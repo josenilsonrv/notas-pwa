@@ -16,8 +16,12 @@ function installNotesExtras(App){
   const nativeClose=dialog.close.bind(dialog);dialog.close=()=>{nativeClose();dialog.remove();this.notesRestoreInsertion(saved);};
   dialog.addEventListener('cancel',e=>{e.preventDefault();dialog.close();});dialog.addEventListener('keydown',e=>{if(e.key==='Escape')e.stopPropagation();});
   dialog.addEventListener('click',e=>{const r=dialog.getBoundingClientRect();if(e.target===dialog&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom))dialog.close();});
-  const position=()=>{const r=anchor.getBoundingClientRect(),w=dialog.offsetWidth,h=dialog.offsetHeight;dialog.style.left=Math.max(12,Math.min(innerWidth-w-12,r.right-w))+'px';dialog.style.top=Math.max(12,Math.min(innerHeight-h-12,r.bottom+8))+'px';};
-  build(dialog);dialog.showModal();position();const observer=new ResizeObserver(position);observer.observe(dialog);window.addEventListener('resize',position);dialog.addEventListener('close',()=>{observer.disconnect();window.removeEventListener('resize',position);dialog.remove();});return dialog;
+  let framePosicao=0;
+  const place=()=>{const r=anchor.getBoundingClientRect(),w=dialog.offsetWidth,h=dialog.offsetHeight;dialog.style.left=Math.max(12,Math.min(innerWidth-w-12,r.right-w))+"px";dialog.style.top=Math.max(12,Math.min(innerHeight-h-12,r.bottom+8))+"px";};
+  // Coalescido num frame: o ResizeObserver do dialogo disparava a cada mudanca de
+  // tamanho e reposicionar dentro do proprio frame forca layout do documento inteiro.
+  const position=()=>{cancelAnimationFrame(framePosicao);framePosicao=requestAnimationFrame(()=>{if(dialog.isConnected)place();});};
+  build(dialog);dialog.showModal();place();const observer=new ResizeObserver(position);observer.observe(dialog);window.addEventListener('resize',position);dialog.addEventListener('close',()=>{cancelAnimationFrame(framePosicao);observer.disconnect();window.removeEventListener('resize',position);dialog.remove();});return dialog;
  };
  p.notesRevealInsertion=function(row){
   // Inserting the first child must not trigger the default collapsed state.

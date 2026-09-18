@@ -39,7 +39,17 @@ html #notesToolbar > .notes-toolbar-overflow[hidden],html #notesToolbar > .notes
 .notes-viewer-tools button svg { width:16px; height:16px; }
 
 /* Native dialogs need explicit positioning; toolbar panels follow their trigger. */
-html .notes-extra-dialog { position:fixed; inset:auto; margin:0; box-sizing:border-box; background:color-mix(in srgb,var(--color-bg-container,#f4f6fa) 82%,transparent); backdrop-filter:blur(22px) saturate(135%); -webkit-backdrop-filter:blur(22px) saturate(135%); border:1px solid #ffffff55; box-shadow:0 16px 50px #0003; }
+html .notes-extra-dialog { position:fixed; inset:auto; margin:0; box-sizing:border-box; background:color-mix(in srgb,var(--color-bg-container,#f4f6fa) 96%,transparent); border:1px solid #ffffff55; box-shadow:0 16px 50px #0003; }
+/* Diálogos seguem o modo: --color-bg-container só existe no claro, então o
+   escuro precisa ser explícito (antes o diálogo ficava claro com as linhas escuras
+   e o texto acabava ilegível). */
+html[data-theme="dark"] .notes-extra-dialog { background: #11161d; color: #CBD5E1; border-color: #2A3543; }
+html[data-theme="dark"] .notes-extra-dialog h3 { color: #E2E8F0; }
+html[data-theme="dark"] .notes-extra-dialog label, html[data-theme="dark"] .notes-extra-dialog small { color: #94A3B8; }
+html[data-theme="dark"] .notes-extra-dialog input, html[data-theme="dark"] .notes-extra-dialog select { border-color: #2A3543; color: #CBD5E1; }
+html[data-theme="dark"] .notes-extra-dialog button:not([type="submit"]) { border-color: #2A3543; color: #CBD5E1; }
+html[data-theme="dark"] .notes-extra-dialog button:not([type="submit"]):hover { background: color-mix(in srgb, #3B82F6 22%, transparent); }
+html[data-theme="dark"] .notes-extra-dialog::backdrop { background: #0006; }
 .notes-extra-dialog::backdrop { background:#101b2a18; }
 .notes-extra-dialog label { display:grid; grid-template-columns:55px minmax(0,1fr); align-items:center; gap:10px; }
 .notes-extra-dialog button[type=submit] { display:block; min-width:160px; margin:18px auto 0; background:var(--color-neon-blue,#0071e3); color:white; border:0; }

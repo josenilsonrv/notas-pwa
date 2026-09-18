@@ -112,6 +112,11 @@ class NotesPWA {
         this.ordemToolbarOriginal = null;
         this.notesToolbarEditorRedraw = null;
 
+        this.notesToolbarEditorRows = null;
+        this.notesToolbarAplicando = false;
+        this.notesToolbarOrdemAgendada = false;
+        this.notesToolbarOrdemPasses = 0;
+        this.notesToolbarOrdemTimer = null;
         this.themeManager = new ThemeManager();
         this.init();
     }
@@ -652,31 +657,78 @@ class NotesPWA {
      * barra, escondendo o menu "…"/gaveta do motor. É idempotente: só mexe no DOM
      * quando algo está fora do lugar (evita loop com o ResizeObserver do motor).
      */
-    aplicarOrdemToolbar(ordem = null) {
+    aplicarOrdemToolbar(ordem = null, opcoes = {}) {
         const toolbar = document.getElementById('notesToolbar');
-        if (!toolbar) return;
-        const mais = toolbar.querySelector('.notes-toolbar-more');
-        const gaveta = toolbar.querySelector('.notes-toolbar-overflow');
-        const lista = ordem || this.lerOrdemToolbar();
-        const mapa = this.chavesToolbar();
-        const itens = [...mapa.keys()];
-        const posicao = new Map();
-        lista.forEach((chave, indice) => { if (!posicao.has(chave)) posicao.set(chave, indice); });
-        itens.sort((a, b) => {
-            const pa = posicao.has(mapa.get(a)) ? posicao.get(mapa.get(a)) : Number.MAX_SAFE_INTEGER;
-            const pb = posicao.has(mapa.get(b)) ? posicao.get(mapa.get(b)) : Number.MAX_SAFE_INTEGER;
-            return pa - pb;
-        });
-        const referencia = mais || gaveta || null;
-        const editar = toolbar.querySelector('[data-pwa="editar-toolbar"]');
-        const atuais = [...toolbar.children].filter(el => el !== mais && el !== gaveta && el !== editar);
-        const jaEsta = atuais.length === itens.length
-            && atuais.every((el, indice) => el === itens[indice])
-            && (!gaveta || !gaveta.children.length);
-        if (!jaEsta) itens.forEach(el => toolbar.insertBefore(el, referencia));
-        if (editar && toolbar.lastElementChild !== editar) toolbar.append(editar);
-        if (mais && !mais.hidden) mais.hidden = true;
-        if (gaveta && !gaveta.hidden) gaveta.hidden = true;
+        if (!toolbar || this.notesToolbarAplicando) return;
+        // Trava de reentrância: enquanto aplicamos a ordem ignoramos as NOSSAS próprias
+        // mutações. Sem ela o observer reagia a cada insertBefore e reordenava tudo de
+        // novo em cascata (CPU a 100% e interface presa - pior ao voltar de outra aba).
+        this.notesToolbarAplicando = true;
+        this.notesToolbarObserver?.disconnect();
+        try {
+            const mais = toolbar.querySelector('.notes-toolbar-more');
+            const gaveta = toolbar.querySelector('.notes-toolbar-overflow');
+            const lista = ordem || this.lerOrdemToolbar();
+            const mapa = this.chavesToolbar();
+            const itens = [...mapa.keys()];
+            const posicao = new Map();
+            lista.forEach((chave, indice)=>{ if (!posicao.has(chave)) posicao.set(chave, indice); });
+            itens.sort((a, b)=>{
+                const pa = posicao.has(mapa.get(a)) ? posicao.get(mapa.get(a)) : Number.MAX_SAFE_INTEGER;
+                const pb = posicao.has(mapa.get(b)) ? posicao.get(mapa.get(b)) : Number.MAX_SAFE_INTEGER;
+                return pa - pb;
+            });
+            const referencia = mais || gaveta || null;
+            const editar = toolbar.querySelector('[data-pwa="editar-toolbar"]');
+            const atuais = [...toolbar.children].filter(el=>el !== mais && el !== gaveta && el !== editar);
+            const jaEsta = atuais.length === itens.length
+                && atuais.every((el, indice)=>el === itens[indice])
+                && (!gaveta || !gaveta.children.length);
+            if (!jaEsta) {
+                const alvo = opcoes.mover;
+                const base = alvo ? itens.filter(el=>el !== alvo) : [];
+                const baseAtual = alvo ? atuais.filter(el=>el !== alvo) : [];
+                const soMover = Boolean(alvo) && itens.includes(alvo) && (!gaveta || !gaveta.children.length)
+                    && base.length === baseAtual.length && base.every((el, i)=>el === baseAtual[i]);
+                if (soMover) {
+                    const proximo = itens[itens.indexOf(alvo) + 1];
+                    toolbar.insertBefore(alvo, proximo && proximo.parentElement === toolbar ? proximo : referencia);
+                } else {
+                    itens.forEach(el=>toolbar.insertBefore(el, referencia));
+                }
+            }
+            if (editar && toolbar.lastElementChild !== editar) toolbar.append(editar);
+            if (mais && !mais.hidden) mais.hidden = true;
+            if (gaveta && !gaveta.hidden) gaveta.hidden = true;
+        } finally {
+            this.notesToolbarAplicando = false;
+            this.observarOrdemToolbar(toolbar);
+        }
+    }
+
+    /** (Re)liga o observer da barra (ele fica desligado enquanto aplicamos a ordem). */
+    observarOrdemToolbar(toolbar = document.getElementById('notesToolbar')) {
+        if (!toolbar || !this.notesToolbarObserver || !this.notesToolbarConfigurada) return;
+        this.notesToolbarObserver.observe(toolbar, { childList: true, subtree: true });
+    }
+
+    /**
+     * Agenda a ordenação no próximo frame. Reagir a cada mutação virava cascata
+     * e usar requestAnimationFrame também evita trabalho com a aba oculta - era isso
+     * que deixava o app preso ao voltar para a página.
+     */
+    agendarOrdemToolbar() {
+        // Aplicação SÍNCRONA, como antes da troca por arraste: reagendar em
+        // requestAnimationFrame ficava alternando com o ResizeObserver do motor
+        // (uma reordenação por frame no boot). A trava de reentrância em
+        // aplicarOrdemToolbar é o que impede a cascata.
+        this.notesToolbarOrdemPasses += 1;
+        // Freio de emergência: se algo reordenar sem parar, ignora este passe - mas
+        // NÃO desliga o observer (senão a ordem deixaria de ser aplicada depois).
+        if (400 < this.notesToolbarOrdemPasses) return;
+        clearTimeout(this.notesToolbarOrdemTimer);
+        this.notesToolbarOrdemTimer = setTimeout(()=>{ this.notesToolbarOrdemPasses = 0; }, 500);
+        this.aplicarOrdemToolbar();
     }
 
     /** Ativa a barra em uma linha com rolagem + botão de edição + ordem salva. */
@@ -690,8 +742,8 @@ class NotesPWA {
         this.ordemToolbarOriginal = [...this.chavesToolbar().values()];
         this.aplicarOrdemToolbar();
         this.notesToolbarObserver?.disconnect();
-        this.notesToolbarObserver = new MutationObserver(() => this.aplicarOrdemToolbar());
-        this.notesToolbarObserver.observe(toolbar, { childList: true, subtree: true });
+        this.notesToolbarObserver = new MutationObserver(()=>this.agendarOrdemToolbar());
+        this.observarOrdemToolbar(toolbar);
     }
 
     criarBotaoEditarToolbar(toolbar) {
@@ -720,50 +772,146 @@ class NotesPWA {
         const itens = [...mapa.keys()];
         const indice = itens.indexOf(el);
         const destino = indice + delta;
-        if (indice < 0 || destino < 0 || destino >= itens.length) return;
+        if (indice < 0 || destino < 0 || itens.length <= destino) return;
         itens.splice(indice, 1);
         itens.splice(destino, 0, el);
-        const ordem = itens.map(item => mapa.get(item));
+        const ordem = itens.map(item=>mapa.get(item));
         this.salvarOrdemToolbar(ordem);
-        this.aplicarOrdemToolbar(ordem);
+        // Aplica só a troca do botão movido (1 mutação em vez de reordenar os ~28).
+        this.aplicarOrdemToolbar(ordem, { mover: el });
         this.notesToolbarEditorRedraw?.();
     }
-    /** Diálogo "Editar barra de ferramentas": reordena com setas e persiste. */
+
+    /** Diálogo "Editar barra de ferramentas": reordena arrastando (ou pelo teclado) e persiste. */
     abrirEditorToolbar() {
         const gatilho = document.querySelector('#notesToolbar [data-pwa="editar-toolbar"]');
-        this.notesExtraDialog('Editar barra de ferramentas', dialog => {
+        this.notesExtraDialog('Editar barra de ferramentas', dialog=>{
             dialog.classList.add('app-toolbar-editor');
             const ajuda = document.createElement('p');
             ajuda.className = 'app-toolbar-editor-help';
-            ajuda.textContent = 'Use as setas para reposicionar os botões. A ordem fica guardada neste dispositivo.';
+            ajuda.textContent = 'Arraste pela alça para reposicionar os botões (ou use ↑ e ↓ com a linha focada). A ordem fica guardada neste dispositivo.';
             const lista = document.createElement('div');
             lista.className = 'app-toolbar-editor-list';
-            dialog.append(ajuda, lista);
+            lista.setAttribute('role', 'listbox');
+            const aviso = document.createElement('p');
+            aviso.className = 'app-toolbar-editor-status';
+            aviso.setAttribute('role', 'status');
+            aviso.setAttribute('aria-live', 'polite');
+            dialog.append(ajuda, lista, aviso);
 
-            const desenhar = () => {
+            // Uma linha por botão, REUTILIZADA nas reordenações. Recriar a lista a cada
+            // mudança (replaceChildren, como nas antigas setas) destruía o elemento do
+            // próprio gesto, jogava o foco no <body> inert do diálogo modal e deixava a
+            // interface "presa"; reutilizar também é o que permite arrastar sem perder a linha.
+            const linhas = new Map();
+            this.notesToolbarEditorRows = linhas;
+            let arrasto = null;
+            const anunciar = texto=>{ aviso.textContent = texto; };
+            const posicaoDe = alvo=>[...lista.querySelectorAll('.app-toolbar-editor-row')].indexOf(alvo) + 1;
+            const rolarSePertoDaBorda = clientY=>{
+                const caixa = lista.getBoundingClientRect();
+                if (clientY < caixa.top + 28) lista.scrollTop -= 12;
+                else if (caixa.bottom - 28 < clientY) lista.scrollTop += 12;
+            };
+            const referenciaPara = (clientY, ignorar)=>{
+                const outras = [...lista.querySelectorAll('.app-toolbar-editor-row')].filter(alvo=>alvo !== ignorar);
+                for (let i = 0; i < outras.length; i++) {
+                    const caixa = outras[i].getBoundingClientRect();
+                    if (clientY < caixa.top + caixa.height / 2) return outras[i];
+                }
+                return null;
+            };
+            const confirmarArraste = ()=>{
                 const mapa = this.chavesToolbar();
-                const itens = [...mapa.keys()];
-                lista.replaceChildren();
-                itens.forEach((el, indice) => {
-                    const linha = document.createElement('div');
-                    linha.className = 'app-toolbar-editor-row';
-                    const nome = document.createElement('span');
-                    nome.className = 'app-toolbar-editor-name';
-                    nome.textContent = this.rotuloBotaoToolbar(el);
-                    const esquerda = document.createElement('button');
-                    esquerda.type = 'button';
-                    esquerda.textContent = '←';
-                    esquerda.setAttribute('aria-label', 'Mover ' + nome.textContent + ' para a esquerda');
-                    esquerda.disabled = indice === 0;
-                    esquerda.addEventListener('click', () => this.moverBotaoToolbar(el, -1));
-                    const direita = document.createElement('button');
-                    direita.type = 'button';
-                    direita.textContent = '→';
-                    direita.setAttribute('aria-label', 'Mover ' + nome.textContent + ' para a direita');
-                    direita.disabled = indice === itens.length - 1;
-                    direita.addEventListener('click', () => this.moverBotaoToolbar(el, 1));
-                    linha.append(nome, esquerda, direita);
-                    lista.append(linha);
+                const chaves = [...mapa.keys()];
+                const dono = new Map([...linhas].map(par=>[par[1].linha, par[0]]));
+                const ordem = [...lista.querySelectorAll('.app-toolbar-editor-row')].map(alvo=>mapa.get(dono.get(alvo))).filter(Boolean);
+                if (ordem.length !== chaves.length) return; // nunca guarda uma ordem parcial
+                this.salvarOrdemToolbar(ordem);
+                this.aplicarOrdemToolbar(ordem);
+                this.notesToolbarEditorRedraw?.();
+            };
+            // Move/solta no document (padrão usado em notes/tables.js): garante que o
+            // gesto termine mesmo se o dedo/mouse sair da alça durante o arraste.
+            const aoMover = event=>{
+                if (!arrasto || arrasto.id !== event.pointerId) return;
+                event.preventDefault();
+                lista.insertBefore(arrasto.linha, referenciaPara(event.clientY, arrasto.linha));
+                rolarSePertoDaBorda(event.clientY);
+            };
+            const pararDeOuvir = ()=>{
+                document.removeEventListener('pointermove', aoMover, true);
+                document.removeEventListener('pointerup', aoSoltar, true);
+                document.removeEventListener('pointercancel', aoSoltar, true);
+            };
+            const aoSoltar = event=>{
+                if (!arrasto || arrasto.id !== event.pointerId) return;
+                const atual = arrasto;
+                arrasto = null;
+                pararDeOuvir();
+                atual.linha.classList.remove('app-toolbar-editor-dragging');
+                lista.classList.remove('app-toolbar-editor-sorting');
+                if (event.type === 'pointercancel') {
+                    atual.retorno.forEach(alvo=>lista.append(alvo));
+                    anunciar('Alteração cancelada. ' + this.rotuloBotaoToolbar(atual.el) + ': posição ' + posicaoDe(atual.linha) + ' de ' + lista.children.length + '.');
+                    return;
+                }
+                confirmarArraste();
+                atual.linha.focus({ preventScroll: true });
+                anunciar(this.rotuloBotaoToolbar(atual.el) + ': posição ' + posicaoDe(atual.linha) + ' de ' + lista.children.length + '.');
+            };
+            const criarLinha = el=>{
+                const linha = document.createElement('div');
+                linha.className = 'app-toolbar-editor-row';
+                linha.tabIndex = 0;
+                linha.setAttribute('role', 'option');
+                const alca = document.createElement('span');
+                alca.className = 'app-toolbar-editor-grip';
+                alca.title = 'Arraste para reordenar';
+                alca.setAttribute('aria-hidden', 'true');
+                alca.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+                const nome = document.createElement('span');
+                nome.className = 'app-toolbar-editor-name';
+                linha.append(alca, nome);
+                // Fallback de teclado: o arraste não é acessível a todo mundo.
+                linha.addEventListener('keydown', event=>{
+                    const passo = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
+                    if (!passo || event.ctrlKey || event.metaKey || arrasto) return;
+                    event.preventDefault();
+                    const antes = posicaoDe(linha);
+                    this.moverBotaoToolbar(el, passo);
+                    const depois = posicaoDe(linha);
+                    if (depois !== antes) anunciar(this.rotuloBotaoToolbar(el) + ': posição ' + depois + ' de ' + lista.children.length + '.');
+                });
+                alca.addEventListener('pointerdown', event=>{
+                    if (arrasto) return;
+                    if (event.pointerType === 'mouse' && event.button !== 0) return;
+                    event.preventDefault();
+                    arrasto = { linha, el, id: event.pointerId, retorno: [...lista.querySelectorAll('.app-toolbar-editor-row')] };
+                    linha.classList.add('app-toolbar-editor-dragging');
+                    lista.classList.add('app-toolbar-editor-sorting');
+                    anunciar(this.rotuloBotaoToolbar(el) + ': arraste para reposicionar e solte para guardar.');
+                    document.addEventListener('pointermove', aoMover, true);
+                    document.addEventListener('pointerup', aoSoltar, true);
+                    document.addEventListener('pointercancel', aoSoltar, true);
+                });
+                return { linha, nome };
+            };
+            const desenhar = ()=>{
+                const itens = [...this.chavesToolbar().keys()];
+                for (const el of [...linhas.keys()]) {
+                    if (!itens.includes(el)) { linhas.get(el).linha.remove(); linhas.delete(el); }
+                }
+                itens.forEach((el, indice)=>{
+                    const rotulo = this.rotuloBotaoToolbar(el);
+                    let entrada = linhas.get(el);
+                    if (!entrada) { entrada = criarLinha(el); linhas.set(el, entrada); }
+                    entrada.nome.textContent = rotulo;
+                    entrada.linha.setAttribute('aria-label', rotulo + ': posição ' + (indice + 1) + ' de ' + itens.length + '. Arraste para reordenar.');
+                    // Reposiciona só quando a linha está fora do lugar: mover um
+                    // elemento que já está na posição faz o navegador PERDER o foco.
+                    const desejado = lista.children[indice];
+                    if (desejado !== entrada.linha) lista.insertBefore(entrada.linha, desejado || null);
                 });
             };
             this.notesToolbarEditorRedraw = desenhar;
@@ -773,10 +921,10 @@ class NotesPWA {
             restaurar.type = 'button';
             restaurar.className = 'app-toolbar-editor-restore';
             restaurar.textContent = 'Restaurar padrão';
-            restaurar.addEventListener('click', () => this.restaurarOrdemToolbar());
+            restaurar.addEventListener('click', ()=>this.restaurarOrdemToolbar());
             dialog.append(restaurar);
 
-            dialog.addEventListener('close', () => { this.notesToolbarEditorRedraw = null; });
+            dialog.addEventListener("close", ()=>{ pararDeOuvir(); this.notesToolbarEditorRedraw = null; this.notesToolbarEditorRows = null; });
         }, gatilho);
     }
 

@@ -1,173 +1,210 @@
 {
-  "geradoEm": "2026-09-18T15:30:00.103Z",
+  "geradoEm": "2026-09-18T21:39:37.745Z",
   "projetoTestado": "C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa",
-  "total": 40,
-  "passaram": 27,
+  "total": 41,
+  "passaram": 28,
   "falharam": 12,
   "naoAplicaveis": 1,
-  "tempoTotalMs": 234702,
+  "flaky": 0,
+  "tempoTotalMs": 281412,
+  "falhasNovas": [],
+  "falhasResolvidas": [],
   "resultados": [
     {
+      "passou": true,
+      "ms": 10784,
+      "motivo": "",
       "arquivo": "multi_notas.cjs",
-      "passou": true,
-      "ms": 7938,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 4279,
+      "motivo": "",
+      "arquivo": "nota_grande_pwa.cjs",
+      "tentativas": 1
+    },
+    {
+      "passou": false,
+      "ms": 6477,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
       "arquivo": "notes_cascade_defaults.cjs",
-      "passou": false,
-      "ms": 8526,
-      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+      "tentativas": 1
     },
     {
+      "passou": false,
+      "ms": 6828,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
       "arquivo": "notes_checklist_numbers.cjs",
-      "passou": false,
-      "ms": 4053,
-      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      "tentativas": 1
     },
     {
+      "passou": false,
+      "ms": 8728,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
       "arquivo": "notes_checklist_order.cjs",
-      "passou": false,
-      "ms": 2953,
-      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      "tentativas": 1
     },
     {
+      "passou": false,
+      "ms": 7633,
+      "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
       "arquivo": "notes_collapse_motion.cjs",
-      "passou": false,
-      "ms": 3782,
-      "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 2061,
+      "motivo": "",
       "arquivo": "notes_colors_persistence.cjs",
-      "passou": true,
-      "ms": 6312,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 4328,
+      "motivo": "",
       "arquivo": "notes_completion_spacing.cjs",
-      "passou": true,
-      "ms": 5036,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 3605,
+      "motivo": "",
       "arquivo": "notes_cut_background.cjs",
-      "passou": true,
-      "ms": 7876,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 4104,
+      "motivo": "",
       "arquivo": "notes_document_migration.cjs",
-      "passou": true,
-      "ms": 8503,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 127,
+      "motivo": "",
       "arquivo": "notes_document_model.cjs",
-      "passou": true,
-      "ms": 466,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": false,
+      "ms": 2613,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
       "arquivo": "notes_enter_child.cjs",
-      "passou": false,
-      "ms": 3045,
-      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      "tentativas": 1
     },
     {
+      "passou": false,
+      "ms": 56595,
+      "motivo": "at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_extras.cjs:55:97 {",
       "arquivo": "notes_extras.cjs",
-      "passou": false,
-      "ms": 42363,
-      "motivo": "at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_extras.cjs:55:97 {"
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 4865,
+      "motivo": "",
       "arquivo": "notes_import_spacing.cjs",
-      "passou": true,
-      "ms": 3098,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 2693,
+      "motivo": "",
       "arquivo": "notes_indent_child.cjs",
-      "passou": true,
-      "ms": 2450,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 5090,
+      "motivo": "",
       "arquivo": "notes_large_document.cjs",
-      "passou": true,
-      "ms": 4084,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 4793,
+      "motivo": "",
       "arquivo": "notes_last_line_enter.cjs",
-      "passou": true,
-      "ms": 4459,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": false,
+      "ms": 4073,
+      "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
       "arquivo": "notes_markdown.cjs",
-      "passou": false,
-      "ms": 4381,
-      "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 5460,
+      "motivo": "",
       "arquivo": "notes_million.cjs",
-      "passou": true,
-      "ms": 4032,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 8012,
+      "motivo": "",
       "arquivo": "notes_million_extras.cjs",
-      "passou": true,
-      "ms": 4569,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": false,
+      "ms": 6591,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
       "arquivo": "notes_navigation_completion.cjs",
-      "passou": false,
-      "ms": 4895,
-      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+      "tentativas": 1
     },
     {
+      "passou": false,
+      "ms": 5084,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
       "arquivo": "notes_outline_code.cjs",
-      "passou": false,
-      "ms": 2941,
-      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 4623,
+      "motivo": "",
       "arquivo": "notes_parent_undo.cjs",
-      "passou": true,
-      "ms": 3844,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": false,
+      "ms": 2926,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
       "arquivo": "notes_paste_blocks.cjs",
-      "passou": false,
-      "ms": 2515,
-      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 3526,
+      "motivo": "",
       "arquivo": "notes_paste_selection.cjs",
-      "passou": true,
-      "ms": 2611,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 5270,
+      "motivo": "",
       "arquivo": "notes_performance.cjs",
-      "passou": true,
-      "ms": 2904,
-      "motivo": ""
+      "tentativas": 1
     },
     {
-      "arquivo": "notes_regression_audit.cjs",
       "passou": false,
-      "ms": 3948,
-      "motivo": "AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to:"
+      "ms": 10888,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to:",
+      "arquivo": "notes_regression_audit.cjs",
+      "tentativas": 1
     },
     {
-      "arquivo": "notes_renumber_structure.cjs",
       "passou": true,
-      "ms": 3280,
-      "motivo": ""
+      "ms": 5059,
+      "motivo": "",
+      "arquivo": "notes_renumber_structure.cjs",
+      "tentativas": 1
     },
     {
       "arquivo": "notes_requested_fixes.cjs",
@@ -177,76 +214,88 @@
       "motivo": ""
     },
     {
+      "passou": true,
+      "ms": 112,
+      "motivo": "",
       "arquivo": "notes_table_math.cjs",
-      "passou": true,
-      "ms": 88,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 6621,
+      "motivo": "",
       "arquivo": "notes_table_media.cjs",
-      "passou": true,
-      "ms": 6167,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 6933,
+      "motivo": "",
       "arquivo": "notes_table_tools.cjs",
-      "passou": true,
-      "ms": 6189,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 2878,
+      "motivo": "",
       "arquivo": "notes_tone_picker.cjs",
-      "passou": true,
-      "ms": 2720,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 2558,
+      "motivo": "",
       "arquivo": "notes_tone_picker_mobile.cjs",
-      "passou": true,
-      "ms": 2706,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 99,
+      "motivo": "",
       "arquivo": "parity_structure.cjs",
-      "passou": true,
-      "ms": 94,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 12567,
+      "motivo": "",
       "arquivo": "parity_visual.cjs",
-      "passou": true,
-      "ms": 18292,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 16561,
+      "motivo": "",
       "arquivo": "shortcuts.cjs",
-      "passou": true,
-      "ms": 12127,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 6596,
+      "motivo": "",
       "arquivo": "tema_switch.cjs",
-      "passou": true,
-      "ms": 5967,
-      "motivo": ""
+      "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 12074,
+      "motivo": "",
       "arquivo": "tema_vidro.cjs",
-      "passou": true,
-      "ms": 13456,
-      "motivo": ""
+      "tentativas": 1
     },
     {
-      "arquivo": "test_notes_editor_ui.cjs",
       "passou": false,
-      "ms": 6116,
-      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      "ms": 5895,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
+      "arquivo": "test_notes_editor_ui.cjs",
+      "tentativas": 1
     },
     {
-      "arquivo": "toolbar_pwa.cjs",
       "passou": true,
-      "ms": 5916,
-      "motivo": ""
+      "ms": 11403,
+      "motivo": "",
+      "arquivo": "toolbar_pwa.cjs",
+      "tentativas": 1
     }
   ],
   "falhas": [
@@ -263,12 +312,12 @@
     {
       "arquivo": "notes_checklist_order.cjs",
       "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
-      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    [\n      'B',\n      'C',\n      'A'\n...\n    [\n+     'A',\n      'C',\n-     'A',\n      'B'\n    ]\n  ]\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_checklist_order.cjs:7:1102 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Array],\n  expected: [Array],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}"
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    [\n      'B',\n      'C',\n      'A'\n...\n    [\n+     'A',\n      'C',\n-     'A',\n      'B'\n    ]\n  ]\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_checklist_order.cjs:7:1102\n    at runNextTicks (node:internal/process/task_queues:65:5)\n    at process.processImmediate (node:internal/timers:472:9) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Array],\n  expected: [Array],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}"
     },
     {
       "arquivo": "notes_collapse_motion.cjs",
       "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
-      "saida": "{\n  start: 248.578125,\n  middle: 196.375,\n  nearEnd: 194.390625,\n  end: 191.390625\n}\nAssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(Math.abs(result.nearEnd-result.end)<3)\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_collapse_motion.cjs:36:103 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}"
+      "saida": "{\n  start: 248.578125,\n  middle: 196.140625,\n  nearEnd: 194.390625,\n  end: 191.390625\n}\nAssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(Math.abs(result.nearEnd-result.end)<3)\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_collapse_motion.cjs:36:103 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}"
     },
     {
       "arquivo": "notes_enter_child.cjs",

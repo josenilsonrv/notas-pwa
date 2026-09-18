@@ -1,6 +1,6 @@
 /*
  * Barra de ferramentas do PWA: uma linha com rolagem horizontal, botão de
- * edição de posições (diálogo com setas), ordem persistida no dispositivo e
+ * edição de posições (diálogo com arrastar-e-soltar), ordem persistida no dispositivo e
  * dock acima do teclado virtual (visualViewport).
  *
  * Usa o boot REAL (`new NotesPWA()` -> init), pois é nele que o PWA liga a
@@ -114,18 +114,62 @@ const ordemDe=page=>page.evaluate(()=>[...app.chavesToolbar().values()]);
   assert.deepEqual(await estadoPoll(),{poll:false,timeouts:0},'poll e reajustes parados quando o foco sai da nota (veio de um filho)');
   await page.evaluate(()=>{document.getElementById('focoNaNota')?.remove();document.getElementById('focoForaDaNota')?.remove();});
 
-  // 4) Diálogo de edição: mover com a seta ->, aplicar ao vivo e persistir.
+  // 4) Dialogo de edicao: ARRASTAR pela alca reordena, aplica ao vivo e persiste.
   await page.evaluate(()=>app.abrirEditorToolbar());
   await page.locator('.app-toolbar-editor').waitFor({state:'visible'});
+  assert.equal(await page.locator('.app-toolbar-editor-row').count(),(await ordemDe(page)).length,'uma linha por botao');
+  assert.equal(await page.locator('.app-toolbar-editor-grip').count(),(await ordemDe(page)).length,'uma alca por linha');
+  assert.equal(await page.locator('.app-toolbar-editor button[aria-label*="esquerda"]').count(),0,'sem botao de seta esquerda');
+  assert.equal(await page.locator('.app-toolbar-editor button[aria-label*="direita"]').count(),0,'sem botao de seta direita');
   const antes=await ordemDe(page);
-  await page.locator('.app-toolbar-editor-row').first().getByRole('button',{name:/direita/i}).click();
-  await page.waitForTimeout(150);
+  const arrastarAlca=async(indice,destino)=>{
+    const alca=await page.locator('.app-toolbar-editor-row').nth(indice).locator('.app-toolbar-editor-grip').boundingBox();
+    const alvo=await page.locator('.app-toolbar-editor-row').nth(destino).boundingBox();
+    await page.mouse.move(alca.x+alca.width/2,alca.y+alca.height/2);
+    await page.mouse.down();
+    await page.mouse.move(alca.x+alca.width/2,alvo.y+alvo.height-2,{steps:6});
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+  };
+  await arrastarAlca(0,1);
   const depois=await ordemDe(page);
-  assert.equal(depois[0],antes[1],'botao movido uma posicao');
+  assert.equal(depois[0],antes[1],'arraste move uma posicao');
   assert.equal(depois[1],antes[0]);
-  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('notas-pwa-toolbar-order'))),depois,'ordem salva no dispositivo');
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('notas-pwa-toolbar-order'))),depois,'ordem salva pelo arraste');
   const dom=await page.evaluate(()=>app.filhosToolbar().map(el=>app.chavesToolbar().get(el)));
   assert.deepEqual(dom,depois,'ordem aplicada no DOM');
+  assert.equal(await page.evaluate(()=>!!document.activeElement?.closest?.('.app-toolbar-editor')),true,'foco permanece dentro da modal');
+  assert.equal(await page.locator('.app-toolbar-editor-row').count(),depois.length,'linhas reutilizadas no arraste');
+
+  // 4.1) Teclado (o arraste nao serve para todos): ArrowDown/ArrowUp reordenam.
+  const baseTeclado=await ordemDe(page);
+  await page.locator('.app-toolbar-editor-row').first().focus();
+  await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(150);
+  assert.equal((await ordemDe(page))[0],baseTeclado[1],'teclado move uma posicao');
+  assert.equal(await page.evaluate(()=>!!document.activeElement?.closest?.('.app-toolbar-editor')),true,'foco continua na modal apos o teclado');
+  await page.keyboard.press('ArrowUp');
+  await page.waitForTimeout(150);
+  assert.deepEqual(await ordemDe(page),baseTeclado,'teclado volta uma posicao');
+
+  // 4.1b) No celular o arraste e por TOQUE (Pointer Events: mesmo caminho do mouse).,  const tocarArrastar=async(indice,destino)=>{,    const alca=await page.locator('.app-toolbar-editor-row').nth(indice).locator('.app-toolbar-editor-grip').boundingBox();,    const alvo=await page.locator('.app-toolbar-editor-row').nth(destino).boundingBox();,    const cdp=await page.context().newCDPSession(page);,    const toque=(t,x,y)=>cdp.send('Input.dispatchTouchEvent',{type:t,touchPoints:t==='touchEnd'?[]:[{x,y,radiusX:3,radiusY:3,force:1,id:1}]});,    const x=alca.x+alca.width/2, y0=alca.y+alca.height/2, y1=alvo.y+alvo.height-2;,    await toque('touchStart',x,y0);,    for(let n=1;n<=6;n++){ await toque('touchMove',x,y0+(y1-y0)*n/6); await page.waitForTimeout(25); },    await toque('touchEnd',x,y1);,    await page.waitForTimeout(300);,    await cdp.detach().catch(()=>{});,  };,  const antesToque=await ordemDe(page);,  await tocarArrastar(0,1);,  const depoisToque=await ordemDe(page);,  assert.equal(depoisToque[0],antesToque[1],'toque arrasta e reordena');,  assert.equal(depoisToque[1],antesToque[0]);,  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('notas-pwa-toolbar-order'))),depoisToque,'ordem salva pelo toque');,  assert.equal(await page.evaluate(()=>!!document.querySelector('.app-toolbar-editor-dragging')),false,'estado de arraste liberado no toque');,
+  // 4.2) A reordenacao PARA depois do gesto (sem cascata) no repouso, no arraste e no resize.
+  await page.evaluate(()=>{window.__ordens=0;const o=app.aplicarOrdemToolbar.bind(app);app.aplicarOrdemToolbar=function(...a){window.__ordens++;return o(...a);};});
+  await page.waitForTimeout(400);
+  const repouso=await page.evaluate(()=>window.__ordens);
+  await page.waitForTimeout(500);
+  assert.equal(await page.evaluate(()=>window.__ordens),repouso,'sem reordenacao em repouso');
+  await arrastarAlca(1,2);
+  await page.waitForTimeout(400);
+  const aposArraste=await page.evaluate(()=>window.__ordens);
+  await page.waitForTimeout(600);
+  assert.equal(await page.evaluate(()=>window.__ordens),aposArraste,'reordenacao para depois do arraste');
+  await page.evaluate(()=>{window.__ordens=0;});
+  await page.setViewportSize({width:820,height:900});
+  await page.waitForTimeout(800);
+  const aposResize=await page.evaluate(()=>window.__ordens);
+  await page.waitForTimeout(500);
+  assert.equal(await page.evaluate(()=>window.__ordens),aposResize,'resize nao inicia cascata');
 
   // 5) "Restaurar padrão" volta à ordem de fábrica e limpa o storage.
   await page.getByRole('button',{name:'Restaurar padrão'}).click();

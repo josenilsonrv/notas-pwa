@@ -15,6 +15,9 @@
     ],
     "pwa": [
       "appToastRegion",
+      "bootGuard",
+      "bootGuardErro",
+      "bootGuardReparar",
       "notesContextNav",
       "notesEditor",
       "notesEditorContainer",
@@ -128,6 +131,7 @@
       "textbox"
     ],
     "pwa": [
+      "alert",
       "region",
       "region",
       "status",

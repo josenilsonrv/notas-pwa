@@ -619,12 +619,16 @@ html[data-theme="dark"] #notesModal #notesToolbar.notes-toolbar-docked {
 .app-toolbar-editor-list { display: flex; flex-direction: column; gap: 6px; max-height: 55vh; overflow-y: auto; }
 .app-toolbar-editor-row { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-bg-container); }
 .app-toolbar-editor-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.app-toolbar-editor-row button { width: 34px; min-width: 34px; height: 34px; padding: 0; border: 1px solid var(--color-border); border-radius: 8px; background: transparent; color: var(--color-text-main); font-size: 16px; line-height: 1; cursor: pointer; }
-.app-toolbar-editor-row button:hover:not(:disabled) { border-color: var(--color-neon-blue); color: var(--color-neon-blue); }
-.app-toolbar-editor-row button:disabled { opacity: .35; cursor: default; }
-html[data-theme="dark"] .app-toolbar-editor-row { background: #11161d; border-color: #2a3543; }
-html[data-theme="dark"] .app-toolbar-editor-row button { color: #cbd5e1; border-color: #2a3543; }
+html[data-theme="dark"] .app-toolbar-editor-row { background: #151B23; border-color: #2A3543; }
 
+/* Alca de arraste da modal de edicao (funciona com mouse e com toque). */
+.app-toolbar-editor-row:focus-visible { outline: 2px solid var(--color-neon-blue); outline-offset: 2px; }
+.app-toolbar-editor-grip { display: flex; align-items: center; justify-content: center; flex: none; width: 26px; height: 30px; border-radius: 6px; color: #64748b; cursor: grab; touch-action: none; }
+.app-toolbar-editor-grip:hover { background: rgba(128, 144, 160, .16); color: var(--color-neon-blue); }
+.app-toolbar-editor-row.app-toolbar-editor-dragging { opacity: .55; border-color: var(--color-neon-blue); box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+.app-toolbar-editor-list.app-toolbar-editor-sorting { cursor: grabbing; }
+.app-toolbar-editor-status { margin: 8px 0 0; font-size: 12px; min-height: 1.2em; opacity: .75; }
+html[data-theme="dark"] .app-toolbar-editor-grip { color: #94a3b8; }
 .app-toolbar-editor-restore {
     width: 100%;
     margin-top: 12px;
