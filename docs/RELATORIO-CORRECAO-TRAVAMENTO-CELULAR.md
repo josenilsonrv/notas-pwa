@@ -312,3 +312,52 @@ O custo restante é proporcional ao tamanho da nota (`refreshNotesCollapseContro
 `getCleanNotesHtml` + parse do HTML). Para notas **muito** grandes, o próximo passo é
 um **"modo nota grande"**: montar os controles aos poucos e/ou oferecer dividir a
 nota. Hoje o limite confortável fica na casa de **milhares de linhas**.
+
+---
+
+## 11. Terceira rodada — página em branco ao carregar (Service Worker)
+
+### 11.1 Sintoma
+
+> "Agora o erro mudou: não aparece mais a tela da nota travada; a trava está no
+> carregamento — **não finaliza o carregamento e a página fica em branco**."
+
+### 11.2 Causa
+
+O HTML estático apareceria mesmo com erro de JavaScript, então **não era o app**: era
+a camada de carregamento. O `sw.js` usava **"Network First" com `fetch` sem timeout**.
+Se a rede **pendura** (nem falha nem responde), a requisição **nunca resolve** — e como
+o `styles.css` bloqueia a pintura, a página fica **branca carregando para sempre**. O
+mesmo valia para a navegação (`index.html`).
+
+Isso só ficou visível agora porque o *bump* de cache (`v8 → v9`) fez o Service Worker
+se atualizar e rebaixar os assets, expondo exatamente esse caminho.
+
+### 11.3 Correção (`sw.js` → v10)
+
+* **Cache primeiro (offline-first)**: tudo que já está no cache é servido **imediatamente**;
+  a rede é consultada em segundo plano (stale-while-revalidate).
+* **Rede sempre com timeout** (3 s, via `AbortController`): nunca mais fica pendurada.
+* **Navegação sem cache**: usa o `index.html` guardado ou um **HTML mínimo** — em
+  nenhum caso a página fica em branco esperando.
+* **Instalação tolerante** (`Promise.allSettled`): um asset que falhe (rede instável)
+  não impede o Service Worker de instalar.
+
+### 11.4 Validação
+
+Teste automatizado com servidor local: registra o Service Worker, deixa o navegador
+**offline** e recarrega a página.
+
+```
+online:  {"titulo":"Notas","editor":true,"controlado":true}
+OFFLINE carregou em 240ms: {"titulo":"Notas","editor":true,"estiloAplicado":"6px"}
+erros de pagina: []
+```
+
+### 11.5 Recuperação no celular (enquanto a versão antiga está instalada)
+
+1. Abra o app **com internet** (Wi‑Fi/dados) — com rede boa, o Service Worker antigo
+   consegue completar a requisição e a página carrega.
+2. **Recarregue uma ou duas vezes**: nesse carregamento o `sw.js` novo (v10) é
+   detectado, instalado e assume (`skipWaiting`/`clients.claim`).
+3. A partir daí o app abre **na hora** e **offline**, sem tela branca.

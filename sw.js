@@ -1,14 +1,23 @@
 /**
  * Service Worker PWA - Cache e Offline
- * Gerencia cache de assets estáticos, estratégia de fetch e offline
+ *
+ * Estratégia: OFFLINE-FIRST de verdade.
+ * O app é 100% local, então o Service Worker serve do CACHE imediatamente e
+ * revalida na rede em segundo plano. A rede NUNCA bloqueia o carregamento: se
+ * demorar mais que TIMEOUT_MS, a resposta em cache é usada na hora.
+ *
+ * Motivo: a versão anterior ("Network First" com `fetch` sem timeout) deixava a
+ * página em branco carregando para sempre quando a rede pendurava — o CSS (que
+ * bloqueia a pintura) nunca chegava.
  */
 
 // ============================================
 // SERVICE WORKER PARA PWA
 // ============================================
 
-// Constantes de cache e assets estáticos
-const CACHE_NAME = 'notas-pwa-v9';
+const CACHE_NAME = 'notas-pwa-v10';
+const TIMEOUT_MS = 3000;
+
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -26,146 +35,115 @@ const STATIC_ASSETS = [
     './icon.svg'
 ];
 
+const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>Notas</title></head><body style="font:16px system-ui;padding:24px">' +
+    '<h1>Notas</h1><p>Sem conexão e sem cópia local do app. Abra uma vez com internet ' +
+    'para que o aplicativo fique disponível offline.</p></body></html>';
+
+/** Busca na rede com limite de tempo (nunca deixa o carregamento pendurado). */
+const buscarComTimeout = (request, ms) => new Promise((resolve, reject) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error('timeout'));
+    }, ms);
+    fetch(request, { signal: controller.signal })
+        .then((response) => { clearTimeout(timer); resolve(response); })
+        .catch((error) => { clearTimeout(timer); reject(error); });
+});
+
+/** Guarda a resposta no cache sem bloquear quem está esperando. */
+const guardarNoCache = (request, response) => {
+    if (!response || !response.ok) return;
+    const copia = response.clone();
+    caches.open(CACHE_NAME)
+        .then((cache) => cache.put(request, copia))
+        .catch(() => { /* sem espaço/opaco: ignora */ });
+};
+
+/** Revalida em segundo plano (stale-while-revalidate) sem bloquear a resposta. */
+const revalidar = (request) => {
+    buscarComTimeout(request, TIMEOUT_MS)
+        .then((response) => guardarNoCache(request, response))
+        .catch(() => { /* offline: mantém o cache */ });
+};
+
 // ============================================
 // INSTALLATION
 // ============================================
 self.addEventListener('install', (event) => {
-    console.log('Service Worker: Installing...');
-    
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('Service Worker: Caching static assets');
-                return cache.addAll(STATIC_ASSETS);
-            })
-            .then(() => {
-                console.log('Service Worker: Installation complete');
-                return self.skipWaiting();
-            })
-            .catch((error) => {
-                console.error('Service Worker: Installation failed', error);
-            })
-    );
+    event.waitUntil((async () => {
+        const cache = await caches.open(CACHE_NAME);
+        // Tolerante: um asset que falhe não impede a instalação do Service Worker
+        // nem deixa a página sem os outros recursos.
+        await Promise.allSettled(STATIC_ASSETS.map((asset) => cache.add(asset)));
+        await self.skipWaiting();
+        console.log('Service Worker: instalado');
+    })());
 });
 
 // ============================================
 // ACTIVATION
 // ============================================
 self.addEventListener('activate', (event) => {
-    console.log('Service Worker: Activating...');
-    
-    event.waitUntil(
-        caches.keys()
-            .then((cacheNames) => {
-                return Promise.all(
-                    cacheNames.map((cacheName) => {
-                        if (cacheName !== CACHE_NAME) {
-                            console.log('Service Worker: Deleting old cache', cacheName);
-                            return caches.delete(cacheName);
-                        }
-                    })
-                );
-            })
-            .then(() => {
-                console.log('Service Worker: Activation complete');
-                return self.clients.claim();
-            })
-    );
+    event.waitUntil((async () => {
+        const nomes = await caches.keys();
+        await Promise.all(nomes.map((nome) => (nome === CACHE_NAME ? null : caches.delete(nome))));
+        await self.clients.claim();
+        console.log('Service Worker: ativado');
+    })());
 });
 
 // ============================================
 // FETCH STRATEGY
 // ============================================
 self.addEventListener('fetch', (event) => {
-    const url = new URL(event.request.url);
-    
-    // Estratégia: Network First para assets estáticos
-    // Compara o pathname (sempre absoluto) com os assets relativos, ignorando o prefixo do subdiretório
-    const isStaticAsset = STATIC_ASSETS.some(asset => {
-        const cleanAsset = asset.replace(/^\.\//, '/');
-        return url.pathname === cleanAsset || url.pathname.endsWith(cleanAsset);
-    });
+    const request = event.request;
+    if (request.method !== 'GET') return;
 
-    if (isStaticAsset) {
-        event.respondWith(
-            fetch(event.request)
-                .then((response) => {
-                    // Verificar se resposta é válida
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
-                        return response;
-                    }
-                    
-                    // Clonar resposta para cache
-                    const responseToCache = response.clone();
-                    
-                    caches.open(CACHE_NAME)
-                        .then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
-                    
-                    return response;
-                })
-                .catch((error) => {
-                    console.error('Service Worker: Fetch failed, trying cache', error);
-                    // Fallback para cache se network falhar (offline)
-                    return caches.match(event.request)
-                        .then((cachedResponse) => {
-                            if (cachedResponse) {
-                                return cachedResponse;
-                            }
-                            // Retornar página offline para erros de navegação
-                            if (event.request.mode === 'navigate') {
-                                return caches.match('./index.html');
-                            }
-                        });
-                })
-        );
-    } else {
-        // Estratégia: Network First para outros requests
-        event.respondWith(
-            fetch(event.request)
-                .then((response) => {
-                    // Verificar se resposta é válida
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
-                        return response;
-                    }
-                    
-                    // Clonar resposta para cache
-                    const responseToCache = response.clone();
-                    
-                    caches.open(CACHE_NAME)
-                        .then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
-                    
-                    return response;
-                })
-                .catch(() => {
-                    // Fallback para cache se network falhar
-                    return caches.match(event.request);
-                })
-        );
-    }
+    const url = new URL(request.url);
+    if (url.origin !== self.location.origin) return;
+
+    event.respondWith((async () => {
+        const emCache = await caches.match(request);
+
+        // 1) Cache primeiro: a página abre na hora, sem depender da rede.
+        if (emCache) {
+            revalidar(request);
+            return emCache;
+        }
+
+        // 2) Sem cópia local: tenta a rede, mas com timeout.
+        try {
+            const response = await buscarComTimeout(request, TIMEOUT_MS);
+            guardarNoCache(request, response);
+            return response;
+        } catch (_) {
+            // 3) Navegação sem cache: usa o index.html guardado (se existir) ou
+            //    uma página mínima — nunca fica em branco carregando para sempre.
+            if (request.mode === 'navigate') {
+                const index = await caches.match('./index.html');
+                if (index) return index;
+                return new Response(OFFLINE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+            }
+            return Response.error();
+        }
+    })());
 });
 
 // ============================================
 // MESSAGE HANDLING
 // ============================================
 self.addEventListener('message', (event) => {
-    console.log('Service Worker: Message received', event.data);
-    
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
     }
-    
+
     if (event.data && event.data.type === 'CACHE_UPDATED') {
-        // Notificar clientes sobre atualização de cache
-        self.clients.matchAll().then(clients => {
-            clients.forEach(client => {
-                client.postMessage({
-                    type: 'CACHE_UPDATED',
-                    cacheName: CACHE_NAME
-                });
+        self.clients.matchAll().then((clients) => {
+            clients.forEach((client) => {
+                client.postMessage({ type: 'CACHE_UPDATED', cacheName: CACHE_NAME });
             });
         });
     }
