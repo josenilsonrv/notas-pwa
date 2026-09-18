@@ -195,19 +195,30 @@ class NotesPWA {
     }
 
     /**
-     * Leva o cursor para o fim da nota quando o toque/clique não atinge nenhuma
-     * linha (área vazia abaixo do conteúdo). No celular e no Safari, tocar numa
-     * área vazia de um contenteditable não posiciona o cursor; sem isto o teclado
-     * não abre e o usuário não consegue escrever.
+     * Permite digitar em TODO o campo abaixo da barra de ferramentas, não apenas
+     * sobre as linhas existentes.
+     *
+     * O editor cobre a área inteira, mas uma linha vazia é comprimida para 8px
+     * (notes/editor.css), então o toque/clique numa área vazia não posiciona o
+     * cursor — e no celular/Safari o teclado nem abre. Aqui a linha mais próxima
+     * do ponto tocado recebe o cursor, o que deixa qualquer ponto do campo
+     * digitável e previsível.
      */
     focusNotesEditorFromEmptyArea(event) {
         const editor = document.getElementById('notesEditor');
         if (!editor) return;
         event?.preventDefault();
-        const lastLine = [...editor.children].reverse().find(element => element.classList.contains('notes-line'));
-        const target = lastLine?.querySelector('.notes-line-text') || editor;
+        const lines = [...editor.children].filter(element => element.classList.contains('notes-line'));
+        let target = lines.at(-1);
+        if (Number.isFinite(event?.clientY) && lines.length) {
+            target = lines.reduce((proxima, linha) => {
+                const distancia = Math.abs(linha.getBoundingClientRect().top - event.clientY);
+                return distancia < proxima.distancia ? { linha, distancia } : proxima;
+            }, { linha: lines[0], distancia: Infinity }).linha;
+        }
+        const box = target?.querySelector('.notes-line-text') || editor;
         const range = document.createRange();
-        range.selectNodeContents(target);
+        range.selectNodeContents(box);
         range.collapse(false);
         editor.focus();
         const selection = window.getSelection();
