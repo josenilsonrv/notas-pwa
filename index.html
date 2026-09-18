@@ -191,18 +191,60 @@
     <script src="./notes/tables.js"></script>
     <script src="./app.js"></script>
     <script>
-        // Register Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => {
-                        console.log('Service Worker registrado com sucesso:', registration);
+        /* Service Worker.
+           - SW_URL aponta para o caminho REAL do arquivo (resolvido a partir da base do
+             documento), e nao para uma rota qualquer.
+           - updateViaCache: none -> o navegador ignora o cache HTTP ao buscar o sw.js,
+             entao uma versao nova e detectada no proximo carregamento (sem isso o cliente
+             podia ficar preso em uma versao antiga para sempre).
+           - Antes de registrar, confere o Content-Type: se o servidor responder HTML
+             (fallback de SPA reescrevendo o caminho), avisa em vez de falhar em silencio. */
+        (function () {
+            if (!('serviceWorker' in navigator)) return;
+            var SW_URL = new URL('sw.js', document.baseURI).href;
+            var tinhaControlador = Boolean(navigator.serviceWorker.controller);
+            var recarregando = false;
+            function avisar(mensagem) {
+                console.error('[notas-pwa] Service Worker: ' + mensagem);
+                var guard = document.getElementById('bootGuard');
+                var detalhe = document.getElementById('bootGuardErro');
+                if (!guard || !detalhe) return;
+                detalhe.textContent = mensagem;
+                guard.hidden = false;
+            }
+            function conferirTipo() {
+                return fetch(SW_URL, { cache: 'no-store' })
+                    .then(function (resposta) {
+                        var tipo = (resposta.headers.get('content-type') || '').toLowerCase();
+                        var ok = /javascript|ecmascript/.test(tipo);
+                        if (!ok) avisar('O servidor respondeu "' + tipo + '" em ' + SW_URL + ' (o Service Worker precisa ser JavaScript). Provavelmente o fallback de SPA esta reescrevendo esse caminho: mantenha o sw.js na raiz e exclua-o do fallback.');
+                        return ok;
                     })
-                    .catch(error => {
-                        console.log('Falha ao registrar Service Worker:', error);
-                    });
+                    .catch(function () { return true; });
+            }
+            window.addEventListener('load', function () {
+                conferirTipo().then(function (ok) {
+                    if (!ok) return;
+                    return navigator.serviceWorker.register(SW_URL, { scope: './', updateViaCache: 'none' })
+                        .then(function (registro) {
+                            console.log('[notas-pwa] Service Worker registrado em ' + SW_URL + ' (scope ' + registro.scope + ')');
+                            registro.update().catch(function () { /* offline */ });
+                            document.addEventListener('visibilitychange', function () {
+                                if (document.visibilityState === 'visible') registro.update().catch(function () { });
+                            });
+                        })
+                        .catch(function (erro) {
+                            avisar('Falha ao registrar o Service Worker: ' + (erro && erro.message ? erro.message : erro));
+                        });
+                });
             });
-        }
+            // Assumiu um Service Worker NOVO? Recarrega uma vez para o app usar a versao nova.
+            navigator.serviceWorker.addEventListener('controllerchange', function () {
+                if (!tinhaControlador || recarregando) return;
+                recarregando = true;
+                location.reload();
+            });
+        })();
     </script>
 </body>
 </html>

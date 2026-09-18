@@ -15,7 +15,7 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
-const CACHE_NAME = 'notas-pwa-v18';
+const CACHE_NAME = 'notas-pwa-v19';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -106,6 +106,8 @@ self.addEventListener('install', (event) => {
             await caches.delete(CACHE_NAME);
             throw new Error('Service Worker: assets essenciais não puderam ser cacheados');
         }
+        // Assumir o controle imediatamente: o cliente novo usa esta versao no proximo carregamento.
+
         await self.skipWaiting();
         console.log('Service Worker: instalado');
     })());
@@ -118,6 +120,8 @@ self.addEventListener('activate', (event) => {
     event.waitUntil((async () => {
         const nomes = await caches.keys();
         await Promise.all(nomes.map((nome) => (nome === CACHE_NAME ? null : caches.delete(nome))));
+        // Passa a controlar as abas ja abertas (sem esperar uma navegacao nova).
+
         await self.clients.claim();
         console.log('Service Worker: ativado');
     })());

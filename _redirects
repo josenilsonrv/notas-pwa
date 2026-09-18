@@ -1,0 +1,8 @@
+﻿# Cloudflare Pages / Netlify: regras avaliadas de cima para baixo.
+#
+# O sw.js e o manifest NAO podem cair no fallback de SPA. Um Service Worker servido
+# como text/html (status 200) e rejeitado pelo navegador EM SILENCIO: o PWA nunca
+# atualiza no cliente. Estas linhas garantem que os dois sejam servidos como arquivos
+# estaticos, mesmo que exista um catch-all apontando para o index.html.
+/sw.js          /sw.js          200
+/manifest.json  /manifest.json  200

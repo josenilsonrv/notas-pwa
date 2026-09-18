@@ -144,3 +144,41 @@ próprio `span`, e não a "imagem") e `contextmenu` cancelado na linha.
 Verificado no navegador: `userSelect` = `none` (linha e alça), `touchAction` = `none`,
 SVG com `pointer-events: none`, `draggable` = false e `contextmenu` com `defaultPrevented`
 = true tanto na linha quanto na alça. `sw.js` -> **v18**.
+
+---
+
+## 7. Deploy e Service Worker (fallback de SPA)
+
+Relato: o host publica com **fallback de SPA** (rota desconhecida -> `index.html` com 200),
+entao o `sw.js` podia ser respondido como `text/html`. O navegador **rejeita em silencio** um
+Service Worker que nao e JavaScript, e o PWA nunca mais atualiza no cliente.
+
+Medicao no deploy: rota inexistente -> `HTTP 200 text/html`; `/sw.js` -> `application/javascript`
+(somente porque o arquivo existe e vence o fallback — fragil).
+
+### Correcoes
+
+- `_redirects` (novo): `/sw.js` e `/manifest.json` servidos como arquivos estaticos **antes** de
+  qualquer catch-all para o `index.html`.
+- `_headers`: `/sw.js` com `Content-Type: application/javascript; charset=utf-8`,
+  `Cache-Control: no-cache` e `Service-Worker-Allowed: /` (escopo da raiz); `manifest.json` idem.
+- `index.html`: registro com `new URL("sw.js", document.baseURI)` (caminho real do arquivo),
+  `{ scope: "./", updateViaCache: "none" }` (ignora o cache HTTP do sw.js), `registration.update()`
+  ao carregar e ao voltar para a aba, `controllerchange` -> uma recarga unica, e checagem de
+  `Content-Type` que **avisa** (via bootGuard) em vez de falhar em silencio.
+- `sw.js`: `self.skipWaiting()` no `install` e `self.clients.claim()` no `activate` ficam
+  explicitos com comentario; cache -> **v19**.
+- `tests/pwa_service_worker.cjs` (novo): sobe um servidor real com fallback de SPA e valida o
+  MIME do `sw.js`, `skipWaiting`/`clients.claim`, `updateViaCache`, registro ativo e o app iniciando.
+
+> Se o fallback estiver configurado fora do repositorio (netlify.toml, nginx, Workers), replique
+> a exclusao de `/sw.js` e `/manifest.json` la. Em nginx, por exemplo, coloque
+> `location = /sw.js { try_files $uri =404; }` **antes** de `location / { try_files $uri /index.html; }`.
+
+### 7.1 Deploy estava desatualizado
+
+Durante a investigacao, `notas-pwa.pages.dev` passou a servir um build **antigo**
+(`app.js` de 50.629 bytes, contendo `textContent = \u2039seta\u203a` e sem `app-toolbar-editor-grip`),
+enquanto `origin/main` ja estava em `1ea0a1b`. Ou seja: o que aparecia no celular tambem era
+**deploy antigo**, nao apenas cache do aparelho. Confira em Cloudflare -> Deployments qual commit
+esta em Production (deve ser o HEAD do `main`) e refaca o deploy.
