@@ -23,12 +23,12 @@ const EXCECOES = [
   {
     seletor: '#notesContextNav',
     propriedade: 'height',
-    motivo: 'No original o nav e preenchido pelo dashboard com chips de projetos/etapas (altura ~60px); no PWA nao existem projetos/focos, entao o nav fica vazio (altura do padding).'
+    motivo: 'No original o nav e preenchido pelo dashboard com chips de projetos/etapas; no PWA ele e preenchido com os chips das notas locais + botao "+". A altura acompanha quando o numero/tamanho dos chips e o mesmo, mas a excecao permanece porque o conteudo do nav pode diferir.'
   },
   {
     seletor: '#notesContextNav',
     propriedade: 'borderTopColor',
-    motivo: 'Consequencia do item acima: o nav vazio do PWA nao recebe a borda translucida do estado com chips.'
+    motivo: 'O original aplica a borda translucida do estado "com chips" do dashboard; o nav do PWA (chips locais + "+") usa a borda base definida em notes/editor.css.'
   },
   {
     seletor: '#notesModalBackdrop',
@@ -48,17 +48,17 @@ const EXCECOES = [
   {
     seletor: '#notesContextNav',
     propriedade: 'padding',
-    motivo: 'O nav vazio do PWA (sem chips) nao recebe o padding do estado preenchido do original.'
+    motivo: 'Tolerancia de layout do nav quando os chips do PWA (nomes de notas) e do original (projetos/etapas) tem larguras diferentes.'
   },
   {
     seletor: '#notesEditorContainer',
     propriedade: 'height',
-    motivo: 'Consequencia direta do nav vazio: o container do editor e flex:1 e absorve os ~42px que no original ficam com os chips de contexto.'
+    motivo: 'Consequencia de eventual diferenca de altura do nav entre os chips locais do PWA e os chips de projeto/etapa do original.'
   },
   {
     seletor: '#notesEditor',
     propriedade: 'height',
-    motivo: 'Mesma causa: o editor ocupa o espaco extra que o nav vazio deixa livre.'
+    motivo: 'Mesma causa do item anterior: o editor e flex:1 e absorve a diferenca de altura do nav.'
   },
   {
     seletor: '.notes-line-check',

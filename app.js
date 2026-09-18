@@ -84,18 +84,25 @@ class NotesPWA {
         this.focusStagesData = [];
         this.currentNotesProjectId = null;
         this.currentNotesStageId = null;
+        this.notesChipMenu = null;
 
         this.themeManager = new ThemeManager();
         this.init();
     }
 
     init() {
-        this.notesContent = this.loadContentFromStorage();
         this.installNotesFeatures();
-        this.projectsData = [{ id: 'local', nome: 'Minhas notas', notas: this.notesContent }];
+        // 🔄 [INÍCIO: ESTADO - MIGRAÇÃO/ABERTURA DA ÚLTIMA NOTA]
+        // `lerNotasLocais` migra a nota única antiga ('notas-pwa-content') para a
+        // lista 'notas-pwa-notes' na primeira execução, sem perder o conteúdo.
+        this.projectsData = this.lerNotasLocais();
+        this.notesContent = this.loadContentFromStorage();
         this.setupEventListeners();
         this.setupResize();
-        this.openNotesModal('local');
+        this.salvarNotasLocais();
+        const ativa = this.lerNotaAtiva();
+        this.openNotesModal(ativa || this.projectsData[0]?.id);
+        // 🔄 [FIM: ESTADO - MIGRAÇÃO/ABERTURA DA ÚLTIMA NOTA]
     }
 
     /** Instala o mesmo motor de notas do sistema sobre este protótipo. */
@@ -128,13 +135,63 @@ class NotesPWA {
         }
     }
 
+    // 🔄 [INÍCIO: ESTADO - MÚLTIPLAS NOTAS LOCAIS]
+    /**
+     * Lê a lista de notas do dispositivo. Na primeira execução (ou quando a lista
+     * ainda não existe), migra a nota única antiga de 'notas-pwa-content' para
+     * uma nota `id: 'local'` — assim quem já usava o app não perde nada.
+     */
+    lerNotasLocais() {
+        try {
+            const bruto = localStorage.getItem('notas-pwa-notes');
+            if (bruto) {
+                const lista = JSON.parse(bruto);
+                if (Array.isArray(lista) && lista.length) return lista;
+            }
+        } catch (error) {
+            console.error('Erro ao ler as notas locais:', error);
+        }
+        return [{ id: 'local', nome: 'Minhas notas', notas: this.loadContentFromStorage() }];
+    }
+
+    /** Grava a lista de notas e o id da nota ativa no dispositivo. */
+    gravarNotasLocais(lista) {
+        try {
+            localStorage.setItem('notas-pwa-notes', JSON.stringify(lista));
+            if (this.currentNotesProjectId) {
+                localStorage.setItem('notas-pwa-nota-ativa', String(this.currentNotesProjectId));
+            }
+        } catch (error) {
+            console.error('Erro ao salvar as notas locais:', error);
+        }
+        this.projectsData = lista;
+    }
+
+    salvarNotasLocais() {
+        this.gravarNotasLocais(this.projectsData || []);
+    }
+
+    lerNotaAtiva() {
+        try { return localStorage.getItem('notas-pwa-nota-ativa') || ''; } catch (_) { return ''; }
+    }
+    // 🔄 [FIM: ESTADO - MÚLTIPLAS NOTAS LOCAIS]
+
     /** Substitui o cliente HTTP do sistema: qualquer gravação fica no dispositivo. */
     async apiCall(endpoint, options = {}) {
         const method = (options.method || 'GET').toUpperCase();
         if (method !== 'GET' && options.body) {
             try {
                 const payload = JSON.parse(options.body);
-                if (typeof payload.notas === 'string') this.saveContentToStorage(payload.notas);
+                if (typeof payload.notas === 'string') {
+                    this.saveContentToStorage(payload.notas); // espelho (compatibilidade)
+                    const lista = this.lerNotasLocais();
+                    const nota = lista.find(item => item.id === this.currentNotesProjectId) || lista[0];
+                    if (nota) {
+                        nota.notas = payload.notas;
+                        nota.atualizadaEm = new Date().toISOString();
+                        this.gravarNotasLocais(lista);
+                    }
+                }
             } catch (_) { /* corpo não-JSON é ignorado */ }
         }
         return {};
@@ -154,9 +211,10 @@ class NotesPWA {
         if (!project) return;
         this.currentNotesProjectId = project.id;
         this.currentNotesStageId = null;
+        this.notesContent = project.notas || '';
 
         const title = document.getElementById('notesModalTitle');
-        if (title) title.textContent = 'Notas';
+        if (title) title.textContent = project.nome || 'Notas';
 
         const editor = document.getElementById('notesEditor');
         editor.innerHTML = project.notas || '<div class="notes-line" data-level="0"><div class="notes-line-text"><br></div></div>';
@@ -167,12 +225,177 @@ class NotesPWA {
         // a partir de notesSavedWidth (undefined na abertura, como no original).
         document.getElementById('notesModalBackdrop')?.classList.add('active');
 
+        this.renderNotesNav();
+        this.salvarNotasLocais();
+
         setTimeout(() => this.placeNotesCursorAtEnd(editor), 100);
     }
 
     openStageNotesModal(stageId) {
         return this.openNotesModal(this.currentNotesProjectId);
     }
+
+    // ⚡ [INÍCIO: INTERAÇÃO/JS - MÚLTIPLAS NOTAS (CHIPS + BOTÃO "+")]
+    /**
+     * Renderiza os chips das notas no `#notesContextNav` + o botão "+".
+     * Cada chip recebe `--notes-accent` lido do conteúdo da sua nota, então
+     * cada nota (e cada chip) segue a sua própria cor padrão — como no original.
+     */
+    renderNotesNav() {
+        const nav = document.getElementById('notesContextNav');
+        if (!nav) return;
+        const ativa = this.currentNotesProjectId;
+        nav.replaceChildren();
+
+        for (const nota of this.projectsData || []) {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'notes-context-chip' + (nota.id === ativa ? ' is-active' : '');
+            chip.dataset.noteId = String(nota.id);
+            chip.textContent = nota.nome || 'Nota';
+            chip.title = 'Abrir esta nota (duplo clique renomeia)';
+            chip.setAttribute('aria-label', 'Abrir nota ' + (nota.nome || 'Nota'));
+            chip.style.setProperty('--notes-accent', this.accentDaNota(nota) || '#0071e3');
+            chip.addEventListener('click', () => {
+                if (chip.dataset.menuAberto === 'true') { delete chip.dataset.menuAberto; return; }
+                if (nota.id !== ativa) this.openNotesModal(nota.id);
+            });
+            chip.addEventListener('dblclick', () => this.renomearNota(nota.id));
+            chip.addEventListener('contextmenu', event => {
+                event.preventDefault();
+                this.abrirMenuNota(nota, chip);
+            });
+            this.setupChipLongPress(chip, nota);
+            nav.append(chip);
+        }
+
+        const mais = document.createElement('button');
+        mais.type = 'button';
+        mais.className = 'notes-context-chip notes-context-chip-add';
+        mais.textContent = '+';
+        mais.title = 'Nova nota';
+        mais.setAttribute('aria-label', 'Criar nova nota');
+        mais.addEventListener('click', () => this.criarNota());
+        nav.append(mais);
+    }
+
+    /** Lê a cor padrão (accent) direto do HTML da nota, como o original faz. */
+    accentDaNota(nota) {
+        const template = document.createElement('template');
+        template.innerHTML = nota?.notas || '';
+        return template.content.querySelector('[data-note-accent]')?.dataset.noteAccent || '';
+    }
+
+    /** Cria uma nota nova em branco e abre em seguida (o motor salva a anterior). */
+    criarNota() {
+        this.persistNow();
+        const nota = this.criarNotaLocal();
+        this.projectsData = this.projectsData || [];
+        this.projectsData.push(nota);
+        this.salvarNotasLocais();
+        return this.openNotesModal(nota.id);
+    }
+
+    criarNotaLocal(nome = 'Nova nota') {
+        const id = 'nota-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        const agora = new Date().toISOString();
+        return { id, nome, notas: '', criadaEm: agora, atualizadaEm: agora };
+    }
+
+    /** Renomeia a nota (duplo clique no chip ou opção do menu). */
+    renomearNota(id) {
+        const nota = (this.projectsData || []).find(item => item.id === id);
+        if (!nota) return;
+        let nome = null;
+        try { nome = window.prompt('Nome da nota', nota.nome || 'Nota'); } catch (_) { nome = null; }
+        if (nome === null) return;
+        nome = String(nome).trim().slice(0, 60);
+        if (!nome || nome === nota.nome) return;
+        nota.nome = nome;
+        this.salvarNotasLocais();
+        if (id === this.currentNotesProjectId) {
+            const title = document.getElementById('notesModalTitle');
+            if (title) title.textContent = nome;
+        }
+        this.renderNotesNav();
+    }
+
+    /** Exclui a nota, sempre com confirmação; se for a última, cria uma vazia. */
+    async excluirNota(id) {
+        const lista = this.projectsData || [];
+        const nota = lista.find(item => item.id === id);
+        if (!nota) return;
+        let confirmado = false;
+        try { confirmado = window.confirm('Excluir a nota "' + (nota.nome || 'Nota') + '"?'); } catch (_) { confirmado = false; }
+        if (!confirmado) return;
+
+        const indice = lista.indexOf(nota);
+        lista.splice(indice, 1);
+        if (!lista.length) lista.push(this.criarNotaLocal());
+
+        if (id === this.currentNotesProjectId) {
+            // Descarta a sessão atual antes de trocar: sem isso o motor salvaria
+            // a nota excluída por cima de outra (closeNotesModal -> saveNotes).
+            this.notesSession = null;
+            clearTimeout(this.notesSaveTimer);
+            this.salvarNotasLocais();
+            const proxima = lista[Math.min(indice, lista.length - 1)];
+            await this.openNotesModal(proxima.id);
+        } else {
+            this.salvarNotasLocais();
+            this.renderNotesNav();
+        }
+    }
+
+    /** Pequeno menu de ações da nota (renomear/excluir), aberto pelo chip. */
+    abrirMenuNota(nota, chip) {
+        this.fecharMenuNota();
+        const menu = document.createElement('div');
+        menu.id = 'notesChipMenu';
+        menu.className = 'notes-chip-menu';
+        menu.setAttribute('role', 'menu');
+        menu.setAttribute('aria-label', 'Ações da nota');
+        const acoes = [
+            ['Renomear', () => this.renomearNota(nota.id)],
+            ['Excluir', () => this.excluirNota(nota.id)]
+        ];
+        for (const [texto, acao] of acoes) {
+            const botao = document.createElement('button');
+            botao.type = 'button';
+            botao.setAttribute('role', 'menuitem');
+            botao.textContent = texto;
+            botao.addEventListener('click', () => { this.fecharMenuNota(); acao(); });
+            menu.append(botao);
+        }
+        document.body.append(menu);
+        const caixa = chip.getBoundingClientRect();
+        menu.style.left = Math.max(8, Math.min(caixa.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+        menu.style.top = Math.min(caixa.bottom + 6, window.innerHeight - menu.offsetHeight - 8) + 'px';
+        menu.querySelector('button')?.focus();
+        this.notesChipMenu = menu;
+    }
+
+    fecharMenuNota() {
+        this.notesChipMenu?.remove();
+        this.notesChipMenu = null;
+    }
+
+    /** Toque longo no chip (celular) abre o menu, sem abrir a nota. */
+    setupChipLongPress(chip, nota) {
+        let timer = null;
+        const cancelar = () => { clearTimeout(timer); timer = null; };
+        chip.addEventListener('pointerdown', event => {
+            if (event.pointerType === 'mouse') return;
+            cancelar();
+            timer = setTimeout(() => {
+                timer = null;
+                chip.dataset.menuAberto = 'true';
+                this.abrirMenuNota(nota, chip);
+            }, 550);
+        });
+        ['pointerup', 'pointerleave', 'pointercancel', 'click'].forEach(tipo => chip.addEventListener(tipo, cancelar));
+    }
+    // ⚡ [FIM: INTERAÇÃO/JS - MÚLTIPLAS NOTAS (CHIPS + BOTÃO "+")]
 
     // Placeholders chamados pelo motor antes de serem substituídos pelo install.
     closeNotesModal() { return true; }
@@ -305,6 +528,11 @@ class NotesPWA {
         document.getElementById('notesEditorContainer')?.addEventListener('pointerdown', event => {
             if (event.target.closest('.notes-line, button, a, input, select, textarea, figure, table, img')) return;
             this.focusNotesEditorFromEmptyArea(event);
+        });
+
+        // Fecha o menu de ações do chip ao toque/clique fora dele.
+        document.addEventListener('pointerdown', event => {
+            if (this.notesChipMenu && !event.target.closest('#notesChipMenu')) this.fecharMenuNota();
         });
 
         // Garante a gravação ao sair.

@@ -449,3 +449,57 @@ img, svg, video, canvas, audio, iframe, embed, object { display: block; vertical
 .max-h-\[70vh\] { max-height: 70vh; }
 .rounded-\[20px\] { border-radius: 20px; }
 .shadow-\[0_12px_32px_rgba\(0\,0\,0\,0\.12\)\] { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12); }
+
+/* ============================================
+ * MÚLTIPLAS NOTAS: BOTÃO "+" E MENU DO CHIP
+ * A base visual dos chips (.notes-context-chip) vem do theme-origem.css e do
+ * notes/editor.css (byte a byte iguais ao original). Aqui só entra o que é
+ * exclusivo do PWA: a cor de accent do botão "+" e o menu renomear/excluir.
+ * ============================================ */
+html #notesModal #notesContextNav .notes-context-chip.notes-context-chip-add {
+    min-width: 2rem;
+    padding-left: .5rem;
+    padding-right: .5rem;
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1;
+    color: var(--notes-accent, var(--color-neon-blue));
+}
+
+.notes-chip-menu {
+    position: fixed;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    min-width: 9rem;
+    padding: .25rem;
+    border: 1px solid var(--color-border, #dce3ed);
+    border-radius: 10px;
+    background: var(--color-bg-container, #fff);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
+}
+
+.notes-chip-menu button {
+    padding: .5rem .75rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text-main, #172033);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.notes-chip-menu button:hover,
+.notes-chip-menu button:focus-visible {
+    background: color-mix(in srgb, var(--notes-accent, var(--color-neon-blue)) 12%, transparent);
+}
+
+html[data-theme="dark"] .notes-chip-menu {
+    background: #151b23;
+    border-color: #2a3543;
+}
+
+html[data-theme="dark"] .notes-chip-menu button {
+    color: #e2e8f0;
+}

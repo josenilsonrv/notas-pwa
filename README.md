@@ -10,6 +10,7 @@ Editor de notas avançado como Progressive Web App (PWA) para uso em celular, co
 - **Formatação**: Bold, italic, tachado, headings (H1-H3)
 - **Listas**: Lista numerada e com marcadores
 - **Cores**: Paleta de cores personalizadas para texto e destaque (background)
+- **Múltiplas notas**: Botão "+" cria notas novas; chips no topo alternam entre elas (duplo clique/toque longo renomeia ou exclui) e cada chip segue a cor padrão da sua nota
 - **Navegação**: Setas para mover itens, colapso/expansão de hierarquias
 - **Blocos de código**: Bloco de código com realce e linguagem
 - **Tabelas**: Tabela estilo planilha com fórmulas (SOMA, MEDIA, POTENCIA, etc.), formatos de número/moeda/porcentagem, cores e redimensionamento
@@ -81,6 +82,7 @@ Editor de notas avançado como Progressive Web App (PWA) para uso em celular, co
 - `Ctrl+Alt+9`: Destaque de texto
 - `Ctrl+Alt+0`: Tela cheia
 - `Ctrl+Alt+T`: Recolher cabeçalho
+- `Ctrl+Alt+M`: Modelos de nota (salvar/aplicar)
 
 ## 🎨 Temas
 
@@ -96,6 +98,18 @@ As notas são salvas automaticamente:
 - **Auto-save**: Salva a cada 1 segundo após mudanças
 - **Draft**: Rascunho local em caso de fechamento não salvo
 - **Status**: Indicador de "Salvo" ou "Alterações pendentes"
+
+Chaves usadas no dispositivo:
+- `notas-pwa-notes`: lista de todas as notas (`id`, `nome`, `notas` em HTML, datas)
+- `notas-pwa-nota-ativa`: id da última nota aberta
+- `notas-pwa-content`: espelho da nota ativa (compatibilidade com versões antigas)
+- `notas-pwa-templates`: modelos de nota salvos no dispositivo (globais, compartilhados entre as notas)
+- `notas-pwa-theme`: tema claro/escuro escolhido
+
+> Na primeira execução de uma versão com múltiplas notas, o conteúdo antigo de
+> `notas-pwa-content` é migrado automaticamente para a nota `id: 'local'` dentro de
+> `notas-pwa-notes` — nada é perdido. Os **modelos** aplicam o texto exatamente como
+> foi salvo (substituem toda a nota atual; `Ctrl+Z` desfaz).
 
 ## 📁 Estrutura de Arquivos
 
@@ -130,6 +144,8 @@ notas-pwa/
 │   ├── notes_*.cjs             # Suíte portada do original (asserts originais)
 │   ├── parity_structure.cjs    # Paridade estrutural do modal (ids/ARIA/comandos)
 │   ├── parity_visual.cjs       # Paridade de estilos computados (claro/escuro)
+│   ├── tema_vidro.cjs          # Modo claro com vidro (backdrop-filter) + escuro sólido
+│   ├── multi_notas.cjs         # Múltiplas notas (botão "+"), chips, migração e accent
 │   ├── shortcuts.cjs           # Atalhos de teclado (lacunas cobertas)
 │   └── helpers/parity.cjs      # Bootstrap comum (PWA e original)
 ├── docs/

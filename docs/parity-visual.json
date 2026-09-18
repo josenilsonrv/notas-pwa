@@ -7,27 +7,6 @@
     "origem": "rgba(255, 255, 255, 0.48)"
   },
   {
-    "tema": "light",
-    "seletor": "#notesContextNav",
-    "propriedade": "height",
-    "pwa": "24px",
-    "origem": "59.6719px"
-  },
-  {
-    "tema": "light",
-    "seletor": "#notesEditorContainer",
-    "propriedade": "height",
-    "pwa": "740px",
-    "origem": "704.328px"
-  },
-  {
-    "tema": "light",
-    "seletor": "#notesEditor",
-    "propriedade": "height",
-    "pwa": "698px",
-    "origem": "662.328px"
-  },
-  {
     "tema": "dark",
     "seletor": "#notesModalBackdrop",
     "propriedade": "color",
@@ -54,27 +33,6 @@
     "propriedade": "borderTopColor",
     "pwa": "rgb(203, 213, 225)",
     "origem": "rgb(42, 53, 67)"
-  },
-  {
-    "tema": "dark",
-    "seletor": "#notesContextNav",
-    "propriedade": "height",
-    "pwa": "24px",
-    "origem": "59.6719px"
-  },
-  {
-    "tema": "dark",
-    "seletor": "#notesEditorContainer",
-    "propriedade": "height",
-    "pwa": "738px",
-    "origem": "702.328px"
-  },
-  {
-    "tema": "dark",
-    "seletor": "#notesEditor",
-    "propriedade": "height",
-    "pwa": "696px",
-    "origem": "660.328px"
   },
   {
     "tema": "dark",

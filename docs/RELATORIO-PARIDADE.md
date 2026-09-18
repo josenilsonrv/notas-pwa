@@ -1,23 +1,23 @@
 # Relatório de paridade visual (PWA x projeto original)
 
-> Gerado por `node tests/parity_visual.cjs` em 2026-09-18 12:10:49.
+> Gerado por `node tests/parity_visual.cjs` em 2026-09-18 14:44:19.
 > Compara as propriedades computadas de 18 seletores do modal de notas, em tema claro e escuro.
 > O original é usado **somente como referência** (nenhuma alteração é feita nele).
 
 | Resultado | Quantidade |
 | --- | --- |
 | Divergências reais | 0 |
-| Exceções documentadas | 13 |
+| Exceções documentadas | 7 |
 
 ## Exceções aceitas (com justificativa)
 
 ### `#notesContextNav` → `height`
 
-No original o nav e preenchido pelo dashboard com chips de projetos/etapas (altura ~60px); no PWA nao existem projetos/focos, entao o nav fica vazio (altura do padding).
+No original o nav e preenchido pelo dashboard com chips de projetos/etapas; no PWA ele e preenchido com os chips das notas locais + botao "+". A altura acompanha quando o numero/tamanho dos chips e o mesmo, mas a excecao permanece porque o conteudo do nav pode diferir.
 
 ### `#notesContextNav` → `borderTopColor`
 
-Consequencia do item acima: o nav vazio do PWA nao recebe a borda translucida do estado com chips.
+O original aplica a borda translucida do estado "com chips" do dashboard; o nav do PWA (chips locais + "+") usa a borda base definida em notes/editor.css.
 
 ### `#notesModalBackdrop` → `color`
 
@@ -33,15 +33,15 @@ Mesma causa dos dois itens anteriores (estado do drawer no tema escuro).
 
 ### `#notesContextNav` → `padding`
 
-O nav vazio do PWA (sem chips) nao recebe o padding do estado preenchido do original.
+Tolerancia de layout do nav quando os chips do PWA (nomes de notas) e do original (projetos/etapas) tem larguras diferentes.
 
 ### `#notesEditorContainer` → `height`
 
-Consequencia direta do nav vazio: o container do editor e flex:1 e absorve os ~42px que no original ficam com os chips de contexto.
+Consequencia de eventual diferenca de altura do nav entre os chips locais do PWA e os chips de projeto/etapa do original.
 
 ### `#notesEditor` → `height`
 
-Mesma causa: o editor ocupa o espaco extra que o nav vazio deixa livre.
+Mesma causa do item anterior: o editor e flex:1 e absorve a diferenca de altura do nav.
 
 ### `.notes-line-check` → `color`
 
