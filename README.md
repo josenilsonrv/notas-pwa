@@ -114,10 +114,20 @@ notas-pwa/
 │   ├── table-math.js       # Avaliador de fórmulas das tabelas
 │   ├── tables.js           # Ferramentas contextuais de tabela
 │   └── tables.css          # Estilos das tabelas
-├── icon-192.png            # Ícone 192x192
-├── icon-512.png            # Ícone 512x512
+├── icon-192.png            # Ícone 192x192 (PNG real, maskable)
+├── icon-512.png            # Ícone 512x512 (PNG real, maskable)
 ├── icon.svg                # Ícone SVG
+├── _headers                # Regras de cache/headers para Cloudflare Pages
+├── tools/
+│   └── gerar-icones.cjs    # Regera os PNGs dos ícones (sem dependências)
 └── README.md               # Este arquivo
+```
+
+### Gerar novamente os ícones
+Os PNGs são gerados a partir do desenho definido em `tools/gerar-icones.cjs` (mesma identidade do `icon.svg`):
+```bash
+node tools/gerar-icones.cjs              # regenera icon-192.png e icon-512.png
+node tools/gerar-icones.cjs --inspecionar  # confere assinatura e dimensões
 ```
 
 ## 🔧 Personalização
@@ -142,10 +152,22 @@ O editor usa o sistema `NotesDocument` do original, mantendo todas as regras:
 
 ## 🚀 Deploy
 
-### GitHub Pages (Recomendado)
+### Cloudflare Pages (Recomendado)
+1. Acesse **Workers & Pages → Create → Pages → Connect to Git**
+2. Selecione o repositório e a branch `main`
+3. Configuração de build: **Framework preset `None`**, **build command vazio**, **output directory `/`**
+4. Deploy automático a cada push; a URL fica em `https://<projeto>.pages.dev`
+
+O arquivo `_headers` já define `Cache-Control: public, max-age=0, must-revalidate` para todo o site,
+evitando que o celular fique preso em uma versão antiga do `sw.js`, `index.html` ou `manifest.json`.
+
+> Ao publicar alterações nos assets, incremente `CACHE_NAME` em `sw.js` (ex.: `notas-pwa-v3`) para
+> forçar a atualização do cache do Service Worker nos dispositivos.
+
+### GitHub Pages
 1. Push dos arquivos para o GitHub
-2. Ativar Pages nas configurações do repositório
-3. Deploy automático via Actions (opcional)
+2. Ativar Pages nas configurações do repositório (branch `main`, pasta `/ (root)`)
+3. Os caminhos do PWA são relativos (`./`), portanto funcionam tanto na raiz do domínio quanto em subpasta
 
 ### Netlify
 1. Conecte o repositório ao Netlify

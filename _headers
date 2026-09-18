@@ -1,0 +1,10 @@
+# Cloudflare Pages - regras de resposta HTTP
+# https://developers.cloudflare.com/pages/configuration/headers/
+#
+# O PWA nao usa nomes de arquivo versionados (sem hash no nome), portanto todo
+# asset e revalidado a cada visita. A revalidacao responde 304 quando nada mudou,
+# o que mantem o carregamento rapido e evita o celular ficar preso em uma versao
+# antiga do sw.js / index.html / manifest.json.
+
+/*
+  Cache-Control: public, max-age=0, must-revalidate
