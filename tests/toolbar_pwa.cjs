@@ -66,6 +66,9 @@ const ordemDe=page=>page.evaluate(()=>[...app.chavesToolbar().values()]);
   // transform/backdrop-filter ao modal (containing block) e quebra o fixed.
   await page.setViewportSize({width:390,height:700});
   await page.waitForTimeout(300);
+  // O poll do teclado (ligado quando o editor foca no boot) desfaria o
+  // `insetForcado` no proximo tick; aqui ele e parado para medir so o calculo.
+  await page.evaluate(()=>{clearInterval(app.notesToolbarTecladoPoll);app.notesToolbarTecladoPoll=null;(app.notesToolbarTecladoTimeouts||[]).forEach(clearTimeout);});
   await page.evaluate(()=>app.aplicarToolbarTeclado());
   assert.equal(await page.evaluate(()=>document.getElementById('notesToolbar').classList.contains('notes-toolbar-docked')),false,'sem teclado nao doca');
   await page.evaluate(()=>app.aplicarToolbarTeclado(260));
@@ -82,6 +85,34 @@ const ordemDe=page=>page.evaluate(()=>[...app.chavesToolbar().values()]);
   await page.evaluate(()=>app.aplicarToolbarTeclado(0));
   assert.equal(await page.evaluate(()=>document.getElementById('notesToolbar').classList.contains('notes-toolbar-docked')),false,'barra volta ao normal');
   assert.equal(await page.evaluate(()=>document.getElementById('notesEditor').style.paddingBottom),'','espaco extra removido');
+
+  // 3b) O poll do teclado so existe com o editor focado: para mesmo quando o
+  // `focusout` vem de um filho (checkbox/botao dentro da nota) e o foco vai para
+  // FORA do editor — antes o intervalo ficava rodando para sempre e o aparelho
+  // continuava a re-renderizar a barra.
+  const estadoPoll=()=>page.evaluate(()=>({poll:Boolean(app.notesToolbarTecladoPoll),timeouts:(app.notesToolbarTecladoTimeouts||[]).length}));
+  await page.evaluate(()=>{
+    const editor=document.getElementById('notesEditor');
+    const dentro=document.createElement('button');
+    dentro.type='button';dentro.id='focoNaNota';dentro.textContent='na nota';
+    (editor.querySelector('.notes-line-text')||editor).append(dentro);
+    const fora=document.createElement('button');
+    fora.type='button';fora.id='focoForaDaNota';fora.textContent='fora';
+    document.body.append(fora);
+    dentro.focus();
+    dentro.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));
+  });
+  await page.waitForTimeout(50);
+  assert.ok((await estadoPoll()).poll,'poll ligado com o foco dentro da nota');
+  await page.evaluate(()=>{
+    // O foco vai para fora do editor a partir de um filho: e o `focusout` que
+    // chega com `target` = filho (nao `#notesEditor`) e enganava o codigo antigo.
+    document.getElementById('focoForaDaNota').focus();
+    document.getElementById('focoNaNota').dispatchEvent(new FocusEvent('focusout',{bubbles:true}));
+  });
+  await page.waitForTimeout(50);
+  assert.deepEqual(await estadoPoll(),{poll:false,timeouts:0},'poll e reajustes parados quando o foco sai da nota (veio de um filho)');
+  await page.evaluate(()=>{document.getElementById('focoNaNota')?.remove();document.getElementById('focoForaDaNota')?.remove();});
 
   // 4) Diálogo de edição: mover com a seta ->, aplicar ao vivo e persistir.
   await page.evaluate(()=>app.abrirEditorToolbar());

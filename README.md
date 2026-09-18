@@ -156,7 +156,8 @@ notas-pwa/
 │   ├── RASTREABILIDADE.md      # Regra -> teste -> status (lacunas explícitas)
 │   ├── RELATORIO-PARIDADE.md   # Divergências visuais e exceções justificadas
 │   ├── PROMPT-MODO-CLARO-VIDRO.md        # Como replicar o tema claro com efeitos de vidro
-│   └── PROMPT-MULTI-NOTAS-MODELOS-CORES.md  # Botão "+" (multi-notas), modelos e cores/accent
+│   ├── PROMPT-MULTI-NOTAS-MODELOS-CORES.md  # Botão "+" (multi-notas), modelos e cores/accent
+│   └── RELATORIO-CORRECAO-TRAVAMENTO-CELULAR.md  # Investigação e correção do travamento no celular
 └── README.md               # Este arquivo
 ```
 

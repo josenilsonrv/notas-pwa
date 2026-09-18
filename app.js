@@ -93,6 +93,8 @@ class NotesPWA {
         this.notesToolbarObserver = null;
         this.notesToolbarTecladoAtivo = false;
         this.notesToolbarTecladoPoll = null;
+        this.notesToolbarTecladoTimeouts = [];
+        this.notesToolbarTecladoAplicado = null;
         this.notesViewportBase = 0;
         this.ordemToolbarOriginal = null;
         this.notesToolbarEditorRedraw = null;
@@ -740,7 +742,32 @@ class NotesPWA {
     ativarToolbarTeclado() {
         if (this.notesToolbarTecladoAtivo) return;
         this.notesToolbarTecladoAtivo = true;
-        const atualizar = () => this.aplicarToolbarTeclado();
+        const editorDeNotas = () => document.getElementById('notesEditor');
+        const temFocoNoEditor = () => {
+            const editor = editorDeNotas();
+            return Boolean(editor && editor.contains(document.activeElement));
+        };
+        // Para o poll do teclado e os reajustes agendados. Sem isto o telemóvel
+        // continuava a re-renderizar a barra para sempre: o `focusout` nem sempre
+        // chega com `target = #notesEditor` (toque em checkbox/link dentro da nota).
+        const pararAjustes = () => {
+            clearInterval(this.notesToolbarTecladoPoll);
+            this.notesToolbarTecladoPoll = null;
+            (this.notesToolbarTecladoTimeouts || []).forEach(clearTimeout);
+            this.notesToolbarTecladoTimeouts = [];
+            this.notesToolbarTecladoAplicado = null;
+        };
+        const atualizar = () => {
+            // Autoproteção: se o foco saiu do editor, o poll deixa de fazer sentido.
+            if (this.notesToolbarTecladoPoll && !temFocoNoEditor()) pararAjustes();
+            this.aplicarToolbarTeclado();
+        };
+        const reagirAoFoco = () => {
+            pararAjustes();
+            // O teclado anima: reavalia algumas vezes além de acompanhar os eventos.
+            this.notesToolbarTecladoTimeouts = [0, 80, 180, 320, 520, 800].map(atraso => setTimeout(atualizar, atraso));
+            this.notesToolbarTecladoPoll = setInterval(atualizar, 250);
+        };
         // Altura do layout SEM teclado (baseline): necessária porque no iOS o
         // `innerHeight` encolhe junto com o teclado e a comparação simples dá 0.
         const layout = document.documentElement.clientHeight || window.innerHeight;
@@ -750,20 +777,19 @@ class NotesPWA {
         vv?.addEventListener('scroll', atualizar);
         window.addEventListener('resize', atualizar);
         window.addEventListener('orientationchange', atualizar);
-        document.addEventListener('visibilitychange', atualizar);
-        const editor = document.getElementById('notesEditor');
-        editor?.addEventListener('focusin', () => {
-            // O teclado anima: reavalia algumas vezes além de acompanhar os eventos.
-            [0, 80, 180, 320, 520, 800].forEach(atraso => setTimeout(atualizar, atraso));
-            clearInterval(this.notesToolbarTecladoPoll);
-            this.notesToolbarTecladoPoll = setInterval(atualizar, 250);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') { pararAjustes(); return; }
+            if (temFocoNoEditor()) reagirAoFoco(); else atualizar();
         });
+        window.addEventListener('pagehide', pararAjustes);
+        editorDeNotas()?.addEventListener('focusin', reagirAoFoco);
         document.addEventListener('focusout', event => {
-            if (event.target && event.target.id === 'notesEditor') {
-                clearInterval(this.notesToolbarTecladoPoll);
-                this.notesToolbarTecladoPoll = null;
-                atualizar();
-            }
+            const editor = editorDeNotas();
+            if (!editor || !editor.contains(event.target)) return;
+            // O foco pode apenas trocar dentro do editor; confirma depois do evento.
+            setTimeout(() => {
+                if (!temFocoNoEditor()) { pararAjustes(); atualizar(); }
+            }, 0);
         });
     }
 
@@ -773,6 +799,10 @@ class NotesPWA {
      * O `#notesToolbar` tem o `#notesModal` como containing block (o modal recebe
      * `transform`/`backdrop-filter` no CSS do original), então a posição é calculada
      * medindo o referencial real em vez de assumir a viewport.
+     *
+     * O resultado é memorizado em `notesToolbarTecladoAplicado`: com o poll do
+     * teclado ativo, reaplicar os mesmos valores a cada 250 ms forçava reflow
+     * contínuo e deixava a interface presa no smartphone.
      */
     aplicarToolbarTeclado(insetForcado) {
         const toolbar = document.getElementById('notesToolbar');
@@ -805,11 +835,16 @@ class NotesPWA {
                 ['--notes-toolbar-dock-bottom', '--notes-toolbar-dock-left', '--notes-toolbar-dock-width'].forEach(nome => toolbar.style.removeProperty(nome));
                 editor?.style.removeProperty('padding-bottom');
             }
+            this.notesToolbarTecladoAplicado = 'livre';
             return;
         }
 
         const modal = document.getElementById('notesModal');
         const caixa = modal ? modal.getBoundingClientRect() : { left: 0, width: window.innerWidth, bottom: layout };
+        const chave = [teclado, inset, Math.round(layout), Math.round(caixa.left), Math.round(caixa.width)].join('|');
+        if (estaDockada && chave === this.notesToolbarTecladoAplicado) return;
+        this.notesToolbarTecladoAplicado = chave;
+
         toolbar.classList.add('notes-toolbar-docked');
         toolbar.style.setProperty('--notes-toolbar-dock-width', Math.round(Math.max(0, Math.min(caixa.width, window.innerWidth - Math.max(0, caixa.left)))) + 'px');
         // Mede o referencial (comporta-se igual com containing block = modal ou viewport).
