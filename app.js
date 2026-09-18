@@ -163,9 +163,8 @@ class NotesPWA {
         this.resetNotesHistory();
         this.refreshNotesCollapseControls();
 
-        // A modal ocupa a tela inteira no celular (mesma largura que o motor espera).
-        this.notesSavedWidth = window.innerWidth;
-        document.getElementById('notesModal')?.style.setProperty('--notes-width', window.innerWidth + 'px');
+        // Largura do modal: o motor usa var(--notes-width, 50vw) e calcula a largura
+        // a partir de notesSavedWidth (undefined na abertura, como no original).
         document.getElementById('notesModalBackdrop')?.classList.add('active');
 
         setTimeout(() => this.placeNotesCursorAtEnd(editor), 100);
@@ -179,6 +178,17 @@ class NotesPWA {
     closeNotesModal() { return true; }
     setupModalListeners() { this.setupNotesEditing(); }
     toggleNotesFullscreen() { return true; }
+
+    /**
+     * Recolhe/expande o cabecalho do modal (header + toolbar + nav).
+     * Replica o metodo do app original (frontend/app.js, toggleNotesHeaderCollapse).
+     * O setNotesHeaderCollapsed vem do motor de notas (notes/editor.js).
+     */
+    toggleNotesHeaderCollapse() {
+        const backdrop = document.getElementById('notesModalBackdrop');
+        if (!backdrop?.classList.contains('active')) return;
+        this.setNotesHeaderCollapsed(!backdrop.classList.contains('notes-header-collapsed'));
+    }
     // ⚡ [FIM: INTERAÇÃO/JS - ABRIR NOTAS]
 
     placeNotesCursorAtEnd(editor) {
@@ -279,6 +289,11 @@ class NotesPWA {
 
         document.getElementById('notesFullscreenBtn')?.addEventListener('click', () => this.toggleNotesFullscreen());
         document.getElementById('notesHeaderCollapseBtn')?.addEventListener('click', () => this.toggleNotesHeaderCollapse());
+        document.getElementById('notesModalClose')?.addEventListener('click', () => this.closeNotesModal());
+
+        // Atalhos do editor: mesma ligacao do app original (frontend/app.js, "notesEditor.addEventListener('keydown', ...)").
+        // Sem esta linha os atalhos (Ctrl+Alt+1..0, Alt+setas, Tab/Shift+Tab, Ctrl+B/I/S/Z/Y) nao funcionam.
+        document.getElementById('notesEditor')?.addEventListener('keydown', event => this.handleNotesEditorShortcut(event));
 
         // Mantém a seleção ao acionar botões da toolbar.
         document.getElementById('notesToolbar')?.addEventListener('pointerdown', event => {
@@ -297,10 +312,7 @@ class NotesPWA {
     }
 
     setupResize() {
-        window.addEventListener('resize', () => {
-            this.refreshNotesCollapseControls();
-            if (this.notesSession) this.notesSavedWidth = window.innerWidth;
-        });
+        window.addEventListener('resize', () => this.refreshNotesCollapseControls());
     }
 }
 

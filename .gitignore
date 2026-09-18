@@ -13,3 +13,7 @@ desktop.ini
 # Temporários
 *.tmp
 *.bak
+
+# Dependências de desenvolvimento (a suite de testes usa Playwright/Edge)
+node_modules/
+.pytest_cache/

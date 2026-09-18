@@ -1,0 +1,246 @@
+{
+  "geradoEm": "2026-09-18T12:06:35.626Z",
+  "contagem": {
+    "ORIGEM-QUEBRADA": 10,
+    "OK": 20,
+    "DIVERGENCIA-ACEITA": 2,
+    "N/A-JUSTIFICADO": 1,
+    "SO-EM-UM-LADO": 6
+  },
+  "classificar": [
+    {
+      "arquivo": "notes_cascade_defaults.cjs",
+      "pwa": "falha",
+      "origem": "falha",
+      "status": "ORIGEM-QUEBRADA"
+    },
+    {
+      "arquivo": "notes_checklist_numbers.cjs",
+      "pwa": "falha",
+      "origem": "falha",
+      "status": "ORIGEM-QUEBRADA"
+    },
+    {
+      "arquivo": "notes_checklist_order.cjs",
+      "pwa": "falha",
+      "origem": "falha",
+      "status": "ORIGEM-QUEBRADA"
+    },
+    {
+      "arquivo": "notes_collapse_motion.cjs",
+      "pwa": "falha",
+      "origem": "falha",
+      "status": "ORIGEM-QUEBRADA"
+    },
+    {
+      "arquivo": "notes_colors_persistence.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_completion_spacing.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_cut_background.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_document_migration.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_document_model.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_enter_child.cjs",
+      "pwa": "falha",
+      "origem": "falha",
+      "status": "ORIGEM-QUEBRADA"
+    },
+    {
+      "arquivo": "notes_extras.cjs",
+      "pwa": "falha",
+      "origem": "passa",
+      "status": "DIVERGENCIA-ACEITA"
+    },
+    {
+      "arquivo": "notes_import_spacing.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_indent_child.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_large_document.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_last_line_enter.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_markdown.cjs",
+      "pwa": "falha",
+      "origem": "falha",
+      "status": "ORIGEM-QUEBRADA"
+    },
+    {
+      "arquivo": "notes_million.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_million_extras.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_navigation_completion.cjs",
+      "pwa": "falha",
+      "origem": "falha",
+      "status": "ORIGEM-QUEBRADA"
+    },
+    {
+      "arquivo": "notes_outline_code.cjs",
+      "pwa": "falha",
+      "origem": "falha",
+      "status": "ORIGEM-QUEBRADA"
+    },
+    {
+      "arquivo": "notes_parent_undo.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_paste_blocks.cjs",
+      "pwa": "falha",
+      "origem": "falha",
+      "status": "ORIGEM-QUEBRADA"
+    },
+    {
+      "arquivo": "notes_paste_selection.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_performance.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_regression_audit.cjs",
+      "pwa": "falha",
+      "origem": "passa",
+      "status": "DIVERGENCIA-ACEITA"
+    },
+    {
+      "arquivo": "notes_renumber_structure.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_requested_fixes.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "N/A-JUSTIFICADO"
+    },
+    {
+      "arquivo": "notes_table_math.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_table_media.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_table_tools.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_tone_picker.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "notes_tone_picker_mobile.cjs",
+      "pwa": "passa",
+      "origem": "passa",
+      "status": "OK"
+    },
+    {
+      "arquivo": "parity_structure.cjs",
+      "pwa": "passa",
+      "origem": "ausente",
+      "status": "SO-EM-UM-LADO"
+    },
+    {
+      "arquivo": "parity_visual.cjs",
+      "pwa": "passa",
+      "origem": "ausente",
+      "status": "SO-EM-UM-LADO"
+    },
+    {
+      "arquivo": "shortcuts.cjs",
+      "pwa": "passa",
+      "origem": "ausente",
+      "status": "SO-EM-UM-LADO"
+    },
+    {
+      "arquivo": "test_focus_pages_ui.cjs",
+      "pwa": "ausente",
+      "origem": "passa",
+      "status": "SO-EM-UM-LADO"
+    },
+    {
+      "arquivo": "test_notes_editor_ui.cjs",
+      "pwa": "falha",
+      "origem": "falha",
+      "status": "ORIGEM-QUEBRADA"
+    },
+    {
+      "arquivo": "test_sports_ui.cjs",
+      "pwa": "ausente",
+      "origem": "passa",
+      "status": "SO-EM-UM-LADO"
+    },
+    {
+      "arquivo": "test_workout_templates_ui.cjs",
+      "pwa": "ausente",
+      "origem": "falha",
+      "status": "SO-EM-UM-LADO"
+    }
+  ]
+}

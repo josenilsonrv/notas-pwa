@@ -1,0 +1,1764 @@
+{
+  "geradoEm": "2026-09-18",
+  "comandos": [
+    {
+      "regra": "bold",
+      "testes": [
+        "notes_paste_blocks",
+        "notes_table_tools",
+        "test_notes_editor_ui",
+        "notes_paste_blocks (novo)",
+        "notes_table_tools (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "checklist",
+      "testes": [
+        "notes_document_migration",
+        "notes_paste_blocks",
+        "test_notes_editor_ui",
+        "notes_checklist_numbers (novo)",
+        "notes_checklist_order (novo)",
+        "notes_document_migration (novo)",
+        "notes_paste_blocks (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "codeBlock",
+      "testes": [
+        "notes_requested_fixes",
+        "notes_requested_fixes (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "collapseAll",
+      "testes": [
+        "notes_requested_fixes",
+        "notes_requested_fixes (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "heading1",
+      "testes": [
+        "test_notes_editor_ui",
+        "shortcuts (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "heading2",
+      "testes": [
+        "test_notes_editor_ui",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "heading3",
+      "testes": [
+        "notes_requested_fixes",
+        "test_notes_editor_ui",
+        "notes_requested_fixes (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "indent",
+      "testes": [
+        "notes_document_model",
+        "notes_navigation_completion",
+        "notes_paste_blocks",
+        "notes_renumber_structure",
+        "test_notes_editor_ui",
+        "notes_document_model (novo)",
+        "notes_indent_child (novo)",
+        "notes_navigation_completion (novo)",
+        "notes_paste_blocks (novo)",
+        "notes_renumber_structure (novo)",
+        "shortcuts (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "insertOrderedList",
+      "testes": [
+        "notes_paste_blocks",
+        "notes_renumber_structure",
+        "test_notes_editor_ui",
+        "notes_paste_blocks (novo)",
+        "notes_renumber_structure (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "insertUnorderedList",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "italic",
+      "testes": [
+        "notes_regression_audit",
+        "test_notes_editor_ui",
+        "notes_regression_audit (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "moveDown",
+      "testes": [
+        "notes_document_migration",
+        "test_notes_editor_ui",
+        "notes_document_migration (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "moveUp",
+      "testes": [
+        "notes_renumber_structure",
+        "test_notes_editor_ui",
+        "notes_renumber_structure (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "outdent",
+      "testes": [
+        "notes_renumber_structure",
+        "test_notes_editor_ui",
+        "notes_renumber_structure (novo)",
+        "shortcuts (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "redo",
+      "testes": [
+        "notes_parent_undo",
+        "test_notes_editor_ui",
+        "notes_parent_undo (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "strikeThrough",
+      "testes": [
+        "shortcuts (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "undo",
+      "testes": [
+        "notes_cut_background",
+        "notes_document_migration",
+        "notes_extras",
+        "notes_markdown",
+        "notes_parent_undo",
+        "notes_table_media",
+        "notes_table_tools",
+        "test_notes_editor_ui",
+        "notes_cut_background (novo)",
+        "notes_document_migration (novo)",
+        "notes_extras (novo)",
+        "notes_markdown (novo)",
+        "notes_parent_undo (novo)",
+        "notes_table_media (novo)",
+        "notes_table_tools (novo)",
+        "parity_visual (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    }
+  ],
+  "atalhos": [
+    {
+      "regra": "Ctrl/Cmd+Z",
+      "acao": "undo",
+      "cobertura": "exercitado via press(Control+z)",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl/Cmd+Shift+Z",
+      "acao": "redo",
+      "cobertura": "exercitado via press(Control+Shift+z)",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl/Cmd+Y",
+      "acao": "redo",
+      "cobertura": "*** SEM TESTE ***",
+      "coberto": false
+    },
+    {
+      "regra": "Ctrl/Cmd+S",
+      "acao": "salvar",
+      "cobertura": "exercitado via press(Control+s)",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl/Cmd+B",
+      "acao": "bold",
+      "cobertura": "exercitado via press(Control+b)",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl/Cmd+I",
+      "acao": "italic",
+      "cobertura": "*** SEM TESTE ***",
+      "coberto": false
+    },
+    {
+      "regra": "Tab",
+      "acao": "indent",
+      "cobertura": "citado em notes_cascade_defaults, notes_extras, notes_indent_child, notes_table_media, notes_tone_picker, notes_tone_picker_mobile, test_notes_editor_ui, notes_cascade_defaults, notes_collapse_motion, notes_completion_spacing, notes_cut_background, notes_document_migration, notes_extras, notes_import_spacing, notes_indent_child, notes_large_document, notes_last_line_enter, notes_markdown, notes_million, notes_million_extras, notes_navigation_completion, notes_outline_code, notes_parent_undo, notes_paste_blocks, notes_paste_selection, notes_performance, notes_regression_audit, notes_renumber_structure, notes_requested_fixes, notes_table_media, notes_table_tools, notes_tone_picker, notes_tone_picker_mobile, shortcuts, test_notes_editor_ui",
+      "coberto": true
+    },
+    {
+      "regra": "Shift+Tab",
+      "acao": "outdent",
+      "cobertura": "citado em test_notes_editor_ui, shortcuts, test_notes_editor_ui",
+      "coberto": true
+    },
+    {
+      "regra": "Alt+ArrowUp",
+      "acao": "moveUp",
+      "cobertura": "exercitado via press(Alt+ArrowUp)",
+      "coberto": true
+    },
+    {
+      "regra": "Alt+ArrowDown",
+      "acao": "moveDown",
+      "cobertura": "exercitado via press(Alt+ArrowDown)",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+Alt+1",
+      "acao": "heading1",
+      "cobertura": "citado em shortcuts",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+Alt+2",
+      "acao": "heading2",
+      "cobertura": "citado em shortcuts",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+Alt+3",
+      "acao": "heading3",
+      "cobertura": "citado em shortcuts",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+Alt+4",
+      "acao": "checklist",
+      "cobertura": "citado em shortcuts",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+Alt+5",
+      "acao": "insertOrderedList",
+      "cobertura": "citado em shortcuts",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+Alt+6",
+      "acao": "insertUnorderedList",
+      "cobertura": "citado em shortcuts",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+Alt+7",
+      "acao": "strikeThrough",
+      "cobertura": "citado em shortcuts",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+Alt+8",
+      "acao": "picker color",
+      "cobertura": "*** SEM TESTE ***",
+      "coberto": false
+    },
+    {
+      "regra": "Ctrl+Alt+9",
+      "acao": "picker backgroundColor",
+      "cobertura": "*** SEM TESTE ***",
+      "coberto": false
+    },
+    {
+      "regra": "Ctrl+Alt+0",
+      "acao": "toggleNotesFullscreen",
+      "cobertura": "citado em shortcuts",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+Alt+T",
+      "acao": "toggleNotesHeaderCollapse",
+      "cobertura": "citado em shortcuts",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+Alt+L",
+      "acao": "animateNotesLineCollapse",
+      "cobertura": "*** SEM TESTE ***",
+      "coberto": false
+    },
+    {
+      "regra": "Ctrl+Shift+I",
+      "acao": "notesInsertMenu",
+      "cobertura": "*** SEM TESTE ***",
+      "coberto": false
+    },
+    {
+      "regra": "Ctrl+Shift+H",
+      "acao": "notesDivider",
+      "cobertura": "exercitado via press(Control+Shift+H)",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+K",
+      "acao": "notesLinkDialog",
+      "cobertura": "exercitado via press(Control+k)",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+Alt+M",
+      "acao": "notesTemplates",
+      "cobertura": "*** SEM TESTE ***",
+      "coberto": false
+    },
+    {
+      "regra": "Ctrl+Alt+Q",
+      "acao": "notesTableDialog",
+      "cobertura": "exercitado via press(Control+Alt+q)",
+      "coberto": true
+    }
+  ],
+  "metodos": [
+    {
+      "regra": "animateNotesMovement",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "applyNotesOutlineDefaults",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "applyNotesTextStyle",
+      "testes": [
+        "notes_regression_audit",
+        "notes_regression_audit (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "beginNotesSession",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "closeNotesColorPanels",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "executeNotesCommand",
+      "testes": [
+        "notes_cascade_defaults",
+        "notes_collapse_motion",
+        "notes_completion_spacing",
+        "notes_cut_background",
+        "notes_document_migration",
+        "notes_extras",
+        "notes_import_spacing",
+        "notes_large_document",
+        "notes_last_line_enter",
+        "notes_markdown",
+        "notes_million",
+        "notes_million_extras",
+        "notes_navigation_completion",
+        "notes_outline_code",
+        "notes_parent_undo",
+        "notes_paste_blocks",
+        "notes_paste_selection",
+        "notes_performance",
+        "notes_regression_audit",
+        "notes_renumber_structure",
+        "notes_requested_fixes",
+        "notes_table_media",
+        "notes_table_tools",
+        "test_notes_editor_ui",
+        "notes_cascade_defaults (novo)",
+        "notes_collapse_motion (novo)",
+        "notes_completion_spacing (novo)",
+        "notes_cut_background (novo)",
+        "notes_document_migration (novo)",
+        "notes_extras (novo)",
+        "notes_import_spacing (novo)",
+        "notes_large_document (novo)",
+        "notes_last_line_enter (novo)",
+        "notes_markdown (novo)",
+        "notes_million (novo)",
+        "notes_million_extras (novo)",
+        "notes_navigation_completion (novo)",
+        "notes_outline_code (novo)",
+        "notes_parent_undo (novo)",
+        "notes_paste_blocks (novo)",
+        "notes_paste_selection (novo)",
+        "notes_performance (novo)",
+        "notes_regression_audit (novo)",
+        "notes_renumber_structure (novo)",
+        "notes_requested_fixes (novo)",
+        "notes_table_media (novo)",
+        "notes_table_tools (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "flushNotesTyping",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "getCleanNotesHtml",
+      "testes": [
+        "notes_colors_persistence",
+        "notes_document_migration",
+        "notes_extras",
+        "notes_large_document",
+        "notes_million",
+        "notes_million_extras",
+        "notes_paste_blocks",
+        "notes_requested_fixes",
+        "notes_table_media",
+        "notes_table_tools",
+        "notes_colors_persistence (novo)",
+        "notes_document_migration (novo)",
+        "notes_extras (novo)",
+        "notes_large_document (novo)",
+        "notes_million (novo)",
+        "notes_million_extras (novo)",
+        "notes_paste_blocks (novo)",
+        "notes_requested_fixes (novo)",
+        "notes_table_media (novo)",
+        "notes_table_tools (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "handleNotesEditorShortcut",
+      "testes": [
+        "notes_colors_persistence",
+        "notes_enter_child",
+        "notes_indent_child",
+        "notes_colors_persistence (novo)",
+        "notes_enter_child (novo)",
+        "notes_indent_child (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "notesAutoLinks",
+      "testes": [
+        "notes_extras",
+        "notes_extras (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "notesBackspaceMedia",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesCaptureInsertion",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesDateDialog",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesDivider",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesExtraDialog",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesFocusMedia",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesInsertMenu",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesInsertNode",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesLinkDialog",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesMedia",
+      "testes": [
+        "notes_extras",
+        "notes_table_media",
+        "notes_extras (novo)",
+        "notes_table_media (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "notesRecalculateTable",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesRestoreInsertion",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesRevealInsertion",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesStatus",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesTableDialog",
+      "testes": [
+        "notes_extras",
+        "notes_extras (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "notesTemplates",
+      "testes": [
+        "notes_extras",
+        "notes_extras (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "notesUpload",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesVideoDialog",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "queueNotesSave",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "recordNotesHistory",
+      "testes": [
+        "notes_checklist_numbers",
+        "notes_checklist_order",
+        "notes_colors_persistence",
+        "notes_enter_child",
+        "notes_indent_child",
+        "notes_tone_picker",
+        "notes_tone_picker_mobile",
+        "notes_checklist_numbers (novo)",
+        "notes_checklist_order (novo)",
+        "notes_colors_persistence (novo)",
+        "notes_enter_child (novo)",
+        "notes_indent_child (novo)",
+        "notes_tone_picker (novo)",
+        "notes_tone_picker_mobile (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "redoNotes",
+      "testes": [
+        "notes_parent_undo",
+        "notes_parent_undo (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "refreshNotesCodePresentation",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "refreshNotesCollapseControls",
+      "testes": [
+        "notes_checklist_numbers",
+        "notes_checklist_order",
+        "notes_collapse_motion",
+        "notes_colors_persistence",
+        "notes_document_migration",
+        "notes_enter_child",
+        "notes_indent_child",
+        "notes_requested_fixes",
+        "notes_checklist_numbers (novo)",
+        "notes_checklist_order (novo)",
+        "notes_collapse_motion (novo)",
+        "notes_colors_persistence (novo)",
+        "notes_document_migration (novo)",
+        "notes_enter_child (novo)",
+        "notes_indent_child (novo)",
+        "notes_requested_fixes (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "refreshNotesSyntaxHighlight",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "renderNotesDocument",
+      "testes": [
+        "notes_document_migration",
+        "notes_document_migration (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "resetNotesHistory",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "restoreNotesHistory",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "restoreNotesSelection",
+      "testes": [
+        "notes_enter_child",
+        "notes_indent_child",
+        "notes_enter_child (novo)",
+        "notes_indent_child (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "setNotesDefaultColor",
+      "testes": [
+        "notes_cascade_defaults",
+        "notes_extras",
+        "notes_navigation_completion",
+        "notes_table_media",
+        "notes_cascade_defaults (novo)",
+        "notes_extras (novo)",
+        "notes_navigation_completion (novo)",
+        "notes_table_media (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "setNotesHeaderCollapsed",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "setupModalListeners",
+      "testes": [
+        "notes_cascade_defaults",
+        "notes_collapse_motion",
+        "notes_completion_spacing",
+        "notes_cut_background",
+        "notes_document_migration",
+        "notes_extras",
+        "notes_import_spacing",
+        "notes_large_document",
+        "notes_last_line_enter",
+        "notes_markdown",
+        "notes_million",
+        "notes_million_extras",
+        "notes_navigation_completion",
+        "notes_outline_code",
+        "notes_parent_undo",
+        "notes_paste_blocks",
+        "notes_paste_selection",
+        "notes_performance",
+        "notes_regression_audit",
+        "notes_renumber_structure",
+        "notes_requested_fixes",
+        "notes_table_media",
+        "notes_table_tools",
+        "test_notes_editor_ui",
+        "notes_cascade_defaults (novo)",
+        "notes_collapse_motion (novo)",
+        "notes_completion_spacing (novo)",
+        "notes_cut_background (novo)",
+        "notes_document_migration (novo)",
+        "notes_extras (novo)",
+        "notes_import_spacing (novo)",
+        "notes_large_document (novo)",
+        "notes_last_line_enter (novo)",
+        "notes_markdown (novo)",
+        "notes_million (novo)",
+        "notes_million_extras (novo)",
+        "notes_navigation_completion (novo)",
+        "notes_outline_code (novo)",
+        "notes_parent_undo (novo)",
+        "notes_paste_blocks (novo)",
+        "notes_paste_selection (novo)",
+        "notes_performance (novo)",
+        "notes_regression_audit (novo)",
+        "notes_renumber_structure (novo)",
+        "notes_requested_fixes (novo)",
+        "notes_table_media (novo)",
+        "notes_table_tools (novo)",
+        "shortcuts (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "setupNotesColors",
+      "testes": [
+        "notes_tone_picker",
+        "notes_tone_picker_mobile",
+        "notes_tone_picker (novo)",
+        "notes_tone_picker_mobile (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "setupNotesEditing",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "setupNotesResize",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "storeNotesDraft",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "syncNotesDocument",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "toggleAllNotesCollapse",
+      "testes": [
+        "notes_requested_fixes",
+        "notes_requested_fixes (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "undoNotes",
+      "testes": [
+        "notes_parent_undo",
+        "notes_parent_undo (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "updateNotesChecklistOrder",
+      "testes": [
+        "notes_checklist_numbers",
+        "notes_checklist_order",
+        "notes_checklist_numbers (novo)",
+        "notes_checklist_order (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "updateNotesToolbarState",
+      "testes": [],
+      "coberto": false
+    }
+  ],
+  "eventos": [
+    {
+      "regra": "beforeinput",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "beforeunload",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "cancel",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "change",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "click",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "close",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "contextmenu",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "copy",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "cut",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "dblclick",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "input",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "keydown",
+      "testes": [
+        "notes_enter_child",
+        "notes_indent_child",
+        "notes_enter_child (novo)",
+        "notes_indent_child (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "mousedown",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "paste",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "pointercancel",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "pointerdown",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "pointerenter",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "pointerleave",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "pointermove",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "pointerup",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "resize",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "scroll",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "selectionchange",
+      "testes": [],
+      "coberto": false
+    }
+  ],
+  "atributos": [
+    {
+      "regra": "cellValue",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "check",
+      "testes": [
+        "notes_cascade_defaults",
+        "notes_checklist_numbers",
+        "notes_checklist_order",
+        "notes_colors_persistence",
+        "notes_completion_spacing",
+        "notes_document_migration",
+        "notes_document_model",
+        "notes_enter_child",
+        "notes_indent_child",
+        "notes_navigation_completion",
+        "notes_parent_undo",
+        "notes_paste_blocks",
+        "notes_renumber_structure",
+        "test_notes_editor_ui",
+        "notes_cascade_defaults (novo)",
+        "notes_checklist_numbers (novo)",
+        "notes_checklist_order (novo)",
+        "notes_colors_persistence (novo)",
+        "notes_completion_spacing (novo)",
+        "notes_document_migration (novo)",
+        "notes_document_model (novo)",
+        "notes_enter_child (novo)",
+        "notes_indent_child (novo)",
+        "notes_navigation_completion (novo)",
+        "notes_parent_undo (novo)",
+        "notes_paste_blocks (novo)",
+        "notes_renumber_structure (novo)",
+        "parity_visual (novo)",
+        "shortcuts (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "checkNumber",
+      "testes": [
+        "notes_document_model",
+        "notes_document_model (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "checked",
+      "testes": [
+        "notes_cascade_defaults",
+        "notes_checklist_numbers",
+        "notes_checklist_order",
+        "notes_colors_persistence",
+        "notes_document_migration",
+        "notes_document_model",
+        "notes_renumber_structure",
+        "test_notes_editor_ui",
+        "notes_cascade_defaults (novo)",
+        "notes_checklist_numbers (novo)",
+        "notes_checklist_order (novo)",
+        "notes_colors_persistence (novo)",
+        "notes_document_migration (novo)",
+        "notes_document_model (novo)",
+        "notes_renumber_structure (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "codeBlock",
+      "testes": [
+        "notes_requested_fixes",
+        "notes_requested_fixes (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "codeDisabled",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "codeLanguage",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "collapsed",
+      "testes": [
+        "notes_cascade_defaults",
+        "notes_collapse_motion",
+        "notes_enter_child",
+        "notes_extras",
+        "notes_indent_child",
+        "notes_markdown",
+        "notes_navigation_completion",
+        "notes_outline_code",
+        "notes_parent_undo",
+        "notes_paste_blocks",
+        "notes_requested_fixes",
+        "notes_cascade_defaults (novo)",
+        "notes_collapse_motion (novo)",
+        "notes_enter_child (novo)",
+        "notes_extras (novo)",
+        "notes_indent_child (novo)",
+        "notes_markdown (novo)",
+        "notes_navigation_completion (novo)",
+        "notes_outline_code (novo)",
+        "notes_parent_undo (novo)",
+        "notes_paste_blocks (novo)",
+        "notes_requested_fixes (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "command",
+      "testes": [
+        "notes_cascade_defaults",
+        "notes_collapse_motion",
+        "notes_completion_spacing",
+        "notes_cut_background",
+        "notes_document_migration",
+        "notes_extras",
+        "notes_import_spacing",
+        "notes_large_document",
+        "notes_last_line_enter",
+        "notes_markdown",
+        "notes_million",
+        "notes_million_extras",
+        "notes_navigation_completion",
+        "notes_outline_code",
+        "notes_parent_undo",
+        "notes_paste_blocks",
+        "notes_paste_selection",
+        "notes_performance",
+        "notes_regression_audit",
+        "notes_renumber_structure",
+        "notes_requested_fixes",
+        "notes_table_media",
+        "notes_table_tools",
+        "test_notes_editor_ui",
+        "notes_cascade_defaults (novo)",
+        "notes_collapse_motion (novo)",
+        "notes_completion_spacing (novo)",
+        "notes_cut_background (novo)",
+        "notes_document_migration (novo)",
+        "notes_extras (novo)",
+        "notes_import_spacing (novo)",
+        "notes_large_document (novo)",
+        "notes_last_line_enter (novo)",
+        "notes_markdown (novo)",
+        "notes_million (novo)",
+        "notes_million_extras (novo)",
+        "notes_navigation_completion (novo)",
+        "notes_outline_code (novo)",
+        "notes_parent_undo (novo)",
+        "notes_paste_blocks (novo)",
+        "notes_paste_selection (novo)",
+        "notes_performance (novo)",
+        "notes_regression_audit (novo)",
+        "notes_renumber_structure (novo)",
+        "notes_requested_fixes (novo)",
+        "notes_table_media (novo)",
+        "notes_table_tools (novo)",
+        "parity_structure (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "completedAt",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "completedBy",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "completionBatch",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "completionLabel",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "completionPosition",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "extra",
+      "testes": [
+        "notes_extras",
+        "notes_last_line_enter",
+        "notes_million_extras",
+        "notes_table_media",
+        "notes_table_tools",
+        "notes_extras (novo)",
+        "notes_last_line_enter (novo)",
+        "notes_million_extras (novo)",
+        "notes_table_media (novo)",
+        "notes_table_tools (novo)",
+        "parity_structure (novo)",
+        "parity_visual (novo)",
+        "shortcuts (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "formula",
+      "testes": [
+        "notes_table_math",
+        "notes_table_tools",
+        "notes_table_math (novo)",
+        "notes_table_tools (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "formulaError",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "heading",
+      "testes": [
+        "notes_document_model",
+        "notes_extras",
+        "notes_indent_child",
+        "notes_last_line_enter",
+        "notes_markdown",
+        "notes_requested_fixes",
+        "test_notes_editor_ui",
+        "notes_document_model (novo)",
+        "notes_extras (novo)",
+        "notes_indent_child (novo)",
+        "notes_last_line_enter (novo)",
+        "notes_markdown (novo)",
+        "notes_requested_fixes (novo)",
+        "shortcuts (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "indentLevel",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "inlineHeading",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "largeNote",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "level",
+      "testes": [
+        "notes_cascade_defaults",
+        "notes_checklist_numbers",
+        "notes_checklist_order",
+        "notes_colors_persistence",
+        "notes_completion_spacing",
+        "notes_document_model",
+        "notes_enter_child",
+        "notes_indent_child",
+        "notes_markdown",
+        "notes_navigation_completion",
+        "notes_outline_code",
+        "notes_parent_undo",
+        "notes_paste_blocks",
+        "notes_performance",
+        "notes_renumber_structure",
+        "notes_requested_fixes",
+        "test_notes_editor_ui",
+        "notes_cascade_defaults (novo)",
+        "notes_checklist_numbers (novo)",
+        "notes_checklist_order (novo)",
+        "notes_colors_persistence (novo)",
+        "notes_completion_spacing (novo)",
+        "notes_document_model (novo)",
+        "notes_enter_child (novo)",
+        "notes_indent_child (novo)",
+        "notes_markdown (novo)",
+        "notes_navigation_completion (novo)",
+        "notes_outline_code (novo)",
+        "notes_parent_undo (novo)",
+        "notes_paste_blocks (novo)",
+        "notes_performance (novo)",
+        "notes_renumber_structure (novo)",
+        "notes_requested_fixes (novo)",
+        "shortcuts (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "lineColor",
+      "testes": [
+        "notes_table_media",
+        "notes_table_media (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "list",
+      "testes": [
+        "notes_checklist_numbers",
+        "notes_checklist_order",
+        "notes_colors_persistence",
+        "notes_document_migration",
+        "notes_document_model",
+        "notes_outline_code",
+        "notes_paste_blocks",
+        "test_notes_editor_ui",
+        "notes_checklist_numbers (novo)",
+        "notes_checklist_order (novo)",
+        "notes_colors_persistence (novo)",
+        "notes_document_migration (novo)",
+        "notes_document_model (novo)",
+        "notes_outline_code (novo)",
+        "notes_paste_blocks (novo)",
+        "shortcuts (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "mediaAction",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "noteAccent",
+      "testes": [
+        "notes_colors_persistence",
+        "notes_document_model",
+        "notes_colors_persistence (novo)",
+        "notes_document_model (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "noteAccentHistory",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "noteAsset",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "noteColors",
+      "testes": [
+        "notes_colors_persistence",
+        "notes_colors_persistence (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "noteHighlightColors",
+      "testes": [
+        "notes_regression_audit",
+        "notes_regression_audit (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "noteId",
+      "testes": [
+        "notes_document_migration",
+        "notes_document_migration (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "noteTable",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "notesColor",
+      "testes": [
+        "notes_cascade_defaults",
+        "notes_regression_audit",
+        "test_notes_editor_ui",
+        "notes_cascade_defaults (novo)",
+        "notes_regression_audit (novo)",
+        "test_notes_editor_ui (novo)"
+      ],
+      "coberto": true
+    },
+    {
+      "regra": "numberCurrency",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "numberDecimals",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "numberFormat",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "outlineBreak",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "property",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "tableResize",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "videoPoster",
+      "testes": [],
+      "coberto": false
+    },
+    {
+      "regra": "youtube",
+      "testes": [
+        "notes_extras",
+        "notes_extras (novo)"
+      ],
+      "coberto": true
+    }
+  ],
+  "regrasOk": [
+    {
+      "teste": "notes_cascade_defaults",
+      "regra": "cascata reversível persistida, data de conclusão, cor do corpo preservada, seletor padrão e fechamento independente"
+    },
+    {
+      "teste": "notes_checklist_numbers",
+      "regra": "pilha de concluídos, desmarcação e evento duplicado"
+    },
+    {
+      "teste": "notes_checklist_order",
+      "regra": "pilha de concluídos, desmarcação e evento duplicado"
+    },
+    {
+      "teste": "notes_collapse_motion",
+      "regra": "following title moves continuously without final spacing jump"
+    },
+    {
+      "teste": "notes_colors_persistence",
+      "regra": "Enter sem número repetido, cores serializadas e nova nota independente"
+    },
+    {
+      "teste": "notes_completion_spacing",
+      "regra": "conclusão sem espaços de HTML e linha vazia real preservada"
+    },
+    {
+      "teste": "notes_cut_background",
+      "regra": "recortar/colar sem fundo acidental e com destaque intencional preservado"
+    },
+    {
+      "teste": "notes_document_migration",
+      "regra": "modelo/HTML sem perdas, IDs persistidos, histórico estruturado, cópia independente, nota extensa"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "modelo sem navegador, identidade, hierarquia, cascata, snapshots, recuo e movimento"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "movimento manual recalcula pendentes; conclusão preserva número"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "primeiro filho sobe acima do pai preservando os demais filhos"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "recuo acompanha o item anterior ao título"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "posição de conclusão persistida e retorno após exclusão de vizinho"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "all checked then unchecked in different orders restore original order"
+    },
+    {
+      "teste": "notes_enter_child",
+      "regra": "Enter reutiliza o filho vazio recolhido sem duplicar checkbox"
+    },
+    {
+      "teste": "notes_extras",
+      "regra": "divider shortcut/removal, automatic and titled links, cursor media, table and toolbar overflow"
+    },
+    {
+      "teste": "notes_import_spacing",
+      "regra": "BR + HTML newline produces one line break; legacy empty fragments removed"
+    },
+    {
+      "teste": "notes_indent_child",
+      "regra": "Tab abre o pai e permite digitar no filho sem título"
+    },
+    {
+      "teste": "notes_last_line_enter",
+      "regra": "Enter at the last paragraph, heading, empty line and editor boundary"
+    },
+    {
+      "teste": "notes_navigation_completion",
+      "regra": "retorno original, cursor vazio, colapsos, conclusão coletiva, cores salvas e abas"
+    },
+    {
+      "teste": "notes_outline_code",
+      "regra": "nested outline visible and complete TypeScript interface grouped"
+    },
+    {
+      "teste": "notes_parent_undo",
+      "regra": "desfazer/refazer por botão e teclado com movimento contínuo"
+    },
+    {
+      "teste": "notes_paste_blocks",
+      "regra": "multiline paste, 150k text, selected bold, indentation and marker sizing"
+    },
+    {
+      "teste": "notes_paste_selection",
+      "regra": "paste on editor root, Select All, and missing selection"
+    },
+    {
+      "teste": "notes_regression_audit",
+      "regra": "remoção parcial preserva formatação, cores sobrevivem em novas linhas, fechamento limpa paletas"
+    },
+    {
+      "teste": "notes_renumber_structure",
+      "regra": "numeração em seleção múltipla, itens marcados, movimento e recuo"
+    },
+    {
+      "teste": "notes_requested_fixes",
+      "regra": "code boundaries, Enter, manual code, collapse persistence, H3, staged colors and module payload"
+    },
+    {
+      "teste": "notes_table_math",
+      "regra": "arithmetic, localized functions, references, dependencies, error handling and 1,000 cells"
+    },
+    {
+      "teste": "notes_table_media",
+      "regra": "create/edit/reopen table; click media, Backspace removal, undo and explicit video playback"
+    },
+    {
+      "teste": "notes_table_tools",
+      "regra": "formulas, recalculation, point-and-click references, staged cell colors, dimensions, drag, undo and reopen"
+    },
+    {
+      "teste": "notes_tone_picker",
+      "regra": "seletor de tonalidade, cancelar, confirmar e independência da cor padrão"
+    },
+    {
+      "teste": "notes_tone_picker_mobile",
+      "regra": "seletor de tonalidade, cancelar, confirmar e independência da cor padrão"
+    },
+    {
+      "teste": "test_notes_editor_ui",
+      "regra": "edição, checkbox, linhas vazias, autosave, expansão sequencial, resize e redução de movimento."
+    },
+    {
+      "teste": "notes_cascade_defaults",
+      "regra": "cascata reversível persistida, data de conclusão, cor do corpo preservada, seletor padrão e fechamento independente"
+    },
+    {
+      "teste": "notes_checklist_numbers",
+      "regra": "pilha de concluídos, desmarcação e evento duplicado"
+    },
+    {
+      "teste": "notes_checklist_order",
+      "regra": "pilha de concluídos, desmarcação e evento duplicado"
+    },
+    {
+      "teste": "notes_collapse_motion",
+      "regra": "following title moves continuously without final spacing jump"
+    },
+    {
+      "teste": "notes_colors_persistence",
+      "regra": "Enter sem número repetido, cores serializadas e nova nota independente"
+    },
+    {
+      "teste": "notes_completion_spacing",
+      "regra": "conclusão sem espaços de HTML e linha vazia real preservada"
+    },
+    {
+      "teste": "notes_cut_background",
+      "regra": "recortar/colar sem fundo acidental e com destaque intencional preservado"
+    },
+    {
+      "teste": "notes_document_migration",
+      "regra": "modelo/HTML sem perdas, IDs persistidos, histórico estruturado, cópia independente, nota extensa"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "modelo sem navegador, identidade, hierarquia, cascata, snapshots, recuo e movimento"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "movimento manual recalcula pendentes; conclusão preserva número"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "primeiro filho sobe acima do pai preservando os demais filhos"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "recuo acompanha o item anterior ao título"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "posição de conclusão persistida e retorno após exclusão de vizinho"
+    },
+    {
+      "teste": "notes_document_model",
+      "regra": "all checked then unchecked in different orders restore original order"
+    },
+    {
+      "teste": "notes_enter_child",
+      "regra": "Enter reutiliza o filho vazio recolhido sem duplicar checkbox"
+    },
+    {
+      "teste": "notes_extras",
+      "regra": "divider shortcut/removal, automatic and titled links, cursor media, table and toolbar overflow"
+    },
+    {
+      "teste": "notes_import_spacing",
+      "regra": "BR + HTML newline produces one line break; legacy empty fragments removed"
+    },
+    {
+      "teste": "notes_indent_child",
+      "regra": "Tab abre o pai e permite digitar no filho sem título"
+    },
+    {
+      "teste": "notes_last_line_enter",
+      "regra": "Enter at the last paragraph, heading, empty line and editor boundary"
+    },
+    {
+      "teste": "notes_navigation_completion",
+      "regra": "retorno original, cursor vazio, colapsos, conclusão coletiva, cores salvas e abas"
+    },
+    {
+      "teste": "notes_outline_code",
+      "regra": "nested outline visible and complete TypeScript interface grouped"
+    },
+    {
+      "teste": "notes_parent_undo",
+      "regra": "desfazer/refazer por botão e teclado com movimento contínuo"
+    },
+    {
+      "teste": "notes_paste_blocks",
+      "regra": "multiline paste, 150k text, selected bold, indentation and marker sizing"
+    },
+    {
+      "teste": "notes_paste_selection",
+      "regra": "paste on editor root, Select All, and missing selection"
+    },
+    {
+      "teste": "notes_regression_audit",
+      "regra": "remoção parcial preserva formatação, cores sobrevivem em novas linhas, fechamento limpa paletas"
+    },
+    {
+      "teste": "notes_renumber_structure",
+      "regra": "numeração em seleção múltipla, itens marcados, movimento e recuo"
+    },
+    {
+      "teste": "notes_requested_fixes",
+      "regra": "code boundaries, Enter, manual code, collapse persistence, H3, staged colors and module payload"
+    },
+    {
+      "teste": "notes_table_math",
+      "regra": "arithmetic, localized functions, references, dependencies, error handling and 1,000 cells"
+    },
+    {
+      "teste": "notes_table_media",
+      "regra": "create/edit/reopen table; click media, Backspace removal, undo and explicit video playback"
+    },
+    {
+      "teste": "notes_table_tools",
+      "regra": "formulas, recalculation, point-and-click references, staged cell colors, dimensions, drag, undo and reopen"
+    },
+    {
+      "teste": "notes_tone_picker",
+      "regra": "seletor de tonalidade, cancelar, confirmar e independência da cor padrão"
+    },
+    {
+      "teste": "notes_tone_picker_mobile",
+      "regra": "seletor de tonalidade, cancelar, confirmar e independência da cor padrão"
+    },
+    {
+      "teste": "parity_structure",
+      "regra": "estrutura do modal equivalente ao original"
+    },
+    {
+      "teste": "parity_visual",
+      "regra": "paridade visual entre PWA e original (somente excecoes documentadas)"
+    },
+    {
+      "teste": "shortcuts",
+      "regra": "atalhos Alt+setas, Ctrl+Alt+1..7/0/T, Tab/Shift+Tab, Ctrl+B e Ctrl+S"
+    },
+    {
+      "teste": "test_notes_editor_ui",
+      "regra": "edição, checkbox, linhas vazias, autosave, expansão sequencial, resize e redução de movimento."
+    }
+  ],
+  "lacunas": {
+    "comandos": [
+      "insertUnorderedList"
+    ],
+    "atalhos": [
+      "Ctrl/Cmd+Y",
+      "Ctrl/Cmd+I",
+      "Ctrl+Alt+8",
+      "Ctrl+Alt+9",
+      "Ctrl+Alt+L",
+      "Ctrl+Shift+I",
+      "Ctrl+Alt+M"
+    ],
+    "metodos": [
+      "animateNotesMovement",
+      "applyNotesOutlineDefaults",
+      "beginNotesSession",
+      "closeNotesColorPanels",
+      "flushNotesTyping",
+      "notesBackspaceMedia",
+      "notesCaptureInsertion",
+      "notesDateDialog",
+      "notesDivider",
+      "notesExtraDialog",
+      "notesFocusMedia",
+      "notesInsertMenu",
+      "notesInsertNode",
+      "notesLinkDialog",
+      "notesRecalculateTable",
+      "notesRestoreInsertion",
+      "notesRevealInsertion",
+      "notesStatus",
+      "notesUpload",
+      "notesVideoDialog",
+      "queueNotesSave",
+      "refreshNotesCodePresentation",
+      "refreshNotesSyntaxHighlight",
+      "resetNotesHistory",
+      "restoreNotesHistory",
+      "setNotesHeaderCollapsed",
+      "setupNotesEditing",
+      "setupNotesResize",
+      "storeNotesDraft",
+      "syncNotesDocument",
+      "updateNotesToolbarState"
+    ],
+    "eventos": [
+      "beforeinput",
+      "beforeunload",
+      "cancel",
+      "change",
+      "click",
+      "close",
+      "contextmenu",
+      "copy",
+      "cut",
+      "dblclick",
+      "input",
+      "mousedown",
+      "paste",
+      "pointercancel",
+      "pointerdown",
+      "pointerenter",
+      "pointerleave",
+      "pointermove",
+      "pointerup",
+      "resize",
+      "scroll",
+      "selectionchange"
+    ],
+    "atributos": [
+      "cellValue",
+      "codeDisabled",
+      "codeLanguage",
+      "completedAt",
+      "completedBy",
+      "completionBatch",
+      "completionLabel",
+      "completionPosition",
+      "formulaError",
+      "indentLevel",
+      "inlineHeading",
+      "largeNote",
+      "mediaAction",
+      "noteAccentHistory",
+      "noteAsset",
+      "noteTable",
+      "numberCurrency",
+      "numberDecimals",
+      "numberFormat",
+      "outlineBreak",
+      "property",
+      "tableResize",
+      "videoPoster"
+    ]
+  }
+}

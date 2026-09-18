@@ -8,11 +8,12 @@
 // ============================================
 
 // Constantes de cache e assets estáticos
-const CACHE_NAME = 'notas-pwa-v3';
+const CACHE_NAME = 'notas-pwa-v4';
 const STATIC_ASSETS = [
     './',
     './index.html',
     './styles.css',
+    './theme-origem.css',
     './app.js',
     './notes/editor.js',
     './notes/editor.css',

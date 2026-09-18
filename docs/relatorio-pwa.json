@@ -1,0 +1,301 @@
+{
+  "geradoEm": "2026-09-18T11:31:33.589Z",
+  "projetoTestado": "C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa",
+  "total": 34,
+  "passaram": 17,
+  "falharam": 17,
+  "tempoTotalMs": 233162,
+  "resultados": [
+    {
+      "arquivo": "notes_cascade_defaults.cjs",
+      "passou": false,
+      "ms": 9170,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "arquivo": "notes_checklist_numbers.cjs",
+      "passou": false,
+      "ms": 4178,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+    },
+    {
+      "arquivo": "notes_checklist_order.cjs",
+      "passou": false,
+      "ms": 2809,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+    },
+    {
+      "arquivo": "notes_collapse_motion.cjs",
+      "passou": false,
+      "ms": 11202,
+      "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "arquivo": "notes_colors_persistence.cjs",
+      "passou": true,
+      "ms": 4588,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_completion_spacing.cjs",
+      "passou": true,
+      "ms": 8327,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_cut_background.cjs",
+      "passou": true,
+      "ms": 4649,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_document_migration.cjs",
+      "passou": true,
+      "ms": 3821,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_document_model.cjs",
+      "passou": true,
+      "ms": 138,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_enter_child.cjs",
+      "passou": false,
+      "ms": 2266,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+    },
+    {
+      "arquivo": "notes_extras.cjs",
+      "passou": false,
+      "ms": 43298,
+      "motivo": "at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_extras.cjs:55:97 {"
+    },
+    {
+      "arquivo": "notes_import_spacing.cjs",
+      "passou": true,
+      "ms": 5605,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_indent_child.cjs",
+      "passou": true,
+      "ms": 11425,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_large_document.cjs",
+      "passou": false,
+      "ms": 8565,
+      "motivo": "TypeError [ERR_INVALID_ARG_TYPE]: The \"path\" argument must be of type string or an instance of Buffer or URL. Received undefined"
+    },
+    {
+      "arquivo": "notes_last_line_enter.cjs",
+      "passou": true,
+      "ms": 7008,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_markdown.cjs",
+      "passou": false,
+      "ms": 8114,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "arquivo": "notes_million.cjs",
+      "passou": true,
+      "ms": 4914,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_million_extras.cjs",
+      "passou": true,
+      "ms": 6643,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_navigation_completion.cjs",
+      "passou": false,
+      "ms": 6152,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "arquivo": "notes_outline_code.cjs",
+      "passou": false,
+      "ms": 3820,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "arquivo": "notes_parent_undo.cjs",
+      "passou": false,
+      "ms": 8934,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "arquivo": "notes_paste_blocks.cjs",
+      "passou": false,
+      "ms": 3587,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+    },
+    {
+      "arquivo": "notes_paste_selection.cjs",
+      "passou": true,
+      "ms": 3687,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_performance.cjs",
+      "passou": true,
+      "ms": 7270,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_regression_audit.cjs",
+      "passou": false,
+      "ms": 4627,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to:"
+    },
+    {
+      "arquivo": "notes_renumber_structure.cjs",
+      "passou": true,
+      "ms": 4542,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_requested_fixes.cjs",
+      "passou": false,
+      "ms": 11958,
+      "motivo": "page.evaluate: TypeError: Cannot set properties of null (setting 'innerHTML')"
+    },
+    {
+      "arquivo": "notes_table_math.cjs",
+      "passou": false,
+      "ms": 233,
+      "motivo": "Error: Cannot find module '../frontend/notes/table-math.js'"
+    },
+    {
+      "arquivo": "notes_table_media.cjs",
+      "passou": true,
+      "ms": 10691,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_table_tools.cjs",
+      "passou": true,
+      "ms": 8489,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_tone_picker.cjs",
+      "passou": true,
+      "ms": 2446,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_tone_picker_mobile.cjs",
+      "passou": true,
+      "ms": 2615,
+      "motivo": ""
+    },
+    {
+      "arquivo": "parity_visual.cjs",
+      "passou": false,
+      "ms": 4446,
+      "motivo": "page.evaluate: ReferenceError: TestApp is not defined"
+    },
+    {
+      "arquivo": "test_notes_editor_ui.cjs",
+      "passou": false,
+      "ms": 2945,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    }
+  ],
+  "falhas": [
+    {
+      "arquivo": "notes_cascade_defaults.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ '#1122aa'\n- '#aa1122'\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_cascade_defaults.cjs:44:287 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: '#1122aa',\n  expected: '#aa1122',\n  operator: 'strictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_checklist_numbers.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    [\n      'B:2.',\n      'C:3.',\n      'A:1.'\n...\n    [\n+     'A:1.',\n      'C:3.',\n-     'A:1.',\n      'B:2.'\n    ]\n  ]\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_checklist_numbers.cjs:7:1171\n    at runNextTicks (node:internal/process/task_queues:65:5)\n    at process.processImmediate (node:internal/timers:472:9) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Array],\n  expected: [Array],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_checklist_order.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    [\n      'B',\n      'C',\n      'A'\n...\n    [\n+     'A',\n      'C',\n-     'A',\n      'B'\n    ]\n  ]\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_checklist_order.cjs:7:1102\n    at runNextTicks (node:internal/process/task_queues:65:5)\n    at process.processImmediate (node:internal/timers:472:9) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Array],\n  expected: [Array],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_collapse_motion.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
+      "saida": "{\n  start: 212.578125,\n  middle: 160.328125,\n  nearEnd: 158.390625,\n  end: 155.390625\n}\nAssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(Math.abs(result.nearEnd-result.end)<3)\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_collapse_motion.cjs:36:103 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_enter_child.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   'true',\n+   '0',\n+   '3',\n-   'false',\n-   '1',\n-   '2',\n    false,\n    'Novo filho'\n  ]\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_enter_child.cjs:7:1354 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Array],\n  expected: [Array],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_extras.cjs",
+      "motivo": "at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_extras.cjs:55:97 {",
+      "saida": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.notes-file-page p') to be visible\u001b[22m\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_extras.cjs:55:97 {\n  log: [ \"  - waiting for locator('.notes-file-page p') to be visible\" ],\n  name: 'TimeoutError'\n}"
+    },
+    {
+      "arquivo": "notes_large_document.cjs",
+      "motivo": "TypeError [ERR_INVALID_ARG_TYPE]: The \"path\" argument must be of type string or an instance of Buffer or URL. Received undefined",
+      "saida": "TypeError [ERR_INVALID_ARG_TYPE]: The \"path\" argument must be of type string or an instance of Buffer or URL. Received undefined\n    at Object.readFileSync (node:fs:439:14)\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_large_document.cjs:34:19 {\n  code: 'ERR_INVALID_ARG_TYPE'\n}"
+    },
+    {
+      "arquivo": "notes_markdown.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n3 !== 0\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_markdown.cjs:39:9 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 3,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_navigation_completion.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ '#445566'\n- '#112233'\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_navigation_completion.cjs:41:214 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: '#445566',\n  expected: '#112233',\n  operator: 'strictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_outline_code.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\ntrue !== false\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_outline_code.cjs:36:29 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: true,\n  expected: false,\n  operator: 'strictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_parent_undo.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\ntrue !== false\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_parent_undo.cjs:34:61 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: true,\n  expected: false,\n  operator: 'strictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_paste_blocks.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n    'Destino Semana',\n    'Estude:',\n    'Pratique:',\n+   'const a = 1;\\nconst b = 2;'\n-   'const a = 1;',\n-   'const b = 2;'\n  ]\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_paste_blocks.cjs:36:9 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Array],\n  expected: [Array],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_regression_audit.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to:\n\n'hidden'\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_regression_audit.cjs:42:140 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 'hidden',\n  expected: 'hidden',\n  operator: 'notStrictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_requested_fixes.cjs",
+      "motivo": "page.evaluate: TypeError: Cannot set properties of null (setting 'innerHTML')",
+      "saida": "page.evaluate: TypeError: Cannot set properties of null (setting 'innerHTML')\n    at eval (eval at evaluate (:311:30), <anonymous>:1:97)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_requested_fixes.cjs:44:13 {\n  log: []\n}"
+    },
+    {
+      "arquivo": "notes_table_math.cjs",
+      "motivo": "Error: Cannot find module '../frontend/notes/table-math.js'",
+      "saida": "node:internal/modules/cjs/loader:1520\r\n  throw err;\r\n  ^\r\n\r\nError: Cannot find module '../frontend/notes/table-math.js'\r\nRequire stack:\r\n- C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_table_math.cjs\r\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\r\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\r\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\r\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\r\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\r\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\r\n    at Module.require (node:internal/modules/cjs/loader:1617:12)\r\n    at require (node:internal/modules/helpers:153:16)\r\n    at Object.<anonymous> (C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_table_math.cjs:7:12)\r\n    at Module._compile (node:internal/modules/cjs/loader:1871:14) {\r\n  code: 'MODULE_NOT_FOUND',\r\n  requireStack: [\r\n    'C:\\\\Users\\\\Usuario\\\\OneDrive\\\\Desktop\\\\notas-pwa\\\\tests\\\\notes_table_math.cjs'\r\n  ]\r\n}\r\n\r\nNode.js v24.18.0"
+    },
+    {
+      "arquivo": "parity_visual.cjs",
+      "motivo": "page.evaluate: ReferenceError: TestApp is not defined",
+      "saida": "page.evaluate: ReferenceError: TestApp is not defined\n    at eval (eval at evaluate (:311:30), <anonymous>:3:32)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at montar (C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\helpers\\parity.cjs:57:14)\n    at async coletar (C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\parity_visual.cjs:21:5)\n    at async C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\parity_visual.cjs:36:26 {\n  log: []\n}"
+    },
+    {
+      "arquivo": "test_notes_editor_ui.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'ol' !== ''\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\test_notes_editor_ui.cjs:37:66 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 'ol',\n  expected: '',\n  operator: 'strictEqual',\n  diff: 'simple'\n}"
+    }
+  ]
+}

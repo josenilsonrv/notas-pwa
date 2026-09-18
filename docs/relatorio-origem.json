@@ -1,0 +1,285 @@
+{
+  "geradoEm": "2026-09-18T12:01:58.516Z",
+  "projetoTestado": "C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta",
+  "total": 36,
+  "passaram": 24,
+  "falharam": 11,
+  "naoAplicaveis": 1,
+  "tempoTotalMs": 201031,
+  "resultados": [
+    {
+      "arquivo": "notes_cascade_defaults.cjs",
+      "passou": false,
+      "ms": 8244,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "arquivo": "notes_checklist_numbers.cjs",
+      "passou": false,
+      "ms": 2209,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+    },
+    {
+      "arquivo": "notes_checklist_order.cjs",
+      "passou": false,
+      "ms": 1698,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+    },
+    {
+      "arquivo": "notes_collapse_motion.cjs",
+      "passou": false,
+      "ms": 4914,
+      "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "arquivo": "notes_colors_persistence.cjs",
+      "passou": true,
+      "ms": 3698,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_completion_spacing.cjs",
+      "passou": true,
+      "ms": 5831,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_cut_background.cjs",
+      "passou": true,
+      "ms": 7314,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_document_migration.cjs",
+      "passou": true,
+      "ms": 6877,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_document_model.cjs",
+      "passou": true,
+      "ms": 153,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_enter_child.cjs",
+      "passou": false,
+      "ms": 3170,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+    },
+    {
+      "arquivo": "notes_extras.cjs",
+      "passou": true,
+      "ms": 18020,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_import_spacing.cjs",
+      "passou": true,
+      "ms": 4984,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_indent_child.cjs",
+      "passou": true,
+      "ms": 1810,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_large_document.cjs",
+      "passou": true,
+      "ms": 6639,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_last_line_enter.cjs",
+      "passou": true,
+      "ms": 8184,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_markdown.cjs",
+      "passou": false,
+      "ms": 5297,
+      "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:"
+    },
+    {
+      "arquivo": "notes_million.cjs",
+      "passou": true,
+      "ms": 6689,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_million_extras.cjs",
+      "passou": true,
+      "ms": 6264,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_navigation_completion.cjs",
+      "passou": false,
+      "ms": 8221,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "arquivo": "notes_outline_code.cjs",
+      "passou": false,
+      "ms": 5424,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+    },
+    {
+      "arquivo": "notes_parent_undo.cjs",
+      "passou": true,
+      "ms": 7772,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_paste_blocks.cjs",
+      "passou": false,
+      "ms": 4525,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+    },
+    {
+      "arquivo": "notes_paste_selection.cjs",
+      "passou": true,
+      "ms": 4894,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_performance.cjs",
+      "passou": true,
+      "ms": 4968,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_regression_audit.cjs",
+      "passou": true,
+      "ms": 4769,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_renumber_structure.cjs",
+      "passou": true,
+      "ms": 4841,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_requested_fixes.cjs",
+      "passou": true,
+      "naoAplicavel": "exercita telas do dashboard de foco (#focusStageFocusId, #focusStageTitle), que nao existem no PWA standalone",
+      "ms": 0,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_table_math.cjs",
+      "passou": true,
+      "ms": 79,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_table_media.cjs",
+      "passou": true,
+      "ms": 10436,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_table_tools.cjs",
+      "passou": true,
+      "ms": 8668,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_tone_picker.cjs",
+      "passou": true,
+      "ms": 2667,
+      "motivo": ""
+    },
+    {
+      "arquivo": "notes_tone_picker_mobile.cjs",
+      "passou": true,
+      "ms": 2371,
+      "motivo": ""
+    },
+    {
+      "arquivo": "test_focus_pages_ui.cjs",
+      "passou": true,
+      "ms": 7450,
+      "motivo": ""
+    },
+    {
+      "arquivo": "test_notes_editor_ui.cjs",
+      "passou": false,
+      "ms": 9314,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+    },
+    {
+      "arquivo": "test_sports_ui.cjs",
+      "passou": true,
+      "ms": 11613,
+      "motivo": ""
+    },
+    {
+      "arquivo": "test_workout_templates_ui.cjs",
+      "passou": false,
+      "ms": 1024,
+      "motivo": "browserType.launch: Executable doesn't exist at C:\\Users\\Usuario\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1243\\chrome-headless-shell-win64\\chrome-headless-shell.exe"
+    }
+  ],
+  "falhas": [
+    {
+      "arquivo": "notes_cascade_defaults.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ '#1122aa'\n- '#aa1122'\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\notes_cascade_defaults.cjs:39:287 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: '#1122aa',\n  expected: '#aa1122',\n  operator: 'strictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_checklist_numbers.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    [\n      'B:2.',\n      'C:3.',\n      'A:1.'\n...\n    [\n+     'A:1.',\n      'C:3.',\n-     'A:1.',\n      'B:2.'\n    ]\n  ]\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\notes_checklist_numbers.cjs:2:1180\n    at runNextTicks (node:internal/process/task_queues:65:5)\n    at process.processImmediate (node:internal/timers:472:9) {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Array],\n  expected: [Array],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_checklist_order.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    [\n      'B',\n      'C',\n      'A'\n...\n    [\n+     'A',\n      'C',\n-     'A',\n      'B'\n    ]\n  ]\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\notes_checklist_order.cjs:2:1111 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Array],\n  expected: [Array],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_collapse_motion.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
+      "saida": "{\n  start: 356.0625,\n  middle: 309.609375,\n  nearEnd: 305.09375,\n  end: 302.0625\n}\nAssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(Math.abs(result.nearEnd-result.end)<3)\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\notes_collapse_motion.cjs:31:103 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_enter_child.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   'true',\n+   '0',\n+   '3',\n-   'false',\n-   '1',\n-   '2',\n    false,\n    'Novo filho'\n  ]\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\notes_enter_child.cjs:2:1363 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Array],\n  expected: [Array],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_markdown.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
+      "saida": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(await page.locator('#notesEditor table').count())\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\notes_markdown.cjs:33:9 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 0,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_navigation_completion.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ '#445566'\n- '#112233'\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\notes_navigation_completion.cjs:36:214 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: '#445566',\n  expected: '#112233',\n  operator: 'strictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_outline_code.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\ntrue !== false\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\notes_outline_code.cjs:31:29 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: true,\n  expected: false,\n  operator: 'strictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "notes_paste_blocks.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n    'Destino Semana',\n    'Estude:',\n    'Pratique:',\n+   'const a = 1;\\nconst b = 2;'\n-   'const a = 1;',\n-   'const b = 2;'\n  ]\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\notes_paste_blocks.cjs:31:9 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Array],\n  expected: [Array],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "test_notes_editor_ui.cjs",
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n    '0',\n    '1',\n-   '1',\n    '0',\n+   '0'\n  ]\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\test_notes_editor_ui.cjs:40:135 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Array],\n  expected: [Array],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}"
+    },
+    {
+      "arquivo": "test_workout_templates_ui.cjs",
+      "motivo": "browserType.launch: Executable doesn't exist at C:\\Users\\Usuario\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1243\\chrome-headless-shell-win64\\chrome-headless-shell.exe",
+      "saida": "browserType.launch: Executable doesn't exist at C:\\Users\\Usuario\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1243\\chrome-headless-shell-win64\\chrome-headless-shell.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\test_workout_templates_ui.cjs:11:36\n    at Object.<anonymous> (C:\\Users\\Usuario\\OneDrive\\Desktop\\produtividade-ferrramenta\\tests\\test_workout_templates_ui.cjs:99:3) {\n  log: [],\n  name: 'Error'\n}"
+    }
+  ]
+}

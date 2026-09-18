@@ -1,0 +1,15 @@
+{
+  "name": "notas-pwa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PWA de notas - replica validada do editor de notas do projeto produtividade-ferrramenta",
+  "scripts": {
+    "test": "node tests/run-all.cjs",
+    "test:origem": "node tests/run-all.cjs --origem",
+    "icones": "node tools/gerar-icones.cjs",
+    "rastreabilidade": "node tools/gerar-rastreabilidade.cjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

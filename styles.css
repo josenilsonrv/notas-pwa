@@ -18,21 +18,11 @@
     --color-neon-orange: #FF9500;
 }
 
-/* Dark Theme */
-html[data-theme="dark"] {
-    --color-bg-global: #000000;
-    --color-bg-container: #1C1C1E;
-    --color-text-main: #FFFFFF;
-    --color-text-muted: #8E8E93;
-    --color-text-label: #98989D;
-    --color-text-secondary: #98989d;
-    --color-border: #38383A;
-    --color-neon-blue: #0A84FF;
-    --color-neon-green: #30D158;
-    --color-neon-red: #FF453A;
-    --color-neon-purple: #BF5AF2;
-    --color-neon-orange: #FF9F0A;
-}
+/* Tema escuro: o CSS compilado do projeto original NAO redefine as variaveis
+ * globais (--color-*) em [data-theme="dark"] — ele ajusta apenas componentes
+ * especificos, e esses ajustes vivem em notes/editor.css (identico ao original).
+ * Para manter a replica fiel ao compilado, as variaveis do tema claro tambem
+ * valem no escuro. Ver docs/RELATORIO-PARIDADE.md. */
 
 /* Base Styles */
 * {
@@ -53,40 +43,10 @@ html.theme-transition * {
     transition: background-color 400ms ease, color 400ms ease, border-color 400ms ease !important;
 }
 
-/* Button Styles */
-.toolbar-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--color-text-main);
-    cursor: pointer;
-    transition: all 200ms ease;
-}
-
-.toolbar-btn:hover {
-    background: var(--color-border);
-}
-
-.toolbar-btn.is-active {
-    background: var(--color-neon-blue);
-    color: white;
-}
-
-.toolbar-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.toolbar-btn svg {
-    width: 20px;
-    height: 20px;
-}
+/* Button Styles
+ * As regras de .toolbar-btn vem do theme-origem.css (extraidas do CSS compilado
+ * do projeto original). Nao redefinir aqui: width/height fixos causavam
+ * divergencia de 2px e de border-radius em relacao ao original. */
 
 /* Utility Classes */
 .flex {
@@ -280,11 +240,6 @@ html.theme-transition * {
 
 /* Mobile-first adjustments */
 @media (max-width: 768px) {
-    .toolbar-btn {
-        width: 32px;
-        height: 32px;
-    }
-    
     .toolbar-btn svg {
         width: 18px;
         height: 18px;
@@ -425,3 +380,72 @@ html.theme-transition * {
     border-radius: 8px;
     margin-bottom: 10px;
 }
+
+/* ============================================
+ * PREFLIGHT ESSENCIAL (Tailwind v4)
+ * Sem isto os controles herdam os valores do navegador (fonte Arial, tamanho
+ * 13.33px, cor preta), divergindo do CSS compilado do projeto original.
+ * ============================================ */
+*, ::before, ::after, ::backdrop {
+    box-sizing: border-box;
+    border: 0 solid;
+    margin: 0;
+    padding: 0;
+}
+
+button, input, optgroup, select, textarea {
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+    background: transparent;
+}
+
+button, [type="button"], [type="reset"], [type="submit"] {
+    -webkit-appearance: button;
+    appearance: button;
+}
+
+:disabled { cursor: not-allowed; }
+ol, ul, menu { list-style: none; }
+img, svg, video, canvas, audio, iframe, embed, object { display: block; vertical-align: middle; }
+
+/* ============================================
+ * UTILITÁRIOS TAILWIND USADOS PELO MODAL DE NOTAS
+ * Transcritos do CSS compilado do projeto original (mesmos valores efetivos).
+ * Os tokens (--spacing, --color-white, --leading-relaxed, --font-sans) vêm do
+ * arquivo theme-origem.css, também extraído do compilado.
+ * ============================================ */
+.bg-white { background-color: var(--color-white); }
+.border-2 { border-width: 2px; border-style: solid; }
+.border-border { border-color: var(--color-border); }
+.border-neon-blue { border-color: var(--color-neon-blue); }
+.cursor-pointer { cursor: pointer; }
+.duration-300 { transition-duration: 300ms; }
+.font-sans { font-family: var(--font-sans); }
+.h-10 { height: calc(var(--spacing) * 10); }
+.w-10 { width: calc(var(--spacing) * 10); }
+.justify-center { justify-content: center; }
+.leading-relaxed { line-height: var(--leading-relaxed); }
+.max-h-full { max-height: 100%; }
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+.p-0 { padding: 0; }
+.pb-4 { padding-bottom: calc(var(--spacing) * 4); }
+.pt-4 { padding-top: calc(var(--spacing) * 4); }
+.hover\:scale-105:hover { scale: 1.05; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.px-6 { padding-left: calc(var(--spacing) * 6); padding-right: calc(var(--spacing) * 6); }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.mt-0 { margin-top: 0; }
+.mr-4 { margin-right: calc(var(--spacing) * 4); }
+.rounded-none { border-radius: 0; }
+.shadow-none { box-shadow: none; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.w-\[90\%\] { width: 90%; }
+.max-w-\[600px\] { max-width: 600px; }
+.h-\[70vh\] { height: 70vh; }
+.max-h-\[70vh\] { max-height: 70vh; }
+.rounded-\[20px\] { border-radius: 20px; }
+.shadow-\[0_12px_32px_rgba\(0\,0\,0\,0\.12\)\] { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12); }

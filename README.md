@@ -117,11 +117,44 @@ notas-pwa/
 ├── icon-192.png            # Ícone 192x192 (PNG real, maskable)
 ├── icon-512.png            # Ícone 512x512 (PNG real, maskable)
 ├── icon.svg                # Ícone SVG
+├── theme-origem.css        # Tema/regras do modal extraídos do CSS compilado do original (gerado)
 ├── _headers                # Regras de cache/headers para Cloudflare Pages
 ├── tools/
-│   └── gerar-icones.cjs    # Regera os PNGs dos ícones (sem dependências)
+│   ├── gerar-icones.cjs        # Regera os PNGs dos ícones (sem dependências)
+│   ├── extrair-tema.cjs        # Extrai o tema do CSS compilado do original
+│   ├── portar-testes.cjs       # Porta a suíte de testes do projeto original
+│   ├── inventario-regras.cjs   # Inventário de regras do motor de notas
+│   └── gerar-rastreabilidade.cjs  # Gera docs/RASTREABILIDADE.md e o inventário
+├── tests/
+│   ├── run-all.cjs             # Runner da suíte (npm test)
+│   ├── notes_*.cjs             # Suíte portada do original (asserts originais)
+│   ├── parity_structure.cjs    # Paridade estrutural do modal (ids/ARIA/comandos)
+│   ├── parity_visual.cjs       # Paridade de estilos computados (claro/escuro)
+│   ├── shortcuts.cjs           # Atalhos de teclado (lacunas cobertas)
+│   └── helpers/parity.cjs      # Bootstrap comum (PWA e original)
+├── docs/
+│   ├── INVENTARIO-REGRAS.md    # Todas as unidades de comportamento do motor
+│   ├── RASTREABILIDADE.md      # Regra -> teste -> status (lacunas explícitas)
+│   └── RELATORIO-PARIDADE.md   # Divergências visuais e exceções justificadas
 └── README.md               # Este arquivo
 ```
+
+## 🧪 Testes
+A suíte valida as regras do editor comparando o PWA com o projeto original
+(`produtividade-ferrramenta`), que é usado **somente como referência**.
+
+```bash
+npm install      # instala o Playwright (usa o Edge já instalado; não baixa navegadores)
+npm test         # roda a suíte completa e gera docs/RELATORIO-TESTES.md
+
+npm run rastreabilidade   # regenera docs/INVENTARIO-REGRAS.md e docs/RASTREABILIDADE.md
+npm run icones            # regenera os ícones PNG
+```
+Para rodar a mesma suíte contra o projeto original (contraprova):
+```bash
+node tests/run-all.cjs --dir="C:/caminho/produtividade-ferrramenta" --prefixo=RELATORIO-ORIGEM
+```
+O caminho do original pode ser trocado pela variável de ambiente `NOTAS_ORIGINAL`.
 
 ### Gerar novamente os ícones
 Os PNGs são gerados a partir do desenho definido em `tools/gerar-icones.cjs` (mesma identidade do `icon.svg`):

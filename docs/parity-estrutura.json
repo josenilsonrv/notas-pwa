@@ -1,0 +1,139 @@
+{
+  "ids": {
+    "origem": [
+      "notesContextNav",
+      "notesEditor",
+      "notesEditorContainer",
+      "notesFullscreenBtn",
+      "notesHeaderCollapseBtn",
+      "notesModal",
+      "notesModalBackdrop",
+      "notesModalClose",
+      "notesModalTitle",
+      "notesSaveStatus",
+      "notesToolbar"
+    ],
+    "pwa": [
+      "appToastRegion",
+      "notesContextNav",
+      "notesEditor",
+      "notesEditorContainer",
+      "notesFullscreenBtn",
+      "notesHeaderCollapseBtn",
+      "notesModal",
+      "notesModalBackdrop",
+      "notesModalClose",
+      "notesModalTitle",
+      "notesSaveStatus",
+      "notesToolbar",
+      "themeToggle"
+    ],
+    "faltando": []
+  },
+  "aria": {
+    "origem": [
+      "Cor da fonte",
+      "Descer linha",
+      "Desfazer",
+      "Destaque de texto",
+      "Fechar notas",
+      "Notas deste foco",
+      "Recolher cabeçalho",
+      "Refazer",
+      "Subir linha",
+      "Tachado",
+      "Título H1",
+      "Título H2",
+      "Título H3"
+    ],
+    "pwa": [
+      "Alternar tema",
+      "Avisos",
+      "Checklist",
+      "Cor da fonte",
+      "Descer linha",
+      "Desfazer",
+      "Desindentar",
+      "Destaque de texto",
+      "Fechar notas",
+      "Indentar",
+      "Itálico",
+      "Lista com marcadores",
+      "Lista numerada",
+      "Negrito",
+      "Notas deste foco",
+      "Recolher cabeçalho",
+      "Refazer",
+      "Subir linha",
+      "Tachado",
+      "Título H1",
+      "Título H2",
+      "Título H3"
+    ],
+    "faltando": []
+  },
+  "comandos": {
+    "origem": [
+      "bold",
+      "checklist",
+      "heading1",
+      "heading2",
+      "heading3",
+      "indent",
+      "insertOrderedList",
+      "insertUnorderedList",
+      "italic",
+      "moveDown",
+      "moveUp",
+      "outdent",
+      "redo",
+      "strikeThrough",
+      "undo"
+    ],
+    "pwa": [
+      "bold",
+      "checklist",
+      "heading1",
+      "heading2",
+      "heading3",
+      "indent",
+      "insertOrderedList",
+      "insertUnorderedList",
+      "italic",
+      "moveDown",
+      "moveUp",
+      "outdent",
+      "redo",
+      "strikeThrough",
+      "undo"
+    ],
+    "faltando": [],
+    "sobrando": []
+  },
+  "cores": {
+    "origem": [
+      "backgroundColor",
+      "color"
+    ],
+    "pwa": [
+      "backgroundColor",
+      "color"
+    ],
+    "faltando": []
+  },
+  "roles": {
+    "origem": [
+      "region",
+      "status",
+      "textbox"
+    ],
+    "pwa": [
+      "region",
+      "region",
+      "status",
+      "textbox"
+    ],
+    "faltando": []
+  },
+  "classesSemRegraNoPWA": []
+}
