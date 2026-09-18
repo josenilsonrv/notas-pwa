@@ -18,9 +18,9 @@ Editor de notas avançado como Progressive Web App (PWA) para uso em celular, co
 - **Links**: Inserir/editar links com auto-link do texto digitado
 - **Modelos de nota**: Salvar a nota atual como modelo e reaplicá-la
 - **Undo/Redo**: Histórico de estados com atalhos
-- **Toolbar**: Comandos de formatação, cores, undo/redo e menu "mais ferramentas"
+- **Toolbar**: Uma única linha com rolagem horizontal; botão "Editar barra de ferramentas" reordena os botões (ordem guardada no dispositivo); a barra acompanha o teclado, ficando logo acima dele
 - **Fullscreen**: Modo tela cheia
-- **Temas**: Suporte a temas claro e escuro
+- **Temas**: Claro e escuro, com um seletor sutil (sol/lua) no cabeçalho do modal para alternar manualmente
 - **Persistência**: Salvo automaticamente no LocalStorage do dispositivo
 
 ### Funcionalidades PWA
@@ -88,7 +88,7 @@ Editor de notas avançado como Progressive Web App (PWA) para uso em celular, co
 
 A PWA suporta temas claro e escuro:
 - **Automático**: Detecta a preferência do sistema
-- **Manual**: Clique no botão de tema no header para alternar
+- **Manual**: Switch sutil (sol/lua) no cabeçalho do modal de notas
 - **Persistente**: A escolha é salva no LocalStorage
 
 ## 💾 Persistência
@@ -105,6 +105,7 @@ Chaves usadas no dispositivo:
 - `notas-pwa-content`: espelho da nota ativa (compatibilidade com versões antigas)
 - `notas-pwa-templates`: modelos de nota salvos no dispositivo (globais, compartilhados entre as notas)
 - `notas-pwa-theme`: tema claro/escuro escolhido
+- `notas-pwa-toolbar-order`: ordem personalizada dos botões da barra de ferramentas
 
 > Na primeira execução de uma versão com múltiplas notas, o conteúdo antigo de
 > `notas-pwa-content` é migrado automaticamente para a nota `id: 'local'` dentro de
@@ -146,6 +147,8 @@ notas-pwa/
 │   ├── parity_visual.cjs       # Paridade de estilos computados (claro/escuro)
 │   ├── tema_vidro.cjs          # Modo claro com vidro (backdrop-filter) + escuro sólido
 │   ├── multi_notas.cjs         # Múltiplas notas (botão "+"), chips, migração e accent
+│   ├── toolbar_pwa.cjs         # Barra em uma linha/rolagem, edição de posições e dock do teclado
+│   ├── tema_switch.cjs         # Switch sutil de tema (claro/escuro) manual
 │   ├── shortcuts.cjs           # Atalhos de teclado (lacunas cobertas)
 │   └── helpers/parity.cjs      # Bootstrap comum (PWA e original)
 ├── docs/

@@ -56,6 +56,10 @@ class ThemeManager {
         this.root.dataset.theme = theme;
         const isDark = theme === 'dark';
         document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#000000' : '#F5F5F7');
+        if (this.toggle) {
+            this.toggle.setAttribute('aria-checked', String(isDark));
+            this.toggle.setAttribute('title', isDark ? 'Tema escuro ativo — toque para o claro' : 'Tema claro ativo — toque para o escuro');
+        }
         window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
     }
 }
@@ -85,6 +89,11 @@ class NotesPWA {
         this.currentNotesProjectId = null;
         this.currentNotesStageId = null;
         this.notesChipMenu = null;
+        this.notesToolbarConfigurada = false;
+        this.notesToolbarObserver = null;
+        this.notesToolbarTecladoAtivo = false;
+        this.ordemToolbarOriginal = null;
+        this.notesToolbarEditorRedraw = null;
 
         this.themeManager = new ThemeManager();
         this.init();
@@ -102,6 +111,12 @@ class NotesPWA {
         this.salvarNotasLocais();
         const ativa = this.lerNotaAtiva();
         this.openNotesModal(ativa || this.projectsData[0]?.id);
+        // ⚡ [INÍCIO: PWA - BARRA DE FERRAMENTAS INLINE/EDIÇÃO + TECLADO]
+        // Só no boot real (`init`): os harnesses de teste/paridade não chamam init,
+        // então o comportamento do motor de notas permanece o mesmo para eles.
+        this.configurarToolbarPWA();
+        this.ativarToolbarTeclado();
+        // ⚡ [FIM: PWA - BARRA DE FERRAMENTAS INLINE/EDIÇÃO + TECLADO]
         // 🔄 [FIM: ESTADO - MIGRAÇÃO/ABERTURA DA ÚLTIMA NOTA]
     }
 
@@ -542,6 +557,226 @@ class NotesPWA {
     setupResize() {
         window.addEventListener('resize', () => this.refreshNotesCollapseControls());
     }
+
+    // ⚡ [INÍCIO: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]
+    /** Chaves estáveis dos botões da toolbar (o motor reordena "items" no resize). */
+    filhosToolbar() {
+        const toolbar = document.getElementById('notesToolbar');
+        if (!toolbar) return [];
+        const gaveta = toolbar.querySelector('.notes-toolbar-overflow');
+        return [...toolbar.children, ...(gaveta ? [...gaveta.children] : [])]
+            .filter(el => !el.classList.contains('notes-toolbar-more')
+                && !el.classList.contains('notes-toolbar-overflow')
+                && el.dataset.pwa !== 'editar-toolbar');
+    }
+
+    chavesToolbar() {
+        const mapa = new Map();
+        let separador = 0;
+        for (const el of this.filhosToolbar()) {
+            if (el.dataset.command) mapa.set(el, 'cmd:' + el.dataset.command);
+            else if (el.dataset.notesColor) mapa.set(el, 'color:' + el.dataset.notesColor);
+            else if (el.dataset.extra) mapa.set(el, 'extra:' + el.dataset.extra);
+            else if (el.dataset.pwa) mapa.set(el, 'pwa:' + el.dataset.pwa);
+            else if (el.id) mapa.set(el, 'id:' + el.id);
+            else mapa.set(el, 'sep:' + (separador++));
+        }
+        return mapa;
+    }
+
+    lerOrdemToolbar() {
+        try {
+            const lista = JSON.parse(localStorage.getItem('notas-pwa-toolbar-order') || '[]');
+            return Array.isArray(lista) ? lista.filter(item => typeof item === 'string') : [];
+        } catch (_) { return []; }
+    }
+
+    salvarOrdemToolbar(ordem) {
+        try { localStorage.setItem('notas-pwa-toolbar-order', JSON.stringify(ordem)); } catch (_) { /* storage opcional */ }
+    }
+
+    /**
+     * Aplica a ordem (salva ou explícita) e traz todos os botões de volta para a
+     * barra, escondendo o menu "…"/gaveta do motor. É idempotente: só mexe no DOM
+     * quando algo está fora do lugar (evita loop com o ResizeObserver do motor).
+     */
+    aplicarOrdemToolbar(ordem = null) {
+        const toolbar = document.getElementById('notesToolbar');
+        if (!toolbar) return;
+        const mais = toolbar.querySelector('.notes-toolbar-more');
+        const gaveta = toolbar.querySelector('.notes-toolbar-overflow');
+        const lista = ordem || this.lerOrdemToolbar();
+        const mapa = this.chavesToolbar();
+        const itens = [...mapa.keys()];
+        const posicao = new Map();
+        lista.forEach((chave, indice) => { if (!posicao.has(chave)) posicao.set(chave, indice); });
+        itens.sort((a, b) => {
+            const pa = posicao.has(mapa.get(a)) ? posicao.get(mapa.get(a)) : Number.MAX_SAFE_INTEGER;
+            const pb = posicao.has(mapa.get(b)) ? posicao.get(mapa.get(b)) : Number.MAX_SAFE_INTEGER;
+            return pa - pb;
+        });
+        const referencia = mais || gaveta || null;
+        const editar = toolbar.querySelector('[data-pwa="editar-toolbar"]');
+        const atuais = [...toolbar.children].filter(el => el !== mais && el !== gaveta && el !== editar);
+        const jaEsta = atuais.length === itens.length
+            && atuais.every((el, indice) => el === itens[indice])
+            && (!gaveta || !gaveta.children.length);
+        if (!jaEsta) itens.forEach(el => toolbar.insertBefore(el, referencia));
+        if (editar && toolbar.lastElementChild !== editar) toolbar.append(editar);
+        if (mais && !mais.hidden) mais.hidden = true;
+        if (gaveta && !gaveta.hidden) gaveta.hidden = true;
+    }
+
+    /** Ativa a barra em uma linha com rolagem + botão de edição + ordem salva. */
+    configurarToolbarPWA() {
+        const toolbar = document.getElementById('notesToolbar');
+        if (!toolbar || this.notesToolbarConfigurada) return;
+        this.notesToolbarConfigurada = true;
+        toolbar.classList.add('notes-toolbar-inline');
+        this.criarBotaoEditarToolbar(toolbar);
+        // Ordem de fábrica = ordem atual do motor, capturada ANTES da ordem salva.
+        this.ordemToolbarOriginal = [...this.chavesToolbar().values()];
+        this.aplicarOrdemToolbar();
+        this.notesToolbarObserver?.disconnect();
+        this.notesToolbarObserver = new MutationObserver(() => this.aplicarOrdemToolbar());
+        this.notesToolbarObserver.observe(toolbar, { childList: true, subtree: true });
+    }
+
+    criarBotaoEditarToolbar(toolbar) {
+        if (toolbar.querySelector('[data-pwa="editar-toolbar"]')) return;
+        const botao = document.createElement('button');
+        botao.type = 'button';
+        botao.className = 'toolbar-btn app-toolbar-edit-btn';
+        botao.dataset.pwa = 'editar-toolbar';
+        botao.title = 'Editar barra de ferramentas';
+        botao.setAttribute('aria-label', 'Editar barra de ferramentas');
+        botao.setAttribute('aria-haspopup', 'dialog');
+        botao.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.5"/><circle cx="3.5" cy="12" r="1.5"/><circle cx="3.5" cy="18" r="1.5"/></svg>';
+        botao.addEventListener('mousedown', event => event.preventDefault());
+        botao.addEventListener('click', () => this.abrirEditorToolbar());
+        toolbar.append(botao);
+    }
+
+    rotuloBotaoToolbar(el) {
+        const bruto = el.getAttribute('aria-label') || el.title || el.textContent.trim() || 'Botão';
+        return bruto.replace(/\s*\((?:(?:Ctrl|Cmd|Alt|Shift|Tab|Esc)[^)]*)\)\s*$/i, '').trim() || 'Botão';
+    }
+
+    /** Move um botão uma posição e persiste a nova ordem. */
+    moverBotaoToolbar(el, delta) {
+        const mapa = this.chavesToolbar();
+        const itens = [...mapa.keys()];
+        const indice = itens.indexOf(el);
+        const destino = indice + delta;
+        if (indice < 0 || destino < 0 || destino >= itens.length) return;
+        itens.splice(indice, 1);
+        itens.splice(destino, 0, el);
+        const ordem = itens.map(item => mapa.get(item));
+        this.salvarOrdemToolbar(ordem);
+        this.aplicarOrdemToolbar(ordem);
+        this.notesToolbarEditorRedraw?.();
+    }
+    /** Diálogo "Editar barra de ferramentas": reordena com setas e persiste. */
+    abrirEditorToolbar() {
+        const gatilho = document.querySelector('#notesToolbar [data-pwa="editar-toolbar"]');
+        this.notesExtraDialog('Editar barra de ferramentas', dialog => {
+            dialog.classList.add('app-toolbar-editor');
+            const ajuda = document.createElement('p');
+            ajuda.className = 'app-toolbar-editor-help';
+            ajuda.textContent = 'Use as setas para reposicionar os botões. A ordem fica guardada neste dispositivo.';
+            const lista = document.createElement('div');
+            lista.className = 'app-toolbar-editor-list';
+            dialog.append(ajuda, lista);
+
+            const desenhar = () => {
+                const mapa = this.chavesToolbar();
+                const itens = [...mapa.keys()];
+                lista.replaceChildren();
+                itens.forEach((el, indice) => {
+                    const linha = document.createElement('div');
+                    linha.className = 'app-toolbar-editor-row';
+                    const nome = document.createElement('span');
+                    nome.className = 'app-toolbar-editor-name';
+                    nome.textContent = this.rotuloBotaoToolbar(el);
+                    const esquerda = document.createElement('button');
+                    esquerda.type = 'button';
+                    esquerda.textContent = '←';
+                    esquerda.setAttribute('aria-label', 'Mover ' + nome.textContent + ' para a esquerda');
+                    esquerda.disabled = indice === 0;
+                    esquerda.addEventListener('click', () => this.moverBotaoToolbar(el, -1));
+                    const direita = document.createElement('button');
+                    direita.type = 'button';
+                    direita.textContent = '→';
+                    direita.setAttribute('aria-label', 'Mover ' + nome.textContent + ' para a direita');
+                    direita.disabled = indice === itens.length - 1;
+                    direita.addEventListener('click', () => this.moverBotaoToolbar(el, 1));
+                    linha.append(nome, esquerda, direita);
+                    lista.append(linha);
+                });
+            };
+            this.notesToolbarEditorRedraw = desenhar;
+            desenhar();
+
+            const restaurar = document.createElement('button');
+            restaurar.type = 'button';
+            restaurar.className = 'app-toolbar-editor-restore';
+            restaurar.textContent = 'Restaurar padrão';
+            restaurar.addEventListener('click', () => this.restaurarOrdemToolbar());
+            dialog.append(restaurar);
+
+            dialog.addEventListener('close', () => { this.notesToolbarEditorRedraw = null; });
+        }, gatilho);
+    }
+
+    restaurarOrdemToolbar() {
+        try { localStorage.removeItem('notas-pwa-toolbar-order'); } catch (_) { /* ignora */ }
+        this.aplicarOrdemToolbar(this.ordemToolbarOriginal || []);
+        this.notesToolbarEditorRedraw?.();
+    }
+
+    /** Mantém a barra logo acima do teclado virtual (visualViewport). */
+    ativarToolbarTeclado() {
+        if (this.notesToolbarTecladoAtivo) return;
+        this.notesToolbarTecladoAtivo = true;
+        const atualizar = () => this.aplicarToolbarTeclado();
+        const vv = window.visualViewport;
+        vv?.addEventListener('resize', atualizar);
+        vv?.addEventListener('scroll', atualizar);
+        window.addEventListener('resize', atualizar);
+        document.getElementById('notesEditor')?.addEventListener('focusin', atualizar);
+        document.addEventListener('focusout', event => { if (event.target && event.target.id === 'notesEditor') atualizar(); });
+    }
+
+    /**
+     * Doca a barra acima do teclado. `insetForcado` (px) permite testar sem teclado real.
+     */
+    aplicarToolbarTeclado(insetForcado) {
+        const toolbar = document.getElementById('notesToolbar');
+        if (!toolbar) return;
+        const editor = document.getElementById('notesEditor');
+        const vv = window.visualViewport;
+        let inset = 0;
+        if (typeof insetForcado === 'number') inset = Math.max(0, Math.round(insetForcado));
+        else if (vv && vv.scale === 1) inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+        const backdropAtivo = document.getElementById('notesModalBackdrop')?.classList.contains('active');
+        const dockar = inset > 100 && backdropAtivo && !toolbar.hidden;
+        if (!dockar) {
+            if (toolbar.classList.contains('notes-toolbar-docked')) {
+                toolbar.classList.remove('notes-toolbar-docked');
+                ['--notes-toolbar-dock-bottom', '--notes-toolbar-dock-left', '--notes-toolbar-dock-width'].forEach(nome => toolbar.style.removeProperty(nome));
+                editor?.style.removeProperty('padding-bottom');
+            }
+            return;
+        }
+        const modal = document.getElementById('notesModal');
+        const caixa = modal ? modal.getBoundingClientRect() : { left: 0, width: window.innerWidth };
+        toolbar.classList.add('notes-toolbar-docked');
+        toolbar.style.setProperty('--notes-toolbar-dock-bottom', inset + 'px');
+        toolbar.style.setProperty('--notes-toolbar-dock-left', Math.max(0, caixa.left) + 'px');
+        toolbar.style.setProperty('--notes-toolbar-dock-width', Math.min(caixa.width, window.innerWidth - Math.max(0, caixa.left)) + 'px');
+        if (editor) editor.style.paddingBottom = (toolbar.offsetHeight + 12) + 'px';
+    }
+    // ⚡ [FIM: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]
 }
 
 // ============================================

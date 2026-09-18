@@ -503,3 +503,133 @@ html[data-theme="dark"] .notes-chip-menu {
 html[data-theme="dark"] .notes-chip-menu button {
     color: #e2e8f0;
 }
+
+/* ============================================
+ * SELETOR SUTIL DE TEMA (claro/escuro, manual)
+ * Fica no .app-header do PWA (fora do modal de notas).
+ * ============================================ */
+.app-theme-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 62px;
+    height: 28px;
+    padding: 3px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg-global);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background-color 300ms ease, border-color 300ms ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.app-theme-switch-icon {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 22px;
+    transition: color 300ms ease;
+}
+
+.app-theme-switch-sun { color: var(--color-neon-orange); }
+.app-theme-switch-moon { color: var(--color-text-muted); }
+
+.app-theme-switch-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 28px;
+    height: 22px;
+    border-radius: 999px;
+    background: var(--color-bg-container);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+    transition: transform 300ms cubic-bezier(.22, 1, .36, 1), background-color 300ms ease;
+}
+
+html[data-theme="dark"] .app-theme-switch {
+    background: #0d1218;
+    border-color: #2a3543;
+}
+
+html[data-theme="dark"] .app-theme-switch-thumb {
+    transform: translateX(28px);
+    background: #1c2635;
+}
+
+html[data-theme="dark"] .app-theme-switch-moon { color: #93c5fd; }
+html[data-theme="dark"] .app-theme-switch-sun { color: #64748b; }
+
+/* ============================================
+ * BARRA DE FERRAMENTAS: UMA LINHA COM ROLAGEM
+ * Aplicado pelo PWA (classe adicionada no init). O motor de notas continua
+ * intocado: aqui só trocamos o menu "…" por scroll horizontal.
+ * ============================================ */
+html #notesModal #notesToolbar.notes-toolbar-inline {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+html #notesModal #notesToolbar.notes-toolbar-inline::-webkit-scrollbar { height: 0; }
+
+html #notesModal #notesToolbar.notes-toolbar-inline > .toolbar-btn { flex: 0 0 auto; }
+
+html #notesModal #notesToolbar.notes-toolbar-inline > .notes-toolbar-more,
+html #notesModal #notesToolbar.notes-toolbar-inline > .notes-toolbar-overflow {
+    display: none !important;
+}
+
+.app-toolbar-edit-btn { color: var(--notes-accent, var(--color-neon-blue)); }
+
+/* Doca acima do teclado (aplicada só com o teclado virtual aberto). */
+html #notesModal #notesToolbar.notes-toolbar-docked {
+    position: fixed;
+    left: var(--notes-toolbar-dock-left, 0px);
+    width: var(--notes-toolbar-dock-width, 100%);
+    bottom: var(--notes-toolbar-dock-bottom, 0px);
+    z-index: 1200;
+    margin: 0;
+    border-bottom: 0;
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, .14);
+    background: var(--color-bg-container);
+}
+
+html[data-theme="dark"] #notesModal #notesToolbar.notes-toolbar-docked {
+    background: #151b23;
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, .5);
+}
+
+/* Diálogo "Editar barra de ferramentas" */
+.app-toolbar-editor-help { margin: 0 0 12px; font-size: 13px; line-height: 1.5; opacity: .8; }
+.app-toolbar-editor-list { display: flex; flex-direction: column; gap: 6px; max-height: 55vh; overflow-y: auto; }
+.app-toolbar-editor-row { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-bg-container); }
+.app-toolbar-editor-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-toolbar-editor-row button { width: 34px; min-width: 34px; height: 34px; padding: 0; border: 1px solid var(--color-border); border-radius: 8px; background: transparent; color: var(--color-text-main); font-size: 16px; line-height: 1; cursor: pointer; }
+.app-toolbar-editor-row button:hover:not(:disabled) { border-color: var(--color-neon-blue); color: var(--color-neon-blue); }
+.app-toolbar-editor-row button:disabled { opacity: .35; cursor: default; }
+html[data-theme="dark"] .app-toolbar-editor-row { background: #11161d; border-color: #2a3543; }
+html[data-theme="dark"] .app-toolbar-editor-row button { color: #cbd5e1; border-color: #2a3543; }
+
+.app-toolbar-editor-restore {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-text-main);
+    font: inherit;
+    cursor: pointer;
+}
+
+.app-toolbar-editor-restore:hover { border-color: var(--color-neon-blue); color: var(--color-neon-blue); }
+html[data-theme="dark"] .app-toolbar-editor-restore { color: #cbd5e1; border-color: #2a3543; }
+
+

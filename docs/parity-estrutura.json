@@ -47,7 +47,7 @@
       "Título H3"
     ],
     "pwa": [
-      "Alternar tema",
+      "Alternar tema claro/escuro",
       "Avisos",
       "Checklist",
       "Cor da fonte",
@@ -131,6 +131,7 @@
       "region",
       "region",
       "status",
+      "switch",
       "textbox"
     ],
     "faltando": []
