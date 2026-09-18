@@ -4,6 +4,16 @@
 // (editor.js + extras.js + tables.js), sem backend.
 // ============================================
 
+// A partir deste tamanho (caracteres de HTML) a nota é tratada como "grande":
+// adia o snapshot do histórico, não grava o espelho legado, não grava rascunho
+// duplicado e evita serialização no beforeunload — assim uma nota com ~1 milhão
+// de caracteres continua sendo renderizada e salva sem estourar a cota do
+// LocalStorage (~5 MB por origem).
+const LIMITE_NOTA_GRANDE = 120000;
+// Rascunho de recuperação: acima disso nem grava (evita pagar o custo do
+// getCleanNotesHtml a cada autosave e o risco de cota).
+const LIMITE_RASCUNHO = 800000;
+
 /**
  * Gerenciador de Tema
  */
@@ -135,7 +145,7 @@ class NotesPWA {
         if (typeof installNotesExtras === 'function') installNotesExtras(NotesPWA);
         if (typeof installNotesTables === 'function') installNotesTables(NotesPWA);
         installLocalNotesStorage(NotesPWA);
-        installHistoricoAdiado(NotesPWA);
+        installAjustesNotaGrande(NotesPWA);
     }
 
     // 🔄 [INÍCIO: ESTADO - PERSISTÊNCIA LOCAL (SEM BACKEND)]
@@ -150,7 +160,11 @@ class NotesPWA {
 
     saveContentToStorage(html) {
         try {
-            localStorage.setItem('notas-pwa-content', html);
+            // 'notas-pwa-content' é o espelho legado (compatibilidade). Em notas
+            // grandes ele duplicaria o conteúdo e podia estourar a cota — a lista
+            // 'notas-pwa-notes' já é a fonte da verdade.
+            if (html.length <= LIMITE_NOTA_GRANDE) localStorage.setItem('notas-pwa-content', html);
+            else localStorage.removeItem('notas-pwa-content');
             this.notesContent = html;
             return true;
         } catch (error) {
@@ -230,6 +244,10 @@ class NotesPWA {
     }
 
     persistNow() {
+        // Notas grandes: serializar no `beforeunload` bloqueia a thread e o autosave
+        // já grava a nota; aqui saímos cedo para não travar a saída da página.
+        const editor = document.getElementById('notesEditor');
+        if (editor && editor.textContent.length > LIMITE_NOTA_GRANDE) return;
         const html = this.getCleanNotesHtml();
         if (html !== this.notesContent) this.saveContentToStorage(html);
     }
@@ -254,7 +272,7 @@ class NotesPWA {
         // para 2000 linhas) para depois do primeiro paint, para o aparelho não
         // bloquear a thread principal e o Android não acusar "UI do sistema não
         // responde". O baseline é capturado antes da primeira edição (beforeinput).
-        this.notesHistoricoAdiado = (project.notas || '').length >= 120000;
+        this.notesHistoricoAdiado = (project.notas || '').length >= LIMITE_NOTA_GRANDE;
         // O histórico é reiniciado logo depois pelo motor (`beginNotesSession`).
         // Refazer o snapshot completo aqui em cima duplicava o trabalho mais caro
         // da abertura (medido em ~270 ms para 2000 linhas) sem necessidade.
@@ -1005,18 +1023,21 @@ function installLocalNotesStorage(App) {
 }
 
 // ============================================
-// AJUSTE PWA: HISTÓRICO ADIADO EM NOTAS GRANDES
-// O snapshot inicial do histórico serializa o documento inteiro em JSON (O(n)).
-// Em notas grandes isso bloqueava a thread principal na abertura (o Android
-// chegava a avisar "UI do sistema não está respondendo"). Aqui o snapshot é
-// adiado e capturado antes da primeira edição — sem tocar no motor, que segue
-// idêntico ao original.
+// AJUSTES PWA PARA NOTAS GRANDES (sem tocar no motor)
+// 1) Histórico: o snapshot inicial serializa o documento inteiro em JSON (O(n));
+//    em notas grandes isso bloqueava a abertura, então é adiado e capturado antes
+//    da primeira edição.
+// 2) Rascunho: o motor grava `{ html, base }` — DUAS cópias da nota. Aqui
+//    guardamos só o `html` (o `base` nunca era lido) e, em notas muito grandes,
+//    nem gravamos: evita estourar a cota do LocalStorage (~5 MB) e o custo de
+//    serializar tudo a cada autosave.
 // ============================================
-function installHistoricoAdiado(App) {
+function installAjustesNotaGrande(App) {
     const p = App.prototype;
-    if (p.__historicoAdiadoInstalado) return;
-    p.__historicoAdiadoInstalado = true;
-    const original = p.resetNotesHistory;
+    if (p.__ajustesNotaGrandeInstalado) return;
+    p.__ajustesNotaGrandeInstalado = true;
+
+    const resetOriginal = p.resetNotesHistory;
     p.resetNotesHistory = function () {
         if (this.notesHistoricoAdiado) {
             this.notesHistoricoAdiado = false;
@@ -1032,7 +1053,22 @@ function installHistoricoAdiado(App) {
             }, 350);
             return;
         }
-        return original.call(this);
+        return resetOriginal.call(this);
+    };
+
+    p.storeNotesDraft = function () {
+        const session = this.notesSession;
+        if (!session) return;
+        const editor = document.getElementById('notesEditor');
+        try {
+            if (editor && editor.textContent.length > LIMITE_RASCUNHO) {
+                localStorage.removeItem(session.key);
+                return;
+            }
+            localStorage.setItem(session.key, JSON.stringify({ html: this.getCleanNotesHtml() }));
+        } catch (_) {
+            this.notesStatus('Rascunho local indisponível');
+        }
     };
 }
 

@@ -474,3 +474,52 @@ light: metaThemeColor "#F8FAFC"
 ```
 
 > Para mudar a cor depois, basta editar `--app-status-bar` em `styles.css`.
+
+---
+
+## 13. Notas com ~1 milhão de caracteres
+
+Pedido: *"abrir nota normal vazia e escrever tipo 1 milhão de caracteres; testar o
+comportamento e fazer os ajustes necessários para a mesma ser renderizada com sucesso"*.
+
+Medições no **app real** (viewport de celular 390×700), com ~1 M de caracteres:
+
+| cenário | armazenamento ANTES | armazenamento DEPOIS |
+| --- | --- | --- |
+| 1 M numa única linha | 3,00 M chars | **1,00 M chars** |
+| 1 M em 1000 linhas (1,35 M) | 4,02 M chars | **1,36 M chars** |
+
+Tempos (depois): abrir 28–231 ms · serializar 8–108 ms · salvar 54–415 ms · status
+**"Salvo"**, sem erros.
+
+### Problemas encontrados
+
+1. **Rascunho com duas cópias da nota.** O motor gravava
+   `notes-draft:*` = `{ html, base }` — sendo `base` uma segunda cópia inteira da nota
+   (e nunca era lido). Com 1 M de caracteres, só o rascunho ocupava ~2 M.
+2. **Espelho legado duplicando.** `notas-pwa-content` recebia outra cópia inteira da
+   nota a cada gravação.
+3. **`beforeunload` pesado** (`persistNow`): serializava a nota toda ao sair da página.
+
+Com (1)+(2) o total passava de **4 M caracteres** — perto do limite do navegador
+(~5 MB por origem), onde a gravação **falha e a nota se perde**.
+
+### Ajustes (camada PWA em `app.js`, motor intocado)
+
+* `LIMITE_NOTA_GRANDE = 120000`: acima disso a nota é "grande" — adia o histórico,
+  **não grava o espelho legado** e o `persistNow` **não serializa** no `beforeunload`.
+* `LIMITE_RASCUNHO = 800000`: acima disso **não grava rascunho**; abaixo, grava só
+  `{ html }` (o `base` nunca era lido).
+* `installAjustesNotaGrande` (antes `installHistoricoAdiado`) concentra esses ajustes.
+
+### Resultado
+
+* Uma nota com **~1 milhão de caracteres abre (renderiza) e salva** normalmente.
+* O armazenamento caiu de 4,02 M para **1,36 M caracteres** (folga confortável).
+* Teste de regressão: `tests/nota_grande_pwa.cjs`
+  (`abrir 313ms, salvar 291ms, armazenamento 1.157.900 chars`).
+* `sw.js` → v15.
+
+> Nota: o limite prático continua existindo (o navegador guarda ~5 MB). Para notas
+> **muito** maiores o caminho é dividir em várias notas (o app já suporta múltiplas
+> notas com o botão "+").
