@@ -343,3 +343,13 @@ Se o objetivo for **intensificar** o vidro (além do original), o caminho é:
 3. adicionar `background: rgba(255,255,255,.55)` aos painéis;
 — e então **documentar como divergência aceita** em `tests/parity_visual.cjs` (a lista
 `EXCECOES`), para a suíte continuar sendo a fonte da verdade.
+
+---
+
+## 7. Documentos relacionados
+
+- `docs/PROMPT-MULTI-NOTAS-MODELOS-CORES.md` — **botão “+” (multi-notas)**, chips no
+  `#notesContextNav`, **modelos de nota** (texto aplicado como está) e como os **seletores de cor
+  seguem a cor padrão (accent)** da nota.
+- `docs/RASTREABILIDADE.md` — matriz regra → teste (o que está coberto e o que falta).
+- `docs/RELATORIO-PARIDADE.md` — divergências visuais e exceções justificadas.

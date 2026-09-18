@@ -135,7 +135,9 @@ notas-pwa/
 ├── docs/
 │   ├── INVENTARIO-REGRAS.md    # Todas as unidades de comportamento do motor
 │   ├── RASTREABILIDADE.md      # Regra -> teste -> status (lacunas explícitas)
-│   └── RELATORIO-PARIDADE.md   # Divergências visuais e exceções justificadas
+│   ├── RELATORIO-PARIDADE.md   # Divergências visuais e exceções justificadas
+│   ├── PROMPT-MODO-CLARO-VIDRO.md        # Como replicar o tema claro com efeitos de vidro
+│   └── PROMPT-MULTI-NOTAS-MODELOS-CORES.md  # Botão "+" (multi-notas), modelos e cores/accent
 └── README.md               # Este arquivo
 ```
 
