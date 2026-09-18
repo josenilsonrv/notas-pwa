@@ -5,6 +5,7 @@
   "description": "PWA de notas - replica validada do editor de notas do projeto produtividade-ferrramenta",
   "scripts": {
     "test": "node tests/run-all.cjs",
+    "test:baseline": "node tests/run-all.cjs --baseline",
     "test:origem": "node tests/run-all.cjs --origem",
     "icones": "node tools/gerar-icones.cjs",
     "rastreabilidade": "node tools/gerar-rastreabilidade.cjs"

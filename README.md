@@ -157,6 +157,7 @@ notas-pwa/
 │   ├── RELATORIO-PARIDADE.md   # Divergências visuais e exceções justificadas
 │   ├── PROMPT-MODO-CLARO-VIDRO.md        # Como replicar o tema claro com efeitos de vidro
 │   ├── PROMPT-MULTI-NOTAS-MODELOS-CORES.md  # Botão "+" (multi-notas), modelos e cores/accent
+│   ├── COMO-RODAR-TESTES.md     # Fluxo eficiente: filtros, baseline, retry
 │   └── RELATORIO-CORRECAO-TRAVAMENTO-CELULAR.md  # Investigação e correção do travamento no celular
 └── README.md               # Este arquivo
 ```
@@ -169,9 +170,18 @@ A suíte valida as regras do editor comparando o PWA com o projeto original
 npm install      # instala o Playwright (usa o Edge já instalado; não baixa navegadores)
 npm test         # roda a suíte completa e gera docs/RELATORIO-TESTES.md
 
+node tests/<arquivo>.cjs        # 1 único teste (segundos) — o mais rápido
+npm test -- --filter=toolbar    # só os testes que casam com o padrão
+npm run test:baseline           # suíte completa; só falha se houver falha NOVA
+npm test -- --retry=1           # repete 1x um teste que falhou (timeout transitório)
+
 npm run rastreabilidade   # regenera docs/INVENTARIO-REGRAS.md e docs/RASTREABILIDADE.md
 npm run icones            # regenera os ícones PNG
 ```
+
+> **Eficiência**: cada teste abre o próprio navegador e a suíte completa leva
+> minutos; são **12 falhas conhecidas** (determinísticas) registradas no baseline.
+> Veja `docs/COMO-RODAR-TESTES.md` para o fluxo recomendado.
 Para rodar a mesma suíte contra o projeto original (contraprova):
 ```bash
 node tests/run-all.cjs --dir="C:/caminho/produtividade-ferrramenta" --prefixo=RELATORIO-ORIGEM

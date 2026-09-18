@@ -5,11 +5,17 @@
  * Uso:
  *   node tests/run-all.cjs                 roda tudo (PWA)
  *   node tests/run-all.cjs --filter=notes_ roda so os que casam com o padrao
+ *   node tests/run-all.cjs --baseline      roda tudo e so falha se houver FALHA NOVA
+ *   node tests/run-all.cjs --retry=1       repete 1x um teste que falhou (timeout transitorio)
  *   node tests/run-all.cjs --dir=DIR       roda a suite de outro projeto (ex.: o original)
  *   node tests/run-all.cjs --prefixo=nome  prefixo dos arquivos de relatorio
  *   node tests/run-all.cjs --timeout=180000
  *
  * Gera docs/RELATORIO-TESTES.md e docs/relatorio-testes.json (ou com o prefixo).
+ *
+ * EFICIENCIA: cada teste abre o proprio navegador e a suite completa leva minutos.
+ * Para o dia a dia rode o ARQUIVO do que voce mexeu: `node tests/<arquivo>.cjs`.
+ * Guia completo em docs/COMO-RODAR-TESTES.md.
  */
 const fs = require('fs');
 const path = require('path');
@@ -32,6 +38,8 @@ const TESTS = path.join(DIR, 'tests');
 const RAIZ = DIR;
 const filtro = arg('filter');
 const timeoutArg = Number(arg('timeout')) || 180000;
+const retryArg = Math.max(0, Number(arg('retry')) || 0);
+const usarBaseline = process.argv.includes('--baseline');
 const nodePathExtra = process.env.NODE_PATH || '';
 
 const arquivos = fs.readdirSync(TESTS)
@@ -40,8 +48,35 @@ const arquivos = fs.readdirSync(TESTS)
   .filter(f => !filtro || f.includes(filtro))
   .sort();
 
+// Baseline: falhas ja conhecidas (lidas ANTES de sobrescrever o relatorio).
+const caminhoRelatorio = path.join(RAIZ_PWA, 'docs', PREFIXO.toLowerCase() + '.json');
+let falhasConhecidas = new Set();
+if (usarBaseline) {
+  try {
+    const anterior = JSON.parse(fs.readFileSync(caminhoRelatorio, 'utf8'));
+    falhasConhecidas = new Set((anterior.falhas || []).map(f => f.arquivo));
+  } catch (_) {
+    console.log('--baseline: nenhum relatorio anterior encontrado; todas as falhas serao tratadas como novas.');
+  }
+}
+
 console.log('Suite: ' + arquivos.length + ' testes' + (filtro ? ' (filtro: ' + filtro + ')' : ''));
+if (retryArg) console.log('retry: ate ' + retryArg + ' repeticao(oes) em caso de falha');
 console.log('');
+
+/** Roda um arquivo de teste uma vez (com os argumentos de fixture quando houver). */
+const executar = (arquivo, argumentos) => {
+  const inicio = Date.now();
+  const r = spawnSync(process.execPath, [path.join(TESTS, arquivo), ...argumentos], {
+    cwd: RAIZ, encoding: 'utf8', timeout: timeoutArg, maxBuffer: 64 * 1024 * 1024,
+    env: { ...process.env, NODE_PATH: nodePathExtra || path.join(RAIZ_PWA, 'node_modules') }
+  });
+  const ms = Date.now() - inicio;
+  const saida = ((r.stdout || '') + (r.stderr || '')).trim();
+  const passou = r.status === 0;
+  const motivo = passou ? '' : (saida.split('\n').find(l => /Error|assert|at /.test(l)) || saida.split('\n').pop() || 'falha sem saida').trim();
+  return { passou, ms, saida, motivo };
+};
 
 const resultados = [];
 for (const arquivo of arquivos) {
@@ -60,29 +95,37 @@ for (const arquivo of arquivos) {
     fs.writeFileSync(fixture, linhas.join('\n'));
     argumentos.push(fixture);
   }
-  const inicio = Date.now();
-  const r = spawnSync(process.execPath, [path.join(TESTS, arquivo), ...argumentos], {
-    cwd: RAIZ, encoding: 'utf8', timeout: timeoutArg, maxBuffer: 64 * 1024 * 1024,
-    env: { ...process.env, NODE_PATH: nodePathExtra || path.join(RAIZ_PWA, 'node_modules') }
-  });
-  const ms = Date.now() - inicio;
-  const saida = ((r.stdout || '') + (r.stderr || '')).trim();
-  const passou = r.status === 0;
-  const motivo = passou ? '' : (saida.split('\n').find(l => /Error|assert|at /.test(l)) || saida.split('\n').pop() || 'falha sem saida').trim();
-  resultados.push({ arquivo, passou, ms, motivo, saida });
-  const icone = passou ? 'PASSA' : 'FALHA';
-  console.log(icone.padEnd(6) + arquivo.padEnd(36) + String(ms).padStart(6) + ' ms' + (passou ? '' : '  -> ' + motivo.slice(0, 120)));
+  let r = executar(arquivo, argumentos);
+  let tentativas = 1;
+  while (!r.passou && tentativas <= retryArg) {
+    tentativas++;
+    console.log('retry'.padEnd(6) + arquivo.padEnd(36) + 'tentativa ' + tentativas + '...');
+    r = executar(arquivo, argumentos);
+  }
+  resultados.push({ ...r, arquivo, tentativas });
+  const icone = r.passou ? (tentativas > 1 ? 'PASSA*' : 'PASSA') : 'FALHA';
+  console.log(icone.padEnd(6) + arquivo.padEnd(36) + String(r.ms).padStart(6) + ' ms' + (tentativas > 1 ? ' (retry ' + (tentativas - 1) + ')' : '') + (r.passou ? '' : '  -> ' + r.motivo.slice(0, 120)));
 }
 
 const naoAplicaveis = resultados.filter(r => r.naoAplicavel).length;
 const passaram = resultados.filter(r => r.passou && !r.naoAplicavel).length;
 const falharam = resultados.filter(r => !r.passou).length;
+const flaky = resultados.filter(r => r.passou && r.tentativas > 1).length;
 const total = resultados.reduce((soma, r) => soma + r.ms, 0);
+
+const arquivosFalhando = resultados.filter(r => !r.passou).map(r => r.arquivo);
+const falhasNovas = usarBaseline ? arquivosFalhando.filter(a => !falhasConhecidas.has(a)) : [];
+// Sem filtro comparamos o conjunto inteiro; com --filter, so importam falhas novas.
+const falhasResolvidas = usarBaseline && !filtro ? [...falhasConhecidas].filter(a => !arquivosFalhando.includes(a)) : [];
 
 console.log('');
 console.log('==================================================');
-console.log(' PASSOU: ' + passaram + ' | FALHOU: ' + falharam + ' | N/A: ' + naoAplicaveis + ' | TOTAL: ' + resultados.length);
+console.log(' PASSOU: ' + passaram + ' | FALHOU: ' + falharam + ' | N/A: ' + naoAplicaveis + ' | TOTAL: ' + resultados.length + (flaky ? ' | flaky: ' + flaky : ''));
 console.log(' tempo total: ' + (total / 1000).toFixed(1) + ' s');
+if (usarBaseline) {
+  console.log(' falhas conhecidas: ' + (arquivosFalhando.length - falhasNovas.length) + ' | falhas NOVAS: ' + falhasNovas.length + ' | resolvidas: ' + falhasResolvidas.length);
+  console.log(falhasNovas.length ? ' RESULTADO: REGRESSAO (' + falhasNovas.join(', ') + ')' : ' RESULTADO: SEM REGRESSOES (as falhas atuais ja existiam)');
+}
 console.log('==================================================');
 
 const docs = path.join(RAIZ_PWA, 'docs');
@@ -90,8 +133,9 @@ fs.mkdirSync(docs, { recursive: true });
 const json = {
   geradoEm: new Date().toISOString(),
   projetoTestado: RAIZ,
-  total: resultados.length, passaram, falharam, naoAplicaveis,
+  total: resultados.length, passaram, falharam, naoAplicaveis, flaky,
   tempoTotalMs: total,
+  falhasNovas, falhasResolvidas,
   resultados: resultados.map(({ saida, ...resto }) => resto),
   falhas: resultados.filter(r => !r.passou).map(r => ({ arquivo: r.arquivo, motivo: r.motivo, saida: r.saida.slice(-1500) }))
 };
@@ -103,11 +147,12 @@ const md = [
   '> Gerado por `node tests/run-all.cjs` em ' + new Date().toISOString().slice(0, 19).replace('T', ' ') + '.',
   '> Projeto testado: `' + RAIZ + '`',
   '',
-  '**PASSOU: ' + passaram + ' / ' + resultados.length + '** · FALHOU: ' + falharam + ' · tempo: ' + (total / 1000).toFixed(1) + ' s',
+  '**PASSOU: ' + passaram + ' / ' + resultados.length + '** · FALHOU: ' + falharam + ' · flaky: ' + flaky + ' · tempo: ' + (total / 1000).toFixed(1) + ' s',
   '',
+  ...(usarBaseline ? ['Falhas novas: **' + falhasNovas.length + '** · resolvidas: ' + falhasResolvidas.length + (falhasNovas.length ? ' (**REGRESSÃO**)' : ' (sem regressões)'), ''] : []),
   '| Teste | Resultado | Tempo |',
   '| --- | --- | --- |',
-  ...resultados.map(r => '| `' + r.arquivo + '` | ' + (r.naoAplicavel ? '➖ n/a — ' + r.naoAplicavel.slice(0, 80) : (r.passou ? '✅' : '❌ ' + r.motivo.slice(0, 90))) + ' | ' + r.ms + ' ms |'),
+  ...resultados.map(r => '| `' + r.arquivo + '` | ' + (r.naoAplicavel ? '➖ n/a — ' + r.naoAplicavel.slice(0, 80) : (r.passou ? (r.tentativas > 1 ? '⚠️ passou com retry' : '✅') : '❌ ' + r.motivo.slice(0, 90))) + ' | ' + r.ms + ' ms |'),
   ''
 ];
 fs.writeFileSync(path.join(docs, PREFIXO + '.md'), md.join('\n') + '\n');
@@ -122,4 +167,5 @@ if (falharam) {
   });
 }
 
-process.exit(falharam ? 1 : 0);
+// Com --baseline, o codigo de saida so reprova quando aparece falha NOVA.
+process.exit(usarBaseline ? (falhasNovas.length ? 1 : 0) : (falharam ? 1 : 0));
