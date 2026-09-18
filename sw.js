@@ -8,7 +8,7 @@
 // ============================================
 
 // Constantes de cache e assets estáticos
-const CACHE_NAME = 'notas-pwa-v2';
+const CACHE_NAME = 'notas-pwa-v3';
 const STATIC_ASSETS = [
     './',
     './index.html',

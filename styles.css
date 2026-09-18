@@ -364,6 +364,16 @@ html.theme-transition * {
     background: var(--color-bg-container);
 }
 
+/* O editor precisa ocupar toda a area do container.
+   Sem isto o #notesEditor tem apenas a altura do proprio conteudo e, como
+   notes/editor.css comprime linhas vazias para 8px, a area focavel/toque
+   fica restrita a uma faixa de 8px no topo: tocar no resto da tela nao
+   posiciona o cursor nem abre o teclado no celular. */
+#notesEditor {
+    min-height: 100%;
+    outline: none;
+}
+
 /* Notes footer */
 .notes-modal-footer {
     background: var(--color-bg-global);

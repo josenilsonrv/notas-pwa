@@ -194,6 +194,29 @@ class NotesPWA {
         this.updateNotesToolbarState();
     }
 
+    /**
+     * Leva o cursor para o fim da nota quando o toque/clique não atinge nenhuma
+     * linha (área vazia abaixo do conteúdo). No celular e no Safari, tocar numa
+     * área vazia de um contenteditable não posiciona o cursor; sem isto o teclado
+     * não abre e o usuário não consegue escrever.
+     */
+    focusNotesEditorFromEmptyArea(event) {
+        const editor = document.getElementById('notesEditor');
+        if (!editor) return;
+        event?.preventDefault();
+        const lastLine = [...editor.children].reverse().find(element => element.classList.contains('notes-line'));
+        const target = lastLine?.querySelector('.notes-line-text') || editor;
+        const range = document.createRange();
+        range.selectNodeContents(target);
+        range.collapse(false);
+        editor.focus();
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        this.rememberNotesSelection();
+        this.updateNotesToolbarState();
+    }
+
     // ⚡ [INÍCIO: INTERAÇÃO/JS - SELEÇÃO DE NOTAS]
     /** Necessário para os comandos de formatação, cores e inserções. */
     rememberNotesSelection() {
@@ -249,6 +272,13 @@ class NotesPWA {
         // Mantém a seleção ao acionar botões da toolbar.
         document.getElementById('notesToolbar')?.addEventListener('pointerdown', event => {
             if (event.target.closest('.toolbar-btn')) this.rememberNotesSelection();
+        });
+
+        // Tocar/clicar na área vazia do container deve focar o editor e posicionar
+        // o cursor no fim da nota (essencial no celular, onde a linha vazia tem 8px).
+        document.getElementById('notesEditorContainer')?.addEventListener('pointerdown', event => {
+            if (event.target.closest('.notes-line, button, a, input, select, textarea, figure, table, img')) return;
+            this.focusNotesEditorFromEmptyArea(event);
         });
 
         // Garante a gravação ao sair.
