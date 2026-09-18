@@ -133,3 +133,14 @@ fundo do diálogo, para a linha continuar destacada).
 
 Estilos computados conferidos nos dois modos; `tema_vidro.cjs` **OK**,
 `parity_visual.cjs` **OK** (0 divergências reais) e `toolbar_pwa.cjs` **OK**.
+
+### 6.1 Toque longo no celular (menu "pesquisar")
+
+No Android, manter o dedo na alça abria o menu do sistema (pesquisar/selecionar), o que
+interrompia o arraste. Correção: `user-select: none` + `-webkit-touch-callout: none` no
+diálogo e na alça, `pointer-events: none` no SVG da alça (o alvo do toque passa a ser o
+próprio `span`, e não a "imagem") e `contextmenu` cancelado na linha.
+
+Verificado no navegador: `userSelect` = `none` (linha e alça), `touchAction` = `none`,
+SVG com `pointer-events: none`, `draggable` = false e `contextmenu` com `defaultPrevented`
+= true tanto na linha quanto na alça. `sw.js` -> **v18**.

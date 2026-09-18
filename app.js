@@ -873,6 +873,11 @@ class NotesPWA {
                 const nome = document.createElement('span');
                 nome.className = 'app-toolbar-editor-name';
                 linha.append(alca, nome);
+                linha.draggable = false;
+                alca.draggable = false;
+                // No celular o toque longo abria o menu do sistema (pesquisar/selecionar),
+                // o que interrompia o arraste no meio do gesto.
+                linha.addEventListener('contextmenu', event=>event.preventDefault());
                 // Fallback de teclado: o arraste não é acessível a todo mundo.
                 linha.addEventListener('keydown', event=>{
                     const passo = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
