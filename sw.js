@@ -15,7 +15,7 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
-const CACHE_NAME = 'notas-pwa-v12';
+const CACHE_NAME = 'notas-pwa-v13';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -46,12 +46,18 @@ const ESSENCIAIS = [
     './icon.svg'
 ];
 
-/** `cache.add` com algumas tentativas (rede móvel costuma falhar de forma intermitente). */
+/** `fetch` + timeout + `cache.put` (evita travar a instalação com rede lenta/instável). */
 const adicionarComRetry = async (cache, asset, tentativas = 3) => {
     for (let i = 0; i < tentativas; i++) {
         try {
-            await cache.add(asset);
-            return true;
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), TIMEOUT_MS * 2);
+            const response = await fetch(asset, { signal: controller.signal, cache: 'no-store' });
+            clearTimeout(timer);
+            if (response && response.ok) {
+                await cache.put(asset, response);
+                return true;
+            }
         } catch (_) {
             // tenta de novo
         }

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#F5F5F7">
+    <title>Reparar · Notas</title>
+    <style>
+        :root { color-scheme: light dark; }
+        body {
+            margin: 0; padding: 24px 18px; min-height: 100vh; box-sizing: border-box;
+            font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+            background: #f5f5f7; color: #172033;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        main { width: 100%; max-width: 460px; padding: 20px; border: 1px solid rgba(128,144,160,.35); border-radius: 14px; background: #fff; box-shadow: 0 14px 40px rgba(0,0,0,.12); }
+        h1 { margin: 0 0 8px; font-size: 19px; }
+        #estado { margin: 0 0 10px; font-weight: 600; }
+        ol { margin: 0 0 14px 18px; padding: 0; font-size: 13.5px; opacity: .9; }
+        button { padding: 10px 16px; border: 1px solid #0071e3; border-radius: 9px; background: transparent; color: #0071e3; font: inherit; cursor: pointer; }
+        .obs { margin: 14px 0 0; font-size: 12.5px; opacity: .75; }
+        @media (prefers-color-scheme: dark) {
+            body { background: #0b0f14; color: #e2e8f0; }
+            main { background: #11161d; border-color: #2a3543; }
+            button { color: #93c5fd; border-color: #2a3543; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Reparar o aplicativo Notas</h1>
+        <p id="estado">Reparando o cache do app…</p>
+        <ol id="passos"></ol>
+        <button id="botao" type="button" hidden>Abrir o app</button>
+        <p class="obs">Esta página remove o <strong>cache</strong> e o <strong>Service Worker</strong> do
+            aplicativo. As suas <strong>notas não são apagadas</strong> (ficam no armazenamento local do navegador).</p>
+    </main>
+    <script>
+        /* Página de recuperação: precisa rodar mesmo quando o app está quebrado,
+           por isso não depende de app.js, CSS, nem do Service Worker do app. */
+        (async function () {
+            var estado = document.getElementById('estado');
+            var passos = document.getElementById('passos');
+            var botao = document.getElementById('botao');
+            var app = new URL('./', location.href).href;
+            function linha(texto) { var li = document.createElement('li'); li.textContent = texto; passos.append(li); }
+            function abrirApp() { location.replace(app + '?reparado=' + Date.now()); }
+            try {
+                if (navigator.serviceWorker) {
+                    var regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(function (r) { return r.unregister(); }));
+                    linha(regs.length + ' Service Worker(s) removido(s)');
+                    if (navigator.serviceWorker.controller) linha('O controle será liberado ao recarregar');
+                } else {
+                    linha('Este navegador não usa Service Worker');
+                }
+                if (window.caches) {
+                    var nomes = await caches.keys();
+                    await Promise.all(nomes.map(function (n) { return caches.delete(n); }));
+                    linha(nomes.length + ' cache(s) do app apagado(s)');
+                }
+                estado.textContent = 'Pronto! O app vai abrir do zero (sem cache antigo).';
+                botao.hidden = false;
+                botao.addEventListener('click', abrirApp);
+                setTimeout(abrirApp, 1500);
+            } catch (e) {
+                estado.textContent = 'Não foi possível reparar automaticamente: ' + (e && e.message ? e.message : e);
+                linha('Abra o app e use o botão "Reparar e recarregar" que aparece na tela.');
+                botao.hidden = false;
+                botao.addEventListener('click', abrirApp);
+            }
+        })();
+    </script>
+</body>
+</html>

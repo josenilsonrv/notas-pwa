@@ -407,3 +407,34 @@ Validação (servidor local):
 > **Diagnóstico importante:** abrindo o site publicado num cliente novo, o app carrega
 > 100% (`modalAtivo: true`, editor com conteúdo, 25 botões, zero erros). Ou seja, o
 > problema relatado é **estado antigo no aparelho** (Service Worker/cache), não o código.
+
+### 11.8 Página de reparo `reparar.html` (v13)
+
+Sintoma: *"tanto navegador como PWA ficam em tela branca; no navegador a barrinha tenta
+carregar mas não finaliza"*.
+
+Ciclo vicioso: o Service Worker antigo prende as requisições, e qualquer recuperação
+"dentro do app" depende de carregar a página — que é justamente o que trava.
+
+Solução: uma página **independente** `reparar.html` (sem `app.js`, sem CSS do app e sem
+depender do Service Worker) que:
+
+1. **desregistra os Service Workers** da origem;
+2. **apaga os caches** do app;
+3. volta para o app (`./?reparado=<timestamp>`).
+
+Como ela **não está no cache** do Service Worker, carrega mesmo com o app quebrado. As
+**notas não são apagadas** (ficam no LocalStorage, que não é tocado).
+
+Além disso, a instalação do Service Worker passou a usar `fetch` **com timeout** +
+`cache.put` (não trava quando a rede está lenta).
+
+Validação (servidor local):
+
+```
+antes:            {"caches":1,"sw":1}
+durante o reparo: {"caches":0,"sw":0,"estado":"Pronto! O app vai abrir do zero (sem cache antigo)."}
+app apos reparo:  {"titulo":"Notas","modalAtivo":true,"appPronto":true}
+```
+
+> **Como usar no celular:** abrir `.../notas-pwa/reparar.html` com internet.
