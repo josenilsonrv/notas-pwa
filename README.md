@@ -216,7 +216,8 @@ evitando que o celular fique preso em uma versão antiga do `sw.js`, `index.html
 
 ### Dependências
 - Sem dependências externas (vanilla JS)
-- Fontes do Google Fonts (Inter)
+- Nenhuma fonte externa: a tipografia é o *system stack* do CSS compilado do projeto
+  original (`-apple-system, Segoe UI, Roboto…`), o que garante o app 100% offline
 - Service Worker para cache offline
 
 ### Compatibilidade
