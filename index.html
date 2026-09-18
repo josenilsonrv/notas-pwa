@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#F5F5F7">
+    <meta name="theme-color" content="#F8FAFC">
     <meta name="color-scheme" content="light dark">
     <meta name="description" content="Editor de notas com hierarquia, checklist e formatação avançada">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -24,6 +24,10 @@
             try { savedTheme = localStorage.getItem('notas-pwa-theme'); } catch (_) { /* storage opcional */ }
             const systemTheme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
             document.documentElement.dataset.theme = ['light', 'dark'].includes(savedTheme) ? savedTheme : systemTheme;
+            // Barra de status já correta no primeiro paint (valores iguais ao token
+            // --app-status-bar definido no styles.css: claro #F8FAFC, escuro #11161D).
+            const metaTema = document.querySelector('meta[name="theme-color"]');
+            if (metaTema) metaTema.setAttribute('content', document.documentElement.dataset.theme === 'dark' ? '#11161D' : '#F8FAFC');
         })();
     </script>
 </head>

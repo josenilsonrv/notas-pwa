@@ -4,8 +4,8 @@
   "description": "Editor de notas com hierarquia, checklist e formatação avançada",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#F5F5F7",
-  "theme_color": "#F5F5F7",
+  "background_color": "#F8FAFC",
+  "theme_color": "#F8FAFC",
   "orientation": "portrait-primary",
   "scope": "./",
   "icons": [

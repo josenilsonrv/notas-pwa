@@ -47,7 +47,7 @@ const estado=page=>page.evaluate(()=>({
   assert.equal(atual.tema,'dark');
   assert.equal(atual.checked,'true');
   assert.equal(atual.salvo,'dark');
-  assert.equal(atual.cor,'#000000');
+  assert.equal(atual.cor,'#11161D');
   assert.ok((await page.locator('#themeToggle').getAttribute('title')).includes('escuro'));
 
   // 3) Clique volta para claro e persiste.
@@ -57,7 +57,7 @@ const estado=page=>page.evaluate(()=>({
   assert.equal(atual.tema,'light');
   assert.equal(atual.checked,'false');
   assert.equal(atual.salvo,'light');
-  assert.equal(atual.cor,'#F5F5F7');
+  assert.equal(atual.cor,'#F8FAFC');
 
   // 4) O thumb do switch acompanha o tema (CSS).
   await page.waitForTimeout(400);

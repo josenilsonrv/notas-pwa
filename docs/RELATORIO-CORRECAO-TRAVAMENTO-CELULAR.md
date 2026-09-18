@@ -438,3 +438,39 @@ app apos reparo:  {"titulo":"Notas","modalAtivo":true,"appPronto":true}
 ```
 
 > **Como usar no celular:** abrir `.../notas-pwa/reparar.html` com internet.
+
+---
+
+## 12. Barra de status na cor padrão de cada modo
+
+Pedido: *"altere a cor da barra de status para que fique na cor padrão de cada modo"*.
+
+Medição das cores reais do app:
+
+| modo | fundo da página | header | superfície principal |
+| --- | --- | --- | --- |
+| claro | `#F8FAFC` | `#FFFFFF` | footer `rgba(255,255,255,.88)` |
+| escuro | `#F8FAFC` | `#FFFFFF` | modal `#11161D` / footer `#151B23` |
+
+Antes o `theme-color` era `#000000` (escuro) e `#F5F5F7` (claro) — não casava com cada
+modo. Agora a cor vem de um **token de CSS** (`--app-status-bar`), então muda no CSS e
+vale para o JS:
+
+* `styles.css` → `:root { --app-status-bar: #F8FAFC; }` e
+  `html[data-theme="dark"] { --app-status-bar: #11161D; }`
+* `app.js` (`ThemeManager.applyTheme`) lê o token e atualiza o
+  `<meta name="theme-color">` ao trocar de tema.
+* `index.html` (script inline, antes do paint) já define o `theme-color` correto para
+  não piscar a cor errada ao abrir.
+* `manifest.json` (`theme_color`/`background_color`) alinhado a `#F8FAFC`.
+* `sw.js` → v14.
+
+Validação (viewport de celular):
+
+```
+light: metaThemeColor "#F8FAFC"
+dark : metaThemeColor "#11161D"
+light: metaThemeColor "#F8FAFC"
+```
+
+> Para mudar a cor depois, basta editar `--app-status-bar` em `styles.css`.

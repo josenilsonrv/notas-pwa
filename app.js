@@ -55,7 +55,10 @@ class ThemeManager {
 
         this.root.dataset.theme = theme;
         const isDark = theme === 'dark';
-        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#000000' : '#F5F5F7');
+        // Barra de status na cor padrão do modo (token --app-status-bar).
+        const corBarra = (window.getComputedStyle(this.root).getPropertyValue('--app-status-bar') || '').trim()
+            || (isDark ? '#11161D' : '#F8FAFC');
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', corBarra);
         if (this.toggle) {
             this.toggle.setAttribute('aria-checked', String(isDark));
             this.toggle.setAttribute('title', isDark ? 'Tema escuro ativo — toque para o claro' : 'Tema claro ativo — toque para o escuro');

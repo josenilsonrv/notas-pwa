@@ -16,6 +16,14 @@
     --color-neon-red: #FF3B30;
     --color-neon-purple: #AF52DE;
     --color-neon-orange: #FF9500;
+    /* Cor da barra de status (theme-color) = cor padrão do modo.
+       Ajuste aqui para mudar a barra sem tocar no JS. */
+    --app-status-bar: #F8FAFC;
+}
+
+/* Barra de status no modo escuro: acompanha a superfície escura do app. */
+html[data-theme="dark"] {
+    --app-status-bar: #11161D;
 }
 
 /* Tema escuro: o CSS compilado do projeto original NAO redefine as variaveis
