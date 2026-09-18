@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#F5F5F7">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="Editor de notas com hierarquia, checklist e formatação avançada">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Notas">
+    <title>Notas PWA</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./notes/editor.css">
+    <link rel="stylesheet" href="./notes/extras.css">
+    <link rel="stylesheet" href="./notes/tables.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Resolve o tema antes do CSS carregar para evitar flash visual no primeiro paint.
+        (() => {
+            let savedTheme = null;
+            try { savedTheme = localStorage.getItem('notas-pwa-theme'); } catch (_) { /* storage opcional */ }
+            const systemTheme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            document.documentElement.dataset.theme = ['light', 'dark'].includes(savedTheme) ? savedTheme : systemTheme;
+        })();
+    </script>
+</head>
+<body class="bg-bg-global text-text-main min-h-screen overflow-x-hidden leading-relaxed select-none font-sans">
+    <!-- Header Mobile -->
+    <header class="app-header border-b border-border pt-4 pb-4 px-4">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-neon-blue"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h4M8 17h3"/><path d="m13.5 17.5 5.7-5.7a1.4 1.4 0 0 1 2 2l-5.7 5.7-3 .8.8-2.8Z"/></svg>
+                <h1 class="text-lg font-semibold tracking-[-0.02em] text-text-main">Notas</h1>
+            </div>
+            
+            <button class="relative w-10 h-10 rounded-full border-2 border-neon-blue bg-neon-blue/10 flex items-center justify-center cursor-pointer transition-all hover:scale-105" id="themeToggle" aria-label="Alternar tema">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-neon-blue"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Editor Container -->
+    <main class="flex-1 flex flex-col">
+        <!-- Notes Modal (Always visible in this PWA) -->
+        <div class="notes-drawer active" id="notesModalBackdrop">
+            <div class="modal notes-modal w-full h-full max-h-full overflow-hidden bg-white rounded-none shadow-none transition-transform duration-300 flex flex-col p-0 select-text" id="notesModal" role="region" aria-labelledby="notesModalTitle">
+                <div class="notes-modal-header px-4 py-3 border-b border-border">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-base font-semibold text-text-main" id="notesModalTitle">Notas</h3>
+                        <div class="flex items-center gap-2">
+                            <button class="toolbar-btn notes-header-collapse-btn" id="notesHeaderCollapseBtn" type="button" title="Recolher cabeçalho" aria-label="Recolher cabeçalho" aria-expanded="true">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 15 7-7 7 7"/></svg>
+                            </button>
+                            <button class="toolbar-btn" id="notesFullscreenBtn" title="Expandir para tela cheia">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path class="notes-expand-icon" d="M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                                    <path class="notes-restore-icon" d="M16 3v3a2 2 0 0 0 2 2h3M8 21v-3a2 2 0 0 0-2-2H3"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <nav class="notes-context-nav" id="notesContextNav" aria-label="Notas" hidden></nav>
+
+                <div class="notes-toolbar" id="notesToolbar">
+                        <button class="toolbar-btn notes-heading-btn" data-command="heading1" title="Título H1" aria-label="Título H1">H1</button>
+                        <button class="toolbar-btn notes-heading-btn" data-command="heading2" title="Título H2" aria-label="Título H2">H2</button>
+                        <button class="toolbar-btn notes-heading-btn" data-command="heading3" title="Título H3" aria-label="Título H3">H3</button>
+                        <div class="w-px h-6 bg-border mx-1"></div>
+                        <button class="toolbar-btn" data-command="bold" title="Negrito" aria-label="Negrito">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+                        </button>
+                        <button class="toolbar-btn" data-command="italic" title="Itálico" aria-label="Itálico">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+                        </button>
+                        <button class="toolbar-btn" data-command="strikeThrough" title="Tachado" aria-label="Tachado">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M5 5l14 7-7 7"/></svg>
+                        </button>
+                        <div class="w-px h-6 bg-border mx-1"></div>
+                        <button class="toolbar-btn" data-command="checklist" title="Checklist" aria-label="Checklist">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        </button>
+                        <button class="toolbar-btn" data-command="insertOrderedList" title="Lista numerada" aria-label="Lista numerada">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+                        </button>
+                        <button class="toolbar-btn" data-command="insertUnorderedList" title="Lista com marcadores" aria-label="Lista com marcadores">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+                        </button>
+                        <div class="w-px h-6 bg-border mx-1"></div>
+                        <button class="toolbar-btn" data-command="indent" title="Indentar" aria-label="Indentar">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><path d="M10 14L21 3"/><path d="M18 13v6"/><path d="M15 18h9"/></svg>
+                        </button>
+                        <button class="toolbar-btn" data-command="outdent" title="Desindentar" aria-label="Desindentar">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><path d="M10 14L21 3"/><path d="M18 13v6"/><path d="M15 18h9"/></svg>
+                        </button>
+                        <div class="w-px h-6 bg-border mx-1"></div>
+                        <button class="toolbar-btn" data-command="undo" title="Desfazer" aria-label="Desfazer">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                        </button>
+                        <button class="toolbar-btn" data-command="redo" title="Refazer" aria-label="Refazer">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+                        </button>
+                        <div class="w-px h-6 bg-border mx-1"></div>
+                        <button type="button" class="toolbar-btn" data-notes-color="color" title="Cor da fonte" aria-label="Cor da fonte" aria-haspopup="dialog">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6.5 12.5 10 3.5l3.5 9M7.7 9.5h4.6" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M1 17.5h18" stroke="currentColor" stroke-width="2.5"/></svg>
+                        </button>
+                        <button type="button" class="toolbar-btn" data-notes-color="backgroundColor" title="Destaque de texto" aria-label="Destaque de texto" aria-haspopup="dialog">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m14 3 7 7-10 10H4v-7zM11 6l7 7M3 23h18"/></svg>
+                        </button>
+                        <button type="button" class="toolbar-btn" data-command="moveUp" aria-label="Subir linha" title="Subir linha">↑</button>
+                        <button type="button" class="toolbar-btn" data-command="moveDown" aria-label="Descer linha" title="Descer linha">↓</button>
+                </div>
+
+                <div class="notes-editor-container flex-1 overflow-auto" id="notesEditorContainer">
+                    <div class="notes-editor" id="notesEditor" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true" autocapitalize="sentences" data-placeholder="Digite suas notas aqui..."></div>
+                </div>
+
+                <div class="notes-modal-footer flex justify-end gap-3 px-4 py-3 border-t border-border bg-bg-global shrink-0">
+                    <button type="button" id="notesSaveStatus" role="status" aria-live="polite" disabled>Salvo</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="appToastRegion" class="app-toast-region" role="region" aria-label="Avisos" aria-live="polite"></div>
+
+    <script src="./notes/editor.js"></script>
+    <script src="./notes/table-math.js"></script>
+    <script src="./notes/extras.js"></script>
+    <script src="./notes/tables.js"></script>
+    <script src="./app.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado com sucesso:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Falha ao registrar Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

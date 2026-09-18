@@ -1,0 +1,416 @@
+/* ============================================
+ * CSS BASE - Notas PWA
+ * ============================================ */
+
+/* CSS Variables - Theme Colors */
+:root {
+    --color-bg-global: #F5F5F7;
+    --color-bg-container: #FFFFFF;
+    --color-text-main: #1D1D1F;
+    --color-text-muted: #6E6E73;
+    --color-text-label: #86868B;
+    --color-text-secondary: #64748b;
+    --color-border: #DCE3ED;
+    --color-neon-blue: #0071E3;
+    --color-neon-green: #34C759;
+    --color-neon-red: #FF3B30;
+    --color-neon-purple: #AF52DE;
+    --color-neon-orange: #FF9500;
+}
+
+/* Dark Theme */
+html[data-theme="dark"] {
+    --color-bg-global: #000000;
+    --color-bg-container: #1C1C1E;
+    --color-text-main: #FFFFFF;
+    --color-text-muted: #8E8E93;
+    --color-text-label: #98989D;
+    --color-text-secondary: #98989d;
+    --color-border: #38383A;
+    --color-neon-blue: #0A84FF;
+    --color-neon-green: #30D158;
+    --color-neon-red: #FF453A;
+    --color-neon-purple: #BF5AF2;
+    --color-neon-orange: #FF9F0A;
+}
+
+/* Base Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Theme Transition */
+html.theme-transition,
+html.theme-transition * {
+    transition: background-color 400ms ease, color 400ms ease, border-color 400ms ease !important;
+}
+
+/* Button Styles */
+.toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-text-main);
+    cursor: pointer;
+    transition: all 200ms ease;
+}
+
+.toolbar-btn:hover {
+    background: var(--color-border);
+}
+
+.toolbar-btn.is-active {
+    background: var(--color-neon-blue);
+    color: white;
+}
+
+.toolbar-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.toolbar-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Utility Classes */
+.flex {
+    display: flex;
+}
+
+.flex-col {
+    flex-direction: column;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.justify-end {
+    justify-content: flex-end;
+}
+
+.gap-1 {
+    gap: 4px;
+}
+
+.gap-2 {
+    gap: 8px;
+}
+
+.gap-3 {
+    gap: 12px;
+}
+
+.border-b {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.border-t {
+    border-top: 1px solid var(--color-border);
+}
+
+.bg-bg-global {
+    background-color: var(--color-bg-global);
+}
+
+.bg-bg-container {
+    background-color: var(--color-bg-container);
+}
+
+.bg-neon-blue {
+    background-color: var(--color-neon-blue);
+}
+
+.w-px {
+    width: 1px;
+}
+
+.h-6 {
+    height: 1.5rem;
+}
+
+.bg-border {
+    background-color: var(--color-border);
+}
+
+.mx-1 {
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.text-text-main {
+    color: var(--color-text-main);
+}
+
+.text-text-muted {
+    color: var(--color-text-muted);
+}
+
+.text-neon-blue {
+    color: var(--color-neon-blue);
+}
+
+.text-sm {
+    font-size: 14px;
+}
+
+.text-base {
+    font-size: 16px;
+}
+
+.text-lg {
+    font-size: 18px;
+}
+
+.font-semibold {
+    font-weight: 600;
+}
+
+.tracking-tight {
+    letter-spacing: -0.02em;
+}
+
+.min-h-screen {
+    min-height: 100vh;
+}
+
+.overflow-x-hidden {
+    overflow-x: hidden;
+}
+
+.overflow-auto {
+    overflow: auto;
+}
+
+.select-none {
+    user-select: none;
+}
+
+.select-text {
+    user-select: text;
+}
+
+.relative {
+    position: relative;
+}
+
+.absolute {
+    position: absolute;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.h-full {
+    height: 100%;
+}
+
+.px-4 {
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.py-2 {
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.py-3 {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.py-4 {
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+
+.rounded-full {
+    border-radius: 9999px;
+}
+
+.rounded-none {
+    border-radius: 0;
+}
+
+.shadow-none {
+    box-shadow: none;
+}
+
+.transition-transform {
+    transition: transform 300ms ease;
+}
+
+.transition-all {
+    transition: all 200ms ease;
+}
+
+.shrink-0 {
+    flex-shrink: 0;
+}
+
+/* Mobile-first adjustments */
+@media (max-width: 768px) {
+    .toolbar-btn {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .toolbar-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+}
+
+/* Focus visible styles */
+:focus-visible {
+    outline: 2px solid var(--color-neon-blue);
+    outline-offset: 2px;
+}
+
+/* Glass effect for header */
+.app-header {
+    background: var(--color-bg-container);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* Modal backdrop */
+.notes-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--color-bg-global);
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms ease, visibility 300ms ease;
+}
+
+.notes-drawer.active {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Notes modal */
+.notes-modal {
+    background: var(--color-bg-container);
+    color: var(--color-text-main);
+}
+
+/* Notes toolbar */
+.notes-toolbar {
+    background: var(--color-bg-container);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 1rem;
+    flex-shrink: 0;
+}
+
+/* Notes editor container */
+.notes-editor-container {
+    background: var(--color-bg-container);
+}
+
+/* Notes footer */
+.notes-modal-footer {
+    background: var(--color-bg-global);
+}
+
+/* Avisos (toasts) usados pelas ferramentas de inserção de notas */
+.app-toast-region {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 5000;
+    pointer-events: none;
+    width: min(420px, calc(100vw - 32px));
+}
+
+.app-toast {
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: var(--color-bg-container);
+    color: var(--color-text-main);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    font-size: 14px;
+    line-height: 1.4;
+    animation: app-toast-in 220ms ease-out;
+}
+
+.app-toast.is-error {
+    border-color: var(--color-neon-red);
+    color: var(--color-neon-red);
+}
+
+@keyframes app-toast-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Visualizador de arquivos locais (imagens/PDF anexados) */
+.notes-file-viewer .notes-local-file {
+    display: block;
+    width: 100%;
+    max-height: 60vh;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}

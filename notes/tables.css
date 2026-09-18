@@ -1,0 +1,28 @@
+.notes-table-tools { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:7px 14px; background:color-mix(in srgb,var(--color-bg-container,#eff2f6) 85%,transparent); border-bottom:1px solid #8090a030; font:13px system-ui; }
+.notes-table-tools[hidden] { display:none !important; }
+.notes-table-address { min-width:30px; font-weight:600; color:var(--notes-accent,var(--color-neon-blue)); }
+.notes-table-tools input,.notes-table-tools button,.notes-table-tools select { min-height:30px; border:1px solid #8090a050; border-radius:5px; background:transparent; color:inherit; padding:4px 7px; font:inherit; }
+.notes-table-tools .notes-table-formula { flex:1 1 160px; min-width:100px; }
+.notes-table-tools button,.notes-table-tools select { cursor:pointer; }
+.notes-table-tools input:focus { outline:1px solid var(--notes-accent,var(--color-neon-blue)); }
+.notes-table-help { font-size:14px; line-height:1.7; }
+.notes-extra-dialog:has(form input[type=color]) label { grid-template-columns:135px minmax(0,1fr); }
+.notes-extra-dialog input[type=checkbox] { width:18px; height:18px; accent-color:var(--color-neon-blue); }
+.notes-extra-dialog input[type=color] { padding:2px; height:32px; }
+#notesEditor .notes-line-text:has(> table[data-note-table]) { overflow-x:auto; }
+#notesEditor table[data-note-table] { max-width:none; }
+#notesEditor td[data-formula],#notesEditor th[data-formula] { font-variant-numeric:tabular-nums; }
+#notesEditor [data-formula-error=true] { color:#b42318; }
+::highlight(notes-table-selection) { background-color:#729dc42b; }
+
+.notes-table-formats { display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-basis:100%; }
+.notes-table-formats label { display:flex; align-items:center; gap:5px; font-size:12px; }
+.notes-table-formats label[hidden] { display:none; }
+.notes-table-formats input[type=number] { width:55px; min-width:0; }
+
+#notesEditor table[data-note-table] td[aria-label] { position:relative; padding-top:17px; }
+#notesEditor table[data-note-table] td[aria-label]::before { content:attr(aria-label); position:absolute; top:1px; left:5px; font:9px system-ui; color:var(--color-text-secondary,#687789); opacity:.7; pointer-events:none; }
+
+/* Descendant editing cursors must not override the resize affordance. */
+#notesEditor[data-table-resize="x"], #notesEditor[data-table-resize="x"] * { cursor:col-resize !important; }
+#notesEditor[data-table-resize="y"], #notesEditor[data-table-resize="y"] * { cursor:row-resize !important; }

@@ -1,0 +1,210 @@
+# Notas PWA - Editor de Notas Mobile
+
+Editor de notas avançado como Progressive Web App (PWA) para uso em celular, com todas as funcionalidades de formatação, hierarquia e checklist do sistema original.
+
+## 🌟 Funcionalidades
+
+### Editor de Notas Completo
+- **Hierarquia**: Sistema de níveis com indentação (nível 0, 1, 2, etc.)
+- **Checklist**: Checkbox com completion tracking, timestamps e batch completion
+- **Formatação**: Bold, italic, tachado, headings (H1-H3)
+- **Listas**: Lista numerada e com marcadores
+- **Cores**: Paleta de cores personalizadas para texto e destaque (background)
+- **Navegação**: Setas para mover itens, colapso/expansão de hierarquias
+- **Blocos de código**: Bloco de código com realce e linguagem
+- **Tabelas**: Tabela estilo planilha com fórmulas (SOMA, MEDIA, POTENCIA, etc.), formatos de número/moeda/porcentagem, cores e redimensionamento
+- **Inserir**: Imagem, arquivo, tabela, data, vídeo do YouTube (incorporado) e divisor
+- **Links**: Inserir/editar links com auto-link do texto digitado
+- **Modelos de nota**: Salvar a nota atual como modelo e reaplicá-la
+- **Undo/Redo**: Histórico de estados com atalhos
+- **Toolbar**: Comandos de formatação, cores, undo/redo e menu "mais ferramentas"
+- **Fullscreen**: Modo tela cheia
+- **Temas**: Suporte a temas claro e escuro
+- **Persistência**: Salvo automaticamente no LocalStorage do dispositivo
+
+### Funcionalidades PWA
+- **Instalável**: Pode ser instalado como app no celular
+- **Offline**: Funciona sem conexão com a internet
+- **Mobile-first**: Interface otimizada para celular
+- **Service Worker**: Cache de assets para performance
+- **GitHub Pages Ready**: Estrutura pronta para deploy estático
+
+## 📱 Como Usar
+
+### Localmente
+1. Clone o repositório ou copie a pasta `notas-pwa`
+2. Abra o arquivo `index.html` em um navegador
+3. Para testar como PWA, use um servidor local:
+   ```bash
+   # Usando Python
+   python -m http.server 8000
+   
+   # Usando Node.js
+   npx serve
+   ```
+4. Acesse `http://localhost:8000`
+
+### Deploy no GitHub Pages
+1. Crie um repositório no GitHub
+2. Faça upload da pasta `notas-pwa` para o repositório
+3. Ative GitHub Pages:
+   - Vá em Settings > Pages
+   - Selecione a branch (main/master)
+   - Salve
+4. A PWA estará disponível em `https://seu-usuario.github.io/seu-repositorio`
+
+### Instalar no Celular
+1. Abra a PWA no navegador do celular (Chrome/Safari)
+2. No Chrome: Toque no menu (três pontos) > "Instalar app" ou "Adicionar à tela inicial"
+3. No Safari: Toque no botão de compartilhar > "Adicionar à tela inicial"
+4. A PWA será instalada como um app nativo
+
+## ⌨️ Atalhos de Teclado
+
+- `Ctrl+B`: Negrito
+- `Ctrl+I`: Itálico
+- `Ctrl+Z`: Desfazer
+- `Ctrl+Shift+Z` ou `Ctrl+Y`: Refazer
+- `Ctrl+S`: Salvar
+- `Tab`: Indentar
+- `Shift+Tab`: Desindentar
+- `Alt+ArrowUp`: Mover item para cima
+- `Alt+ArrowDown`: Mover item para baixo
+- `Ctrl+Alt+1`: Heading 1
+- `Ctrl+Alt+2`: Heading 2
+- `Ctrl+Alt+3`: Heading 3
+- `Ctrl+Alt+4`: Checklist
+- `Ctrl+Alt+5`: Lista numerada
+- `Ctrl+Alt+6`: Lista com marcadores
+- `Ctrl+Alt+7`: Tachado
+- `Ctrl+Alt+8`: Cor do texto
+- `Ctrl+Alt+9`: Destaque de texto
+- `Ctrl+Alt+0`: Tela cheia
+- `Ctrl+Alt+T`: Recolher cabeçalho
+
+## 🎨 Temas
+
+A PWA suporta temas claro e escuro:
+- **Automático**: Detecta a preferência do sistema
+- **Manual**: Clique no botão de tema no header para alternar
+- **Persistente**: A escolha é salva no LocalStorage
+
+## 💾 Persistência
+
+As notas são salvas automaticamente:
+- **LocalStorage**: Dados salvos no navegador
+- **Auto-save**: Salva a cada 1 segundo após mudanças
+- **Draft**: Rascunho local em caso de fechamento não salvo
+- **Status**: Indicador de "Salvo" ou "Alterações pendentes"
+
+## 📁 Estrutura de Arquivos
+
+```
+notas-pwa/
+├── index.html              # Página principal
+├── manifest.json           # Config PWA
+├── sw.js                   # Service Worker
+├── styles.css              # CSS base
+├── app.js                  # Lógica da aplicação (camada local, sem backend)
+├── notes/
+│   ├── editor.js           # Editor completo (mesmo motor do sistema)
+│   ├── editor.css          # Estilos do editor
+│   ├── extras.js           # Ferramentas: inserir, link, modelos, mídia
+│   ├── extras.css          # Estilos das ferramentas extras
+│   ├── table-math.js       # Avaliador de fórmulas das tabelas
+│   ├── tables.js           # Ferramentas contextuais de tabela
+│   └── tables.css          # Estilos das tabelas
+├── icon-192.png            # Ícone 192x192
+├── icon-512.png            # Ícone 512x512
+├── icon.svg                # Ícone SVG
+└── README.md               # Este arquivo
+```
+
+## 🔧 Personalização
+
+### Cores do Tema
+Edite as variáveis CSS em `styles.css`:
+```css
+:root {
+    --color-neon-blue: #0071E3;
+    --color-neon-green: #34C759;
+    /* ... outras cores */
+}
+```
+
+### Comportamento do Editor
+O editor usa o sistema `NotesDocument` do original, mantendo todas as regras:
+- Completion position restoration
+- Cascade completion
+- Auto-renumbering
+- HTML normalization
+- Sanitização de scripts
+
+## 🚀 Deploy
+
+### GitHub Pages (Recomendado)
+1. Push dos arquivos para o GitHub
+2. Ativar Pages nas configurações do repositório
+3. Deploy automático via Actions (opcional)
+
+### Netlify
+1. Conecte o repositório ao Netlify
+2. Configure as configurações de build (não necessário para HTML estático)
+3. Deploy automático
+
+### Vercel
+1. Importe o repositório no Vercel
+2. Configure como projeto estático
+3. Deploy automático
+
+## 📝 Notas Técnicas
+
+### Dependências
+- Sem dependências externas (vanilla JS)
+- Fontes do Google Fonts (Inter)
+- Service Worker para cache offline
+
+### Compatibilidade
+- Chrome/Edge: Suporte completo
+- Safari: Suporte completo (iOS 14.5+)
+- Firefox: Suporte completo
+- Navegadores móveis: Otimizado para mobile
+
+### Performance
+- Service Worker para cache de assets
+- Lazy loading de funcionalidades
+- CSS otimizado com variáveis
+- JavaScript vanilla (sem frameworks)
+
+## 🔒 Privacidade
+
+- Dados salvos apenas no LocalStorage do dispositivo
+- Sem envio de dados para servidores externos
+- Sem tracking ou analytics
+- Totalmente offline
+
+## 🤝 Contribuindo
+
+Este é um fork do editor de notas do sistema original. Para contribuir:
+1. Mantenha a compatibilidade com o sistema `NotesDocument`
+2. Preservar todas as funcionalidades do editor
+3. Teste em múltiplos dispositivos
+4. Mantenha o código limpo e documentado
+
+## 📄 Licença
+
+Mantenha a mesma licença do projeto original.
+
+## 🎯 Próximos Passos (Opcionais)
+
+- Exportar/importar notas (JSON/HTML)
+- Sincronização via GitHub Gist
+- Suporte a imagens
+- Busca de notas
+- Tags/categorias
+- Backup automático
+
+---
+
+**Desenvolvido como PWA standalone do sistema de notas original.**
+**Todas as funcionalidades e regras de formatação foram preservadas.**
