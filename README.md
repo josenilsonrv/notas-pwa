@@ -134,6 +134,7 @@ notas-pwa/
 ├── icon.svg                # Ícone SVG
 ├── theme-origem.css        # Tema/regras do modal extraídos do CSS compilado do original (gerado)
 ├── _headers                # Regras de cache/headers para Cloudflare Pages
+├── _redirects              # Mantém /sw.js e /manifest.json fora do fallback de SPA
 ├── tools/
 │   ├── gerar-icones.cjs        # Regera os PNGs dos ícones (sem dependências)
 │   ├── extrair-tema.cjs        # Extrai o tema do CSS compilado do original
@@ -171,6 +172,7 @@ npm install      # instala o Playwright (usa o Edge já instalado; não baixa na
 npm test         # roda a suíte completa e gera docs/RELATORIO-TESTES.md
 
 node tests/<arquivo>.cjs        # 1 único teste (segundos) — o mais rápido
+node tests/pwa_service_worker.cjs   # deploy/Service Worker (MIME, skipWaiting, fallback de SPA)
 npm test -- --filter=toolbar    # só os testes que casam com o padrão
 npm run test:baseline           # suíte completa; só falha se houver falha NOVA
 npm test -- --retry=1           # repete 1x um teste que falhou (timeout transitório)
@@ -229,6 +231,44 @@ evitando que o celular fique preso em uma versão antiga do `sw.js`, `index.html
 > Ao publicar alterações nos assets, incremente `CACHE_NAME` em `sw.js` (ex.: `notas-pwa-v3`) para
 > forçar a atualização do cache do Service Worker nos dispositivos.
 
+### Service Worker e fallback de SPA (importante)
+
+Se o host estiver configurado como **SPA** (qualquer rota desconhecida → `index.html` com status 200),
+o `sw.js` pode acabar respondido como `text/html`. O navegador **rejeita em silêncio** um Service
+Worker que não é JavaScript: o app continua abrindo, mas **nunca mais atualiza** no dispositivo.
+
+O repositório já resolve isso:
+
+* `_redirects` - `/sw.js` e `/manifest.json` são servidos como arquivos estáticos, **antes** de
+  qualquer catch-all do `index.html`;
+* `_headers` - reforça `Content-Type: application/javascript; charset=utf-8`, `Cache-Control: no-cache`
+  e `Service-Worker-Allowed: /` para o `/sw.js`;
+* `index.html` - registra com `new URL("sw.js", document.baseURI)` e `{ scope: "./", updateViaCache: "none" }`
+  (ignora o cache HTTP do `sw.js`), checa atualização ao carregar e ao voltar para a aba, recarrega
+  uma vez no `controllerchange` e **avisa** (bootGuard) se o servidor devolver HTML no lugar do JavaScript.
+
+> Se o fallback estiver configurado fora do repositório, replique a exclusão. Em nginx:
+> ```nginx
+> location = /sw.js          { try_files $uri =404; }
+> location = /manifest.json  { try_files $uri =404; }
+> location /                 { try_files $uri /index.html; }
+> ```
+> No Netlify, mantenha as regras de `/sw.js` e `/manifest.json` **antes** do `/* /index.html 200`
+> (é exatamente o que o `_redirects` deste repositório faz).
+
+**Como conferir o deploy:**
+
+```bash
+curl -s  https://SEU-DOMINIO/sw.js | grep notas-pwa-v          # versão atual (ex.: notas-pwa-v19)
+curl -sI https://SEU-DOMINIO/sw.js | grep -i content-type      # deve ser application/javascript
+```
+
+No navegador: DevTools -> **Application -> Service Workers** -> o script deve vir de
+`https://SEU-DOMINIO/sw.js` (nunca de um `index.html`).
+
+O teste `tests/pwa_service_worker.cjs` sobe um servidor real **com fallback de SPA** e valida
+tudo isso automaticamente.
+
 ### GitHub Pages
 1. Push dos arquivos para o GitHub
 2. Ativar Pages nas configurações do repositório (branch `main`, pasta `/ (root)`)
@@ -238,6 +278,7 @@ evitando que o celular fique preso em uma versão antiga do `sw.js`, `index.html
 1. Conecte o repositório ao Netlify
 2. Configure as configurações de build (não necessário para HTML estático)
 3. Deploy automático
+4. O arquivo _redirects do repositório mantém /sw.js e /manifest.json fora do fallback de SPA - mantenha essas regras antes de qualquer /* /index.html 200
 
 ### Vercel
 1. Importe o repositório no Vercel

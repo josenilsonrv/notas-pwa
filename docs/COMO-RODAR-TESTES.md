@@ -43,6 +43,7 @@ Get-Process msedge -ErrorAction SilentlyContinue | Stop-Process -Force
 
 ```bash
 node tests/toolbar_pwa.cjs        # barra/teclado
+node tests/pwa_service_worker.cjs  # deploy/Service Worker (MIME + fallback de SPA)
 node tests/tema_switch.cjs        # tema + theme-color
 node tests/nota_grande_pwa.cjs    # nota com ~1 milhão de caracteres
 ```

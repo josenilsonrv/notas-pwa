@@ -1,4 +1,4 @@
-﻿# Correção: travamento na modal "Editar barra de ferramentas"
+# Correção: travamento na modal "Editar barra de ferramentas"
 
 > Relato: **ao clicar no botão com a seta apontando para a esquerda** (ao lado de um
 > dos títulos da modal "Editar barra de ferramentas") o app travava — "trava tudo,
@@ -149,7 +149,7 @@ SVG com `pointer-events: none`, `draggable` = false e `contextmenu` com `default
 
 ## 7. Deploy e Service Worker (fallback de SPA)
 
-Relato: o host publica com **fallback de SPA** (rota desconhecida -> `index.html` com 200),
+Relato: o host publica com **fallback de SPA** (rota desconhecida → `index.html` com 200),
 entao o `sw.js` podia ser respondido como `text/html`. O navegador **rejeita em silencio** um
 Service Worker que nao e JavaScript, e o PWA nunca mais atualiza no cliente.
 

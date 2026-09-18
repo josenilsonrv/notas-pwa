@@ -1,4 +1,4 @@
-﻿# Cloudflare Pages / Netlify: regras avaliadas de cima para baixo.
+# Cloudflare Pages / Netlify: regras avaliadas de cima para baixo.
 #
 # O sw.js e o manifest NAO podem cair no fallback de SPA. Um Service Worker servido
 # como text/html (status 200) e rejeitado pelo navegador EM SILENCIO: o PWA nunca

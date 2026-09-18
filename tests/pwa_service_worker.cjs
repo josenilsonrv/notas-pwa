@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Deploy/PWA: o Service Worker precisa ser servido como JavaScript NA RAIZ e nao
  * cair no fallback de SPA do host. Um sw.js respondido como text/html (status 200)
  * e rejeitado pelo navegador em silencio e o PWA para de atualizar no cliente.
