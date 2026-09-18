@@ -15,6 +15,7 @@ desktop.ini
 /o[A-Z].txt
 /r[0-9].txt
 /rdone.txt
+/done.txt
 
 # Temporários
 *.tmp

@@ -62,15 +62,23 @@ const ordemDe=page=>page.evaluate(()=>[...app.chavesToolbar().values()]);
   await page.waitForTimeout(300);
 
   // 3) Dock acima do teclado (inset simulado, pois não há teclado no headless).
-  await page.evaluate(()=>app.aplicarToolbarTeclado(320));
+  // Viewport de celular com altura <= 720px: é aí que o CSS do original dá
+  // transform/backdrop-filter ao modal (containing block) e quebra o fixed.
+  await page.setViewportSize({width:390,height:700});
+  await page.waitForTimeout(300);
+  await page.evaluate(()=>app.aplicarToolbarTeclado());
+  assert.equal(await page.evaluate(()=>document.getElementById('notesToolbar').classList.contains('notes-toolbar-docked')),false,'sem teclado nao doca');
+  await page.evaluate(()=>app.aplicarToolbarTeclado(260));
   const dock=await page.evaluate(()=>{const t=document.getElementById('notesToolbar');const s=getComputedStyle(t);return{classe:t.classList.contains('notes-toolbar-docked'),pos:s.position,bottom:s.bottom,pad:document.getElementById('notesEditor').style.paddingBottom};});
   assert.equal(dock.classe,true,'barra docada');
   assert.equal(dock.pos,'fixed','barra fixa enquanto o teclado esta aberto');
-  assert.equal(dock.bottom,'320px','barra logo acima do teclado');
+  assert.ok(parseFloat(dock.bottom)>0,'barra deslocada para cima do teclado');
   assert.ok(parseFloat(dock.pad)>0,'editor ganha espaco para nao ficar sob a barra');
   const visivel=await page.locator('#notesToolbar').boundingBox();
   const alturaJanela=await page.evaluate(()=>window.innerHeight);
-  assert.ok(Math.abs((visivel.y+visivel.height)-(alturaJanela-320))<5,'barra visivelmente logo acima do teclado');
+  assert.ok(Math.abs((visivel.y+visivel.height)-(alturaJanela-260))<5,'barra visivelmente logo acima do teclado ('+JSON.stringify({topoBarra:Math.round(visivel.y+visivel.height),esperado:alturaJanela-260})+')');
+  const modalBox=await page.locator('#notesModal').boundingBox();
+  assert.ok(Math.abs(visivel.x-modalBox.x)<2&&Math.abs(visivel.width-modalBox.width)<2,'barra alinhada com o modal');
   await page.evaluate(()=>app.aplicarToolbarTeclado(0));
   assert.equal(await page.evaluate(()=>document.getElementById('notesToolbar').classList.contains('notes-toolbar-docked')),false,'barra volta ao normal');
   assert.equal(await page.evaluate(()=>document.getElementById('notesEditor').style.paddingBottom),'','espaco extra removido');

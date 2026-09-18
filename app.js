@@ -92,6 +92,8 @@ class NotesPWA {
         this.notesToolbarConfigurada = false;
         this.notesToolbarObserver = null;
         this.notesToolbarTecladoAtivo = false;
+        this.notesToolbarTecladoPoll = null;
+        this.notesViewportBase = 0;
         this.ordemToolbarOriginal = null;
         this.notesToolbarEditorRedraw = null;
 
@@ -739,41 +741,83 @@ class NotesPWA {
         if (this.notesToolbarTecladoAtivo) return;
         this.notesToolbarTecladoAtivo = true;
         const atualizar = () => this.aplicarToolbarTeclado();
+        // Altura do layout SEM teclado (baseline): necessária porque no iOS o
+        // `innerHeight` encolhe junto com o teclado e a comparação simples dá 0.
+        const layout = document.documentElement.clientHeight || window.innerHeight;
+        this.notesViewportBase = Math.max(layout, window.innerHeight || 0, window.visualViewport?.height || 0);
         const vv = window.visualViewport;
         vv?.addEventListener('resize', atualizar);
         vv?.addEventListener('scroll', atualizar);
         window.addEventListener('resize', atualizar);
-        document.getElementById('notesEditor')?.addEventListener('focusin', atualizar);
-        document.addEventListener('focusout', event => { if (event.target && event.target.id === 'notesEditor') atualizar(); });
+        window.addEventListener('orientationchange', atualizar);
+        document.addEventListener('visibilitychange', atualizar);
+        const editor = document.getElementById('notesEditor');
+        editor?.addEventListener('focusin', () => {
+            // O teclado anima: reavalia algumas vezes além de acompanhar os eventos.
+            [0, 80, 180, 320, 520, 800].forEach(atraso => setTimeout(atualizar, atraso));
+            clearInterval(this.notesToolbarTecladoPoll);
+            this.notesToolbarTecladoPoll = setInterval(atualizar, 250);
+        });
+        document.addEventListener('focusout', event => {
+            if (event.target && event.target.id === 'notesEditor') {
+                clearInterval(this.notesToolbarTecladoPoll);
+                this.notesToolbarTecladoPoll = null;
+                atualizar();
+            }
+        });
     }
 
     /**
      * Doca a barra acima do teclado. `insetForcado` (px) permite testar sem teclado real.
+     *
+     * O `#notesToolbar` tem o `#notesModal` como containing block (o modal recebe
+     * `transform`/`backdrop-filter` no CSS do original), então a posição é calculada
+     * medindo o referencial real em vez de assumir a viewport.
      */
     aplicarToolbarTeclado(insetForcado) {
         const toolbar = document.getElementById('notesToolbar');
         if (!toolbar) return;
         const editor = document.getElementById('notesEditor');
         const vv = window.visualViewport;
-        let inset = 0;
-        if (typeof insetForcado === 'number') inset = Math.max(0, Math.round(insetForcado));
-        else if (vv && vv.scale === 1) inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+        // `clientHeight` = layout viewport: NÃO encolhe com o teclado no iOS.
+        const layout = document.documentElement.clientHeight || window.innerHeight;
+        const alturaVisual = vv ? vv.height : layout;
+        const deslocamento = vv ? vv.offsetTop : 0;
+        const estaDockada = toolbar.classList.contains('notes-toolbar-docked');
+
+        let teclado;
+        let inset;
+        if (typeof insetForcado === 'number') {
+            teclado = Math.max(0, Math.round(insetForcado));
+            inset = teclado;
+        } else {
+            if (!estaDockada) this.notesViewportBase = Math.max(layout, window.innerHeight || 0, alturaVisual);
+            const base = this.notesViewportBase || layout;
+            teclado = Math.max(0, Math.round(base - alturaVisual));
+            inset = Math.max(0, Math.round(layout - alturaVisual - deslocamento));
+        }
+
         const backdropAtivo = document.getElementById('notesModalBackdrop')?.classList.contains('active');
-        const dockar = inset > 100 && backdropAtivo && !toolbar.hidden;
-        if (!dockar) {
-            if (toolbar.classList.contains('notes-toolbar-docked')) {
+        const deveDockar = teclado > 120 && backdropAtivo && !toolbar.hidden;
+        if (!deveDockar) {
+            if (estaDockada) {
                 toolbar.classList.remove('notes-toolbar-docked');
                 ['--notes-toolbar-dock-bottom', '--notes-toolbar-dock-left', '--notes-toolbar-dock-width'].forEach(nome => toolbar.style.removeProperty(nome));
                 editor?.style.removeProperty('padding-bottom');
             }
             return;
         }
+
         const modal = document.getElementById('notesModal');
-        const caixa = modal ? modal.getBoundingClientRect() : { left: 0, width: window.innerWidth };
+        const caixa = modal ? modal.getBoundingClientRect() : { left: 0, width: window.innerWidth, bottom: layout };
         toolbar.classList.add('notes-toolbar-docked');
-        toolbar.style.setProperty('--notes-toolbar-dock-bottom', inset + 'px');
-        toolbar.style.setProperty('--notes-toolbar-dock-left', Math.max(0, caixa.left) + 'px');
-        toolbar.style.setProperty('--notes-toolbar-dock-width', Math.min(caixa.width, window.innerWidth - Math.max(0, caixa.left)) + 'px');
+        toolbar.style.setProperty('--notes-toolbar-dock-width', Math.round(Math.max(0, Math.min(caixa.width, window.innerWidth - Math.max(0, caixa.left)))) + 'px');
+        // Mede o referencial (comporta-se igual com containing block = modal ou viewport).
+        toolbar.style.setProperty('--notes-toolbar-dock-left', '0px');
+        toolbar.style.setProperty('--notes-toolbar-dock-bottom', '0px');
+        const zerado = toolbar.getBoundingClientRect();
+        toolbar.style.setProperty('--notes-toolbar-dock-left', Math.round(Math.max(0, caixa.left) - zerado.left) + 'px');
+        toolbar.style.setProperty('--notes-toolbar-dock-bottom', Math.round(zerado.bottom - (layout - inset)) + 'px');
         if (editor) editor.style.paddingBottom = (toolbar.offsetHeight + 12) + 'px';
     }
     // ⚡ [FIM: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]
