@@ -10,6 +10,12 @@ desktop.ini
 # Logs
 *.log
 
+# Saídas temporárias de diagnóstico (scripts inline)
+/orig*.txt
+/o[A-Z].txt
+/r[0-9].txt
+/rdone.txt
+
 # Temporários
 *.tmp
 *.bak
