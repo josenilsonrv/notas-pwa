@@ -361,3 +361,24 @@ erros de pagina: []
 2. **Recarregue uma ou duas vezes**: nesse carregamento o `sw.js` novo (v10) é
    detectado, instalado e assume (`skipWaiting`/`clients.claim`).
 3. A partir daí o app abre **na hora** e **offline**, sem tela branca.
+
+### 11.6 Correção extra (v11) — cache incompleto deixava o app "à meio"
+
+Sintoma: *"a tela da nota fica mais recuada, aparecendo de forma travada"*.
+
+Na v10 a instalação ficou **tolerante** (`Promise.allSettled`): se um asset falhasse
+ao baixar (rede móvel instável), ele ficava **fora do cache**. Com *cache-first*, o
+app era então servido **sem o `app.js`** — o JavaScript não rodava, o modal **não
+recebia a classe `active`** e aparecia **recuado/parado** (o sintoma relatado).
+
+Agora a instalação **só conclui se todos os assets essenciais estiverem no cache**
+(até 3 tentativas cada). Se algum falhar, o cache é descartado e a instalação falha,
+mantendo a versão anterior funcionando em vez de servir um app quebrado.
+
+Validação (servidor local, offline):
+
+```
+cache: {"cache":"notas-pwa-v11","itens":14}
+OFFLINE carregou em 198ms: {"titulo":"Notas","editor":true,"modalAtivo":true,"barraVisivel":true}
+erros de pagina: []
+```

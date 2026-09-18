@@ -15,10 +15,21 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
-const CACHE_NAME = 'notas-pwa-v10';
+const CACHE_NAME = 'notas-pwa-v11';
 const TIMEOUT_MS = 3000;
 
-const STATIC_ASSETS = [
+const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>Notas</title></head><body style="font:16px system-ui;padding:24px">' +
+    '<h1>Notas</h1><p>Sem conexão e sem cópia local do app. Abra uma vez com internet ' +
+    'para que o aplicativo fique disponível offline.</p></body></html>';
+
+/**
+ * Assets ESSENCIAIS: sem eles o app não funciona (o app.js aplica a classe `active`
+ * no modal, monta o editor, etc.). A instalação só é concluída se TODOS estiverem
+ * no cache — assim o modo offline nunca serve um app quebrado/à meio.
+ */
+const ESSENCIAIS = [
     './',
     './index.html',
     './styles.css',
@@ -35,11 +46,18 @@ const STATIC_ASSETS = [
     './icon.svg'
 ];
 
-const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
-    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<title>Notas</title></head><body style="font:16px system-ui;padding:24px">' +
-    '<h1>Notas</h1><p>Sem conexão e sem cópia local do app. Abra uma vez com internet ' +
-    'para que o aplicativo fique disponível offline.</p></body></html>';
+/** `cache.add` com algumas tentativas (rede móvel costuma falhar de forma intermitente). */
+const adicionarComRetry = async (cache, asset, tentativas = 3) => {
+    for (let i = 0; i < tentativas; i++) {
+        try {
+            await cache.add(asset);
+            return true;
+        } catch (_) {
+            // tenta de novo
+        }
+    }
+    return false;
+};
 
 /** Busca na rede com limite de tempo (nunca deixa o carregamento pendurado). */
 const buscarComTimeout = (request, ms) => new Promise((resolve, reject) => {
@@ -75,9 +93,13 @@ const revalidar = (request) => {
 self.addEventListener('install', (event) => {
     event.waitUntil((async () => {
         const cache = await caches.open(CACHE_NAME);
-        // Tolerante: um asset que falhe não impede a instalação do Service Worker
-        // nem deixa a página sem os outros recursos.
-        await Promise.allSettled(STATIC_ASSETS.map((asset) => cache.add(asset)));
+        const resultados = await Promise.all(ESSENCIAIS.map((asset) => adicionarComRetry(cache, asset)));
+        if (resultados.some((ok) => !ok)) {
+            // Cache incompleto NUNCA deve ser usado: remove e falha a instalação
+            // (mantém a versão anterior funcionando) em vez de servir app quebrado.
+            await caches.delete(CACHE_NAME);
+            throw new Error('Service Worker: assets essenciais não puderam ser cacheados');
+        }
         await self.skipWaiting();
         console.log('Service Worker: instalado');
     })());
