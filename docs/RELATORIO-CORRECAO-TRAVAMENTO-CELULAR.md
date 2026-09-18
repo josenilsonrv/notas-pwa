@@ -1,8 +1,11 @@
-# Correção: o app "travava" no celular (poll do teclado)
+# Correção: o app "travava" no celular
 
 > Relato: **"o aplicativo simplesmente travou no celular"**.
-> Documento da investigação e da correção, etapa por etapa.
-> Arquivos alterados: `app.js`, `sw.js`, `tests/toolbar_pwa.cjs`.
+> Documento da investigação e das correções, etapa por etapa — em **duas rodadas**:
+> 1. **vazamento do poll do teclado** (seções 1–9);
+> 2. **robustez para notas grandes** (seção 10) — a causa confirmada do travamento
+>    no aparelho ("em aba anônima, sem dados, abre normal").
+> Arquivos alterados: `app.js`, `notes/editor.js`, `sw.js`, `tests/toolbar_pwa.cjs`.
 
 ---
 
@@ -243,3 +246,69 @@ npm test                            # suíte completa: 27 passam / 12 falham / 1
 * Código: `app.js` (`NotesPWA#ativarToolbarTeclado`, `NotesPWA#aplicarToolbarTeclado`).
 * Teste: `tests/toolbar_pwa.cjs` (casos 3 e 3b).
 * Relatórios gerados: `docs/RELATORIO-TESTES.md`, `docs/relatorio-testes.json`.
+
+---
+
+## 10. Segunda rodada — robustez para notas grandes (causa confirmada)
+
+### 10.1 Confirmação do usuário
+
+> "Acho que é a nota ficando pesada; **em modo anônimo (sem dados) carregou normal**."
+
+Isso fecha o diagnóstico: o problema **está no dado** (a nota crescendo), não no
+aparelho. O aviso **"UI do sistema não está respondendo" ao abrir** acontece porque a
+thread principal fica bloqueada tempo demais montando a nota.
+
+### 10.2 Medições (boot real, viewport de celular 390×700)
+
+| Cenário | Boot |
+| --- | --- |
+| 300 linhas | ~0,5 s |
+| 1000 linhas | ~1,2 s |
+| 3000 linhas | ~2,4 s |
+| 100 notas × 20 linhas | ~0,14 s |
+| 300 notas × 20 linhas | ~0,22 s |
+
+Perfil de **uma abertura** (2000 linhas ≈ 295 KB de HTML):
+
+| Operação | Antes | Depois |
+| --- | --- | --- |
+| `resetNotesHistory` (serializa o documento em JSON) | ~582 ms | **0 ms no caminho crítico** (adiado) |
+| `refreshNotesCollapseControls` (monta a UI) | ~171–274 ms | igual (necessário) |
+| `getCleanNotesHtml` | ~168–240 ms | igual |
+| **Abertura total** | **~0,9–1,1 s** | **~0,75 s** |
+
+O maior custo era o histórico: cada `resetNotesHistory` serializa o documento inteiro
+em JSON (O(n)) e era chamado **duas vezes** na abertura.
+
+### 10.3 O que mudou
+
+* `app.js openNotesModal`: **removeu o `resetNotesHistory()` duplicado** — o motor já
+  reinicia o histórico em `beginNotesSession`.
+* `app.js openNotesModal`: em vez de `salvarNotasLocais()` (que reescrevia a **lista
+  inteira** de notas, com anexos em base64, a cada abertura), grava **só o id da nota
+  ativa** (`marcarNotaAtiva`).
+* `app.js apiCall`: usa a lista em memória (`projectsData`) em vez de fazer
+  `JSON.parse` de todas as notas a cada salvamento.
+* `notes/editor.js resetNotesHistory`: para **notas grandes** (HTML ≥ 120 KB, marcado
+  por `notesHistoricoAdiado`), o snapshot inicial é **adiado** (~350 ms), fora do
+  caminho crítico. O baseline continua correto: é capturado **antes da primeira
+  edição**, no `beforeinput` (`if(!this.notesHistory)this.resetNotesHistory()`).
+* `app.js updateNotesHistoryButtons`: seguro quando ainda não há snapshot (evita erro
+  enquanto o histórico está adiado).
+
+### 10.4 Resultado
+
+* A abertura de uma nota grande **não faz mais um bloqueio longo antes de pintar**.
+* Desfazer/refazer continuam funcionando (`notes_parent_undo`, `notes_million`,
+  `notes_million_extras`, `notes_large_document` passam).
+* Suíte completa: **27 passam / 12 falham / 1 n/a** — **idêntico ao baseline** (as 12
+  falhas são pré-existentes).
+* `sw.js` foi para **v9** para o celular buscar a versão nova.
+
+### 10.5 Se ainda estiver pesado
+
+O custo restante é proporcional ao tamanho da nota (`refreshNotesCollapseControls` +
+`getCleanNotesHtml` + parse do HTML). Para notas **muito** grandes, o próximo passo é
+um **"modo nota grande"**: montar os controles aos poucos e/ou oferecer dividir a
+nota. Hoje o limite confortável fica na casa de **milhares de linhas**.

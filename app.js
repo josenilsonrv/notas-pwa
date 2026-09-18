@@ -130,6 +130,7 @@ class NotesPWA {
         if (typeof installNotesExtras === 'function') installNotesExtras(NotesPWA);
         if (typeof installNotesTables === 'function') installNotesTables(NotesPWA);
         installLocalNotesStorage(NotesPWA);
+        installHistoricoAdiado(NotesPWA);
     }
 
     // 🔄 [INÍCIO: ESTADO - PERSISTÊNCIA LOCAL (SEM BACKEND)]
@@ -190,6 +191,11 @@ class NotesPWA {
         this.gravarNotasLocais(this.projectsData || []);
     }
 
+    /** Grava só o id da nota ativa (evita reescrever a lista inteira). */
+    marcarNotaAtiva(id) {
+        try { localStorage.setItem('notas-pwa-nota-ativa', String(id)); } catch (_) { /* storage opcional */ }
+    }
+
     lerNotaAtiva() {
         try { return localStorage.getItem('notas-pwa-nota-ativa') || ''; } catch (_) { return ''; }
     }
@@ -203,7 +209,9 @@ class NotesPWA {
                 const payload = JSON.parse(options.body);
                 if (typeof payload.notas === 'string') {
                     this.saveContentToStorage(payload.notas); // espelho (compatibilidade)
-                    const lista = this.lerNotasLocais();
+                    // Usa a lista em memória: evita um JSON.parse de todas as notas
+                    // a cada gravamento (pesado quando há anexos embutidos).
+                    const lista = this.projectsData || [];
                     const nota = lista.find(item => item.id === this.currentNotesProjectId) || lista[0];
                     if (nota) {
                         nota.notas = payload.notas;
@@ -237,7 +245,14 @@ class NotesPWA {
 
         const editor = document.getElementById('notesEditor');
         editor.innerHTML = project.notas || '<div class="notes-line" data-level="0"><div class="notes-line-text"><br></div></div>';
-        this.resetNotesHistory();
+        // Notas grandes: adia o snapshot inicial do histórico (medido em ~580 ms
+        // para 2000 linhas) para depois do primeiro paint, para o aparelho não
+        // bloquear a thread principal e o Android não acusar "UI do sistema não
+        // responde". O baseline é capturado antes da primeira edição (beforeinput).
+        this.notesHistoricoAdiado = (project.notas || '').length >= 120000;
+        // O histórico é reiniciado logo depois pelo motor (`beginNotesSession`).
+        // Refazer o snapshot completo aqui em cima duplicava o trabalho mais caro
+        // da abertura (medido em ~270 ms para 2000 linhas) sem necessidade.
         this.refreshNotesCollapseControls();
 
         // Largura do modal: o motor usa var(--notes-width, 50vw) e calcula a largura
@@ -245,7 +260,10 @@ class NotesPWA {
         document.getElementById('notesModalBackdrop')?.classList.add('active');
 
         this.renderNotesNav();
-        this.salvarNotasLocais();
+        // Só a nota ativa muda aqui: reescrever a lista inteira (JSON.stringify de
+        // todas as notas, com anexos em base64) a cada abertura travava o aparelho
+        // em notas grandes.
+        this.marcarNotaAtiva(project.id);
 
         setTimeout(() => this.placeNotesCursorAtEnd(editor), 100);
     }
@@ -498,7 +516,7 @@ class NotesPWA {
         const undoButton = document.querySelector('#notesToolbar [data-command="undo"]');
         const redoButton = document.querySelector('#notesToolbar [data-command="redo"]');
         if (undoButton) undoButton.disabled = this.notesHistoryIndex <= 0;
-        if (redoButton) redoButton.disabled = this.notesHistoryIndex >= this.notesHistory.length - 1;
+        if (redoButton) redoButton.disabled = !this.notesHistory || this.notesHistoryIndex >= this.notesHistory.length - 1;
     }
     // ⚡ [FIM: INTERAÇÃO/JS - SELEÇÃO DE NOTAS]
 
@@ -536,6 +554,13 @@ class NotesPWA {
         // Atalhos do editor: mesma ligacao do app original (frontend/app.js, "notesEditor.addEventListener('keydown', ...)").
         // Sem esta linha os atalhos (Ctrl+Alt+1..0, Alt+setas, Tab/Shift+Tab, Ctrl+B/I/S/Z/Y) nao funcionam.
         document.getElementById('notesEditor')?.addEventListener('keydown', event => this.handleNotesEditorShortcut(event));
+
+        // Baseline do histórico adiado (notas grandes): captura o estado ANTES da
+        // primeira edição. Este listener é registrado antes do motor (`setupNotesEditing`
+        // roda na abertura), então executa primeiro na fase de captura.
+        document.getElementById('notesEditor')?.addEventListener('beforeinput', () => {
+            if (!this.notesHistory) this.resetNotesHistory();
+        }, true);
 
         // Mantém a seleção ao acionar botões da toolbar.
         document.getElementById('notesToolbar')?.addEventListener('pointerdown', event => {
@@ -971,6 +996,38 @@ function installLocalNotesStorage(App) {
             download.textContent = 'Baixar arquivo';
             dialog.append(download);
         }, link);
+    };
+}
+
+// ============================================
+// AJUSTE PWA: HISTÓRICO ADIADO EM NOTAS GRANDES
+// O snapshot inicial do histórico serializa o documento inteiro em JSON (O(n)).
+// Em notas grandes isso bloqueava a thread principal na abertura (o Android
+// chegava a avisar "UI do sistema não está respondendo"). Aqui o snapshot é
+// adiado e capturado antes da primeira edição — sem tocar no motor, que segue
+// idêntico ao original.
+// ============================================
+function installHistoricoAdiado(App) {
+    const p = App.prototype;
+    if (p.__historicoAdiadoInstalado) return;
+    p.__historicoAdiadoInstalado = true;
+    const original = p.resetNotesHistory;
+    p.resetNotesHistory = function () {
+        if (this.notesHistoricoAdiado) {
+            this.notesHistoricoAdiado = false;
+            this.notesHistory = null;
+            this.notesHistoryIndex = -1;
+            this.updateNotesHistoryButtons();
+            // Se o utilizador editar antes do timer, o `beforeinput` captura o
+            // baseline; o `!this.notesHistory` evita apagar o histórico real.
+            const projeto = this.currentNotesProjectId;
+            clearTimeout(this.notesHistoricoTimer);
+            this.notesHistoricoTimer = setTimeout(() => {
+                if (!this.notesHistory && this.currentNotesProjectId === projeto) this.resetNotesHistory();
+            }, 350);
+            return;
+        }
+        return original.call(this);
     };
 }
 
