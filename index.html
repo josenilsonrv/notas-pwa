@@ -28,6 +28,52 @@
     </script>
 </head>
 <body class="bg-bg-global text-text-main min-h-screen overflow-x-hidden leading-relaxed select-none font-sans">
+    <!-- Auto-recuperação: aparece só se o app não iniciar (cache/Service Worker antigo).
+         O botão limpa Service Worker e cache — NÃO apaga as notas (LocalStorage). -->
+    <div id="bootGuard" class="app-boot-guard" hidden role="alert" aria-live="assertive">
+        <p class="app-boot-guard-titulo"><strong>O aplicativo não iniciou.</strong></p>
+        <p id="bootGuardErro" class="app-boot-guard-erro"></p>
+        <button type="button" id="bootGuardReparar">Reparar e recarregar</button>
+        <p class="app-boot-guard-obs">Isso atualiza o cache do app e <strong>não apaga suas notas</strong>.</p>
+    </div>
+    <script>
+        /* Watchdog de inicialização: se o app não ficar pronto em 6 s (ou der erro),
+           mostra o aviso acima. Roda inline, então funciona mesmo se o app.js não carregar. */
+        (function () {
+            var guard = document.getElementById('bootGuard');
+            var detalhe = document.getElementById('bootGuardErro');
+            var erros = [];
+            function mostrar() {
+                if (!guard || !guard.hidden || window.__notasPronto) return;
+                if (detalhe) detalhe.textContent = erros.length ? erros.slice(0, 3).join('\n') : 'Tempo de carregamento excedido.';
+                guard.hidden = false;
+            }
+            window.addEventListener('error', function (e) {
+                erros.push((e.message || 'Erro ao carregar recurso') + (e.filename ? ' (' + String(e.filename).split('/').pop() + ':' + e.lineno + ')' : ''));
+                mostrar();
+            }, true); // captura: pega também erros de carregamento de scripts/css
+            window.addEventListener('unhandledrejection', function (e) {
+                erros.push('Promessa: ' + ((e.reason && e.reason.message) || e.reason || 'erro'));
+            });
+            window.setTimeout(mostrar, 6000);
+            var botao = document.getElementById('bootGuardReparar');
+            if (botao) botao.addEventListener('click', async function () {
+                botao.disabled = true;
+                botao.textContent = 'Reparando…';
+                try {
+                    if (navigator.serviceWorker) {
+                        var regs = await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(regs.map(function (r) { return r.unregister(); }));
+                    }
+                    if (window.caches) {
+                        var nomes = await caches.keys();
+                        await Promise.all(nomes.map(function (n) { return caches.delete(n); }));
+                    }
+                } catch (_) { /* segue para o recarregamento */ }
+                location.replace(location.pathname + '?v=' + Date.now());
+            });
+        })();
+    </script>
     <!-- Header Mobile -->
     <header class="app-header border-b border-border pt-4 pb-4 px-4">
         <div class="flex justify-between items-center">

@@ -120,6 +120,8 @@ class NotesPWA {
         // então o comportamento do motor de notas permanece o mesmo para eles.
         this.configurarToolbarPWA();
         this.ativarToolbarTeclado();
+        // Sinaliza para a auto-recuperação (index.html) que o app iniciou bem.
+        window.__notasPronto = true;
         // ⚡ [FIM: PWA - BARRA DE FERRAMENTAS INLINE/EDIÇÃO + TECLADO]
         // 🔄 [FIM: ESTADO - MIGRAÇÃO/ABERTURA DA ÚLTIMA NOTA]
     }

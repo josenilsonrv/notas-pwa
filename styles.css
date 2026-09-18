@@ -632,4 +632,38 @@ html[data-theme="dark"] .app-toolbar-editor-row button { color: #cbd5e1; border-
 .app-toolbar-editor-restore:hover { border-color: var(--color-neon-blue); color: var(--color-neon-blue); }
 html[data-theme="dark"] .app-toolbar-editor-restore { color: #cbd5e1; border-color: #2a3543; }
 
+/* Auto-recuperação (index.html): aviso quando o app não inicia. */
+.app-boot-guard {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    z-index: 99999;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 14px 16px;
+    border: 1px solid var(--color-border, rgba(128, 144, 160, .45));
+    border-radius: 12px;
+    background: var(--color-bg-container, #ffffff);
+    color: var(--color-text-main, #172033);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+    text-align: left;
+    box-shadow: 0 14px 38px rgba(0, 0, 0, .28);
+}
+.app-boot-guard[hidden] { display: none !important; }
+.app-boot-guard-titulo { margin: 0; font-size: 15px; }
+.app-boot-guard-erro { margin: 8px 0 0; font-size: 12px; opacity: .85; word-break: break-word; white-space: pre-wrap; }
+.app-boot-guard button {
+    margin-top: 10px;
+    padding: 9px 14px;
+    border: 1px solid var(--color-neon-blue, #0071e3);
+    border-radius: 9px;
+    background: transparent;
+    color: var(--color-neon-blue, #0071e3);
+    font: inherit;
+    cursor: pointer;
+}
+.app-boot-guard button:disabled { opacity: .6; cursor: default; }
+.app-boot-guard-obs { margin: 8px 0 0; font-size: 12px; opacity: .75; }
+
 

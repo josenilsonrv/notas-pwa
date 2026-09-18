@@ -382,3 +382,28 @@ cache: {"cache":"notas-pwa-v11","itens":14}
 OFFLINE carregou em 198ms: {"titulo":"Notas","editor":true,"modalAtivo":true,"barraVisivel":true}
 erros de pagina: []
 ```
+
+### 11.7 Auto-recuperação no app (v12)
+
+Para não depender de "limpar dados do site" (o que apagaria as notas), o `index.html`
+ganhou um **watchdog de inicialização** que roda *inline* (funciona mesmo se o `app.js`
+não carregar):
+
+* Se o app **não ficar pronto em 6 s** ou ocorrer **erro de carregamento** (script/CSS),
+  aparece um aviso: **"O aplicativo não iniciou"** + a mensagem do erro.
+* O botão **"Reparar e recarregar"** desregistra o Service Worker, apaga os *caches* e
+  recarrega com `?v=<timestamp>` — **sem tocar no LocalStorage** (as notas continuam lá).
+* Quando o app inicia normalmente, o `app.js` marca `window.__notasPronto = true` e o
+  aviso **nunca aparece**.
+
+Validação (servidor local):
+
+```
+(a) normal: {"pronto":true,"guardEscondido":true}
+(b) falha : {"guardVisivel":true,"erro":"Erro ao carregar recurso"}
+(c) reparar -> url: ?v=1789757006505
+```
+
+> **Diagnóstico importante:** abrindo o site publicado num cliente novo, o app carrega
+> 100% (`modalAtivo: true`, editor com conteúdo, 25 botões, zero erros). Ou seja, o
+> problema relatado é **estado antigo no aparelho** (Service Worker/cache), não o código.
