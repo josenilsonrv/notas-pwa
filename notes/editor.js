@@ -688,10 +688,23 @@ function installNotesEditor(App) {
         if(modifier&&['z','y','s','b','i','u'].includes(key)){event.preventDefault();if(key==='s')this.saveNotes();else if(key==='z')event.shiftKey?this.redoNotes():this.undoNotes();else if(key==='y')this.redoNotes();else{this.rememberNotesSelection();this.executeNotesCommand(key==='b'?'bold':key==='u'?'underline':'italic');}return;}
         if(event.key==='Tab'){event.preventDefault();this.rememberNotesSelection();this.executeNotesCommand(event.shiftKey?'outdent':'indent');return;}
         const selection=getSelection();if(!selection.rangeCount)return;const range=selection.getRangeAt(0);let line=lineAt(range.startContainer);
-        // Clicking after the final block can put the caret on the editor itself.
-        if(!line&&event.key==='Enter'&&selection.isCollapsed&&range.startContainer===editor()){
-            const visible=lines().filter(row=>!row.hidden),target=range.startOffset===0?visible[0]:[...editor().children].slice(0,range.startOffset).reverse().find(row=>!row.hidden)||visible.at(-1);
-            if(target){const atStart=range.startOffset===0;line=target;range.selectNodeContents(body(line));range.collapse(atStart);selection.removeAllRanges();selection.addRange(range);}
+        // O cursor pode ficar FORA de uma linha: clique depois do ultimo bloco,
+        // foco dado por `editor.focus()` sem range, no solto ou editor vazio. Nesses
+        // casos o Enter NAO fazia nada — o keydown saia antes do preventDefault e o
+        // `beforeinput` (insertParagraph) cancelava a insercao. Aqui o cursor e
+        // levado para a linha certa para a quebra sempre acontecer.
+        if(!line&&event.key==='Enter'&&selection.isCollapsed){
+            const visiveis=lines().filter(row=>!row.hidden);
+            let target=null,noInicio=false;
+            if(range.startContainer===editor()){
+                noInicio=range.startOffset===0;
+                target=noInicio?visiveis[0]:([...editor().children].slice(0,range.startOffset).reverse().find(row=>row.classList.contains('notes-line')&&!row.hidden)||visiveis.at(-1));
+            }else{
+                const rect=range.getClientRects?.()[0];
+                target=rect&&visiveis.length?visiveis.reduce((melhor,row)=>{const r=row.getBoundingClientRect(),d=Math.min(Math.abs(r.top-rect.top),Math.abs(r.bottom-rect.bottom));return d<melhor.d?{row,d}:melhor;},{row:visiveis.at(-1),d:Infinity}).row:visiveis.at(-1);
+            }
+            if(!target){target=newLine('<br>',{level:'0'});editor().append(target);}
+            line=target;range.selectNodeContents(body(line));range.collapse(noInicio);selection.removeAllRanges();selection.addRange(range);
         }
         if(!line)return;
         const mark=bookmark();if(this.notesHistoryMarks)this.notesHistoryMarks[this.notesHistoryIndex]=mark;

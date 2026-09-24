@@ -1,13 +1,13 @@
 # Relatório de paridade visual (PWA x projeto original)
 
-> Gerado por `node tests/parity_visual.cjs` em 2026-09-24 21:34:34.
+> Gerado por `node tests/parity_visual.cjs` em 2026-09-24 21:46:48.
 > Compara as propriedades computadas de 18 seletores do modal de notas, em tema claro e escuro.
 > O original é usado **somente como referência** (nenhuma alteração é feita nele).
 
 | Resultado | Quantidade |
 | --- | --- |
 | Divergências reais | 0 |
-| Exceções documentadas | 17 |
+| Exceções documentadas | 19 |
 
 ## Exceções aceitas (com justificativa)
 
@@ -38,6 +38,10 @@ Tolerancia de layout do nav quando os chips do PWA (nomes de notas) e do origina
 ### `#notesContextNav` → `overflow`
 
 Revisao do bloco de notas: os chips passam a rolar na vertical a partir de ~2 linhas (o original so rola na horizontal).
+
+### `#notesContextNav` → `backgroundColor`
+
+Revisao do bloco de notas: o conteiner (faixa/painel) atras dos chips foi removido de proposito, entao o nav fica transparente sobre o cabecalho. O original mantem a faixa branca.
 
 ### `#notesEditorContainer` → `height`
 

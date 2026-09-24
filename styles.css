@@ -503,6 +503,40 @@ html #notesModal #notesContextNav .notes-context-chip.notes-context-chip-add {
 }
 
 /* ============================================
+ * CHIPS DE NOTAS: SEM CONTÊINER + DARK INVERTIDO
+ * 1) Remove a "faixa"/painel (contêiner) atrás dos chips: o nav fica transparente,
+ *    sem borda e sem o painel interno (::before), sobrando só os chips.
+ * 2) No modo escuro as cores são o INVERSO do claro: o texto do chip era
+ *    #172033 (escuro) tanto no claro quanto no escuro — no escuro ele ficava
+ *    ilegível sobre o fundo escuro. Aqui o texto vira claro no tema escuro.
+ * A especificidade extra (`body`) é necessária para vencer as regras do
+ * notes/editor.css, que carrega depois deste arquivo.
+ * ============================================ */
+/* O fundo do nav é definido em notes/editor.css dentro de `@layer components`
+   com `!important`; na cascata, um `!important` DENTRO de camada vence um
+   `!important` FORA de camada. Por isso a sobrescrita precisa entrar na MESMA
+   camada (aí a especificidade decide e este seletor vence). */
+@layer components {
+    html body #notesModalBackdrop.active #notesModal #notesContextNav,
+    html[data-theme="dark"] body #notesModalBackdrop.active #notesModal #notesContextNav {
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}
+
+html body #notesModal #notesContextNav::before {
+    content: none !important;
+    display: none !important;
+}
+
+html[data-theme="dark"] body #notesModal #notesContextNav .notes-context-chip {
+    color: #F5F5F7;
+}
+
+/* ============================================
  * CHIPS DE NOTAS: ROLAGEM VERTICAL E BOTÃO "+"
  * - A área dos chips ganha rolagem vertical a partir de ~2 linhas, então o
  *   número de notas pode crescer (até muitas) sem empurrar o conteúdo.

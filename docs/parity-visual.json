@@ -2,6 +2,13 @@
   {
     "tema": "light",
     "seletor": "#notesContextNav",
+    "propriedade": "backgroundColor",
+    "pwa": "rgba(0, 0, 0, 0)",
+    "origem": "rgba(245, 245, 247, 0.72)"
+  },
+  {
+    "tema": "light",
+    "seletor": "#notesContextNav",
     "propriedade": "borderTopColor",
     "pwa": "rgb(15, 23, 42)",
     "origem": "rgba(255, 255, 255, 0.48)"
@@ -61,6 +68,13 @@
     "propriedade": "borderTopColor",
     "pwa": "rgb(15, 23, 42)",
     "origem": "rgb(245, 245, 247)"
+  },
+  {
+    "tema": "dark",
+    "seletor": "#notesContextNav",
+    "propriedade": "backgroundColor",
+    "pwa": "rgba(0, 0, 0, 0)",
+    "origem": "rgb(13, 18, 24)"
   },
   {
     "tema": "dark",

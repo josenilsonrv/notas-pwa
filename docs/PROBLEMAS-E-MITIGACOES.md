@@ -289,6 +289,49 @@ N/A 1 / TOTAL 44` → **SEM REGRESSÕES** (0 falhas novas). `parity_visual` e `s
   (título/bold/italic aplicados a seleção). Ao replicar formatação, checar os dois
   formatos. Teste: `tests/notes_collapsed_heading.cjs`.
 
+### P30 — Contêiner branco atrás dos chips e dark que não era o inverso do claro
+- **Sintoma**: havia uma "faixa"/painel branco atrás dos chips e, no tema escuro, o
+  texto dos chips continuava **escuro** (`#172033`) sobre fundo escuro (ilegível).
+- **Causa**: o painel vem de `notes/editor.css:179,186,192-201` (`background` do nav
+  + `::before`); o texto do chip é definido **uma vez** em
+  `notes/editor.css:180` (`color:var(--color-text-main)` = escuro) e vencia a regra
+  escura do `theme-origem.css` (id+atributo não basta).
+- **Armadilha de cascata**: o fundo do nav está dentro de `@layer components` com
+  `!important`. Pela cascata, **`!important` dentro de camada vence `!important`
+  fora de camada**, independentemente da especificidade — por isso as tentativas de
+  sobrescrever no `styles.css` (fora de camada) não pegavam.
+- **Correção**: a sobrescrita foi colocada **dentro de `@layer components`** no
+  `styles.css` (com `body` a mais para ganhar na especificidade dentro da camada):
+  nav transparente/sem borda/sem `::before`; e o texto do chip vira claro
+  (`#F5F5F7`) no tema escuro.
+- **Mitigação p/ novas fases**: para sobrescrever regra `!important` que esteja em
+  `@layer`, a sobrescrita também precisa estar em camada. Ajuste do nav exige
+  exceção em `parity_visual.cjs` (`#notesContextNav` `backgroundColor`).
+
+### P31 — Enter que "não pegava" (cursor fora de uma linha)
+- **Sintoma**: às vezes apertar Enter não dava a quebra (intermitente).
+- **Causa**: quando o cursor não está dentro de um `.notes-line` (clique depois do
+  último bloco, foco dado por `editor.focus()` sem range, nó solto, editor vazio), o
+  `keydown` saía **antes** do `preventDefault`; aí o `beforeinput` (insertParagraph)
+  cancelava a inserção e o `handleNotesEditorShortcut` era chamado de novo, também
+  sem linha → **nada acontecia**. O caso especial existente cobria só
+  `range.startContainer === editor()`.
+- **Correção**: no Enter com o cursor fora de linha, o motor leva o cursor para a
+  linha mais próxima (pela posição visual) / primeira / última e, se não houver
+  nenhuma, cria uma linha — então a quebra sempre acontece. Teste:
+  `tests/notes_enter_robust.cjs`.
+- **Mitigação p/ novas fases**: ao investigar Enter "morto", verificar primeiro se o
+  cursor está dentro de um `.notes-line` (`lineAt(range.startContainer)`).
+
+### Mapa Mental "não alternava a área" (deploy)
+- **Sintoma**: no site publicado, clicar em "Mapa Mental" continuava em Notas.
+- **Causa**: os arquivos de `mapa/` estavam **fora do controle de versão** (não
+  existiam no servidor) → `installMapaMental`/`inicializarAreasMapa` não existiam e
+  o seletor não recebia handler. Agora estão versionados (commit da área do Mapa).
+- **Mitigação**: o Service Worker é offline-first; depois do deploy de assets, a
+  primeira navegação ainda pode servir o cache antigo. Recarregar 1x (o SW novo
+  assume o controle e a página recarrega no `controllerchange`) resolve.
+
 ### Cores (pré-existentes, fora dos 16 itens)
 - `notes_cascade_defaults.cjs` (`#1122aa` vs `#aa1122`) e `notes_navigation_completion.cjs`
   (histórico de accent) continuam falhando: o helper de cor do PWA mantém a ordem dos canais

@@ -56,6 +56,11 @@ const EXCECOES = [
     motivo: 'Revisao do bloco de notas: os chips passam a rolar na vertical a partir de ~2 linhas (o original so rola na horizontal).'
   },
   {
+    seletor: '#notesContextNav',
+    propriedade: 'backgroundColor',
+    motivo: 'Revisao do bloco de notas: o conteiner (faixa/painel) atras dos chips foi removido de proposito, entao o nav fica transparente sobre o cabecalho. O original mantem a faixa branca.'
+  },
+  {
     seletor: '#notesEditorContainer',
     propriedade: 'height',
     motivo: 'Consequencia de eventual diferenca de altura do nav entre os chips locais do PWA e os chips de projeto/etapa do original.'

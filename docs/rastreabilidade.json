@@ -762,6 +762,7 @@
         "notes_completion_spacing (novo)",
         "notes_cut_background (novo)",
         "notes_document_migration (novo)",
+        "notes_enter_robust (novo)",
         "notes_extras (novo)",
         "notes_import_spacing (novo)",
         "notes_indent_levels (novo)",
@@ -1300,6 +1301,7 @@
         "notes_completion_spacing (novo)",
         "notes_document_model (novo)",
         "notes_enter_child (novo)",
+        "notes_enter_robust (novo)",
         "notes_indent_child (novo)",
         "notes_indent_levels (novo)",
         "notes_markdown (novo)",
@@ -1708,6 +1710,10 @@
     {
       "teste": "notes_enter_child",
       "regra": "Enter reutiliza o filho vazio recolhido sem duplicar checkbox"
+    },
+    {
+      "teste": "notes_enter_robust",
+      "regra": "Enter sempre quebra (mesmo com o cursor fora de uma linha)"
     },
     {
       "teste": "notes_extras",
