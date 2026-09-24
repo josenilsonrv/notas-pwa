@@ -345,6 +345,26 @@ N/A 1 / TOTAL 44` → **SEM REGRESSÕES** (0 falhas novas). `parity_visual` e `s
   (b) título inline recolhido, (c) pai de lista recolhido, (d) aberto → filho sem
   formatação e (e) sem botão → irmão simples.
 
+### P33 — "Apagar todo o conteúdo" deixava conteúdo oculto e o botão de colapso preso
+- **Sintoma**: depois de apagar tudo, a primeira linha continuava com o botão de
+  colapso (parecia que o botão "não apagava").
+- **Causa**: as linhas-filhas ESCONDIDAS por um colapso não são alcançáveis pela
+  seleção nativa do navegador — o `Ctrl+A`/Delete apagava só o texto visível, então
+  as linhas ocultas (com conteúdo) permaneciam e o pai continuava sendo "pai".
+- **Correção** (em `notes/editor.js`):
+  1. `Ctrl/Cmd+A` no editor passa a selecionar **todo o conteúdo do editor**
+     (`selectNodeContents(editor())`), incluindo as linhas ocultas;
+  2. no `beforeinput`, quando a seleção cobre **todas** as linhas e a ação é de
+     apagar (`/^delete/`), a nota é zerada de fato: sobra uma linha vazia, sem
+     `data-collapsed` (o botão de colapso desaparece).
+- **Cuidado p/ novas fases**: tentar "reduzir linhas vazias" no
+  `refreshNotesCollapseControls` é **errado** — `notes_last_line_enter` exige poder
+  ter várias linhas em branco. Além disso, nunca remover a linha do CURSOR (a
+  digitação iria para o vazio). Um guard de "nunca esconder a linha do cursor"
+  também foi descartado: ele desfazia o colapso quando o cursor estava dentro da
+  seção.
+- **Teste**: `tests/notes_clear_all.cjs`.
+
 ### Mapa Mental "não alternava a área" (deploy)
 - **Sintoma**: no site publicado, clicar em "Mapa Mental" continuava em Notas.
 - **Causa**: os arquivos de `mapa/` estavam **fora do controle de versão** (não

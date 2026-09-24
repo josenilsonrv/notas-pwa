@@ -660,6 +660,16 @@ function installNotesEditor(App) {
         if(event.ctrlKey||event.metaKey||event.altKey||['Enter','Tab','ArrowUp','ArrowDown'].includes(event.key))this.flushNotesTyping();
         if(event.isComposing)return;
         const modifier=event.ctrlKey||event.metaKey,key=event.key.toLowerCase();
+        // Ctrl/Cmd+A: seleciona TODO o editor — inclusive as linhas escondidas por um
+        // colapso (a seleção nativa do navegador não alcança `hidden`, então apagar
+        // "tudo" deixava conteúdo oculto e o botão de colapso preso na primeira linha).
+        if(modifier&&key==='a'&&!event.altKey){
+            event.preventDefault();this.flushNotesTyping();
+            const tudo=document.createRange();tudo.selectNodeContents(editor());
+            const selTodo=getSelection();selTodo.removeAllRanges();selTodo.addRange(tudo);
+            this.rememberNotesSelection();
+            return;
+        }
         if(event.target?.matches('.notes-line-check')){
             if(modifier&&!event.altKey&&['z','y','s'].includes(key)){
                 event.preventDefault();event.stopPropagation();
@@ -707,7 +717,9 @@ function installNotesEditor(App) {
             line=target;range.selectNodeContents(body(line));range.collapse(noInicio);selection.removeAllRanges();selection.addRange(range);
         }
         if(!line)return;
-        const mark=bookmark();if(this.notesHistoryMarks)this.notesHistoryMarks[this.notesHistoryIndex]=mark;
+        const mark=bookmark()||{start:[lines().indexOf(line),body(line).textContent.length],end:null};
+        if(!mark.start)mark.start=[lines().indexOf(line),body(line).textContent.length];
+        if(this.notesHistoryMarks)this.notesHistoryMarks[this.notesHistoryIndex]=mark;
         if(selection.isCollapsed&&!modifier&&!event.altKey&&['ArrowUp','ArrowDown'].includes(event.key)){
             const visible=lines().filter(row=>!row.hidden),index=visible.indexOf(line),next=visible[index+(event.key==='ArrowUp'?-1:1)];
             if(next){const empty=!body(next).textContent.trim(),currentEmpty=!body(line).textContent.trim();
@@ -757,7 +769,10 @@ function installNotesEditor(App) {
         // formatação do item (título, lista e/ou check) e, em listas numeradas,
         // segue o fluxo de numeração abaixo. Em lista/checklist com filhos, a nova
         // linha entra como PRIMEIRO FILHO (o pai é expandido) para seguir o fluxo.
-        if(line.dataset.collapsed==='true'&&mark.start[1]===body(line).textContent.length){
+        // `mark` pode vir nulo (seleção ancorada fora de uma linha); sem esta guarda o
+        // acesso a `mark.start[1]` lançava exceção e o Enter não fazia nada.
+        const noFim=!mark?.start||mark.start[1]>=body(line).textContent.length;
+        if(line.dataset.collapsed==='true'&&noFim){
             const group=targets(line);
             // O título pode ser de LINHA (`data-heading`) ou INLINE (um `span
             // [data-inline-heading]` cobrindo o texto, quando o H1..H3 é aplicado a
@@ -842,6 +857,24 @@ function installNotesEditor(App) {
             if(event.target.matches('.notes-line-check'))return;
             event.stopImmediatePropagation();
             const mark=bookmark();
+            // Seleção cobrindo TODAS as linhas (Ctrl+A inclui as escondidas por colapso):
+            // o navegador ignora as linhas ocultas ao apagar, então "apagar tudo" deixava
+            // conteúdo e o botão de colapso preso. Aqui a nota é zerada de fato.
+            {
+                const selection=getSelection(),rangeSel=selection.rangeCount?selection.getRangeAt(0):null;
+                if(rangeSel&&!selection.isCollapsed&&/^delete/.test(event.inputType)){
+                    const todas=[...editor().querySelectorAll('.notes-line')];
+                    const marcadas=todas.filter(linha=>rangeSel.intersectsNode(linha));
+                    if(todas.length>1&&marcadas.length===todas.length){
+                        event.preventDefault();
+                        todas.slice(1).forEach(linha=>linha.remove());
+                        const manter=todas[0];body(manter).replaceChildren(document.createElement('br'));delete manter.dataset.collapsed;
+                        this.refreshNotesCollapseControls();this.recordNotesHistory();
+                        caret(manter,0);this.rememberNotesSelection();
+                        return;
+                    }
+                }
+            }
             if(!getSelection().isCollapsed&&mark?.start&&mark.end&&mark.start[0]!==mark.end[0]&&(/^(delete|insertText)/.test(event.inputType))){
                 event.preventDefault();deleteSelection();
                 if(event.inputType==='insertText'&&event.data){const r=getSelection().getRangeAt(0),node=document.createTextNode(event.data);r.insertNode(node);r.setStartAfter(node);r.collapse(true);getSelection().removeAllRanges();getSelection().addRange(r);}

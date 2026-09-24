@@ -243,7 +243,7 @@
     {
       "regra": "Tab",
       "acao": "indent",
-      "cobertura": "citado em notes_cascade_defaults, notes_extras, notes_indent_child, notes_table_media, notes_tone_picker, notes_tone_picker_mobile, test_notes_editor_ui, mapa_area, mapa_gestao, mapa_vazio, notes_cascade_defaults, notes_collapse_motion, notes_completion_spacing, notes_cut_background, notes_document_migration, notes_extras, notes_import_spacing, notes_indent_child, notes_indent_levels, notes_large_document, notes_last_line_enter, notes_markdown, notes_million, notes_million_extras, notes_navigation_completion, notes_outline_code, notes_parent_undo, notes_paste_blocks, notes_paste_selection, notes_performance, notes_regression_audit, notes_renumber_structure, notes_requested_fixes, notes_table_media, notes_table_tools, notes_tone_picker, notes_tone_picker_mobile, notes_underline, shortcuts, test_notes_editor_ui",
+      "cobertura": "citado em notes_cascade_defaults, notes_extras, notes_indent_child, notes_table_media, notes_tone_picker, notes_tone_picker_mobile, test_notes_editor_ui, mapa_area, mapa_gestao, mapa_vazio, notes_cascade_defaults, notes_clear_all, notes_collapse_motion, notes_completion_spacing, notes_cut_background, notes_document_migration, notes_extras, notes_import_spacing, notes_indent_child, notes_indent_levels, notes_large_document, notes_last_line_enter, notes_markdown, notes_million, notes_million_extras, notes_navigation_completion, notes_outline_code, notes_parent_undo, notes_paste_blocks, notes_paste_selection, notes_performance, notes_regression_audit, notes_renumber_structure, notes_requested_fixes, notes_table_media, notes_table_tools, notes_tone_picker, notes_tone_picker_mobile, notes_underline, shortcuts, test_notes_editor_ui",
       "coberto": true
     },
     {
@@ -758,6 +758,7 @@
         "mapa_vazio (novo)",
         "notes_cascade_defaults (novo)",
         "notes_checklist_enter (novo)",
+        "notes_clear_all (novo)",
         "notes_collapse_motion (novo)",
         "notes_collapsed_heading (novo)",
         "notes_completion_spacing (novo)",
@@ -1206,6 +1207,7 @@
         "multi_notas (novo)",
         "multi_notas_100 (novo)",
         "nota_grande_pwa (novo)",
+        "notes_clear_all (novo)",
         "notes_extras (novo)",
         "notes_last_line_enter (novo)",
         "notes_million_extras (novo)",
@@ -1659,12 +1661,16 @@
       "regra": "pilha de concluídos, desmarcação e evento duplicado"
     },
     {
+      "teste": "notes_clear_all",
+      "regra": "apagar tudo (Ctrl+A) zera a nota e remove o botao de colapso"
+    },
+    {
       "teste": "notes_collapse_motion",
       "regra": "following title moves continuously without final spacing jump"
     },
     {
       "teste": "notes_collapsed_heading",
-      "regra": "Enter em titulo/lista recolhida cria FILHO indentado herdando a formatacao"
+      "regra": "recolhido cria IRMAO herdando a formatacao; aberto/sem botao cria FILHO sem a formatacao"
     },
     {
       "teste": "notes_colors_persistence",
