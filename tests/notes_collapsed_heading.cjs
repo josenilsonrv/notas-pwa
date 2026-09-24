@@ -21,14 +21,16 @@ const {chromium}=require('playwright');
   document.documentElement.dataset.theme='light';window.app=Object.create(TestApp.prototype);app.userId=1;app.projectsData=[{id:1,nome:'Teste',notas:''}];app.focusStagesData=[{id:2,foco_id:1,titulo:'Etapa',notas:''}];app.ensureNotesFocusPage=()=>{};app.showToast=()=>{};if(!TestApp.prototype.__motorInstalado){installNotesEditor(TestApp);if(typeof installNotesExtras==='function')installNotesExtras(TestApp);TestApp.prototype.__motorInstalado=true;}if(app.setupEventListeners)app.setupEventListeners();app.setupModalListeners();
   window.loadNote=async html=>{clearTimeout(app.notesSaveTimer);app.notesSession=null;app.projectsData[0].notas=html;localStorage.clear();await app.openNotesModal(1);};
   window.caretFim=()=>{const t=document.querySelector('#notesEditor .notes-line-text');const r=document.createRange();r.selectNodeContents(t);r.collapse(false);getSelection().removeAllRanges();getSelection().addRange(r);app.rememberNotesSelection();};
-  window.ultima=()=>{const linhas=[...document.querySelectorAll('#notesEditor .notes-line')],u=linhas.at(-1);const t=u.querySelector('.notes-line-text');return {heading:u.dataset.heading||'',outlineBreak:u.dataset.outlineBreak||'',size:getComputedStyle(t).fontSize,bold:getComputedStyle(t).fontWeight,linhas:linhas.length};};
+  // A linha criada entra logo APOS o pai (como filho) — nao no fim.
+  window.filhoCriado=()=>{const linhas=[...document.querySelectorAll('#notesEditor .notes-line')],u=linhas[1];const t=u.querySelector('.notes-line-text');return {heading:u.dataset.heading||'',level:u.dataset.level,list:u.dataset.list||'',size:getComputedStyle(t).fontSize,bold:getComputedStyle(t).fontWeight,linhas:linhas.length};};
  });
- const rodar=async html=>{await page.evaluate(h=>loadNote(h),html);await page.waitForTimeout(400);await page.evaluate(()=>caretFim());await page.keyboard.press('Enter');await page.waitForTimeout(180);return page.evaluate(()=>ultima());};
+ const rodar=async html=>{await page.evaluate(h=>loadNote(h),html);await page.waitForTimeout(400);await page.evaluate(()=>caretFim());await page.keyboard.press('Enter');await page.waitForTimeout(180);return page.evaluate(()=>filhoCriado());};
  const filho='<div class="notes-line" data-level="1"><div class="notes-line-text">filho</div></div>';
 
  // (a) título de linha (data-heading)
  const linha=await rodar('<div class="notes-line" data-level="0" data-heading="1" data-collapsed="true"><div class="notes-line-text">Titulo</div></div>'+filho);
  assert.equal(linha.linhas,3,'criou a linha de baixo');
+ assert.equal(linha.level,'1','a linha criada e FILHO (indentada em relacao ao pai)');
  assert.equal(linha.heading,'1','titulo de linha replicado (data-heading)');
  assert.equal(linha.bold,'700','negrito do titulo replicado');
  assert.equal(linha.size,'24px','tamanho do titulo replicado');
@@ -36,15 +38,18 @@ const {chromium}=require('playwright');
  // (b) título INLINE (aplicado a uma seleção)
  const inline=await rodar('<div class="notes-line" data-level="0" data-collapsed="true"><div class="notes-line-text"><span data-inline-heading="1">Titulo</span></div></div>'+filho);
  assert.equal(inline.linhas,3,'criou a linha de baixo');
+ assert.equal(inline.level,'1','tambem e FILHO (indentado)');
  assert.equal(inline.heading,'1','titulo INLINE replicado na linha de baixo');
  assert.equal(inline.bold,'700','negrito do titulo inline replicado');
  assert.equal(inline.size,'24px','tamanho do titulo inline replicado');
 
- // (c) lista recolhida continua seguindo o fluxo (filho), sem virar título
+ // (c) lista recolhida continua seguindo o fluxo (filho indentado), sem virar título
  const lista=await rodar('<div class="notes-line" data-level="0" data-list="ol" data-check="true" data-checked="false" data-check-number="1" data-collapsed="true"><div class="notes-line-text">Item</div></div><div class="notes-line" data-level="1" data-list="ol" data-check="true" data-checked="false"><div class="notes-line-text">Sub</div></div>');
  assert.equal(lista.heading,'','lista recolhida NAO vira titulo');
+ assert.equal(lista.level,'1','lista recolhida cria filho indentado');
+ assert.equal(lista.list,'ol','mantem a lista');
  assert.equal(lista.linhas,3,'lista recolhida segue o fluxo (novo item)');
  assert.deepEqual(errors,[]);
- console.log('OK: Enter em titulo recolhido replica a formatacao (linha e inline) e listas seguem o fluxo');
+ console.log('OK: Enter em titulo/lista recolhida cria FILHO indentado herdando a formatacao');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

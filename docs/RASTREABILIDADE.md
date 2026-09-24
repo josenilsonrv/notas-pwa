@@ -14,7 +14,7 @@
 | `heading1` | test_notes_editor_ui, shortcuts (novo), test_notes_editor_ui (novo) | ✅ |
 | `heading2` | test_notes_editor_ui, test_notes_editor_ui (novo) | ✅ |
 | `heading3` | notes_requested_fixes, test_notes_editor_ui, notes_requested_fixes (novo), test_notes_editor_ui (novo) | ✅ |
-| `indent` | notes_document_model, notes_navigation_completion, notes_paste_blocks, notes_renumber_structure, test_notes_editor_ui, notes_document_model (novo), notes_indent_child (novo), notes_indent_levels (novo), notes_navigation_completion (novo), notes_paste_blocks (novo), notes_renumber_structure (novo), shortcuts (novo), test_notes_editor_ui (novo) | ✅ |
+| `indent` | notes_document_model, notes_navigation_completion, notes_paste_blocks, notes_renumber_structure, test_notes_editor_ui, notes_collapsed_heading (novo), notes_document_model (novo), notes_indent_child (novo), notes_indent_levels (novo), notes_navigation_completion (novo), notes_paste_blocks (novo), notes_renumber_structure (novo), shortcuts (novo), test_notes_editor_ui (novo) | ✅ |
 | `insertOrderedList` | notes_paste_blocks, notes_renumber_structure, test_notes_editor_ui, notes_paste_blocks (novo), notes_renumber_structure (novo), test_notes_editor_ui (novo) | ✅ |
 | `insertUnorderedList` | — | ❌ |
 | `italic` | notes_regression_audit, test_notes_editor_ui, notes_regression_audit (novo), test_notes_editor_ui (novo) | ✅ |
@@ -182,7 +182,7 @@
 | `numberCurrency` | — | ✅ |
 | `numberDecimals` | — | ✅ |
 | `numberFormat` | — | ✅ |
-| `outlineBreak` | notes_collapsed_heading (novo) | ✅ |
+| `outlineBreak` | — | ✅ |
 | `property` | — | ✅ |
 | `tableResize` | — | ✅ |
 | `videoPoster` | — | ✅ |
@@ -238,7 +238,7 @@
 - **notes_checklist_numbers** — pilha de concluídos, desmarcação e evento duplicado
 - **notes_checklist_order** — pilha de concluídos, desmarcação e evento duplicado
 - **notes_collapse_motion** — following title moves continuously without final spacing jump
-- **notes_collapsed_heading** — Enter em titulo recolhido replica a formatacao (linha e inline) e listas seguem o fluxo
+- **notes_collapsed_heading** — Enter em titulo/lista recolhida cria FILHO indentado herdando a formatacao
 - **notes_colors_persistence** — Enter sem número repetido, cores serializadas e nova nota independente
 - **notes_completion_spacing** — conclusão sem espaços de HTML e linha vazia real preservada
 - **notes_cut_background** — recortar/colar sem fundo acidental e com destaque intencional preservado
@@ -287,5 +287,5 @@
 | atalhos | 7 | `Ctrl/Cmd+Y`, `Ctrl/Cmd+I`, `Ctrl+Alt+8`, `Ctrl+Alt+9`, `Ctrl+Alt+L`, `Ctrl+Shift+I`, `Ctrl+Alt+M` |
 | metodos | 30 | `animateNotesMovement`, `applyNotesOutlineDefaults`, `beginNotesSession`, `closeNotesColorPanels`, `flushNotesTyping`, `notesBackspaceMedia`, `notesCaptureInsertion`, `notesDateDialog`, `notesDivider`, `notesExtraDialog`, `notesFocusMedia`, `notesInsertMenu`, `notesInsertNode`, `notesLinkDialog`, `notesRecalculateTable`, `notesRestoreInsertion`, `notesRevealInsertion`, `notesStatus`, `notesUpload`, `notesVideoDialog`, `queueNotesSave`, `refreshNotesCodePresentation`, `refreshNotesSyntaxHighlight`, `resetNotesHistory`, `restoreNotesHistory`, `setNotesHeaderCollapsed`, `setupNotesEditing`, `setupNotesResize`, `syncNotesDocument`, `updateNotesToolbarState` |
 | eventos | 22 | `beforeinput`, `beforeunload`, `cancel`, `change`, `click`, `close`, `contextmenu`, `copy`, `cut`, `dblclick`, `input`, `mousedown`, `paste`, `pointercancel`, `pointerdown`, `pointerenter`, `pointerleave`, `pointermove`, `pointerup`, `resize`, `scroll`, `selectionchange` |
-| atributos | 22 | `cellValue`, `codeDisabled`, `codeLanguage`, `completedAt`, `completedBy`, `completionBatch`, `completionLabel`, `completionPosition`, `formulaError`, `indentLevel`, `inlineHeading`, `largeNote`, `mediaAction`, `noteAccentHistory`, `noteAsset`, `noteTable`, `numberCurrency`, `numberDecimals`, `numberFormat`, `property`, `tableResize`, `videoPoster` |
+| atributos | 23 | `cellValue`, `codeDisabled`, `codeLanguage`, `completedAt`, `completedBy`, `completionBatch`, `completionLabel`, `completionPosition`, `formulaError`, `indentLevel`, `inlineHeading`, `largeNote`, `mediaAction`, `noteAccentHistory`, `noteAsset`, `noteTable`, `numberCurrency`, `numberDecimals`, `numberFormat`, `outlineBreak`, `property`, `tableResize`, `videoPoster` |
 

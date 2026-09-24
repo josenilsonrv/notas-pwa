@@ -768,10 +768,15 @@ function installNotesEditor(App) {
             const titulo=line.dataset.heading||tituloInline;
             if(group.length||titulo||line.dataset.list||line.dataset.check==='true'){
                 const lista=line.dataset.list||'',check=line.dataset.check||'false';
-                const comoFilho=group.length>0&&!titulo&&Boolean(lista||check==='true');
+                // Se a linha TEM filhos, a linha criada é sempre um FILHO — indentada
+                // em relação ao pai (nível do pai + 1) — e o pai é expandido. Sem isso
+                // a linha nova virava "irmã" e o botão de colapso do pai ficava sem
+                // correspondência com a indentação.
+                const comoFilho=group.length>0;
                 const next=newLine('<br>',{level:String(level(line)+(comoFilho?1:0)),list:lista,check,checked:'false'});
                 for(const field of ['bold','italic'])if(line.dataset[field])next.dataset[field]=line.dataset[field];
-                if(titulo){next.dataset.heading=titulo;next.dataset.outlineBreak=titulo;}
+                if(titulo)next.dataset.heading=titulo;
+                if(!comoFilho&&titulo)next.dataset.outlineBreak=titulo;
                 if(lista==='ol'&&line.dataset.checkNumber)next.dataset.checkNumber=String(Number(line.dataset.checkNumber)+1);
                 if(comoFilho){line.dataset.collapsed='false';line.after(next);this.refreshNotesCollapseControls();}
                 else{(group.at(-1)||line).after(next);}

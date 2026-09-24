@@ -323,6 +323,21 @@ N/A 1 / TOTAL 44` → **SEM REGRESSÕES** (0 falhas novas). `parity_visual` e `s
 - **Mitigação p/ novas fases**: ao investigar Enter "morto", verificar primeiro se o
   cursor está dentro de um `.notes-line` (`lineAt(range.startContainer)`).
 
+### P32 — Enter em pai recolhido criava IRMÃO (o "botão de colapso sem filho indentado")
+- **Sintoma**: a 1ª linha (título) mostrava o botão de colapso, mas a linha criada pelo
+  Enter não ficava indentada; o botão parecia "não apagar" porque o filho não tinha
+  indentação visível.
+- **Causa**: `targets()` considera "filhos" de um TÍTULO também as linhas seguintes por
+  **hierarquia de outline** (mesmo sem indentação). O bloco do Enter só criava o filho
+  (`nível+1`) quando a linha NÃO era título — em título criava um irmão no mesmo nível.
+- **Correção**: se a linha TEM filhos, a linha do Enter é **sempre** um FILHO,
+  indentada (`nível do pai + 1`), o pai é expandido e a formatação (título/lista/check)
+  é herdada. Teste: `tests/notes_collapsed_heading.cjs` (verifica `level` do filho).
+- **Mitigação p/ novas fases**: ao mexer na criação de linhas, garantir
+  `level(filho) === level(pai) + 1`. Obs.: o colapso de TÍTULO continua por outline
+  (uma seção inteira), comportamento herdado do original — por isso linhas no mesmo
+  nível sob um título ainda contam como seção.
+
 ### Mapa Mental "não alternava a área" (deploy)
 - **Sintoma**: no site publicado, clicar em "Mapa Mental" continuava em Notas.
 - **Causa**: os arquivos de `mapa/` estavam **fora do controle de versão** (não

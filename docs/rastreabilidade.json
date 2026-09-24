@@ -80,6 +80,7 @@
         "notes_paste_blocks",
         "notes_renumber_structure",
         "test_notes_editor_ui",
+        "notes_collapsed_heading (novo)",
         "notes_document_model (novo)",
         "notes_indent_child (novo)",
         "notes_indent_levels (novo)",
@@ -1441,10 +1442,8 @@
     },
     {
       "regra": "outlineBreak",
-      "testes": [
-        "notes_collapsed_heading (novo)"
-      ],
-      "coberto": true
+      "testes": [],
+      "coberto": false
     },
     {
       "regra": "property",
@@ -1665,7 +1664,7 @@
     },
     {
       "teste": "notes_collapsed_heading",
-      "regra": "Enter em titulo recolhido replica a formatacao (linha e inline) e listas seguem o fluxo"
+      "regra": "Enter em titulo/lista recolhida cria FILHO indentado herdando a formatacao"
     },
     {
       "teste": "notes_colors_persistence",
@@ -1913,6 +1912,7 @@
       "numberCurrency",
       "numberDecimals",
       "numberFormat",
+      "outlineBreak",
       "property",
       "tableResize",
       "videoPoster"

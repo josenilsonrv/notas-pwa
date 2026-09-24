@@ -23,7 +23,7 @@
 | Regras de domínio (`NotesDocument`) | 8 |
 | Arquivos de teste do original | 90 |
 
-Motor: `editor.js`: 1055 linhas / 114190 bytes · `extras.js`: 137 linhas / 34353 bytes · `tables.js`: 133 linhas / 19363 bytes · `table-math.js`: 72 linhas / 6646 bytes
+Motor: `editor.js`: 1060 linhas / 114513 bytes · `extras.js`: 137 linhas / 34353 bytes · `tables.js`: 133 linhas / 19363 bytes · `table-math.js`: 72 linhas / 6646 bytes
 
 ## Comandos (18)
 

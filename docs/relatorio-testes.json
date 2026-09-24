@@ -1,295 +1,221 @@
 {
-  "geradoEm": "2026-09-24T20:41:56.200Z",
+  "geradoEm": "2026-09-24T21:59:30.215Z",
   "projetoTestado": "C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa",
-  "total": 55,
-  "passaram": 45,
+  "total": 38,
+  "passaram": 28,
   "falharam": 9,
   "naoAplicaveis": 1,
   "flaky": 0,
-  "tempoTotalMs": 266167,
-  "falhasNovas": [
-    "notes_collapse_motion.cjs"
-  ],
-  "falhasResolvidas": [
-    "multi_notas.cjs"
-  ],
+  "tempoTotalMs": 183566,
+  "falhasNovas": [],
+  "falhasResolvidas": [],
   "resultados": [
     {
-      "passou": true,
-      "ms": 3881,
-      "motivo": "",
-      "arquivo": "mapa_area.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 5643,
-      "motivo": "",
-      "arquivo": "mapa_canvas.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 6755,
-      "motivo": "",
-      "arquivo": "mapa_conexoes.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 4037,
-      "motivo": "",
-      "arquivo": "mapa_conteudo.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 3233,
-      "motivo": "",
-      "arquivo": "mapa_dragdrop.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 3656,
-      "motivo": "",
-      "arquivo": "mapa_gestao.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 2659,
-      "motivo": "",
-      "arquivo": "mapa_layout.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 4256,
-      "motivo": "",
-      "arquivo": "mapa_nos.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 3433,
-      "motivo": "",
-      "arquivo": "mapa_vazio.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 7227,
-      "motivo": "",
-      "arquivo": "multi_notas.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 3947,
-      "motivo": "",
-      "arquivo": "multi_notas_100.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 3480,
-      "motivo": "",
-      "arquivo": "nota_grande_pwa.cjs",
-      "tentativas": 1
-    },
-    {
       "passou": false,
-      "ms": 4755,
+      "ms": 6512,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
       "arquivo": "notes_cascade_defaults.cjs",
       "tentativas": 2
     },
     {
       "passou": true,
-      "ms": 2661,
+      "ms": 6856,
       "motivo": "",
       "arquivo": "notes_checklist_enter.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 1672,
+      "ms": 2301,
       "motivo": "",
       "arquivo": "notes_checklist_numbers.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 1796,
+      "ms": 2358,
       "motivo": "",
       "arquivo": "notes_checklist_order.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 2863,
+      "ms": 3278,
       "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
       "arquivo": "notes_collapse_motion.cjs",
       "tentativas": 2
     },
     {
       "passou": true,
-      "ms": 2949,
+      "ms": 4540,
+      "motivo": "",
+      "arquivo": "notes_collapsed_heading.cjs",
+      "tentativas": 1
+    },
+    {
+      "passou": true,
+      "ms": 2035,
       "motivo": "",
       "arquivo": "notes_colors_persistence.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 3636,
+      "ms": 3902,
       "motivo": "",
       "arquivo": "notes_completion_spacing.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 3645,
+      "ms": 3587,
       "motivo": "",
       "arquivo": "notes_cut_background.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 3516,
+      "ms": 3960,
       "motivo": "",
       "arquivo": "notes_document_migration.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 93,
+      "ms": 92,
       "motivo": "",
       "arquivo": "notes_document_model.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 2085,
+      "ms": 1965,
       "motivo": "",
       "arquivo": "notes_enter_child.cjs",
       "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 3818,
+      "motivo": "",
+      "arquivo": "notes_enter_robust.cjs",
+      "tentativas": 1
+    },
+    {
       "passou": false,
-      "ms": 41743,
-      "motivo": "at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_extras.cjs:55:97 {",
+      "ms": 13125,
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
       "arquivo": "notes_extras.cjs",
       "tentativas": 2
     },
     {
       "passou": true,
-      "ms": 4307,
+      "ms": 19218,
       "motivo": "",
       "arquivo": "notes_import_spacing.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 2131,
+      "ms": 3294,
       "motivo": "",
       "arquivo": "notes_indent_child.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 4124,
+      "ms": 3553,
       "motivo": "",
       "arquivo": "notes_indent_levels.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 4178,
+      "ms": 5533,
       "motivo": "",
       "arquivo": "notes_large_document.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 4530,
+      "ms": 4466,
       "motivo": "",
       "arquivo": "notes_last_line_enter.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 3660,
+      "ms": 4803,
       "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
       "arquivo": "notes_markdown.cjs",
       "tentativas": 2
     },
     {
       "passou": true,
-      "ms": 4270,
+      "ms": 4777,
       "motivo": "",
       "arquivo": "notes_million.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 4283,
+      "ms": 4499,
       "motivo": "",
       "arquivo": "notes_million_extras.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 6397,
+      "ms": 6881,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
       "arquivo": "notes_navigation_completion.cjs",
       "tentativas": 2
     },
     {
       "passou": false,
-      "ms": 2586,
+      "ms": 3615,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
       "arquivo": "notes_outline_code.cjs",
       "tentativas": 2
     },
     {
       "passou": true,
-      "ms": 4008,
+      "ms": 4648,
       "motivo": "",
       "arquivo": "notes_parent_undo.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 2906,
+      "ms": 3501,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
       "arquivo": "notes_paste_blocks.cjs",
       "tentativas": 2
     },
     {
       "passou": true,
-      "ms": 6965,
+      "ms": 3989,
       "motivo": "",
       "arquivo": "notes_paste_selection.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 6456,
+      "ms": 4823,
       "motivo": "",
       "arquivo": "notes_performance.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 3746,
+      "ms": 3377,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to:",
       "arquivo": "notes_regression_audit.cjs",
       "tentativas": 2
     },
     {
       "passou": true,
-      "ms": 2675,
+      "ms": 3514,
       "motivo": "",
       "arquivo": "notes_renumber_structure.cjs",
       "tentativas": 1
@@ -303,101 +229,52 @@
     },
     {
       "passou": true,
-      "ms": 78,
+      "ms": 254,
       "motivo": "",
       "arquivo": "notes_table_math.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5485,
+      "ms": 9108,
       "motivo": "",
       "arquivo": "notes_table_media.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 6202,
+      "ms": 9119,
       "motivo": "",
       "arquivo": "notes_table_tools.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 2551,
+      "ms": 4659,
       "motivo": "",
       "arquivo": "notes_tone_picker.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 2439,
+      "ms": 4620,
       "motivo": "",
       "arquivo": "notes_tone_picker_mobile.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 3014,
+      "ms": 6584,
       "motivo": "",
       "arquivo": "notes_underline.cjs",
       "tentativas": 1
     },
     {
-      "passou": true,
-      "ms": 80,
-      "motivo": "",
-      "arquivo": "parity_structure.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 9790,
-      "motivo": "",
-      "arquivo": "parity_visual.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 4439,
-      "motivo": "",
-      "arquivo": "pwa_service_worker.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 11029,
-      "motivo": "",
-      "arquivo": "shortcuts.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 4247,
-      "motivo": "",
-      "arquivo": "tema_switch.cjs",
-      "tentativas": 1
-    },
-    {
-      "passou": true,
-      "ms": 8213,
-      "motivo": "",
-      "arquivo": "tema_vidro.cjs",
-      "tentativas": 1
-    },
-    {
       "passou": false,
-      "ms": 5982,
+      "ms": 6402,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
       "arquivo": "test_notes_editor_ui.cjs",
       "tentativas": 2
-    },
-    {
-      "passou": true,
-      "ms": 11775,
-      "motivo": "",
-      "arquivo": "toolbar_pwa.cjs",
-      "tentativas": 1
     }
   ],
   "falhas": [
@@ -409,12 +286,12 @@
     {
       "arquivo": "notes_collapse_motion.cjs",
       "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
-      "saida": "{\n  start: 248.578125,\n  middle: 196.4375,\n  nearEnd: 194.390625,\n  end: 191.390625\n}\nAssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(Math.abs(result.nearEnd-result.end)<3)\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_collapse_motion.cjs:36:103 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}"
+      "saida": "{\n  start: 248.578125,\n  middle: 196.140625,\n  nearEnd: 194.390625,\n  end: 191.390625\n}\nAssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(Math.abs(result.nearEnd-result.end)<3)\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_collapse_motion.cjs:36:103 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}"
     },
     {
       "arquivo": "notes_extras.cjs",
-      "motivo": "at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_extras.cjs:55:97 {",
-      "saida": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.notes-file-page p') to be visible\u001b[22m\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_extras.cjs:55:97 {\n  log: [ \"  - waiting for locator('.notes-file-page p') to be visible\" ],\n  name: 'TimeoutError'\n}"
+      "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+      "saida": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'false' !== 'true'\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_extras.cjs:52:297 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 'false',\n  expected: 'true',\n  operator: 'strictEqual',\n  diff: 'simple'\n}"
     },
     {
       "arquivo": "notes_markdown.cjs",
