@@ -746,12 +746,19 @@ function installNotesEditor(App) {
         // linha entra como PRIMEIRO FILHO (o pai é expandido) para seguir o fluxo.
         if(line.dataset.collapsed==='true'&&mark.start[1]===body(line).textContent.length){
             const group=targets(line);
-            if(group.length||line.dataset.heading||line.dataset.list||line.dataset.check==='true'){
+            // O título pode ser de LINHA (`data-heading`) ou INLINE (um `span
+            // [data-inline-heading]` cobrindo o texto, quando o H1..H3 é aplicado a
+            // uma seleção). Nos dois casos a linha criada abaixo deve herdar a
+            // formatação — senão a linha nova nasce "sem título".
+            const inline=body(line).querySelector('[data-inline-heading]:not([data-inline-heading="0"])');
+            const tituloInline=inline&&!body(line).textContent.replace(inline.textContent,'').trim()?inline.dataset.inlineHeading:'';
+            const titulo=line.dataset.heading||tituloInline;
+            if(group.length||titulo||line.dataset.list||line.dataset.check==='true'){
                 const lista=line.dataset.list||'',check=line.dataset.check||'false';
-                const comoFilho=group.length>0&&!line.dataset.heading&&Boolean(lista||check==='true');
+                const comoFilho=group.length>0&&!titulo&&Boolean(lista||check==='true');
                 const next=newLine('<br>',{level:String(level(line)+(comoFilho?1:0)),list:lista,check,checked:'false'});
-                for(const field of ['heading','bold','italic'])if(line.dataset[field])next.dataset[field]=line.dataset[field];
-                if(line.dataset.heading)next.dataset.outlineBreak=line.dataset.heading;
+                for(const field of ['bold','italic'])if(line.dataset[field])next.dataset[field]=line.dataset[field];
+                if(titulo){next.dataset.heading=titulo;next.dataset.outlineBreak=titulo;}
                 if(lista==='ol'&&line.dataset.checkNumber)next.dataset.checkNumber=String(Number(line.dataset.checkNumber)+1);
                 if(comoFilho){line.dataset.collapsed='false';line.after(next);this.refreshNotesCollapseControls();}
                 else{(group.at(-1)||line).after(next);}

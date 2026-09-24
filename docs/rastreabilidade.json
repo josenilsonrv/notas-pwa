@@ -7,6 +7,7 @@
         "notes_paste_blocks",
         "notes_table_tools",
         "test_notes_editor_ui",
+        "notes_collapsed_heading (novo)",
         "notes_paste_blocks (novo)",
         "notes_table_tools (novo)",
         "test_notes_editor_ui (novo)"
@@ -19,6 +20,7 @@
         "notes_document_migration",
         "notes_paste_blocks",
         "test_notes_editor_ui",
+        "notes_checklist_enter (novo)",
         "notes_checklist_numbers (novo)",
         "notes_checklist_order (novo)",
         "notes_document_migration (novo)",
@@ -754,7 +756,9 @@
         "mapa_nos (novo)",
         "mapa_vazio (novo)",
         "notes_cascade_defaults (novo)",
+        "notes_checklist_enter (novo)",
         "notes_collapse_motion (novo)",
+        "notes_collapsed_heading (novo)",
         "notes_completion_spacing (novo)",
         "notes_cut_background (novo)",
         "notes_document_migration (novo)",
@@ -995,8 +999,10 @@
         "mapa_conexoes (novo)",
         "mapa_conteudo (novo)",
         "notes_cascade_defaults (novo)",
+        "notes_checklist_enter (novo)",
         "notes_checklist_numbers (novo)",
         "notes_checklist_order (novo)",
+        "notes_collapsed_heading (novo)",
         "notes_colors_persistence (novo)",
         "notes_completion_spacing (novo)",
         "notes_document_migration (novo)",
@@ -1035,8 +1041,10 @@
         "notes_renumber_structure",
         "test_notes_editor_ui",
         "notes_cascade_defaults (novo)",
+        "notes_checklist_enter (novo)",
         "notes_checklist_numbers (novo)",
         "notes_checklist_order (novo)",
+        "notes_collapsed_heading (novo)",
         "notes_colors_persistence (novo)",
         "notes_document_migration (novo)",
         "notes_document_model (novo)",
@@ -1080,6 +1088,7 @@
         "notes_requested_fixes",
         "notes_cascade_defaults (novo)",
         "notes_collapse_motion (novo)",
+        "notes_collapsed_heading (novo)",
         "notes_enter_child (novo)",
         "notes_extras (novo)",
         "notes_indent_child (novo)",
@@ -1232,6 +1241,7 @@
         "notes_markdown",
         "notes_requested_fixes",
         "test_notes_editor_ui",
+        "notes_collapsed_heading (novo)",
         "notes_document_model (novo)",
         "notes_extras (novo)",
         "notes_indent_child (novo)",
@@ -1282,8 +1292,10 @@
         "multi_notas_100 (novo)",
         "nota_grande_pwa (novo)",
         "notes_cascade_defaults (novo)",
+        "notes_checklist_enter (novo)",
         "notes_checklist_numbers (novo)",
         "notes_checklist_order (novo)",
+        "notes_collapsed_heading (novo)",
         "notes_colors_persistence (novo)",
         "notes_completion_spacing (novo)",
         "notes_document_model (novo)",
@@ -1329,8 +1341,10 @@
         "mapa_gestao (novo)",
         "mapa_layout (novo)",
         "multi_notas (novo)",
+        "notes_checklist_enter (novo)",
         "notes_checklist_numbers (novo)",
         "notes_checklist_order (novo)",
+        "notes_collapsed_heading (novo)",
         "notes_colors_persistence (novo)",
         "notes_document_migration (novo)",
         "notes_document_model (novo)",
@@ -1425,8 +1439,10 @@
     },
     {
       "regra": "outlineBreak",
-      "testes": [],
-      "coberto": false
+      "testes": [
+        "notes_collapsed_heading (novo)"
+      ],
+      "coberto": true
     },
     {
       "regra": "property",
@@ -1630,6 +1646,10 @@
       "regra": "cascata reversível persistida, data de conclusão, cor do corpo preservada, seletor padrão e fechamento independente"
     },
     {
+      "teste": "notes_checklist_enter",
+      "regra": "Enter em lista com check+numerada mantem continuidade e foca o item seguinte"
+    },
+    {
       "teste": "notes_checklist_numbers",
       "regra": "pilha de concluídos, desmarcação e evento duplicado"
     },
@@ -1640,6 +1660,10 @@
     {
       "teste": "notes_collapse_motion",
       "regra": "following title moves continuously without final spacing jump"
+    },
+    {
+      "teste": "notes_collapsed_heading",
+      "regra": "Enter em titulo recolhido replica a formatacao (linha e inline) e listas seguem o fluxo"
     },
     {
       "teste": "notes_colors_persistence",
@@ -1883,7 +1907,6 @@
       "numberCurrency",
       "numberDecimals",
       "numberFormat",
-      "outlineBreak",
       "property",
       "tableResize",
       "videoPoster"

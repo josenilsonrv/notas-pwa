@@ -9,20 +9,6 @@
   {
     "tema": "light",
     "seletor": "#notesContextNav",
-    "propriedade": "padding",
-    "pwa": "3.87852px 33.9722px 3.87852px 5.81778px",
-    "origem": "12px 18px"
-  },
-  {
-    "tema": "light",
-    "seletor": "#notesContextNav",
-    "propriedade": "height",
-    "pwa": "43.4219px",
-    "origem": "59.6719px"
-  },
-  {
-    "tema": "light",
-    "seletor": "#notesContextNav",
     "propriedade": "overflow",
     "pwa": "hidden auto",
     "origem": "hidden"
@@ -33,20 +19,6 @@
     "propriedade": "padding",
     "pwa": "20px 22.4px 20px 9.6px",
     "origem": "20px 22.4px"
-  },
-  {
-    "tema": "light",
-    "seletor": "#notesEditorContainer",
-    "propriedade": "height",
-    "pwa": "720.578px",
-    "origem": "704.328px"
-  },
-  {
-    "tema": "light",
-    "seletor": "#notesEditor",
-    "propriedade": "height",
-    "pwa": "678.578px",
-    "origem": "662.328px"
   },
   {
     "tema": "light",

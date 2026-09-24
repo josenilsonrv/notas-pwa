@@ -1,13 +1,13 @@
 # Relatório de paridade visual (PWA x projeto original)
 
-> Gerado por `node tests/parity_visual.cjs` em 2026-09-24 20:41:05.
+> Gerado por `node tests/parity_visual.cjs` em 2026-09-24 21:34:34.
 > Compara as propriedades computadas de 18 seletores do modal de notas, em tema claro e escuro.
 > O original é usado **somente como referência** (nenhuma alteração é feita nele).
 
 | Resultado | Quantidade |
 | --- | --- |
 | Divergências reais | 0 |
-| Exceções documentadas | 21 |
+| Exceções documentadas | 17 |
 
 ## Exceções aceitas (com justificativa)
 

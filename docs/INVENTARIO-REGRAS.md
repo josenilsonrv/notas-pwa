@@ -21,9 +21,9 @@
 | Atributos `dataset.*` | 41 |
 | Seletores de atributo no CSS | 17 |
 | Regras de domínio (`NotesDocument`) | 8 |
-| Arquivos de teste do original | 87 |
+| Arquivos de teste do original | 89 |
 
-Motor: `editor.js`: 1035 linhas / 112729 bytes · `extras.js`: 137 linhas / 34353 bytes · `tables.js`: 133 linhas / 19363 bytes · `table-math.js`: 72 linhas / 6646 bytes
+Motor: `editor.js`: 1042 linhas / 113316 bytes · `extras.js`: 137 linhas / 34353 bytes · `tables.js`: 133 linhas / 19363 bytes · `table-math.js`: 72 linhas / 6646 bytes
 
 ## Comandos (18)
 

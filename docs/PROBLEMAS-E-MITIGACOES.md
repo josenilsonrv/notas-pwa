@@ -275,6 +275,20 @@ N/A 1 / TOTAL 44` → **SEM REGRESSÕES** (0 falhas novas). `parity_visual` e `s
 - **Mitigação p/ novas fases**: ao investigar colapso, medir com `hidden=true` (estado
   persistente) em vez de `isVisible()` no meio da animação.
 
+### P29 — Título recolhido não replicava a formatação quando o H1 era INLINE
+- **Sintoma**: com o conteúdo recolhido e o cursor no fim da linha, o Enter criava
+  uma linha de baixo **sem formatação** (texto normal) mesmo a linha de cima sendo
+  um título azul/negrito/grande.
+- **Causa**: o comando `heading` aplicado a uma **seleção** cria um título **inline**
+  (`span [data-inline-heading]`) em vez de `data-heading` na linha (ver
+  `formatSelectionHeading`). O bloco do Enter só copiava `line.dataset.heading`.
+- **Correção**: o bloco do Enter (recolhido + cursor no fim) agora deriva o título
+  também do `span [data-inline-heading]` que cobre o texto, e a linha criada recebe
+  `data-heading` + `outlineBreak` (mesma aparência).
+- **Mitigação p/ novas fases**: qualquer formatação "de linha" pode estar inline
+  (título/bold/italic aplicados a seleção). Ao replicar formatação, checar os dois
+  formatos. Teste: `tests/notes_collapsed_heading.cjs`.
+
 ### Cores (pré-existentes, fora dos 16 itens)
 - `notes_cascade_defaults.cjs` (`#1122aa` vs `#aa1122`) e `notes_navigation_completion.cjs`
   (histórico de accent) continuam falhando: o helper de cor do PWA mantém a ordem dos canais
