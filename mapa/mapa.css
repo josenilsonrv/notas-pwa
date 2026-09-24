@@ -1,0 +1,616 @@
+/* ============================================
+ * MAPA MENTAL - Área independente de Notas
+ * Usa os tokens de tema de styles.css e o atributo html[data-theme].
+ * Nada aqui redefine tokens globais (parity_visual compara o modal de notas).
+ * ============================================ */
+
+/* ------------------------------------------------------------
+ * Seletor de áreas (Notas | Mapa Mental).
+ * Flutuante: NÃO participa do fluxo do modal de notas (parity visual intacta).
+ * ------------------------------------------------------------ */
+.app-areas {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    /* Acima do modal de notas ativo (#notesModalBackdrop.active = z-index 2300),
+       para o seletor continuar clicável em qualquer área. */
+    z-index: 2400;
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-bg-container) 92%, transparent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+
+.app-areas [data-app-area] {
+    appearance: none;
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 18px;
+    min-height: 40px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: transparent;
+    cursor: pointer;
+}
+
+.app-areas [data-app-area]:hover { color: var(--color-text-main); }
+
+.app-areas [data-app-area][aria-selected="true"] {
+    color: #fff;
+    background: var(--color-neon-blue);
+    box-shadow: 0 2px 8px rgba(0, 113, 227, 0.35);
+}
+
+.app-areas [data-app-area]:focus-visible { outline: 2px solid var(--color-neon-blue); outline-offset: 2px; }
+
+html[data-theme="dark"] .app-areas {
+    background: rgba(17, 22, 29, 0.92);
+    border-color: #2A3543;
+}
+html[data-theme="dark"] .app-areas [data-app-area] { color: #94A3B8; }
+html[data-theme="dark"] .app-areas [data-app-area]:hover { color: #E2E8F0; }
+
+/* ------------------------------------------------------------
+ * Área do Mapa Mental (segunda área trocável).
+ * z-index abaixo do modal de notas (1000): quando Notas está ativa, ela cobre.
+ * ------------------------------------------------------------ */
+.mapa-area {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg-global);
+    color: var(--color-text-main);
+}
+
+.mapa-area[hidden] { display: none !important; }
+
+.mapa-shell { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+
+.mapa-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: none;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-container);
+}
+
+.mapa-topbar-titulo { font-size: 16px; font-weight: 600; }
+.mapa-topbar-espaco { flex: 1; }
+
+.mapa-canvas-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--color-bg-global);
+    touch-action: none;
+}
+
+.mapa-vazio {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 24px;
+    text-align: center;
+    color: var(--color-text-muted);
+}
+
+.mapa-vazio-titulo { font-size: 16px; font-weight: 600; color: var(--color-text-main); }
+.mapa-vazio-dica { font-size: 13px; }
+
+/* Tema escuro: acompanha as superfícies do app (mesmos tons do modal de notas). */
+html[data-theme="dark"] .mapa-area { background: #0B0F14; color: #CBD5E1; }
+html[data-theme="dark"] .mapa-topbar { background: #11161D; border-bottom-color: #2A3543; }
+html[data-theme="dark"] .mapa-topbar-titulo { color: #E2E8F0; }
+html[data-theme="dark"] .mapa-canvas-wrap { background: #0B0F14; }
+html[data-theme="dark"] .mapa-vazio-titulo { color: #E2E8F0; }
+
+@media (max-width: 480px) {
+    .app-areas { bottom: 12px; }
+    .app-areas [data-app-area] { padding: 8px 14px; min-height: 44px; }
+}
+
+/* ------------------------------------------------------------
+ * Gestão de mapas (Fase 1): topbar, formulário, lista e chips.
+ * ------------------------------------------------------------ */
+.mapa-topbar { flex-wrap: wrap; row-gap: 8px; }
+.mapa-titulo-atual { font-size: 15px; font-weight: 600; color: var(--color-text-main); }
+
+.mapa-btn {
+    appearance: none;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-container);
+    color: var(--color-text-main);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 12px;
+    min-height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+.mapa-btn:hover { border-color: var(--color-neon-blue); color: var(--color-neon-blue); }
+.mapa-btn[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--color-neon-blue) 14%, var(--color-bg-container));
+    border-color: var(--color-neon-blue);
+    color: var(--color-neon-blue);
+}
+.mapa-btn-primario { background: var(--color-neon-blue); border-color: var(--color-neon-blue); color: #fff; }
+.mapa-btn-primario:hover { background: #0060c0; color: #fff; }
+.mapa-btn-perigo { background: var(--color-neon-red); border-color: var(--color-neon-red); color: #fff; }
+.mapa-btn-perigo:hover { background: #d92d24; color: #fff; }
+
+.mapa-busca, .mapa-ordem, .mapa-form-campo {
+    font: inherit;
+    font-size: 13px;
+    padding: 8px 10px;
+    min-height: 40px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg-container);
+    color: var(--color-text-main);
+}
+.mapa-busca { min-width: 150px; }
+
+.mapa-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-neon-blue) 6%, var(--color-bg-container));
+}
+.mapa-form-titulo { font-size: 13px; font-weight: 700; color: var(--color-text-main); }
+.mapa-form-aviso { font-size: 13px; color: var(--color-text-main); }
+
+.mapa-lista {
+    height: 100%;
+    overflow-y: auto;
+    padding: 16px 18px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mapa-chips, .mapa-recentes, .mapa-templates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.mapa-recentes-rotulo, .mapa-templates-rotulo, .mapa-conexoes-rotulo {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+}
+
+.mapa-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg-container);
+    color: var(--color-text-main);
+    font: inherit;
+    font-size: 13px;
+    padding: 6px 12px;
+    min-height: 36px;
+    cursor: pointer;
+}
+.mapa-chip:hover { border-color: var(--color-neon-blue); }
+.mapa-chip-ativo { background: var(--color-neon-blue); border-color: var(--color-neon-blue); color: #fff; }
+.mapa-chip-acao {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    padding: 2px 4px;
+    min-height: 24px;
+    cursor: pointer;
+    opacity: .72;
+}
+.mapa-chip-quebrado { border-style: dashed; color: var(--color-neon-red); border-color: var(--color-neon-red); cursor: default; }
+
+.mapa-itens { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.mapa-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-bg-container);
+}
+.mapa-item-raiz { border-color: var(--color-neon-blue); box-shadow: inset 3px 0 0 var(--color-neon-blue); }
+.mapa-item-arquivado { opacity: .6; }
+.mapa-item-abrir {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    flex: 1;
+    min-width: 140px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    padding: 4px 0;
+}
+.mapa-item-nome { font-size: 14px; font-weight: 600; color: var(--color-text-main); }
+.mapa-item-meta { font-size: 12px; color: var(--color-text-muted); }
+.mapa-item-acao {
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: 12px;
+    padding: 6px 8px;
+    min-height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.mapa-item-acao:hover { color: var(--color-neon-blue); border-color: var(--color-neon-blue); }
+.mapa-item-acoes { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.mapa-aberto { padding: 20px 18px 96px; display: flex; flex-direction: column; gap: 10px; }
+.mapa-aberto-nome { font-size: 18px; font-weight: 700; }
+.mapa-aberto-meta { font-size: 13px; color: var(--color-text-muted); }
+.mapa-aberto-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.mapa-conexoes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+html[data-theme="dark"] .mapa-btn { background: #11161D; border-color: #2A3543; color: #CBD5E1; }
+html[data-theme="dark"] .mapa-busca,
+html[data-theme="dark"] .mapa-ordem,
+html[data-theme="dark"] .mapa-form-campo { background: #11161D; border-color: #2A3543; color: #CBD5E1; }
+html[data-theme="dark"] .mapa-titulo-atual,
+html[data-theme="dark"] .mapa-item-nome,
+html[data-theme="dark"] .mapa-aberto-nome { color: #E2E8F0; }
+html[data-theme="dark"] .mapa-item { background: #11161D; border-color: #2A3543; }
+html[data-theme="dark"] .mapa-chip { background: #11161D; border-color: #2A3543; color: #CBD5E1; }
+html[data-theme="dark"] .mapa-item-acao { border-color: #2A3543; color: #94A3B8; }
+
+/* ------------------------------------------------------------
+ * Canvas infinito (Fase 2): mundo com transform, nós e minimapa.
+ * ------------------------------------------------------------ */
+.mapa-aberto { height: 100%; }
+.mapa-canvas-controles { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.mapa-canvas-btn { min-width: 40px; font-size: 16px; line-height: 1; }
+.mapa-zoom-atual {
+    min-width: 52px;
+    text-align: center;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted);
+}
+
+.mapa-canvas {
+    position: relative;
+    flex: 1;
+    min-height: 240px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background:
+        radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--color-border) 80%, transparent) 1px, transparent 0) 0 0 / 24px 24px,
+        var(--color-bg-global);
+    touch-action: none;
+    cursor: grab;
+}
+.mapa-canvas-arrastando { cursor: grabbing; }
+
+.mapa-mundo { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+.mapa-conexoes-svg { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
+.mapa-nos { position: absolute; left: 0; top: 0; }
+
+.mapa-no {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: 44px;
+    width: 180px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg-container);
+    color: var(--color-text-main);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+    font-size: 13px;
+    line-height: 1.3;
+    user-select: none;
+}
+.mapa-no-texto { overflow-wrap: anywhere; }
+.mapa-no-bloqueado { border-style: dashed; opacity: .85; }
+
+.mapa-minimapa {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    width: 160px;
+    height: 110px;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--color-bg-container) 92%, transparent);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .14);
+    overflow: hidden;
+    cursor: pointer;
+    z-index: 5;
+}
+.mapa-minimapa-mundo { position: absolute; border: 1px dashed var(--color-border); border-radius: 4px; }
+.mapa-minimapa-viewport {
+    position: absolute;
+    border: 1px solid var(--color-neon-blue);
+    background: color-mix(in srgb, var(--color-neon-blue) 18%, transparent);
+    border-radius: 3px;
+}
+
+html[data-theme="dark"] .mapa-canvas {
+    background:
+        radial-gradient(circle at 1px 1px, #2A3543 1px, transparent 0) 0 0 / 24px 24px,
+        #0B0F14;
+}
+html[data-theme="dark"] .mapa-no { background: #11161D; border-color: #2A3543; color: #CBD5E1; }
+html[data-theme="dark"] .mapa-minimapa { background: rgba(17, 22, 29, .92); border-color: #2A3543; }
+
+/* ------------------------------------------------------------
+ * Nós (Fase 3): seleção, edição, alternador, cadeado, alça e laço.
+ * ------------------------------------------------------------ */
+.mapa-no-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.mapa-no-btn { min-height: 34px; font-size: 12px; padding: 6px 10px; }
+
+.mapa-no.mapa-selecionado {
+    border-color: var(--color-neon-blue);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-neon-blue) 30%, transparent), 0 2px 8px rgba(0, 0, 0, .08);
+}
+.mapa-no-editando {
+    border-color: var(--color-neon-blue);
+    box-shadow: 0 0 0 2px var(--color-neon-blue);
+    cursor: text;
+}
+.mapa-no-arrastando { pointer-events: none; opacity: .9; cursor: grabbing; }
+.mapa-no.mapa-alvo-reparent {
+    border-color: var(--color-neon-green);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-neon-green) 35%, transparent);
+}
+.mapa-no-recolhido { border-style: dashed; }
+
+.mapa-no-toggle {
+    flex: none;
+    border: 0;
+    background: transparent;
+    color: var(--color-neon-blue);
+    font: inherit;
+    font-size: 12px;
+    line-height: 1;
+    padding: 2px 4px;
+    margin-right: 4px;
+    cursor: pointer;
+}
+.mapa-no-cadeado { flex: none; margin-left: 6px; font-size: 11px; }
+.mapa-no-texto { flex: 1; }
+.mapa-no-editor { outline: none; cursor: text; white-space: pre-wrap; min-width: 40px; }
+
+.mapa-no-resize {
+    position: absolute;
+    right: -3px;
+    top: 6px;
+    bottom: 6px;
+    width: 6px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--color-neon-blue) 45%, transparent);
+    opacity: 0;
+    cursor: ew-resize;
+}
+.mapa-no:hover .mapa-no-resize,
+.mapa-no.mapa-selecionado .mapa-no-resize,
+.mapa-no:focus-within .mapa-no-resize { opacity: 1; }
+
+.mapa-laco {
+    position: absolute;
+    border: 1px dashed var(--color-neon-blue);
+    background: color-mix(in srgb, var(--color-neon-blue) 12%, transparent);
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 4;
+}
+
+html[data-theme="dark"] .mapa-no-editor { background: #0B0F14; }
+
+/* ------------------------------------------------------------
+ * Fase 4: conteúdo do nó (ícone/check, tags, prioridade, painel).
+ * ------------------------------------------------------------ */
+.mapa-no-icone { flex: none; margin-right: 4px; }
+.mapa-no-check {
+    flex: none; border: 0; background: transparent; color: inherit;
+    font: inherit; cursor: pointer; padding: 0 4px; min-height: 24px;
+}
+.mapa-no-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.mapa-no-tag {
+    font-size: 10px; color: var(--color-neon-blue);
+    background: color-mix(in srgb, var(--color-neon-blue) 12%, transparent);
+    border-radius: 999px; padding: 1px 6px;
+}
+.mapa-no-concluido .mapa-no-texto { text-decoration: line-through; opacity: .65; }
+.mapa-no-prioridade-alta { box-shadow: inset 3px 0 0 #e5484d; }
+.mapa-no-prioridade-media { box-shadow: inset 3px 0 0 #f5a623; }
+.mapa-no-prioridade-baixa { box-shadow: inset 3px 0 0 #3fb950; }
+.mapa-no-ponte { border-style: solid; }
+.mapa-no-ponte-icone {
+    flex: none; margin-left: 6px; border: 0; background: transparent;
+    cursor: pointer; font-size: 12px; min-height: 24px;
+}
+
+.mapa-painel {
+    flex: none; margin: 8px; padding: 12px; max-height: 46vh; overflow: auto;
+    border: 1px solid var(--color-border); border-radius: 12px;
+    background: var(--color-bg-container);
+}
+.mapa-painel-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.mapa-painel-titulo { margin: 0; font-size: 14px; font-weight: 600; }
+.mapa-painel-form { display: flex; flex-direction: column; gap: 8px; }
+.mapa-painel-icones, .mapa-painel-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.mapa-painel-campo { display: flex; flex-direction: column; gap: 2px; flex: 1 1 160px; }
+.mapa-painel-rotulo { font-size: 11px; font-weight: 600; color: var(--color-text-muted); }
+.mapa-painel-entrada {
+    font: inherit; font-size: 13px; color: var(--color-text-main);
+    background: var(--color-bg-global); border: 1px solid var(--color-border);
+    border-radius: 8px; padding: 6px 8px;
+}
+.mapa-painel-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.mapa-painel-emoji-picker { display: flex; flex-wrap: wrap; gap: 4px; }
+.mapa-emoji {
+    min-height: 34px; padding: 4px 8px; font-size: 16px; cursor: pointer;
+    border: 1px solid var(--color-border); background: transparent; border-radius: 8px;
+}
+.mapa-painel-detectados { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.mapa-painel-link { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.mapa-painel-anexos { display: flex; flex-direction: column; gap: 4px; }
+.mapa-painel-anexo { display: flex; align-items: center; gap: 8px; }
+.mapa-painel-miniatura {
+    width: 40px; height: 40px; object-fit: cover;
+    border-radius: 6px; border: 1px solid var(--color-border);
+}
+.mapa-painel-anexo-nome { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mapa-painel-ponte { margin-top: 4px; }
+.mapa-painel-acoes { display: flex; gap: 8px; justify-content: flex-end; }
+
+html[data-theme="dark"] .mapa-painel { background: #11161D; border-color: #2A3543; }
+html[data-theme="dark"] .mapa-painel-entrada { background: #0B0F14; border-color: #2A3543; color: #CBD5E1; }
+html[data-theme="dark"] .mapa-emoji { border-color: #2A3543; }
+
+
+/* ------------------------------------------------------------
+ * Fase 5: identificação visual por nível (profundidade na hierarquia).
+ * ------------------------------------------------------------ */
+.mapa-no[data-mapa-nivel="1"] { font-size: 14px; font-weight: 700; border-width: 2px; }
+.mapa-no[data-mapa-nivel="2"] { border-left: 3px solid var(--color-neon-blue); }
+.mapa-no[data-mapa-nivel="3"] { border-left: 3px solid var(--color-neon-green); }
+.mapa-no[data-mapa-nivel="4"] { border-left: 3px solid var(--color-neon-purple); }
+.mapa-no[data-mapa-nivel="5"],
+.mapa-no[data-mapa-nivel="6"],
+.mapa-no[data-mapa-nivel="7"],
+.mapa-no[data-mapa-nivel="8"] { border-left: 3px solid var(--color-neon-orange); opacity: .95; }
+
+/* Seletor de layout dentro dos controles do canvas. */
+.mapa-canvas-controles .mapa-ordem {
+    min-height: 34px; font: inherit; font-size: 13px; padding: 4px 8px;
+    color: var(--color-text-main); background: var(--color-bg-container);
+    border: 1px solid var(--color-border); border-radius: 8px;
+}
+html[data-theme="dark"] .mapa-canvas-controles .mapa-ordem { background: #11161D; border-color: #2A3543; color: #CBD5E1; }
+
+
+/* ------------------------------------------------------------
+ * Fase 6: conexões livres (arestas em SVG, overlay do mundo).
+ * ------------------------------------------------------------ */
+.mapa-conexoes-svg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1px;
+    height: 1px;
+    overflow: visible;
+    pointer-events: none;
+}
+.mapa-conexao-hit { fill: none; stroke: transparent; stroke-width: 18; pointer-events: stroke; cursor: pointer; }
+.mapa-conexao-linha { pointer-events: none; }
+.mapa-conexao-texto {
+    font-size: 12px;
+    font-weight: 600;
+    fill: var(--color-text-main);
+    paint-order: stroke;
+    stroke: var(--color-bg-global);
+    stroke-width: 3px;
+    pointer-events: none;
+}
+.mapa-conexao:hover .mapa-conexao-linha { filter: drop-shadow(0 0 3px var(--color-neon-blue)); }
+.mapa-conexao-temp { stroke: var(--color-neon-blue); stroke-width: 2; stroke-dasharray: 5 4; pointer-events: none; }
+.mapa-no.mapa-alvo-conexao {
+    border-color: var(--color-neon-blue);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-neon-blue) 40%, transparent);
+}
+.mapa-cx-menu {
+    flex: none;
+    margin: 8px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-bg-container);
+}
+
+html[data-theme="dark"] .mapa-conexao-texto { stroke: #0B0F14; fill: #CBD5E1; }
+html[data-theme="dark"] .mapa-cx-menu { background: #11161D; border-color: #2A3543; }
+
+
+/* ------------------------------------------------------------
+ * Fase 7: zonas de soltura do drag & drop (linha-guia + alvo bloqueado).
+ * ------------------------------------------------------------ */
+.mapa-no.mapa-alvo-antes::before,
+.mapa-no.mapa-alvo-depois::after {
+    content: '';
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    height: 3px;
+    background: var(--color-neon-blue);
+    border-radius: 2px;
+}
+.mapa-no.mapa-alvo-antes::before { top: -7px; }
+.mapa-no.mapa-alvo-depois::after { bottom: -7px; }
+.mapa-no.mapa-alvo-bloqueado {
+    border-color: var(--color-neon-red);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-neon-red) 35%, transparent);
+    cursor: not-allowed;
+}
+
+
+/* ------------------------------------------------------------
+ * Estado vazio do canvas (mapa sem nós) — não bloqueia o pan.
+ * ------------------------------------------------------------ */
+.mapa-canvas-vazio {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px;
+    text-align: center;
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+.mapa-canvas-vazio button { pointer-events: auto; }
+.mapa-canvas-vazio-titulo { margin: 0; font-size: 16px; font-weight: 600; color: var(--color-text-main); }
+.mapa-canvas-vazio-dica { max-width: 420px; margin: 0; font-size: 13px; }
+
+
+/* ------------------------------------------------------------
+ * Ramificações pai→filho (hierarquia): a ligação do filho com o pai.
+ * Traçadas em SVG, por baixo dos nós e das conexões livres.
+ * ------------------------------------------------------------ */
+.mapa-ramo {
+    stroke: color-mix(in srgb, var(--color-text-muted) 55%, transparent);
+    stroke-width: 2;
+    stroke-linecap: round;
+    pointer-events: none;
+}
+html[data-theme="dark"] .mapa-ramo { stroke: #3A4657; }
+
