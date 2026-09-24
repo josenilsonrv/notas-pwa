@@ -1,4 +1,5 @@
 /* Versioned note document. This domain layer does not depend on the DOM. */
+// 🔄 [INÍCIO: NOTAS - MODELO DE DOCUMENTO (NotesDocument)]
 class NotesDocument {
     static VERSION = 1;
     // Níveis de indentação permitidos: 0 (sem recuo) a 4 (quatro recuos).
@@ -106,7 +107,10 @@ class NotesDocument {
 }
 globalThis.NotesDocument=NotesDocument;
 
+// 🔄 [FIM: NOTAS - MODELO DE DOCUMENTO (NotesDocument)]
+
 /* Notes commands share one line structure; persisted notes remain HTML. */
+// 🔄 [INÍCIO: NOTAS - MOTOR/IMPORTAÇÃO (install/sanitize/walk/render)]
 function installNotesEditor(App) {
     const p = App.prototype, original = {};
     for (const name of ['openNotesModal','openStageNotesModal','closeNotesModal','setupModalListeners','toggleNotesFullscreen']) original[name] = p[name];
@@ -244,6 +248,9 @@ function installNotesEditor(App) {
     }
     p.syncNotesDocument=function(){this.notesDocument=captureDocument();return this.notesDocument;};
     p.renderNotesDocument=function(){renderDocument(this.notesDocument);};
+    // 🔄 [FIM: NOTAS - MOTOR/IMPORTAÇÃO (install/sanitize/walk/render)]
+
+    // 🔄 [INÍCIO: NOTAS - ALVO E APRESENTAÇÃO (targets/syntax/colapso)]
     function targets(line,all=lines(),start=all.indexOf(line),structural=false) {
         const result=[];
         for(let i=start+1;i<all.length;i++) {
@@ -397,6 +404,9 @@ function installNotesEditor(App) {
         if(toggle){const expanded=all.some((row,index)=>childGroups[index].length)&&all.every((row,index)=>!childGroups[index].length||row.dataset.collapsed!=='true');toggle.setAttribute('aria-expanded',String(expanded));toggle.title=expanded?'Recolher todos':'Expandir todos';toggle.innerHTML=expanded?'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v6m-3-3 3 3 3-3M10 18v-6m-3 3 3-3 3 3"/></svg>':'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 8V2m-3 3 3-3 3 3M10 12v6m-3-3 3 3 3-3"/></svg>';}
         this.syncNotesDocument();
     };
+    // 🔄 [FIM: NOTAS - ALVO E APRESENTAÇÃO (targets/syntax/colapso)]
+
+    // 🔄 [INÍCIO: NOTAS - EXPORTAÇÃO, SELEÇÃO E HISTÓRICO]
     p.getCleanNotesHtml = function() {
         const model=this.syncNotesDocument(),copy=document.createElement('div');renderDocument(model,copy);
         return copy.innerHTML;
@@ -446,6 +456,9 @@ function installNotesEditor(App) {
     p.undoNotes=function(){this.flushNotesTyping();this.restoreNotesHistory(this.notesHistoryIndex-1);};
     p.redoNotes=function(){this.flushNotesTyping();this.restoreNotesHistory(this.notesHistoryIndex+1);};
     p.restoreNotesHistory=function(index){if(index<0||index>=this.notesHistory.length)return;const positions=new Map(lines().filter(row=>!row.hidden).map(row=>[row,row.getBoundingClientRect()]));this.notesHistoryIndex=index;lines().forEach(row=>{row.getAnimations().forEach(animation=>animation.cancel());const controls=row.querySelector('.notes-line-controls');if(controls){clearTimeout(controls._completionNoticeTimer);controls.classList.remove('notes-completion-notice');}});this.notesDocument=NotesDocument.restore(this.notesHistory[index]);this.renderNotesDocument();this.refreshNotesCollapseControls();restore(this.notesHistoryMarks[index]);this.updateNotesHistoryButtons();this.animateNotesMovement(positions);this.queueNotesSave();};
+    // 🔄 [FIM: NOTAS - EXPORTAÇÃO, SELEÇÃO E HISTÓRICO]
+
+    // 🔄 [INÍCIO: NOTAS - FORMATAÇÃO E CORES]
     function selectedHeading() {
         const node=getSelection().anchorNode,element=node?.nodeType===3?node.parentElement:node;
         return element?.closest('[data-inline-heading]')?.dataset.inlineHeading ?? lineAt(node)?.dataset.heading ?? '';
@@ -518,6 +531,7 @@ function installNotesEditor(App) {
     p.closeNotesColorPanels=function(){
         document.querySelectorAll('#notesColorPalette,.notes-tone-picker').forEach(element=>{element._positionObserver?.disconnect();element._dispose?.();element.remove();});
     };
+    // 🔄 [INÍCIO: NOTAS - PALETA DE CORES (setupNotesColors)]
     p.setupNotesColors=function(){
         document.querySelectorAll('[data-notes-color]').forEach(button=>{
             button.addEventListener('mousedown',e=>{if(e.button===0)e.preventDefault();});
@@ -606,6 +620,10 @@ function installNotesEditor(App) {
             });
         });
     };
+    // 🔄 [FIM: NOTAS - PALETA DE CORES (setupNotesColors)]
+    // 🔄 [FIM: NOTAS - FORMATAÇÃO E CORES]
+
+    // 🔄 [INÍCIO: NOTAS - COMANDOS (executeNotesCommand)]
     p.executeNotesCommand=function(command){
         this.flushNotesTyping();
         if(command==='undo')return this.undoNotes();if(command==='redo')return this.redoNotes();
@@ -656,6 +674,9 @@ function installNotesEditor(App) {
         if(command.startsWith('heading')){const all=lines();all.forEach((row,index)=>{if(targets(row,all,index).some(child=>chosen.includes(child)))row.dataset.collapsed='false';});}
         this.refreshNotesCollapseControls();restore(mark);this.rememberNotesSelection();this.recordNotesHistory();this.updateNotesToolbarState();
     };
+    // 🔄 [FIM: NOTAS - COMANDOS (executeNotesCommand)]
+
+    // 🔄 [INÍCIO: NOTAS - ATALHOS (handleNotesEditorShortcut)]
     p.handleNotesEditorShortcut=function(event){
         if(event.ctrlKey||event.metaKey||event.altKey||['Enter','Tab','ArrowUp','ArrowDown'].includes(event.key))this.flushNotesTyping();
         if(event.isComposing)return;
@@ -807,6 +828,9 @@ function installNotesEditor(App) {
         if(!body(line).childNodes.length)body(line).append(document.createElement('br'));
         if(child||line.dataset.heading)line.dataset.collapsed='false';line.after(next);this.refreshNotesCollapseControls();caret(next);this.recordNotesHistory();
     };
+    // 🔄 [FIM: NOTAS - ATALHOS (handleNotesEditorShortcut)]
+
+    // 🔄 [INÍCIO: NOTAS - ESTADO DA TOOLBAR E CHECKLIST]
     p.updateNotesToolbarState=function(){const chosen=selected().filter(Boolean);document.querySelectorAll('#notesToolbar [data-command]').forEach(button=>{const command=button.dataset.command;let active=false;if(command.startsWith('heading'))active=getSelection().isCollapsed?chosen.length&&chosen.every(l=>l.dataset.heading===command.slice(-1)):selectedHeading()===command.slice(-1);else if(command==='checklist')active=chosen.length&&chosen.every(l=>l.dataset.check==='true');else if(command.includes('List'))active=chosen.length&&chosen.every(l=>l.dataset.list===(command==='insertOrderedList'?'ol':'ul'));else if(command==='bold'||command==='italic'||command==='underline')active=document.queryCommandState(command);button.classList.toggle('is-active',Boolean(active));button.setAttribute('aria-pressed',String(Boolean(active)));});};
     p.updateNotesChecklistOrder=function(check){
         this.flushNotesTyping();
@@ -842,6 +866,9 @@ function installNotesEditor(App) {
             row._checkMoveAnimation=motion;motion.onfinish=()=>{if(row._checkMoveAnimation===motion)row._checkMoveAnimation=null;};
         });
     };
+    // 🔄 [FIM: NOTAS - ESTADO DA TOOLBAR E CHECKLIST]
+
+    // 🔄 [INÍCIO: NOTAS - SETUP/EDIÇÃO (setupNotesEditing)]
     p.setupNotesEditing=function(){
         if(this.notesEditingReady)return;this.notesEditingReady=true;this.setupNotesColors();
         for(const [command,label,glyph]of [['codeBlock','Adicionar bloco de código','</>'],['collapseAll','Expandir/recolher todos','↕']]){
@@ -972,6 +999,9 @@ function installNotesEditor(App) {
         });
         window.addEventListener('beforeunload',event=>{if(this.notesSession&&this.getCleanNotesHtml()!==this.notesSession.saved){this.storeNotesDraft();event.preventDefault();event.returnValue='';}});
     };
+    // 🔄 [FIM: NOTAS - SETUP/EDIÇÃO (setupNotesEditing)]
+
+    // 🔄 [INÍCIO: NOTAS - SESSÃO/MODAL (status/autosave/open/close)]
     p.setupModalListeners=function(){original.setupModalListeners.call(this);this.setupNotesEditing();};
     p.notesStatus=function(text,error=false){const status=document.getElementById('notesSaveStatus');if(status){status.textContent=text;status.disabled=!error;status.onclick=error?()=>this.saveNotes():null;}};
     p.storeNotesDraft=function(){const session=this.notesSession;if(!session)return;try{localStorage.setItem(session.key,JSON.stringify({html:this.getCleanNotesHtml(),base:session.saved}));}catch{this.notesStatus('Rascunho local indisponível');}};
@@ -1011,6 +1041,9 @@ function installNotesEditor(App) {
     p.openNotesModal=async function(id){if(this.notesSession&&!(await this.closeNotesModal()))return;original.openNotesModal.call(this,id);if(this.currentNotesProjectId)this.beginNotesSession();};
     p.openStageNotesModal=async function(id){if(this.notesSession&&!(await this.closeNotesModal()))return;original.openStageNotesModal.call(this,id);if(this.currentNotesProjectId)this.beginNotesSession();};
     p.closeNotesModal=async function(){if(this.notesSession){if(!(await this.saveNotes()))return false;clearTimeout(this.notesSaveTimer);this.notesSession=null;}clearTimeout(this.notesCodeTimer);clearTimeout(this.notesDraftTimer);this.closeNotesColorPanels();this.notesMotionVersion=(this.notesMotionVersion||0)+1;document.getElementById('notesContextNav').hidden=false;original.closeNotesModal.call(this);return true;};
+    // 🔄 [FIM: NOTAS - SESSÃO/MODAL (status/autosave/open/close)]
+
+    // 🔄 [INÍCIO: NOTAS - CABEÇALHO, COLAPSO, MOTION E FULLSCREEN]
     p.setNotesHeaderCollapsed=function(collapsed){const toolbar=document.getElementById('notesToolbar'),button=document.getElementById('notesHeaderCollapseBtn');toolbar.hidden=Boolean(collapsed);button.setAttribute('aria-expanded',String(!collapsed));button.title=collapsed?'Mostrar ferramentas':'Ocultar ferramentas';button.setAttribute('aria-label',button.title);};
     p.toggleNotesHeaderCollapse=async function(){
         const toolbar=document.getElementById('notesToolbar'),nav=document.getElementById('notesContextNav');
@@ -1069,6 +1102,9 @@ function installNotesEditor(App) {
         else{await this.notesPanelMotion(nav,Boolean(this.notesNavBeforeFullscreen),version);await this.notesPanelMotion(toolbar,Boolean(this.notesToolbarBeforeFullscreen),version);}
         if(version===this.notesMotionVersion)this.setNotesHeaderCollapsed(toolbar.hidden);
     };
+    // 🔄 [FIM: NOTAS - CABEÇALHO, COLAPSO, MOTION E FULLSCREEN]
+
+    // 🔄 [INÍCIO: NOTAS - RESIZE (setupNotesResize)]
     p.setupNotesResize=function(){
         const modal=document.getElementById('notesModal');
         modal.style.setProperty('--notes-width',Math.min(innerWidth,this.notesSavedWidth||Math.max(360,innerWidth/2))+'px');
@@ -1085,4 +1121,5 @@ function installNotesEditor(App) {
         handle.onpointerup=finish;handle.onpointercancel=finish;
         handle.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();if(e.key==='End'){this.toggleNotesFullscreen(true);return;}if(modal.classList.contains('fullscreen'))this.toggleNotesFullscreen(false);this.notesSavedWidth=setWidth(e.key==='Home'?360:modal.getBoundingClientRect().width+(e.key==='ArrowLeft'?-24:24));};
     };
+    // 🔄 [FIM: NOTAS - RESIZE (setupNotesResize)]
 }

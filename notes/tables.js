@@ -1,4 +1,5 @@
 /* Contextual table tools. Only a table being edited is recalculated. */
+// 🔄 [INÍCIO: NOTAS/TABELA - INSTALAÇÃO E HELPERS]
 function installNotesTables(App){
  const p=App.prototype,setup=p.setupNotesEditing,record=p.recordNotesHistory;
  const editor=()=>document.getElementById('notesEditor');
@@ -9,6 +10,9 @@ function installNotesTables(App){
  const source=cell=>cell.dataset.formula??cell.dataset.cellValue??cell.textContent;
  const functions=[['Soma','SOMA'],['Média','MEDIA'],['Menor valor','MINIMO'],['Maior valor','MAXIMO'],['Contar números','CONTAR'],['Produto','PRODUTO'],['Raiz quadrada','RAIZ'],['Potência','POTENCIA'],['Arredondar','ARRED'],['Valor absoluto','ABS'],['Resto da divisão','RESTO'],['Logaritmo','LOG'],['Logaritmo natural','LN'],['Seno','SEN'],['Cosseno','COS'],['Tangente','TAN'],['Fatorial','FATORIAL']];
  const messages={'#DIV/0!':'Não é possível dividir por zero.','#REF!':'Esta célula não existe na tabela.','#CICLO!':'A fórmula depende dela mesma, direta ou indiretamente.','#VALOR!':'Use números nas operações.','#ARG!':'Verifique os argumentos da função.','#NUM!':'O resultado não é um número válido.','#FORMULA!':'Confira os parênteses e use ; para separar argumentos.','#FUNCAO!':'Função não reconhecida.','#LIMITE!':'A fórmula ou cadeia de referências é grande demais.'};
+ // 🔄 [FIM: NOTAS/TABELA - INSTALAÇÃO E HELPERS]
+
+ // 🔄 [INÍCIO: NOTAS/TABELA - RECÁLCULO (notesRecalculateTable)]
  p.notesRecalculateTable=function(table,skip=null){
   if(!table?.isConnected)return;const grid=cells(table),values=NotesTableMath.calculate(grid.map(row=>row.map(source)));
   grid.forEach((row,r)=>row.forEach((cell,c)=>{
@@ -31,10 +35,16 @@ function installNotesTables(App){
 
   }));
  };
+ // 🔄 [FIM: NOTAS/TABELA - RECÁLCULO (notesRecalculateTable)]
+
+ // 🔄 [INÍCIO: NOTAS/TABELA - HISTÓRICO]
  p.recordNotesHistory=function(...args){
   if(this.notesDirtyTables?.size){const active=cellAt(getSelection().anchorNode);for(const table of this.notesDirtyTables)this.notesRecalculateTable(table,active);this.notesDirtyTables.clear();}
   return record.apply(this,args);
  };
+ // 🔄 [FIM: NOTAS/TABELA - HISTÓRICO]
+
+ // 🔄 [INÍCIO: NOTAS/TABELA - PAINEL/EDIÇÃO (setupNotesEditing)]
  p.setupNotesEditing=function(){
   setup.call(this);if(this.notesTablesReady)return;this.notesTablesReady=true;this.notesDirtyTables=new Set();
   const app=this,root=editor();let active=null,selected=[],editing=false,frame,drag=null,referenceAnchor=null;
@@ -76,6 +86,7 @@ function installNotesTables(App){
   const coordinates=(cell)=>{const rect=cell.getBoundingClientRect();return {rect,x:rect.right,y:rect.bottom};};
   function widths(table){return [...table.rows[0].cells].map(cell=>cell.getBoundingClientRect().width);}
   function setWidths(table,values){let group=table.querySelector(':scope > colgroup');if(!group){group=document.createElement('colgroup');table.prepend(group);}while(group.children.length<values.length)group.append(document.createElement('col'));values.forEach((value,i)=>group.children[i].style.width=Math.max(48,value)+'px');table.style.width=values.reduce((sum,value)=>sum+Math.max(48,value),0)+'px';table.style.tableLayout='fixed';}
+  // 🔄 [INÍCIO: NOTAS/TABELA - AJUSTES (openSettings)]
   function openSettings(){
    if(!active?.isConnected)return;const current=active,table=tableOf(current),initial=[...selected],tableSession=app.notesSession;
    app.notesExtraDialog('Ajustar tabela',dialog=>{
@@ -96,6 +107,7 @@ function installNotesTables(App){
     };dialog.append(form);
    },settings);
   }
+  // 🔄 [FIM: NOTAS/TABELA - AJUSTES (openSettings)]
   document.addEventListener('selectionchange',()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{if(editing||drag||panel.contains(document.activeElement)||document.activeElement?.closest?.('.notes-extra-dialog'))return;const cell=cellAt(getSelection().anchorNode);if(cell===active)return;select(cell);});});
   document.addEventListener('input',e=>{
    if(!root.contains(e.target))return;const cell=cellAt(getSelection().anchorNode);if(!cell)return;const text=cell.textContent.trim();delete cell.dataset.cellValue;if(!text.startsWith('=')){delete cell.dataset.formula;delete cell.dataset.formulaError;cell.removeAttribute('title');}else cell.dataset.formula=text;app.notesDirtyTables.add(tableOf(cell));if(!editing&&cell===active)fill();
@@ -129,4 +141,5 @@ function installNotesTables(App){
   document.addEventListener('pointerdown',e=>{if(!root.contains(e.target)&&!panel.contains(e.target)&&!e.target.closest('.notes-extra-dialog')){editing=false;select(null);}},true);
   const observer=new MutationObserver(()=>{if(active&&!active.isConnected){active=null;selected=[];editing=false;panel.hidden=true;markSelection();}});observer.observe(root,{childList:true,subtree:true});
  };
+ // 🔄 [FIM: NOTAS/TABELA - PAINEL/EDIÇÃO (setupNotesEditing)]
 }

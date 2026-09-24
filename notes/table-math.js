@@ -4,6 +4,7 @@
  const fault=code=>{throw new Error(code);};
  const scalar=value=>{if(Array.isArray(value)||!Number.isFinite(value))fault('#VALOR!');return value;};
  const aliases={SUM:'SOMA',AVERAGE:'MEDIA',MIN:'MINIMO',MAX:'MAXIMO',COUNT:'CONTAR',PRODUCT:'PRODUTO',SQRT:'RAIZ',POWER:'POTENCIA',ROUND:'ARRED',ABS:'ABS',MOD:'RESTO',SIN:'SEN',COS:'COS',TAN:'TAN',LOG10:'LOG10',LN:'LN',EXP:'EXP',FLOOR:'PISO',CEIL:'TETO',PI:'PI',FACT:'FATORIAL'};
+ // 🔄 [INÍCIO: TABELA - FUNÇÕES (call)]
  function call(name,args){
   name=aliases[name]||name;
   const values=args.flat().filter(Number.isFinite),a=()=>scalar(args[0]),b=()=>scalar(args[1]);
@@ -33,9 +34,15 @@
    case 'FATORIAL':{const n=a();if(!Number.isInteger(n)||n<0||n>170)fault('#NUM!');let result=1;for(let i=2;i<=n;i++)result*=i;return result;}
   }
  }
+ // 🔄 [FIM: TABELA - FUNÇÕES (call)]
+
+ // 🔄 [INÍCIO: TABELA - REFERÊNCIAS (address/coordinates/numeric)]
  function address(row,col){let label='';for(let n=col+1;n;n=Math.floor((n-1)/26))label=String.fromCharCode(65+(n-1)%26)+label;return label+(row+1);}
  function coordinates(ref){const match=/^\$?([A-Z]+)\$?([1-9]\d*)$/i.exec(ref);if(!match)fault('#REF!');let col=0;for(const c of match[1].toUpperCase())col=col*26+c.charCodeAt(0)-64;return [Number(match[2])-1,col-1];}
  function numeric(raw){let text=String(raw??'').trim().replace(/\s/g,'');if(!text)return NaN;const percent=text.endsWith('%');if(percent)text=text.slice(0,-1);if(text.includes(','))text=text.replace(/\./g,'').replace(',','.');return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(text)?Number(text)/(percent?100:1):NaN;}
+ // 🔄 [FIM: TABELA - REFERÊNCIAS (address/coordinates/numeric)]
+
+ // 🔄 [INÍCIO: TABELA - PARSER/AVALIADOR (evaluate)]
  function evaluate(expression,read){
   let source=expression.trim().replace(/^=/,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase(),offset=0,depth=0;
   if(source.length>4096)fault('#LIMITE!');
@@ -62,10 +69,17 @@
   function add(){let value=multiply();for(;;){if(take('+'))value=scalar(value)+scalar(multiply());else if(take('-'))value=scalar(value)-scalar(multiply());else return value;}}
   const result=scalar(add());space();if(offset!==source.length)fault('#FORMULA!');if(!Number.isFinite(result))fault('#NUM!');return result;
  }
+ // 🔄 [FIM: TABELA - PARSER/AVALIADOR (evaluate)]
+
+ // 🔄 [INÍCIO: TABELA - GRADE/DEPENDÊNCIAS (calculate)]
  function calculate(grid){
   const cache=new Map(),visiting=new Set();
   const read=(ref,range=false)=>{const [row,col]=coordinates(ref),key=address(row,col);if(!grid[row]||col>=grid[row].length)fault('#REF!');const raw=String(grid[row][col]??'').trim();if(!raw.startsWith('=')){const n=numeric(raw);if(range)return n;if(!raw)return 0;return scalar(n);}if(cache.has(key)){const value=cache.get(key);if(typeof value==='string')fault(value);return value;}if(visiting.has(key))fault('#CICLO!');if(visiting.size>200)fault('#LIMITE!');visiting.add(key);let result;try{result=evaluate(raw,read);}catch(error){result=error.message.startsWith('#')?error.message:'#FORMULA!';}visiting.delete(key);cache.set(key,result);if(typeof result==='string')fault(result);return result;};
   return grid.map((row,r)=>row.map((raw,c)=>{if(!String(raw).trim().startsWith('='))return raw;try{return read(address(r,c));}catch(error){return error.message;}}));
  }
+ // 🔄 [FIM: TABELA - GRADE/DEPENDÊNCIAS (calculate)]
+
+ // 🔄 [INÍCIO: TABELA - API PÚBLICA]
  const api={evaluate,calculate,numeric,address,coordinates};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.NotesTableMath=api;
+ // 🔄 [FIM: TABELA - API PÚBLICA]
 })(globalThis);

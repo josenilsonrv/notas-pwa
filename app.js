@@ -9,11 +9,14 @@
 // duplicado e evita serialização no beforeunload — assim uma nota com ~1 milhão
 // de caracteres continua sendo renderizada e salva sem estourar a cota do
 // LocalStorage (~5 MB por origem).
+// 🔄 [INÍCIO: PWA - CONSTANTES DE NOTA GRANDE]
 const LIMITE_NOTA_GRANDE = 120000;
 // Rascunho de recuperação: acima disso nem grava (evita pagar o custo do
 // getCleanNotesHtml a cada autosave e o risco de cota).
 const LIMITE_RASCUNHO = 800000;
+// 🔄 [FIM: PWA - CONSTANTES DE NOTA GRANDE]
 
+// 🔄 [INÍCIO: PWA - TEMA (ThemeManager)]
 /**
  * Gerenciador de Tema
  */
@@ -77,6 +80,9 @@ class ThemeManager {
     }
 }
 
+// 🔄 [FIM: PWA - TEMA (ThemeManager)]
+
+// 🔄 [INÍCIO: PWA - APLICAÇÃO (NotesPWA boot/instalação)]
 /**
  * Aplicação Principal de Notas (standalone, tudo no dispositivo).
  * O editor, as ferramentas extras e as tabelas são instalados no
@@ -161,6 +167,8 @@ class NotesPWA {
         // Modo mobile: toolbar superior oculta por padrao e colapso agindo nos chips.
         installModoMobileNotas(NotesPWA);
     }
+
+    // 🔄 [FIM: PWA - APLICAÇÃO (NotesPWA boot/instalação)]
 
     // 🔄 [INÍCIO: ESTADO - PERSISTÊNCIA LOCAL (SEM BACKEND)]
     loadContentFromStorage() {
@@ -1192,6 +1200,7 @@ class NotesPWA {
 // acoplada ao teclado aparece) e o botao de colapso passa a alternar APENAS os
 // chips de notas. A deteccao combina toque (pointer: coarse) com largura.
 // ============================================
+// 🔄 [INÍCIO: PWA - MODO MOBILE (installModoMobileNotas)]
 function installModoMobileNotas(App) {
     const p = App.prototype;
     const superColapso = p.toggleNotesHeaderCollapse;
@@ -1240,11 +1249,13 @@ function installModoMobileNotas(App) {
 }
 
 // ============================================
+// 🔄 [FIM: PWA - MODO MOBILE (installModoMobileNotas)]
 // CAMADA LOCAL DAS FERRAMENTAS EXTRAS / TABELAS
 // Mantém as mesmas funcionalidades do sistema, mas sem backend:
 // anexos e imagens viram data URLs dentro da própria nota e os
 // modelos de nota ficam guardados no dispositivo (LocalStorage).
 // ============================================
+// 🔄 [INÍCIO: PWA - CAMADA LOCAL DE EXTRAS/TABELAS (installLocalNotesStorage)]
 function installLocalNotesStorage(App) {
     const p = App.prototype;
 
@@ -1356,6 +1367,7 @@ function installLocalNotesStorage(App) {
 }
 
 // ============================================
+// 🔄 [FIM: PWA - CAMADA LOCAL DE EXTRAS/TABELAS (installLocalNotesStorage)]
 // AJUSTES PWA PARA NOTAS GRANDES (sem tocar no motor)
 // 1) Histórico: o snapshot inicial serializa o documento inteiro em JSON (O(n));
 //    em notas grandes isso bloqueava a abertura, então é adiado e capturado antes
@@ -1365,6 +1377,7 @@ function installLocalNotesStorage(App) {
 //    nem gravamos: evita estourar a cota do LocalStorage (~5 MB) e o custo de
 //    serializar tudo a cada autosave.
 // ============================================
+// 🔄 [INÍCIO: PWA - AJUSTES DE NOTA GRANDE (installAjustesNotaGrande)]
 function installAjustesNotaGrande(App) {
     const p = App.prototype;
     if (p.__ajustesNotaGrandeInstalado) return;
@@ -1405,7 +1418,11 @@ function installAjustesNotaGrande(App) {
     };
 }
 
+// 🔄 [FIM: PWA - AJUSTES DE NOTA GRANDE (installAjustesNotaGrande)]
+
+// 🔄 [INÍCIO: PWA - BOOT (DOMContentLoaded)]
 // Inicializar a aplicação quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
     window.notesApp = new NotesPWA();
 });
+// 🔄 [FIM: PWA - BOOT (DOMContentLoaded)]

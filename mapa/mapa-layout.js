@@ -6,6 +6,7 @@
 (function (global) {
     'use strict';
 
+    // 🔄 [INÍCIO: MAPA - CONSTANTES/DIMENSÕES]
     const LARGURA_PADRAO = 180;
     const ALTURA_PADRAO = 44;
     const FOLGA = 64; // respiro no fit/minimapa
@@ -16,6 +17,7 @@
         largura: Number(no && no.largura) > 0 ? Number(no.largura) : LARGURA_PADRAO,
         altura: ALTURA_PADRAO
     });
+    // 🔄 [FIM: MAPA - CONSTANTES/DIMENSÕES]
 
     /**
      * Layout em árvore POR RAIZ (Fase 5). Honra `grafo.layout`:
@@ -26,6 +28,7 @@
      * - `livre`: mantém as posições gravadas (layout manual)
      * A travessia é ITERATIVA (pós-ordem) — profundidade ilimitada sem estourar a pilha.
      */
+    // 🔄 [INÍCIO: MAPA - LAYOUT EM ÁRVORE (calcularPosicoes)]
     function calcularPosicoes(grafo, opcoes) {
         const cfg = opcoes || {};
         const layout = LAYOUTS.includes(cfg.layout) ? cfg.layout : ((grafo && grafo.layout) || 'bilateral');
@@ -109,6 +112,9 @@
         return posicoes;
     }
 
+    // 🔄 [FIM: MAPA - LAYOUT EM ÁRVORE (calcularPosicoes)]
+
+    // 🔄 [INÍCIO: MAPA - POSIÇÕES GARANTIDAS (garantirPosicoes)]
     /** Garante `posicao` em todos os nós (uma vez por mapa) e informa se alterou. */
     function garantirPosicoes(grafo) {
         if (!grafo || !grafo.nos || !grafo.nos.length) return false;
@@ -126,6 +132,9 @@
         return alterou;
     }
 
+    // 🔄 [FIM: MAPA - POSIÇÕES GARANTIDAS (garantirPosicoes)]
+
+    // 🔄 [INÍCIO: MAPA - LIMITES/FIT (limites)]
     /** Limites do "mundo" (com folga) para fit e minimapa. `lista` opcional (nós visíveis). */
     function limites(grafo, lista) {
         const nos = lista || (grafo && grafo.nos) || [];
@@ -151,6 +160,9 @@
         };
     }
 
+    // 🔄 [FIM: MAPA - LIMITES/FIT (limites)]
+
+    // 🔄 [INÍCIO: MAPA - MINIMAPA (minimapa/pontoDoMinimapa/medirNo)]
     /** Geometria do minimapa: escala/offset do mundo + retângulo da viewport atual. */
     function minimapa(estado) {
         const lim = estado.limites;
@@ -187,8 +199,12 @@
         return { largura: elemento.offsetWidth || LARGURA_PADRAO, altura: elemento.offsetHeight || ALTURA_PADRAO };
     }
 
+    // 🔄 [FIM: MAPA - MINIMAPA (minimapa/pontoDoMinimapa/medirNo)]
+
+    // 🔄 [INÍCIO: MAPA - API PÚBLICA]
     global.MapaMentalLayout = {
         LARGURA_PADRAO, ALTURA_PADRAO,
         calcularPosicoes, garantirPosicoes, limites, minimapa, pontoDoMinimapa, medirNo
     };
+    // 🔄 [FIM: MAPA - API PÚBLICA]
 })(typeof window !== 'undefined' ? window : globalThis);

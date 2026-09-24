@@ -7,6 +7,7 @@
 (function (global) {
     'use strict';
 
+    // 🔄 [INÍCIO: MAPA - HELPERS DE DOM / RÓTULOS]
     const EMOJIS = ['⭐', '🔥', '💡', '✅', '⚠️', '📌', '📎', '🎯', '🚀', '📈', '🧩', '🔑', '📝', '🧠', '❤️', '❓'];
 
     const criar = (tag, classe, texto) => {
@@ -39,7 +40,9 @@
 
     const ROTULO_PRIORIDADE = { '': 'Sem prioridade', baixa: 'Baixa', media: 'Média', alta: 'Alta' };
     const ROTULO_STATUS = { '': 'Sem status', 'a-fazer': 'A fazer', fazendo: 'Fazendo', feito: 'Feito', bloqueado: 'Bloqueado' };
+    // 🔄 [FIM: MAPA - HELPERS DE DOM / RÓTULOS]
 
+    // 🔄 [INÍCIO: MAPA - BLOCOS DE CONTEÚDO (links/anexos/ponte)]
     /** Chips de URLs achados no texto (auto-link) — alimenta o campo `links` ao salvar. */
     function blocoLinksDetectados(no) {
         const m = modelo();
@@ -96,6 +99,9 @@
         return bloco;
     }
 
+    // 🔄 [FIM: MAPA - BLOCOS DE CONTEÚDO (links/anexos/ponte)]
+
+    // 🔄 [INÍCIO: MAPA - LINHAS META (prioridade/status/datas)]
     /** Linha prioridade/status/responsável. */
     function linhaMeta(no) {
         const linha = criar('div', 'mapa-painel-meta');
@@ -138,6 +144,9 @@
     }
 
 
+    // 🔄 [FIM: MAPA - LINHAS META (prioridade/status/datas)]
+
+    // 🔄 [INÍCIO: MAPA - FORMULÁRIO DO PAINEL (montarPainel)]
     /** Monta o formulário completo do painel para um nó. */
     function montarPainel(no, contexto) {
         if (!no) return null;
@@ -236,8 +245,12 @@
         return painel;
     }
 
+    // 🔄 [FIM: MAPA - FORMULÁRIO DO PAINEL (montarPainel)]
+
+    // 🔄 [INÍCIO: MAPA - API PÚBLICA]
     global.MapaMentalPainel = {
         EMOJIS, ROTULO_PRIORIDADE, ROTULO_STATUS, montarPainel,
         blocoLinksDetectados, blocoAnexos, blocoPonte
     };
+    // 🔄 [FIM: MAPA - API PÚBLICA]
 })(typeof window !== 'undefined' ? window : globalThis);

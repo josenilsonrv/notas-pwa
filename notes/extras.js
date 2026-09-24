@@ -1,4 +1,5 @@
 /* Optional note tools; no file viewers are loaded during typing. */
+// 🔄 [INÍCIO: NOTAS/EXTRAS - INSTALAÇÃO E HELPERS]
 function installNotesExtras(App){
  const p=App.prototype,setup=p.setupNotesEditing,clean=p.getCleanNotesHtml,refresh=p.refreshNotesCollapseControls;
  const editor=()=>document.getElementById('notesEditor'),body=row=>row?.querySelector(':scope > .notes-line-text');
@@ -6,6 +7,9 @@ function installNotesExtras(App){
  const safeURL=value=>{try{const url=new URL(value);return ['http:','https:'].includes(url.protocol)?url.href:null;}catch{return null;}};
  const youtube=value=>{try{const url=new URL(value);if(url.hostname==='youtu.be')return url.pathname.slice(1).match(/^[\w-]{11}$/)?.[0];if(/^(www\.|m\.)?youtube\.com$/.test(url.hostname))return (url.searchParams.get('v')||url.pathname.split('/').at(-1)).match(/^[\w-]{11}$/)?.[0];}catch{}return null;};
  const button=(label,text,action)=>{const el=document.createElement('button');el.type='button';el.textContent=text;el.title=label;el.setAttribute('aria-label',label);el.onmousedown=e=>e.preventDefault();el.onclick=action;return el;};
+ // 🔄 [FIM: NOTAS/EXTRAS - INSTALAÇÃO E HELPERS]
+
+ // 🔄 [INÍCIO: NOTAS/EXTRAS - JANELA/DIÁLOGO BASE (notesExtraDialog)]
  p.notesExtraRequest=async function(path,options={}){const response=await fetch('/api/note-assets'+path+(path.includes('?')?'&':'?')+'user_id='+this.userId,options);if(!response.ok){const error=await response.json().catch(()=>({}));throw Error(error.detail||'Não foi possível concluir a operação');}return response.json();};
  // Keep a private range for the whole interaction, including native file pickers.
  p.notesCaptureInsertion=function(){this.rememberNotesSelection();return {range:this.notesSelectionRange?.cloneRange(),session:this.notesSession};};
@@ -23,6 +27,9 @@ function installNotesExtras(App){
   const position=()=>{cancelAnimationFrame(framePosicao);framePosicao=requestAnimationFrame(()=>{if(dialog.isConnected)place();});};
   build(dialog);dialog.showModal();place();const observer=new ResizeObserver(position);observer.observe(dialog);window.addEventListener('resize',position);dialog.addEventListener('close',()=>{cancelAnimationFrame(framePosicao);observer.disconnect();window.removeEventListener('resize',position);dialog.remove();});return dialog;
  };
+ // 🔄 [FIM: NOTAS/EXTRAS - JANELA/DIÁLOGO BASE (notesExtraDialog)]
+
+ // 🔄 [INÍCIO: NOTAS/EXTRAS - INSERÇÃO DE CONTEÚDO (nó/divisor/link/mídia)]
  p.notesRevealInsertion=function(row){
   // Inserting the first child must not trigger the default collapsed state.
   const stack=[];for(const current of editor().children){while(stack.length){const parent=stack.at(-1);if(current.dataset.outlineBreak&&parent.dataset.heading&&Number(current.dataset.outlineBreak)<=Number(parent.dataset.heading)&&Number(current.dataset.level||0)<=Number(parent.dataset.level||0)){stack.pop();continue;}if(Number(current.dataset.level||0)>Number(parent.dataset.level||0)||!parent.dataset.list&&parent.dataset.check!=='true'&&parent.dataset.heading&&(!current.dataset.heading||Number(current.dataset.heading)>Number(parent.dataset.heading)))break;stack.pop();}stack.push(current);if(current===row)break;}for(const parent of stack)parent.dataset.collapsed='false';
@@ -86,6 +93,9 @@ function installNotesExtras(App){
   const help=document.createElement('p');help.className='notes-template-help';help.textContent='Salve o conteúdo atual como modelo. Ao escolher um modelo, todo o texto da nota será substituído por uma cópia editável. Você pode desfazer com Ctrl+Z; editar a nota não altera o modelo salvo.';dialog.append(help);const name=document.createElement('input');name.placeholder='Nome do modelo';name.maxLength=100;dialog.append(name,button('Salvar nota como modelo','Salvar texto atual como modelo',async()=>{if(!name.value.trim())return;try{await this.notesExtraRequest('/templates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.value.trim(),html:this.getCleanNotesHtml()})});dialog.close();this.notesTemplates();}catch(error){this.showToast(error.message,'error');}}));
   const list=document.createElement('div');list.textContent='Carregando modelos…';dialog.append(list);this.notesExtraRequest('/templates').then(items=>{list.replaceChildren();items.forEach(item=>list.append(button('Usar '+item.name,'Aplicar: '+item.name,async()=>{let model;try{model=await this.notesExtraRequest('/templates/'+item.id);}catch(error){this.showToast(error.message,'error');return;}this.flushNotesTyping();const template=document.createElement('template');template.innerHTML=model.html;template.content.querySelectorAll('script,style,iframe,object,embed').forEach(el=>el.remove());template.content.querySelectorAll('*').forEach(el=>[...el.attributes].forEach(attribute=>{if(/^on/i.test(attribute.name)||/^(href|src)$/i.test(attribute.name)&&/^\s*javascript:/i.test(attribute.value))el.removeAttribute(attribute.name);}));editor().replaceChildren(template.content.cloneNode(true));editor().querySelectorAll('[data-note-id]').forEach(row=>row.dataset.noteId=NotesDocument.id());this.recordNotesHistory();dialog.close();})));if(!items.length)list.textContent='Nenhum modelo salvo.';}).catch(error=>list.textContent=error.message);
  });};
+ // 🔄 [FIM: NOTAS/EXTRAS - INSERÇÃO DE CONTEÚDO (nó/divisor/link/mídia)]
+
+ // 🔄 [INÍCIO: NOTAS/EXTRAS - VISUALIZADOR DE ARQUIVO (notesFileViewer)]
  p.notesFileViewer=async function(id){
   const dialog=this.notesExtraDialog('Visualização do arquivo',dialog=>{});dialog.classList.add('notes-file-viewer');const tools=document.createElement('div');tools.className='notes-viewer-tools';const content=document.createElement('div');content.className='notes-file-page';const status=document.createElement('span');let index=0,sheet=0,column=0,total=1,info,marks=[],version=0;
   const previous=button('Página anterior','‹',()=>{if(index){index--;render();}}),next=button('Próxima página','›',()=>{if(index+1<total){index++;render();}}),expand=button('Expandir/restaurar','⛶',()=>dialog.classList.toggle('expanded')),highlight=button('Destacar seleção','Destaque',async()=>{const selection=getSelection();if(!selection.rangeCount||!content.contains(selection.anchorNode)||selection.isCollapsed)return;const range=selection.getRangeAt(0),before=document.createRange();before.selectNodeContents(content);before.setEnd(range.startContainer,range.startOffset);marks.push({start:before.toString().length,end:before.toString().length+range.toString().length});try{await this.notesExtraRequest('/files/'+id+'/annotations?page='+index,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({ranges:marks})});paint();}catch(error){this.showToast(error.message,'error');}});
@@ -103,6 +113,9 @@ function installNotesExtras(App){
   try{info=await this.notesExtraRequest('/files/'+id+'/info');dialog.querySelector('h3').textContent=info.name;total=info.pages||info.sheets?.[0]?.pages||1;highlight.hidden=info.kind==='sheet';if(info.sheets){const select=document.createElement('select');info.sheets.forEach((sheet,i)=>{const option=document.createElement('option');option.value=i;option.textContent=sheet.name;select.append(option);});select.onchange=()=>{sheet=Number(select.value);index=0;column=0;total=info.sheets[sheet].pages;render();};tools.prepend(select);tools.append(button('Colunas anteriores','‹ Colunas',()=>{if(column){column--;render();}}),button('Próximas colunas','Colunas ›',()=>{if((column+1)*100<(info.sheets[sheet].columns||100)){column++;render();}}));}await render();}catch(error){content.textContent=error.message;}
   dialog.addEventListener('close',()=>CSS.highlights?.delete('notes-file-marks'));
  };
+ // 🔄 [FIM: NOTAS/EXTRAS - VISUALIZADOR DE ARQUIVO (notesFileViewer)]
+
+ // 🔄 [INÍCIO: NOTAS/EXTRAS - BARRA E MENU MAIS (setupNotesEditing)]
  p.setupNotesEditing=function(){setup.call(this);if(this.notesExtrasReady)return;this.notesExtrasReady=true;const toolbar=document.getElementById('notesToolbar');
   const actions=[['divider','Divisor (Ctrl+Shift+H)','—',()=>this.notesDivider()],['link','Link (Ctrl+K)','🔗',()=>this.notesLinkDialog()],['insert','Inserir (Ctrl+Shift+I)','＋',()=>this.notesInsertMenu()],['templates','Modelos (Ctrl+Alt+M)','▤',()=>this.notesTemplates()]];
   for(const [id,label,glyph,action]of actions){const el=button(label,glyph,()=>{this.notesExtraAnchor=el;action();});el.className='toolbar-btn';if(id==='link')el.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m10 13 4-4m-6 6-2 2a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0m2 3 2-2a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0"/></svg>';if(id==='templates')el.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>';el.dataset.extra=id;el.onmousedown=e=>e.preventDefault();toolbar.append(el);}
@@ -131,6 +144,10 @@ function installNotesExtras(App){
   }),drawer=document.createElement('div');more.className='toolbar-btn notes-toolbar-more';more.setAttribute('aria-expanded','false');drawer.className='notes-toolbar-overflow';drawer.hidden=true;toolbar.append(more,drawer);let widths,frame;
   const layout=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{if(!toolbar.clientWidth)return;if(!widths){items.forEach(el=>toolbar.insertBefore(el,more));widths=items.map(el=>el.getBoundingClientRect().width+8);}const available=toolbar.clientWidth-24;let used=0,overflow=false;items.forEach((el,i)=>{if(widths.reduce((a,b)=>a+b,0)>available&&used+widths[i]>available-36)overflow=true;(overflow?drawer:toolbar).insertBefore(el,overflow?null:more);used+=widths[i];});more.hidden=!drawer.children.length;if(more.hidden)drawer.hidden=true;});};new ResizeObserver(layout).observe(toolbar);layout();
  };
+ // 🔄 [FIM: NOTAS/EXTRAS - BARRA E MENU MAIS (setupNotesEditing)]
+
+ // 🔄 [INÍCIO: NOTAS/EXTRAS - DELEGAÇÕES (refresh/clean)]
  p.refreshNotesCollapseControls=function(){refresh.call(this);for(const [command,shortcut]of [['codeBlock','Ctrl+Alt+C'],['collapseAll','Ctrl+Alt+E']]){const button=document.querySelector('[data-command="'+command+'"]');if(button){if(!button.title.includes(shortcut))button.title+=' ('+shortcut+')';button.setAttribute('aria-keyshortcuts',shortcut.replace('Ctrl','Control'));}}};
  p.getCleanNotesHtml=function(){const html=clean.call(this);if(!html.includes('<iframe'))return html;const template=document.createElement('template');template.innerHTML=html;template.content.querySelectorAll('iframe').forEach(el=>el.remove());template.content.querySelectorAll('[data-video-poster],.notes-video-play').forEach(el=>el.removeAttribute('hidden'));return template.innerHTML;};
+ // 🔄 [FIM: NOTAS/EXTRAS - DELEGAÇÕES (refresh/clean)]
 }
