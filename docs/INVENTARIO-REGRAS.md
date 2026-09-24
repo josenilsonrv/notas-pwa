@@ -1,7 +1,11 @@
 # Inventário de regras do motor de notas
 
-> Gerado por `node tools/gerar-rastreabilidade.cjs` em 2026-09-18.
-> O motor do PWA é **byte a byte idêntico** ao do `produtividade-ferrramenta` (verificado por SHA-256).
+> Gerado por `node tools/gerar-rastreabilidade.cjs` em 2026-09-24.
+> O motor do PWA partia do **byte a byte idêntico** ao do `produtividade-ferrramenta`,
+> mas a **Revisão do bloco de notas** fez mudanças deliberadas e documentadas em
+> `notes/editor.js`/`notes/extras.js`: teto de 4 níveis de indentação, sublinhado (`underline`/`Ctrl+U`),
+> retorno do check à posição original e fluxo do Enter em listas/títulos recolhidos.
+> Ver `docs/PROBLEMAS-E-MITIGACOES.md` (P23–P28).
 
 ## Resumo
 
@@ -10,18 +14,18 @@
 | Arquivos do motor | 4 |
 | Métodos públicos (`p.x`) | 50 |
 | Funções internas | 21 |
-| Comandos | 17 |
-| Atalhos (combinações mapeadas) | 27 |
+| Comandos | 18 |
+| Atalhos (combinações mapeadas) | 28 |
 | Teclas tratadas | 10 |
 | Eventos escutados | 23 |
 | Atributos `dataset.*` | 41 |
 | Seletores de atributo no CSS | 17 |
 | Regras de domínio (`NotesDocument`) | 8 |
-| Arquivos de teste do original | 69 |
+| Arquivos de teste do original | 87 |
 
-Motor: `editor.js`: 1005 linhas / 111328 bytes · `extras.js`: 128 linhas / 32857 bytes · `tables.js`: 133 linhas / 19363 bytes · `table-math.js`: 72 linhas / 6646 bytes
+Motor: `editor.js`: 1035 linhas / 112729 bytes · `extras.js`: 137 linhas / 34353 bytes · `tables.js`: 133 linhas / 19363 bytes · `table-math.js`: 72 linhas / 6646 bytes
 
-## Comandos (17)
+## Comandos (18)
 
 ```
   1. bold
@@ -40,10 +44,11 @@ Motor: `editor.js`: 1005 linhas / 111328 bytes · `extras.js`: 128 linhas / 3285
  14. outdent
  15. redo
  16. strikeThrough
- 17. undo
+ 17. underline
+ 18. undo
 ```
 
-## Atalhos mapeados (27)
+## Atalhos mapeados (28)
 
 ```
   1. Ctrl/Cmd+Z  ->  undo
@@ -63,16 +68,17 @@ Motor: `editor.js`: 1005 linhas / 111328 bytes · `extras.js`: 128 linhas / 3285
  15. Ctrl+Alt+5  ->  insertOrderedList
  16. Ctrl+Alt+6  ->  insertUnorderedList
  17. Ctrl+Alt+7  ->  strikeThrough
- 18. Ctrl+Alt+8  ->  picker color
- 19. Ctrl+Alt+9  ->  picker backgroundColor
- 20. Ctrl+Alt+0  ->  toggleNotesFullscreen
- 21. Ctrl+Alt+T  ->  toggleNotesHeaderCollapse
- 22. Ctrl+Alt+L  ->  animateNotesLineCollapse
- 23. Ctrl+Shift+I  ->  notesInsertMenu
- 24. Ctrl+Shift+H  ->  notesDivider
- 25. Ctrl+K  ->  notesLinkDialog
- 26. Ctrl+Alt+M  ->  notesTemplates
- 27. Ctrl+Alt+Q  ->  notesTableDialog
+ 18. Ctrl+U  ->  underline
+ 19. Ctrl+Alt+8  ->  picker color
+ 20. Ctrl+Alt+9  ->  picker backgroundColor
+ 21. Ctrl+Alt+0  ->  toggleNotesFullscreen
+ 22. Ctrl+Alt+T  ->  toggleNotesHeaderCollapse
+ 23. Ctrl+Alt+L  ->  animateNotesLineCollapse
+ 24. Ctrl+Shift+I  ->  notesInsertMenu
+ 25. Ctrl+Shift+H  ->  notesDivider
+ 26. Ctrl+K  ->  notesLinkDialog
+ 27. Ctrl+Alt+M  ->  notesTemplates
+ 28. Ctrl+Alt+Q  ->  notesTableDialog
 ```
 
 ## Teclas tratadas (10)

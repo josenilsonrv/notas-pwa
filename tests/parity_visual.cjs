@@ -51,6 +51,11 @@ const EXCECOES = [
     motivo: 'Tolerancia de layout do nav quando os chips do PWA (nomes de notas) e do original (projetos/etapas) tem larguras diferentes.'
   },
   {
+    seletor: '#notesContextNav',
+    propriedade: 'overflow',
+    motivo: 'Revisao do bloco de notas: os chips passam a rolar na vertical a partir de ~2 linhas (o original so rola na horizontal).'
+  },
+  {
     seletor: '#notesEditorContainer',
     propriedade: 'height',
     motivo: 'Consequencia de eventual diferenca de altura do nav entre os chips locais do PWA e os chips de projeto/etapa do original.'
@@ -69,6 +74,26 @@ const EXCECOES = [
     seletor: '.notes-line-check',
     propriedade: 'borderTopColor',
     motivo: 'Mesma causa do item anterior (cor herdada pelo checkbox no tema escuro).'
+  },
+  {
+    seletor: '#notesEditorContainer',
+    propriedade: 'padding',
+    motivo: 'Revisao do bloco de notas: recuo lateral esquerdo reduzido de proposito (0.6rem) para aproximar o conteudo da borda do campo. O original mantem 1.4rem.'
+  },
+  {
+    seletor: '#notesEditor',
+    propriedade: 'width',
+    motivo: 'Consequencia direta da reducao do padding-left do container (item 14 da revisao): o editor fica ~13px mais largo. Nao e divergencia de estilo, e o efeito pedido.'
+  },
+  {
+    seletor: '.notes-line',
+    propriedade: 'width',
+    motivo: 'Mesma causa do item anterior (largura herdada do editor mais largo).'
+  },
+  {
+    seletor: '.notes-line-text',
+    propriedade: 'width',
+    motivo: 'Mesma causa dos itens anteriores (a area de texto acompanha a largura do editor).'
   }
 ];
 

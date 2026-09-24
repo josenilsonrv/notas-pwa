@@ -327,6 +327,13 @@ html.theme-transition * {
     background: var(--color-bg-container);
 }
 
+/* Recuo lateral esquerdo reduzido entre a borda do campo e o conteúdo editado.
+   Override do `padding: 1.25rem 1.4rem` do theme-origem (lado esquerdo apenas),
+   como pedido na revisão do bloco de notas. */
+html #notesModal #notesEditorContainer {
+    padding-left: 0.6rem;
+}
+
 /* O editor precisa ocupar toda a area do container.
    Sem isto o #notesEditor tem apenas a altura do proprio conteudo e, como
    notes/editor.css comprime linhas vazias para 8px, a area focavel/toque
@@ -459,6 +466,27 @@ img, svg, video, canvas, audio, iframe, embed, object { display: block; vertical
 .shadow-\[0_12px_32px_rgba\(0\,0\,0\,0\.12\)\] { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12); }
 
 /* ============================================
+ * MODO MOBILE DO BLOCO DE NOTAS
+ * No mobile a barra de ferramentas SUPERIOR fica escondida por padrão — só a
+ * barra acoplada ao teclado (`notes-toolbar-docked`) aparece. O botão de colapso
+ * passa a alternar apenas os chips (`notes-chips-collapsed`). As classes são
+ * aplicadas pelo app.js (`installModoMobileNotas`).
+ * ============================================ */
+html.notes-mobile #notesModal #notesToolbar:not(.notes-toolbar-docked) {
+    display: none !important;
+}
+
+html.notes-mobile #notesModalBackdrop.notes-chips-collapsed #notesContextNav {
+    max-height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-color: transparent !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none;
+}
+
+/* ============================================
  * MÚLTIPLAS NOTAS: BOTÃO "+" E MENU DO CHIP
  * A base visual dos chips (.notes-context-chip) vem do theme-origem.css e do
  * notes/editor.css (byte a byte iguais ao original). Aqui só entra o que é
@@ -472,6 +500,49 @@ html #notesModal #notesContextNav .notes-context-chip.notes-context-chip-add {
     font-size: 1.05rem;
     line-height: 1;
     color: var(--notes-accent, var(--color-neon-blue));
+}
+
+/* ============================================
+ * CHIPS DE NOTAS: ROLAGEM VERTICAL E BOTÃO "+"
+ * - A área dos chips ganha rolagem vertical a partir de ~2 linhas, então o
+ *   número de notas pode crescer (até muitas) sem empurrar o conteúdo.
+ * - O botão "+" fica preso (sticky) no canto inferior direito, menor e com média
+ *   transparência, sem aumentar a altura do contêiner.
+ * ============================================ */
+html #notesModal #notesContextNav {
+    max-height: calc(2 * 1.85rem + .45rem + .8rem);
+    flex-wrap: wrap;
+    align-content: flex-start;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding-right: 2.6rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128, 144, 160, .5) transparent;
+}
+
+html #notesModal #notesContextNav::-webkit-scrollbar { width: 6px; }
+html #notesModal #notesContextNav::-webkit-scrollbar-thumb { background: rgba(128, 144, 160, .5); border-radius: 3px; }
+
+html #notesModal #notesContextNav .notes-context-chip.notes-context-chip-add {
+    position: sticky;
+    bottom: .25rem;
+    margin-left: auto;
+    align-self: flex-end;
+    width: 1.6rem;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    font-size: .95rem;
+    opacity: .6;
+    backdrop-filter: blur(3px);
+    background: color-mix(in srgb, var(--color-bg-container, #fff) 70%, transparent);
+    transition: opacity .2s ease;
+}
+
+html #notesModal #notesContextNav .notes-context-chip.notes-context-chip-add:hover,
+html #notesModal #notesContextNav .notes-context-chip.notes-context-chip-add:focus-visible {
+    opacity: .92;
 }
 
 .notes-chip-menu {

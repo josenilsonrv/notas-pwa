@@ -1,5 +1,5 @@
 {
-  "geradoEm": "2026-09-18",
+  "geradoEm": "2026-09-24",
   "comandos": [
     {
       "regra": "bold",
@@ -80,6 +80,7 @@
         "test_notes_editor_ui",
         "notes_document_model (novo)",
         "notes_indent_child (novo)",
+        "notes_indent_levels (novo)",
         "notes_navigation_completion (novo)",
         "notes_paste_blocks (novo)",
         "notes_renumber_structure (novo)",
@@ -140,6 +141,7 @@
       "testes": [
         "notes_renumber_structure",
         "test_notes_editor_ui",
+        "notes_indent_levels (novo)",
         "notes_renumber_structure (novo)",
         "shortcuts (novo)",
         "test_notes_editor_ui (novo)"
@@ -164,6 +166,14 @@
       "coberto": true
     },
     {
+      "regra": "underline",
+      "testes": [
+        "notes_underline (novo)",
+        "parity_structure (novo)"
+      ],
+      "coberto": true
+    },
+    {
       "regra": "undo",
       "testes": [
         "notes_cut_background",
@@ -174,14 +184,17 @@
         "notes_table_media",
         "notes_table_tools",
         "test_notes_editor_ui",
+        "mapa_canvas (novo)",
         "notes_cut_background (novo)",
         "notes_document_migration (novo)",
         "notes_extras (novo)",
+        "notes_indent_levels (novo)",
         "notes_markdown (novo)",
         "notes_parent_undo (novo)",
         "notes_table_media (novo)",
         "notes_table_tools (novo)",
         "parity_visual (novo)",
+        "tema_vidro (novo)",
         "test_notes_editor_ui (novo)"
       ],
       "coberto": true
@@ -227,13 +240,13 @@
     {
       "regra": "Tab",
       "acao": "indent",
-      "cobertura": "citado em notes_cascade_defaults, notes_extras, notes_indent_child, notes_table_media, notes_tone_picker, notes_tone_picker_mobile, test_notes_editor_ui, notes_cascade_defaults, notes_collapse_motion, notes_completion_spacing, notes_cut_background, notes_document_migration, notes_extras, notes_import_spacing, notes_indent_child, notes_large_document, notes_last_line_enter, notes_markdown, notes_million, notes_million_extras, notes_navigation_completion, notes_outline_code, notes_parent_undo, notes_paste_blocks, notes_paste_selection, notes_performance, notes_regression_audit, notes_renumber_structure, notes_requested_fixes, notes_table_media, notes_table_tools, notes_tone_picker, notes_tone_picker_mobile, shortcuts, test_notes_editor_ui",
+      "cobertura": "citado em notes_cascade_defaults, notes_extras, notes_indent_child, notes_table_media, notes_tone_picker, notes_tone_picker_mobile, test_notes_editor_ui, mapa_area, mapa_gestao, mapa_vazio, notes_cascade_defaults, notes_collapse_motion, notes_completion_spacing, notes_cut_background, notes_document_migration, notes_extras, notes_import_spacing, notes_indent_child, notes_indent_levels, notes_large_document, notes_last_line_enter, notes_markdown, notes_million, notes_million_extras, notes_navigation_completion, notes_outline_code, notes_parent_undo, notes_paste_blocks, notes_paste_selection, notes_performance, notes_regression_audit, notes_renumber_structure, notes_requested_fixes, notes_table_media, notes_table_tools, notes_tone_picker, notes_tone_picker_mobile, notes_underline, shortcuts, test_notes_editor_ui",
       "coberto": true
     },
     {
       "regra": "Shift+Tab",
       "acao": "outdent",
-      "cobertura": "citado em test_notes_editor_ui, shortcuts, test_notes_editor_ui",
+      "cobertura": "citado em test_notes_editor_ui, notes_indent_levels, shortcuts, test_notes_editor_ui",
       "coberto": true
     },
     {
@@ -288,6 +301,12 @@
       "regra": "Ctrl+Alt+7",
       "acao": "strikeThrough",
       "cobertura": "citado em shortcuts",
+      "coberto": true
+    },
+    {
+      "regra": "Ctrl+U",
+      "acao": "underline",
+      "cobertura": "citado em notes_underline",
       "coberto": true
     },
     {
@@ -725,6 +744,15 @@
         "notes_table_media",
         "notes_table_tools",
         "test_notes_editor_ui",
+        "mapa_area (novo)",
+        "mapa_canvas (novo)",
+        "mapa_conexoes (novo)",
+        "mapa_conteudo (novo)",
+        "mapa_dragdrop (novo)",
+        "mapa_gestao (novo)",
+        "mapa_layout (novo)",
+        "mapa_nos (novo)",
+        "mapa_vazio (novo)",
         "notes_cascade_defaults (novo)",
         "notes_collapse_motion (novo)",
         "notes_completion_spacing (novo)",
@@ -732,6 +760,7 @@
         "notes_document_migration (novo)",
         "notes_extras (novo)",
         "notes_import_spacing (novo)",
+        "notes_indent_levels (novo)",
         "notes_large_document (novo)",
         "notes_last_line_enter (novo)",
         "notes_markdown (novo)",
@@ -748,6 +777,7 @@
         "notes_requested_fixes (novo)",
         "notes_table_media (novo)",
         "notes_table_tools (novo)",
+        "notes_underline (novo)",
         "shortcuts (novo)",
         "test_notes_editor_ui (novo)"
       ],
@@ -775,8 +805,10 @@
     },
     {
       "regra": "storeNotesDraft",
-      "testes": [],
-      "coberto": false
+      "testes": [
+        "nota_grande_pwa (novo)"
+      ],
+      "coberto": true
     },
     {
       "regra": "syncNotesDocument",
@@ -960,6 +992,8 @@
         "notes_paste_blocks",
         "notes_renumber_structure",
         "test_notes_editor_ui",
+        "mapa_conexoes (novo)",
+        "mapa_conteudo (novo)",
         "notes_cascade_defaults (novo)",
         "notes_checklist_numbers (novo)",
         "notes_checklist_order (novo)",
@@ -975,7 +1009,9 @@
         "notes_renumber_structure (novo)",
         "parity_visual (novo)",
         "shortcuts (novo)",
-        "test_notes_editor_ui (novo)"
+        "tema_switch (novo)",
+        "test_notes_editor_ui (novo)",
+        "toolbar_pwa (novo)"
       ],
       "coberto": true
     },
@@ -1005,6 +1041,7 @@
         "notes_document_migration (novo)",
         "notes_document_model (novo)",
         "notes_renumber_structure (novo)",
+        "tema_switch (novo)",
         "test_notes_editor_ui (novo)"
       ],
       "coberto": true
@@ -1051,7 +1088,8 @@
         "notes_outline_code (novo)",
         "notes_parent_undo (novo)",
         "notes_paste_blocks (novo)",
-        "notes_requested_fixes (novo)"
+        "notes_requested_fixes (novo)",
+        "toolbar_pwa (novo)"
       ],
       "coberto": true
     },
@@ -1089,6 +1127,7 @@
         "notes_document_migration (novo)",
         "notes_extras (novo)",
         "notes_import_spacing (novo)",
+        "notes_indent_levels (novo)",
         "notes_large_document (novo)",
         "notes_last_line_enter (novo)",
         "notes_markdown (novo)",
@@ -1105,6 +1144,7 @@
         "notes_requested_fixes (novo)",
         "notes_table_media (novo)",
         "notes_table_tools (novo)",
+        "notes_underline (novo)",
         "parity_structure (novo)",
         "test_notes_editor_ui (novo)"
       ],
@@ -1143,14 +1183,27 @@
         "notes_million_extras",
         "notes_table_media",
         "notes_table_tools",
+        "mapa_area (novo)",
+        "mapa_canvas (novo)",
+        "mapa_conexoes (novo)",
+        "mapa_conteudo (novo)",
+        "mapa_dragdrop (novo)",
+        "mapa_gestao (novo)",
+        "mapa_layout (novo)",
+        "mapa_nos (novo)",
+        "mapa_vazio (novo)",
+        "multi_notas (novo)",
+        "multi_notas_100 (novo)",
+        "nota_grande_pwa (novo)",
         "notes_extras (novo)",
         "notes_last_line_enter (novo)",
         "notes_million_extras (novo)",
         "notes_table_media (novo)",
         "notes_table_tools (novo)",
+        "notes_underline (novo)",
         "parity_structure (novo)",
-        "parity_visual (novo)",
-        "shortcuts (novo)"
+        "shortcuts (novo)",
+        "toolbar_pwa (novo)"
       ],
       "coberto": true
     },
@@ -1225,6 +1278,9 @@
         "notes_renumber_structure",
         "notes_requested_fixes",
         "test_notes_editor_ui",
+        "multi_notas (novo)",
+        "multi_notas_100 (novo)",
+        "nota_grande_pwa (novo)",
         "notes_cascade_defaults (novo)",
         "notes_checklist_numbers (novo)",
         "notes_checklist_order (novo)",
@@ -1233,6 +1289,7 @@
         "notes_document_model (novo)",
         "notes_enter_child (novo)",
         "notes_indent_child (novo)",
+        "notes_indent_levels (novo)",
         "notes_markdown (novo)",
         "notes_navigation_completion (novo)",
         "notes_outline_code (novo)",
@@ -1241,8 +1298,10 @@
         "notes_performance (novo)",
         "notes_renumber_structure (novo)",
         "notes_requested_fixes (novo)",
+        "notes_underline (novo)",
         "shortcuts (novo)",
-        "test_notes_editor_ui (novo)"
+        "test_notes_editor_ui (novo)",
+        "toolbar_pwa (novo)"
       ],
       "coberto": true
     },
@@ -1265,6 +1324,11 @@
         "notes_outline_code",
         "notes_paste_blocks",
         "test_notes_editor_ui",
+        "mapa_conteudo (novo)",
+        "mapa_dragdrop (novo)",
+        "mapa_gestao (novo)",
+        "mapa_layout (novo)",
+        "multi_notas (novo)",
         "notes_checklist_numbers (novo)",
         "notes_checklist_order (novo)",
         "notes_colors_persistence (novo)",
@@ -1272,6 +1336,7 @@
         "notes_document_model (novo)",
         "notes_outline_code (novo)",
         "notes_paste_blocks (novo)",
+        "pwa_service_worker (novo)",
         "shortcuts (novo)",
         "test_notes_editor_ui (novo)"
       ],
@@ -1521,6 +1586,46 @@
       "regra": "edição, checkbox, linhas vazias, autosave, expansão sequencial, resize e redução de movimento."
     },
     {
+      "teste": "mapa_area",
+      "regra": "área Notas/Mapa Mental, montagem lazy, tema e persistência"
+    },
+    {
+      "teste": "mapa_canvas",
+      "regra": "canvas infinito (zoom, pan, pinça, centralizar/fit/raiz, minimapa, viewport persistida)"
+    },
+    {
+      "teste": "mapa_conexoes",
+      "regra": "conexões (menu/modo/alt+arrastar/editar/remover)"
+    },
+    {
+      "teste": "mapa_conteudo",
+      "regra": "conteúdo (concluir/anexos/nó-ponte)"
+    },
+    {
+      "teste": "mapa_dragdrop",
+      "regra": "dragdrop (reparent/irmãos/ramo/ciclo)"
+    },
+    {
+      "teste": "mapa_gestao",
+      "regra": "gestão de mapas (CRUD, pastas, raiz, conexões, templates, recentes, busca/ordenação)"
+    },
+    {
+      "teste": "mapa_layout",
+      "regra": "hierarquia (níveis + layouts + recolher seguro)"
+    },
+    {
+      "teste": "mapa_nos",
+      "regra": "nós (criar/editar/excluir/duplicar/copiar/colar/reordenar/reparent/laço/recolher/bloquear/largura/desfazer)"
+    },
+    {
+      "teste": "mapa_vazio",
+      "regra": "mapa vazio -> primeiro tópico (clique + Enter/Tab/Insert/Ctrl+Enter)"
+    },
+    {
+      "teste": "multi_notas",
+      "regra": "multi-notas (migração, \"+\", chips, troca, renomear, excluir, accent por nota)"
+    },
+    {
       "teste": "notes_cascade_defaults",
       "regra": "cascata reversível persistida, data de conclusão, cor do corpo preservada, seletor padrão e fechamento independente"
     },
@@ -1593,6 +1698,10 @@
       "regra": "Tab abre o pai e permite digitar no filho sem título"
     },
     {
+      "teste": "notes_indent_levels",
+      "regra": "teto de 4 niveis, recuo/desrecuo e rotulos de atalho"
+    },
+    {
       "teste": "notes_last_line_enter",
       "regra": "Enter at the last paragraph, heading, empty line and editor boundary"
     },
@@ -1649,6 +1758,10 @@
       "regra": "seletor de tonalidade, cancelar, confirmar e independência da cor padrão"
     },
     {
+      "teste": "notes_underline",
+      "regra": "sublinhado por botao/atalho Ctrl+U"
+    },
+    {
       "teste": "parity_structure",
       "regra": "estrutura do modal equivalente ao original"
     },
@@ -1657,12 +1770,28 @@
       "regra": "paridade visual entre PWA e original (somente excecoes documentadas)"
     },
     {
+      "teste": "pwa_service_worker",
+      "regra": "sw.js na raiz servido como JavaScript (fora do fallback de SPA), registro com updateViaCache none e app inicia controlado"
+    },
+    {
       "teste": "shortcuts",
       "regra": "atalhos Alt+setas, Ctrl+Alt+1..7/0/T, Tab/Shift+Tab, Ctrl+B e Ctrl+S"
     },
     {
+      "teste": "tema_switch",
+      "regra": "seletor sutil de tema (claro/escuro) alterna, persiste e reabre mantendo a escolha"
+    },
+    {
+      "teste": "tema_vidro",
+      "regra": "modo claro com vidro (paineis blur16, card blur18/alpha .72, system stack) e escuro solido, iguais ao original"
+    },
+    {
       "teste": "test_notes_editor_ui",
       "regra": "edição, checkbox, linhas vazias, autosave, expansão sequencial, resize e redução de movimento."
+    },
+    {
+      "teste": "toolbar_pwa",
+      "regra": "toolbar inline com rolagem, sem \"...\" , ordem editavel/persistida e dock acima do teclado"
     }
   ],
   "lacunas": {
@@ -1707,7 +1836,6 @@
       "setNotesHeaderCollapsed",
       "setupNotesEditing",
       "setupNotesResize",
-      "storeNotesDraft",
       "syncNotesDocument",
       "updateNotesToolbarState"
     ],

@@ -104,3 +104,13 @@ Não persiga essas 12 ao rodar a suíte: use `--baseline` para focar no que é n
 * Se algum teste passar de 3 min sob carga: `--timeout=300000`.
 * Meça tempos por teste no rodapé de cada linha (`PASSA  arquivo  1234 ms`) para
   saber o que está lento.
+
+## Registro de problemas e mitigações
+
+Se a suíte acusar **falha nova** ou **flakiness** (e depois de corrigir), registre em
+`docs/PROBLEMAS-E-MITIGACOES.md`: sintoma, causa, correção e como evitar nas próximas
+fases. Antes de “consertar” uma divergência de paridade, rode o teste **isolado**
+(ex.: `node tests/parity_visual.cjs`) para confirmar que ela é real.
+
+**Sempre que assets cacheados mudarem** (CSS/JS servidos pelo Service Worker),
+incremente o `CACHE_NAME` em `sw.js` e inclua os novos caminhos em `ESSENCIAIS`.

@@ -15,7 +15,7 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
-const CACHE_NAME = 'notas-pwa-v19';
+const CACHE_NAME = 'notas-pwa-v30';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -42,6 +42,14 @@ const ESSENCIAIS = [
     './notes/table-math.js',
     './notes/tables.js',
     './notes/tables.css',
+    './mapa/mapa.css',
+    './mapa/mapa-modelo.js',
+    './mapa/mapa-store.js',
+    './mapa/mapa-layout.js',
+    './mapa/mapa-render.js',
+    './mapa/mapa-painel.js',
+    './mapa/mapa-interacao.js',
+    './mapa/mapa.js',
     './manifest.json',
     './icon.svg'
 ];

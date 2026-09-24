@@ -7,6 +7,69 @@
     "origem": "rgba(255, 255, 255, 0.48)"
   },
   {
+    "tema": "light",
+    "seletor": "#notesContextNav",
+    "propriedade": "padding",
+    "pwa": "3.87852px 33.9722px 3.87852px 5.81778px",
+    "origem": "12px 18px"
+  },
+  {
+    "tema": "light",
+    "seletor": "#notesContextNav",
+    "propriedade": "height",
+    "pwa": "43.4219px",
+    "origem": "59.6719px"
+  },
+  {
+    "tema": "light",
+    "seletor": "#notesContextNav",
+    "propriedade": "overflow",
+    "pwa": "hidden auto",
+    "origem": "hidden"
+  },
+  {
+    "tema": "light",
+    "seletor": "#notesEditorContainer",
+    "propriedade": "padding",
+    "pwa": "20px 22.4px 20px 9.6px",
+    "origem": "20px 22.4px"
+  },
+  {
+    "tema": "light",
+    "seletor": "#notesEditorContainer",
+    "propriedade": "height",
+    "pwa": "720.578px",
+    "origem": "704.328px"
+  },
+  {
+    "tema": "light",
+    "seletor": "#notesEditor",
+    "propriedade": "height",
+    "pwa": "678.578px",
+    "origem": "662.328px"
+  },
+  {
+    "tema": "light",
+    "seletor": "#notesEditor",
+    "propriedade": "width",
+    "pwa": "606.016px",
+    "origem": "593.219px"
+  },
+  {
+    "tema": "light",
+    "seletor": ".notes-line",
+    "propriedade": "width",
+    "pwa": "606.016px",
+    "origem": "593.219px"
+  },
+  {
+    "tema": "light",
+    "seletor": ".notes-line-text",
+    "propriedade": "width",
+    "pwa": "580.016px",
+    "origem": "567.219px"
+  },
+  {
     "tema": "dark",
     "seletor": "#notesModalBackdrop",
     "propriedade": "color",
@@ -36,6 +99,34 @@
   },
   {
     "tema": "dark",
+    "seletor": "#notesContextNav",
+    "propriedade": "overflow",
+    "pwa": "hidden auto",
+    "origem": "hidden"
+  },
+  {
+    "tema": "dark",
+    "seletor": "#notesEditorContainer",
+    "propriedade": "padding",
+    "pwa": "20px 22.4px 20px 9.6px",
+    "origem": "20px 22.4px"
+  },
+  {
+    "tema": "dark",
+    "seletor": "#notesEditor",
+    "propriedade": "width",
+    "pwa": "604.016px",
+    "origem": "591.219px"
+  },
+  {
+    "tema": "dark",
+    "seletor": ".notes-line",
+    "propriedade": "width",
+    "pwa": "604.016px",
+    "origem": "591.219px"
+  },
+  {
+    "tema": "dark",
     "seletor": ".notes-line-check",
     "propriedade": "color",
     "pwa": "rgb(226, 232, 240)",
@@ -47,5 +138,12 @@
     "propriedade": "borderTopColor",
     "pwa": "rgb(226, 232, 240)",
     "origem": "rgb(245, 245, 247)"
+  },
+  {
+    "tema": "dark",
+    "seletor": ".notes-line-text",
+    "propriedade": "width",
+    "pwa": "578.016px",
+    "origem": "565.219px"
   }
 ]

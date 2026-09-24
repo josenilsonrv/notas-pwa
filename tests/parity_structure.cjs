@@ -38,10 +38,25 @@ const classesPWA = classesDe(pwaHtml);
 
 const faltando = (origem, destino) => origem.filter(item => !destino.includes(item));
 
+// Comandos que existem SO no PWA (revisao do bloco de notas) e por isso nao tem
+// equivalente no original. Cada um precisa de um motivo escrito.
+const COMANDOS_EXTRAS_PWA = {
+  underline: 'Sublinhado: comando adicionado na revisao do bloco de notas (o original nao tem sublinhado).'
+};
+
 const relatorio = {
   ids: { origem: idsOrigem, pwa: idsPWA, faltando: faltando(idsOrigem, idsPWA) },
   aria: { origem: ariaOrigem, pwa: ariaPWA, faltando: faltando(ariaOrigem, ariaPWA) },
-  comandos: { origem: comandosOrigem, pwa: comandosPWA, faltando: faltando(comandosOrigem, comandosPWA), sobrando: faltando(comandosPWA, comandosOrigem) },
+  comandos: (() => {
+    const extras = faltando(comandosPWA, comandosOrigem);
+    return {
+      origem: comandosOrigem,
+      pwa: comandosPWA,
+      faltando: faltando(comandosOrigem, comandosPWA),
+      sobrando: extras.filter(c => !COMANDOS_EXTRAS_PWA[c]),
+      extrasPWA: extras.filter(c => COMANDOS_EXTRAS_PWA[c]).map(c => ({ comando: c, motivo: COMANDOS_EXTRAS_PWA[c] }))
+    };
+  })(),
   cores: { origem: coresOrigem, pwa: coresPWA, faltando: faltando(coresOrigem, coresPWA) },
   roles: { origem: rolesOrigem, pwa: rolesPWA, faltando: faltando(rolesOrigem, rolesPWA) },
   classesSemRegraNoPWA: (() => {
@@ -62,7 +77,7 @@ fs.writeFileSync(path.join(docs, 'parity-estrutura.json'), JSON.stringify(relato
 
 console.log('ids        : origem=' + idsOrigem.length + ' pwa=' + idsPWA.length + ' faltando=' + relatorio.ids.faltando.length + (relatorio.ids.faltando.length ? ' -> ' + relatorio.ids.faltando.join(', ') : ''));
 console.log('aria-label : origem=' + ariaOrigem.length + ' pwa=' + ariaPWA.length + ' faltando=' + relatorio.aria.faltando.length + (relatorio.aria.faltando.length ? ' -> ' + relatorio.aria.faltando.join(', ') : ''));
-console.log('data-command: origem=' + comandosOrigem.length + ' pwa=' + comandosPWA.length + ' faltando=' + relatorio.comandos.faltando.length + ' sobrando=' + relatorio.comandos.sobrando.length);
+console.log('data-command: origem=' + comandosOrigem.length + ' pwa=' + comandosPWA.length + ' faltando=' + relatorio.comandos.faltando.length + ' sobrando=' + relatorio.comandos.sobrando.length + ' extrasPWA=' + relatorio.comandos.extrasPWA.map(e => e.comando).join(','));
 console.log('data-notes-color: origem=' + coresOrigem.length + ' pwa=' + coresPWA.length + ' faltando=' + relatorio.cores.faltando.length);
 console.log('role       : origem=' + rolesOrigem.length + ' pwa=' + rolesPWA.length + ' faltando=' + relatorio.roles.faltando.length + (relatorio.roles.faltando.length ? ' -> ' + relatorio.roles.faltando.join(', ') : ''));
 console.log('classes do PWA sem regra CSS (que existem no original): ' + relatorio.classesSemRegraNoPWA.length + (relatorio.classesSemRegraNoPWA.length ? ' -> ' + relatorio.classesSemRegraNoPWA.join(' ') : ''));

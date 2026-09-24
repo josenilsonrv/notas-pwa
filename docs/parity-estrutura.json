@@ -14,10 +14,12 @@
       "notesToolbar"
     ],
     "pwa": [
+      "appAreas",
       "appToastRegion",
       "bootGuard",
       "bootGuardErro",
       "bootGuardReparar",
+      "mapaArea",
       "notesContextNav",
       "notesEditor",
       "notesEditorContainer",
@@ -63,15 +65,18 @@
       "Itálico",
       "Lista com marcadores",
       "Lista numerada",
+      "Mapa Mental",
       "Negrito",
       "Notas deste foco",
       "Recolher cabeçalho",
       "Refazer",
       "Subir linha",
+      "Sublinhado",
       "Tachado",
       "Título H1",
       "Título H2",
-      "Título H3"
+      "Título H3",
+      "Áreas do aplicativo"
     ],
     "faltando": []
   },
@@ -108,10 +113,17 @@
       "outdent",
       "redo",
       "strikeThrough",
+      "underline",
       "undo"
     ],
     "faltando": [],
-    "sobrando": []
+    "sobrando": [],
+    "extrasPWA": [
+      {
+        "comando": "underline",
+        "motivo": "Sublinhado: comando adicionado na revisao do bloco de notas (o original nao tem sublinhado)."
+      }
+    ]
   },
   "cores": {
     "origem": [
@@ -136,6 +148,10 @@
       "region",
       "status",
       "switch",
+      "tab",
+      "tab",
+      "tablist",
+      "tabpanel",
       "textbox"
     ],
     "faltando": []

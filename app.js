@@ -138,8 +138,12 @@ class NotesPWA {
         // então o comportamento do motor de notas permanece o mesmo para eles.
         this.configurarToolbarPWA();
         this.ativarToolbarTeclado();
+        this.aplicarModoMobile();
         // Sinaliza para a auto-recuperação (index.html) que o app iniciou bem.
         window.__notasPronto = true;
+        // Área do app (Notas | Mapa Mental): só agora ligamos o seletor e aplicamos a
+        // área salva — o mapa continua em montagem lazy na primeira entrada.
+        if (typeof this.inicializarAreasMapa === 'function') this.inicializarAreasMapa();
         // ⚡ [FIM: PWA - BARRA DE FERRAMENTAS INLINE/EDIÇÃO + TECLADO]
         // 🔄 [FIM: ESTADO - MIGRAÇÃO/ABERTURA DA ÚLTIMA NOTA]
     }
@@ -151,6 +155,11 @@ class NotesPWA {
         if (typeof installNotesTables === 'function') installNotesTables(NotesPWA);
         installLocalNotesStorage(NotesPWA);
         installAjustesNotaGrande(NotesPWA);
+        // Área do Mapa Mental: instala a troca de áreas (o mapa em si monta lazy).
+        // Guardado: os harnesses de paridade/shortcuts não carregam mapa/*.js.
+        if (typeof installMapaMental === 'function') installMapaMental(NotesPWA);
+        // Modo mobile: toolbar superior oculta por padrao e colapso agindo nos chips.
+        installModoMobileNotas(NotesPWA);
     }
 
     // 🔄 [INÍCIO: ESTADO - PERSISTÊNCIA LOCAL (SEM BACKEND)]
@@ -198,6 +207,24 @@ class NotesPWA {
         return [{ id: 'local', nome: 'Minhas notas', notas: this.loadContentFromStorage() }];
     }
 
+    /**
+     * Seam de persistência das notas.
+     *
+     * Hoje a implementação é o LocalStorage (abaixo). Quando o **Supabase** for
+     * ligado, basta trocar estes métodos por chamadas remotas assíncronas: a UI
+     * dos chips consome apenas METADADOS (id/nome/accent) e o conteúdo é lido por
+     * nota, então a lista pode crescer (100+ notas) sem manter tudo em memória.
+     * O `accentDaNota` já evita reparsear o HTML e aceita `nota.accent` como
+     * metadado — que é o formato natural para vir do backend.
+     */
+    notasBackend() {
+        return {
+            listar: () => (this.projectsData || []).map(nota => ({ id: nota.id, nome: nota.nome, accent: this.accentDaNota(nota) })),
+            obter: id => (this.projectsData || []).find(nota => nota.id === id) || null,
+            salvar: lista => this.gravarNotasLocais(lista)
+        };
+    }
+
     /** Grava a lista de notas e o id da nota ativa no dispositivo. */
     gravarNotasLocais(lista) {
         try {
@@ -240,6 +267,7 @@ class NotesPWA {
                     if (nota) {
                         nota.notas = payload.notas;
                         nota.atualizadaEm = new Date().toISOString();
+                        this.invalidarAccentDaNota(nota.id);
                         this.gravarNotasLocais(lista);
                     }
                 }
@@ -293,7 +321,12 @@ class NotesPWA {
         // em notas grandes.
         this.marcarNotaAtiva(project.id);
 
-        setTimeout(() => this.placeNotesCursorAtEnd(editor), 100);
+        // No mobile, trocar de nota (chip) nao deve abrir o teclado nem acoplar a
+        // barra — isso era percebido como "a barra encolhe" ao tocar em um chip.
+        // O comportamento de colapso so deve ocorrer pelos botoes proprios.
+        if (typeof this.ehMobile !== 'function' || !this.ehMobile()) {
+            setTimeout(() => this.placeNotesCursorAtEnd(editor), 100);
+        }
     }
 
     openStageNotesModal(stageId) {
@@ -344,11 +377,29 @@ class NotesPWA {
         nav.append(mais);
     }
 
-    /** Lê a cor padrão (accent) direto do HTML da nota, como o original faz. */
+    /**
+     * Lê a cor padrão (accent) da nota. Em vez de reparsear o HTML inteiro a cada
+     * render dos chips (pesado com muitas notas grandes), guarda em cache por id e
+     * invalida quando o conteúdo da nota muda. Prepara a persistência remota:
+     * quando houver backend, o accent pode vir como metadado da própria nota.
+     */
     accentDaNota(nota) {
+        if (!nota) return '';
+        if (typeof nota.accent === 'string') return nota.accent;
+        const cache = this._notasAccentCache || (this._notasAccentCache = new Map());
+        const guardado = cache.get(nota.id);
+        // Compara o CONTEÚDO guardado: se a nota mudou, o cache é descartado.
+        if (guardado && guardado.notas === nota.notas) return guardado.accent;
         const template = document.createElement('template');
-        template.innerHTML = nota?.notas || '';
-        return template.content.querySelector('[data-note-accent]')?.dataset.noteAccent || '';
+        template.innerHTML = nota.notas || '';
+        const accent = template.content.querySelector('[data-note-accent]')?.dataset.noteAccent || '';
+        cache.set(nota.id, { notas: nota.notas, accent });
+        return accent;
+    }
+
+    /** Invalida o accent em cache de uma nota (quando o conteúdo muda). */
+    invalidarAccentDaNota(id) {
+        this._notasAccentCache?.delete(id);
     }
 
     /** Cria uma nota nova em branco e abre em seguida (o motor salva a anterior). */
@@ -526,6 +577,33 @@ class NotesPWA {
         this.updateNotesToolbarState();
     }
 
+    /**
+     * Com a barra acoplada ao teclado, garante que a linha onde o cursor está
+     * continue visível ACIMA da barra (senão as quebras de linha empurram o texto
+     * para trás da barra). Rola o container do editor só o necessário.
+     */
+    rolarCaretParaAcima() {
+        const toolbar = document.getElementById('notesToolbar');
+        const container = document.getElementById('notesEditorContainer');
+        if (!toolbar?.classList.contains('notes-toolbar-docked') || !container) return;
+        const selection = window.getSelection();
+        if (!selection?.rangeCount) return;
+        const range = selection.getRangeAt(0).cloneRange();
+        let rect = range.getClientRects()[0];
+        if (!rect) {
+            const node = range.startContainer;
+            const elemento = node?.nodeType === 3 ? node.parentElement : node;
+            rect = elemento?.getBoundingClientRect?.();
+        }
+        if (!rect || (!rect.height && !rect.top)) return;
+        const limite = toolbar.getBoundingClientRect().top - 8;
+        if (rect.bottom > limite) {
+            container.scrollTop += rect.bottom - limite;
+        } else if (rect.top < container.getBoundingClientRect().top) {
+            container.scrollTop -= container.getBoundingClientRect().top - rect.top;
+        }
+    }
+
     // ⚡ [INÍCIO: INTERAÇÃO/JS - SELEÇÃO DE NOTAS]
     /** Necessário para os comandos de formatação, cores e inserções. */
     rememberNotesSelection() {
@@ -612,7 +690,10 @@ class NotesPWA {
     }
 
     setupResize() {
-        window.addEventListener('resize', () => this.refreshNotesCollapseControls());
+        window.addEventListener('resize', () => {
+            if (typeof this.aplicarModoMobile === 'function') this.aplicarModoMobile();
+            this.refreshNotesCollapseControls();
+        });
     }
 
     // ⚡ [INÍCIO: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]
@@ -755,7 +836,9 @@ class NotesPWA {
         botao.title = 'Editar barra de ferramentas';
         botao.setAttribute('aria-label', 'Editar barra de ferramentas');
         botao.setAttribute('aria-haspopup', 'dialog');
-        botao.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.5"/><circle cx="3.5" cy="12" r="1.5"/><circle cx="3.5" cy="18" r="1.5"/></svg>';
+        // Ícone de "arrastar/reordenar" (mais claro que a antiga lista): alça de
+        // arraste + seta vertical, a mesma linguagem do grip da modal.
+        botao.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01"/><path d="M12 2v3m0 0 1.5-1.5M12 5 10.5 3.5M12 22v-3m0 0 1.5 1.5M12 19l-1.5 1.5"/></svg>';
         botao.addEventListener('mousedown', event => event.preventDefault());
         botao.addEventListener('click', () => this.abrirEditorToolbar());
         toolbar.append(botao);
@@ -962,6 +1045,9 @@ class NotesPWA {
             // Autoproteção: se o foco saiu do editor, o poll deixa de fazer sentido.
             if (this.notesToolbarTecladoPoll && !temFocoNoEditor()) pararAjustes();
             this.aplicarToolbarTeclado();
+            // Mantém a linha digitada acima da barra (quebras de linha não podem
+            // esconder o cursor atrás da barra do teclado).
+            if (this.notesToolbarTecladoPoll && temFocoNoEditor()) this.rolarCaretParaAcima();
         };
         const reagirAoFoco = () => {
             pararAjustes();
@@ -1057,6 +1143,59 @@ class NotesPWA {
         if (editor) editor.style.paddingBottom = (toolbar.offsetHeight + 12) + 'px';
     }
     // ⚡ [FIM: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]
+}
+
+// ============================================
+// MODO MOBILE DO BLOCO DE NOTAS
+// No mobile a barra de ferramentas SUPERIOR fica escondida por padrao (so a barra
+// acoplada ao teclado aparece) e o botao de colapso passa a alternar APENAS os
+// chips de notas. A deteccao combina toque (pointer: coarse) com largura.
+// ============================================
+function installModoMobileNotas(App) {
+    const p = App.prototype;
+    const superColapso = p.toggleNotesHeaderCollapse;
+
+    p.ehMobile = function () {
+        try {
+            // Celular = toque (pointer: coarse) E janela estreita. Assim uma janela
+            // estreita de desktop NAO entra em modo mobile (mantem a toolbar visible).
+            return window.matchMedia('(pointer: coarse)').matches && window.innerWidth <= 767;
+        } catch (_) { return false; }
+    };
+
+    p.aplicarModoMobile = function () {
+        const mobile = this.ehMobile();
+        document.documentElement.classList.toggle('notes-mobile', mobile);
+        const backdrop = document.getElementById('notesModalBackdrop');
+        const toolbar = document.getElementById('notesToolbar');
+        if (mobile) {
+            // No mobile o colapso do cabeçalho não deve esconder a barra do teclado:
+            // a toolbar é escondida pelo CSS (só aparece quando acoplada).
+            backdrop?.classList.remove('notes-header-collapsed');
+            if (toolbar) toolbar.hidden = false;
+        } else {
+            backdrop?.classList.remove('notes-chips-collapsed');
+        }
+        this.sincronizarBotaoColapsoChips(Boolean(backdrop?.classList.contains('notes-chips-collapsed')));
+    };
+
+    p.sincronizarBotaoColapsoChips = function (recolhido) {
+        const botao = document.getElementById('notesHeaderCollapseBtn');
+        if (!botao || !this.ehMobile()) return;
+        botao.setAttribute('aria-expanded', String(!recolhido));
+        botao.title = recolhido ? 'Mostrar notas' : 'Ocultar notas';
+        botao.setAttribute('aria-label', botao.title);
+    };
+
+    // No mobile o botao de colapso alterna APENAS os chips (a toolbar superior
+    // continua escondida por CSS e a barra do teclado nao e afetada).
+    p.toggleNotesHeaderCollapse = async function () {
+        if (!this.ehMobile()) return superColapso.call(this);
+        const backdrop = document.getElementById('notesModalBackdrop');
+        if (!backdrop?.classList.contains('active')) return;
+        const recolhido = backdrop.classList.toggle('notes-chips-collapsed');
+        this.sincronizarBotaoColapsoChips(recolhido);
+    };
 }
 
 // ============================================

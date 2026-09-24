@@ -40,7 +40,7 @@ const combos = [
   ['Alt+ArrowUp', 'moveUp'], ['Alt+ArrowDown', 'moveDown'],
   ['Ctrl+Alt+1', 'heading1'], ['Ctrl+Alt+2', 'heading2'], ['Ctrl+Alt+3', 'heading3'],
   ['Ctrl+Alt+4', 'checklist'], ['Ctrl+Alt+5', 'insertOrderedList'], ['Ctrl+Alt+6', 'insertUnorderedList'],
-  ['Ctrl+Alt+7', 'strikeThrough'], ['Ctrl+Alt+8', 'picker color'], ['Ctrl+Alt+9', 'picker backgroundColor'],
+  ['Ctrl+Alt+7', 'strikeThrough'], ['Ctrl+U', 'underline'], ['Ctrl+Alt+8', 'picker color'], ['Ctrl+Alt+9', 'picker backgroundColor'],
   ['Ctrl+Alt+0', 'toggleNotesFullscreen'], ['Ctrl+Alt+T', 'toggleNotesHeaderCollapse'], ['Ctrl+Alt+L', 'animateNotesLineCollapse'],
   ['Ctrl+Shift+I', 'notesInsertMenu'], ['Ctrl+Shift+H', 'notesDivider'], ['Ctrl+K', 'notesLinkDialog'],
   ['Ctrl+Alt+M', 'notesTemplates'], ['Ctrl+Alt+Q', 'notesTableDialog']
@@ -74,7 +74,11 @@ if (require.main === module) {
   md.push('# Inventário de regras do motor de notas');
   md.push('');
   md.push('> Gerado por `node tools/gerar-rastreabilidade.cjs` em ' + hoje + '.');
-  md.push('> O motor do PWA é **byte a byte idêntico** ao do `produtividade-ferrramenta` (verificado por SHA-256).');
+  md.push('> O motor do PWA partia do **byte a byte idêntico** ao do `produtividade-ferrramenta`,');
+  md.push('> mas a **Revisão do bloco de notas** fez mudanças deliberadas e documentadas em');
+  md.push('> `notes/editor.js`/`notes/extras.js`: teto de 4 níveis de indentação, sublinhado (`underline`/`Ctrl+U`),');
+  md.push('> retorno do check à posição original e fluxo do Enter em listas/títulos recolhidos.');
+  md.push('> Ver `docs/PROBLEMAS-E-MITIGACOES.md` (P23–P28).');
   md.push('');
   md.push('## Resumo');
   md.push('');

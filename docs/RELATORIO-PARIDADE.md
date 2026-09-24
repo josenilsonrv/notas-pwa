@@ -1,13 +1,13 @@
 # Relatório de paridade visual (PWA x projeto original)
 
-> Gerado por `node tests/parity_visual.cjs` em 2026-09-18 21:59:09.
+> Gerado por `node tests/parity_visual.cjs` em 2026-09-24 20:41:05.
 > Compara as propriedades computadas de 18 seletores do modal de notas, em tema claro e escuro.
 > O original é usado **somente como referência** (nenhuma alteração é feita nele).
 
 | Resultado | Quantidade |
 | --- | --- |
 | Divergências reais | 0 |
-| Exceções documentadas | 7 |
+| Exceções documentadas | 21 |
 
 ## Exceções aceitas (com justificativa)
 
@@ -35,6 +35,10 @@ Mesma causa dos dois itens anteriores (estado do drawer no tema escuro).
 
 Tolerancia de layout do nav quando os chips do PWA (nomes de notas) e do original (projetos/etapas) tem larguras diferentes.
 
+### `#notesContextNav` → `overflow`
+
+Revisao do bloco de notas: os chips passam a rolar na vertical a partir de ~2 linhas (o original so rola na horizontal).
+
 ### `#notesEditorContainer` → `height`
 
 Consequencia de eventual diferenca de altura do nav entre os chips locais do PWA e os chips de projeto/etapa do original.
@@ -50,4 +54,20 @@ Tema escuro: o compilado define a cor do texto do dashboard no escuro (#F5F5F7) 
 ### `.notes-line-check` → `borderTopColor`
 
 Mesma causa do item anterior (cor herdada pelo checkbox no tema escuro).
+
+### `#notesEditorContainer` → `padding`
+
+Revisao do bloco de notas: recuo lateral esquerdo reduzido de proposito (0.6rem) para aproximar o conteudo da borda do campo. O original mantem 1.4rem.
+
+### `#notesEditor` → `width`
+
+Consequencia direta da reducao do padding-left do container (item 14 da revisao): o editor fica ~13px mais largo. Nao e divergencia de estilo, e o efeito pedido.
+
+### `.notes-line` → `width`
+
+Mesma causa do item anterior (largura herdada do editor mais largo).
+
+### `.notes-line-text` → `width`
+
+Mesma causa dos itens anteriores (a area de texto acompanha a largura do editor).
 

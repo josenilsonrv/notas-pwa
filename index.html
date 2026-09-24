@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="./notes/editor.css">
     <link rel="stylesheet" href="./notes/extras.css">
     <link rel="stylesheet" href="./notes/tables.css">
+    <link rel="stylesheet" href="./mapa/mapa.css">
     <script>
         // Resolve o tema antes do CSS carregar para evitar flash visual no primeiro paint.
         (() => {
@@ -91,6 +92,14 @@
 
     <!-- Main Editor Container -->
     <main class="flex-1 flex flex-col">
+        <!-- Áreas do aplicativo: Notas | Mapa Mental.
+             Fica FORA do bloco #notesModalBackdrop (parity_* compara o modal de notas). -->
+        <nav id="appAreas" class="app-areas" role="tablist" aria-label="Áreas do aplicativo">
+            <button type="button" role="tab" data-app-area="notas" aria-selected="true">Notas</button>
+            <button type="button" role="tab" data-app-area="mapa" aria-selected="false">Mapa Mental</button>
+        </nav>
+        <!-- Área do Mapa Mental: montada lazy na primeira entrada (mapa/mapa.js). -->
+        <section id="mapaArea" class="mapa-area" role="tabpanel" aria-label="Mapa Mental" hidden></section>
         <!-- Notes Modal (Always visible in this PWA) -->
         <div class="notes-drawer active" id="notesModalBackdrop">
             <div class="modal notes-modal w-[90%] max-w-[600px] h-[70vh] max-h-[70vh] overflow-hidden bg-white rounded-[20px] shadow-[0_12px_32px_rgba(0,0,0,0.12)] transition-transform duration-300 flex flex-col p-0 select-text" id="notesModal" role="region" aria-labelledby="notesModalTitle">
@@ -129,37 +138,38 @@
                         <button class="toolbar-btn notes-heading-btn" data-command="heading3" title="Título H3" aria-label="Título H3">H3</button>
                         <div class="w-px h-6 bg-border mx-1"></div>
                         <button class="toolbar-btn" data-command="bold" title="Negrito" aria-label="Negrito">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
                         </button>
                         <button class="toolbar-btn" data-command="italic" title="Itálico" aria-label="Itálico">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
                         </button>
-                        <button class="toolbar-btn" data-command="strikeThrough" title="Tachado" aria-label="Tachado">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M5 5l14 7-7 7"/></svg>
-                        </button>
+                        <button class="toolbar-btn" data-command="strikeThrough" title="Tachado" aria-label="Tachado"><s>S</s></button>
                         <div class="w-px h-6 bg-border mx-1"></div>
                         <button class="toolbar-btn" data-command="checklist" title="Checklist" aria-label="Checklist">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="6" height="6" rx="1"></rect><path d="M4.5 8l1.5 1.5L9 6.5"></path><line x1="13" y1="8" x2="21" y2="8"></line><rect x="3" y="14" width="6" height="6" rx="1"></rect><line x1="13" y1="17" x2="21" y2="17"></line></svg>
                         </button>
                         <button class="toolbar-btn" data-command="insertOrderedList" title="Lista numerada" aria-label="Lista numerada">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
                         </button>
                         <button class="toolbar-btn" data-command="insertUnorderedList" title="Lista com marcadores" aria-label="Lista com marcadores">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"></line><line x1="9" y1="12" x2="20" y2="12"></line><line x1="9" y1="18" x2="20" y2="18"></line><circle cx="4.5" cy="6" r="1.5" fill="currentColor" stroke="none"></circle><circle cx="4.5" cy="12" r="1.5" fill="currentColor" stroke="none"></circle><circle cx="4.5" cy="18" r="1.5" fill="currentColor" stroke="none"></circle></svg>
+                        </button>
+                        <button class="toolbar-btn" data-command="underline" title="Sublinhado" aria-label="Sublinhado">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
                         </button>
                         <div class="w-px h-6 bg-border mx-1"></div>
                         <button class="toolbar-btn" data-command="indent" title="Indentar" aria-label="Indentar">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><path d="M10 14L21 3"/><path d="M18 13v6"/><path d="M15 18h9"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 8 7 12 3 16"></polyline><line x1="21" y1="12" x2="11" y2="12"></line><line x1="21" y1="6" x2="11" y2="6"></line><line x1="21" y1="18" x2="11" y2="18"></line></svg>
                         </button>
                         <button class="toolbar-btn" data-command="outdent" title="Desindentar" aria-label="Desindentar">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><path d="M10 14L21 3"/><path d="M18 13v6"/><path d="M15 18h9"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 8 3 12 7 16"></polyline><line x1="21" y1="12" x2="11" y2="12"></line><line x1="21" y1="6" x2="11" y2="6"></line><line x1="21" y1="18" x2="11" y2="18"></line></svg>
                         </button>
                         <div class="w-px h-6 bg-border mx-1"></div>
                         <button class="toolbar-btn" data-command="undo" title="Desfazer" aria-label="Desfazer">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7 4 12l5 5"/><path d="M4 12h9a7 7 0 0 1 7 7"/></svg>
                         </button>
                         <button class="toolbar-btn" data-command="redo" title="Refazer" aria-label="Refazer">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 7 5 5-5 5"/><path d="M20 12h-9a7 7 0 0 0-7 7"/></svg>
                         </button>
                         <div class="w-px h-6 bg-border mx-1"></div>
                         <button type="button" class="toolbar-btn" data-notes-color="color" title="Cor da fonte" aria-label="Cor da fonte" aria-haspopup="dialog">
@@ -190,6 +200,13 @@
     <script src="./notes/extras.js"></script>
     <script src="./notes/tables.js"></script>
     <script src="./app.js"></script>
+    <script src="./mapa/mapa-modelo.js"></script>
+    <script src="./mapa/mapa-store.js"></script>
+    <script src="./mapa/mapa-layout.js"></script>
+    <script src="./mapa/mapa-render.js"></script>
+    <script src="./mapa/mapa-painel.js"></script>
+    <script src="./mapa/mapa-interacao.js"></script>
+    <script src="./mapa/mapa.js"></script>
     <script>
         /* Service Worker.
            - SW_URL aponta para o caminho REAL do arquivo (resolvido a partir da base do

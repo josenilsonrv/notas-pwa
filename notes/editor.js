@@ -1,6 +1,8 @@
 /* Versioned note document. This domain layer does not depend on the DOM. */
 class NotesDocument {
     static VERSION = 1;
+    // Níveis de indentação permitidos: 0 (sem recuo) a 4 (quatro recuos).
+    static MAX_LEVEL = 4;
     static id() { return globalThis.crypto?.randomUUID?.() || 'note-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2); }
     constructor({version=1, blocks=[], settings={}}={}) {
         if(version!==NotesDocument.VERSION)throw new Error('Unsupported note document version');
@@ -10,7 +12,7 @@ class NotesDocument {
         this.byId=new Map();const parents=[];
         for(const block of this.blocks){
             if(!block.id||this.byId.has(block.id))block.id=NotesDocument.id();
-            block.level=Math.max(0,Number(block.level)||0);
+            block.level=Math.min(NotesDocument.MAX_LEVEL,Math.max(0,Number(block.level)||0));
             while(parents.length&&parents.at(-1).level>=block.level)parents.pop();
             block.parentId=parents.at(-1)?.id||null;
             this.byId.set(block.id,block);parents.push(block);
@@ -52,9 +54,16 @@ class NotesDocument {
             else{const peers=this.blocks.filter(b=>b.parentId===block.parentId),next=peers[Math.max(0,returnPosition.index||0)];if(next)insertion=this.blocks.indexOf(next);}
         }
         if(!checked&&state.completionOrder!==undefined){
-            const following=this.blocks.find(peer=>peer.parentId===block.parentId&&peer.props.checked!=='true'&&Number(peer.props.completionOrder)>Number(state.completionOrder));
-            if(following)insertion=this.blocks.indexOf(following);
-            else {const checkedPeer=this.blocks.find(peer=>peer.parentId===block.parentId&&peer.props.checked==='true');if(checkedPeer)insertion=this.blocks.indexOf(checkedPeer);else{const preceding=this.blocks.filter(peer=>peer.parentId===block.parentId&&Number(peer.props.completionOrder)<Number(state.completionOrder)).at(-1);if(preceding){const last=this.descendants(preceding.id).filter(row=>this.blocks.includes(row)).at(-1)||preceding;insertion=this.blocks.indexOf(last)+1;}}}
+            // Voltar à posição de origem: olha o PRIMEIRO irmão na ORDEM ORIGINAL
+            // (completionOrder), não o primeiro na ordem atual. Se esse irmão ainda
+            // estiver pendente, o item volta para logo antes dele; se já estiver
+            // concluído, o item vai para o topo da pilha de concluídos (antes do
+            // primeiro irmão concluído), preservando o fluxo de "desmarcar em
+            // qualquer ordem restaura a ordem original".
+            const ordem=Number(state.completionOrder),irmaos=this.blocks.filter(peer=>peer.parentId===block.parentId);
+            const primeiroSeguinte=irmaos.filter(peer=>Number(peer.props.completionOrder)>ordem).sort((a,b)=>Number(a.props.completionOrder)-Number(b.props.completionOrder))[0];
+            if(primeiroSeguinte&&primeiroSeguinte.props.checked!=='true')insertion=this.blocks.indexOf(primeiroSeguinte);
+            else {const checkedPeer=irmaos.find(peer=>peer.props.checked==='true');if(checkedPeer)insertion=this.blocks.indexOf(checkedPeer);else{const preceding=irmaos.filter(peer=>Number(peer.props.completionOrder)<ordem).at(-1);if(preceding){const last=this.descendants(preceding.id).filter(row=>this.blocks.includes(row)).at(-1)||preceding;insertion=this.blocks.indexOf(last)+1;}}}
         }
         if(!checked)delete state.completionPosition;
         this.blocks.splice(insertion,0,...group);this.reindex();
@@ -67,12 +76,13 @@ class NotesDocument {
         const chosen=ids.map(id=>this.byId.get(id)).filter(Boolean),first=chosen[0];if(!first)return;
         const selected=new Set(ids);ids.forEach(id=>this.descendants(id).forEach(b=>selected.add(b.id)));
         const group=this.blocks.filter(b=>selected.has(b.id)),parents=new Set(group.map(b=>b.parentId)),depth=first.level,previous=this.blocks[this.blocks.indexOf(first)-1];
-        if(delta>0&&(!previous||depth>previous.level))return;
+        // Sem indentar além do teto (4 níveis) e sem "pular" a linha anterior.
+        if(delta>0&&(group.some(b=>b.level>=NotesDocument.MAX_LEVEL)||!previous||depth>previous.level))return;
         if(delta<0&&depth>0&&group.every(b=>b.level>=depth)){
             let index=this.blocks.indexOf(group.at(-1))+1;while(index<this.blocks.length&&this.blocks[index].level>=depth)index++;
             const boundary=this.blocks[index];this.blocks=this.blocks.filter(b=>!selected.has(b.id));this.blocks.splice(boundary?this.blocks.indexOf(boundary):this.blocks.length,0,...group);
         }
-        group.forEach(b=>b.level=Math.max(0,b.level+delta));this.reindex();group.forEach(b=>parents.add(b.parentId));this.renumber(parents);
+        group.forEach(b=>b.level=Math.min(NotesDocument.MAX_LEVEL,Math.max(0,b.level+delta)));this.reindex();group.forEach(b=>parents.add(b.parentId));this.renumber(parents);
         if(delta>0){const parent=this.byId.get(first.parentId);if(parent)parent.props.collapsed='false';}
     }
     move(ids,direction){
@@ -602,6 +612,7 @@ function installNotesEditor(App) {
         this.restoreNotesSelection();normalize(editor());const mark=bookmark(), chosen=selected().filter(Boolean);
         if(this.notesHistoryMarks)this.notesHistoryMarks[this.notesHistoryIndex]=mark;
         if(command==='strikeThrough'&&getSelection().isCollapsed){return this.applyNotesTextStyle('textDecoration',document.queryCommandState('strikeThrough')?'none':'line-through');}
+        if(command==='underline'&&getSelection().isCollapsed){return this.applyNotesTextStyle('textDecoration',document.queryCommandState('underline')?'none':'underline');}
         if(command==='bold'||command==='italic'){
             if(getSelection().isCollapsed){const enabled=chosen[0]?.dataset[command]!=='true';chosen.forEach(l=>formatWholeLine(l,command,enabled));}
             else return this.applyNotesTextStyle(command==='bold'?'fontWeight':'fontStyle',document.queryCommandState(command)?(command==='bold'?'400':'normal'):(command==='bold'?'700':'italic'));
@@ -674,7 +685,7 @@ function installNotesEditor(App) {
             }
         }
 
-        if(modifier&&['z','y','s','b','i'].includes(key)){event.preventDefault();if(key==='s')this.saveNotes();else if(key==='z')event.shiftKey?this.redoNotes():this.undoNotes();else if(key==='y')this.redoNotes();else{this.rememberNotesSelection();this.executeNotesCommand(key==='b'?'bold':'italic');}return;}
+        if(modifier&&['z','y','s','b','i','u'].includes(key)){event.preventDefault();if(key==='s')this.saveNotes();else if(key==='z')event.shiftKey?this.redoNotes():this.undoNotes();else if(key==='y')this.redoNotes();else{this.rememberNotesSelection();this.executeNotesCommand(key==='b'?'bold':key==='u'?'underline':'italic');}return;}
         if(event.key==='Tab'){event.preventDefault();this.rememberNotesSelection();this.executeNotesCommand(event.shiftKey?'outdent':'indent');return;}
         const selection=getSelection();if(!selection.rangeCount)return;const range=selection.getRangeAt(0);let line=lineAt(range.startContainer);
         // Clicking after the final block can put the caret on the editor itself.
@@ -711,7 +722,6 @@ function installNotesEditor(App) {
         if(event.key!=='Enter')return;event.preventDefault();
         if(!selection.isCollapsed){deleteSelection();range.setStart(getSelection().getRangeAt(0).startContainer,getSelection().getRangeAt(0).startOffset);range.collapse(true);}
         if(line.dataset.codeBlock){const node=document.createTextNode('\n');range.insertNode(node);if(!node.nextSibling)node.after(document.createElement('br'));range.setStartAfter(node);range.collapse(true);selection.removeAllRanges();selection.addRange(range);this.recordNotesHistory();this.rememberNotesSelection();return;}
-        if(line.dataset.collapsed==='true'&&mark.start[1]===body(line).textContent.length){const group=targets(line);if(group.length||line.dataset.heading){const next=newLine('<br>',{level:String(level(line))});if(line.dataset.heading)next.dataset.outlineBreak=line.dataset.heading;(group.at(-1)||line).after(next);caret(next);this.recordNotesHistory();this.rememberNotesSelection();return;}}
         if(event.shiftKey){const br=document.createElement('br');range.insertNode(br);range.setStartAfter(br);range.collapse(true);selection.removeAllRanges();selection.addRange(range);this.recordNotesHistory();return;}
         if(!body(line).textContent.trim()){
             if(!line.dataset.list&&line.dataset.check!=='true'){const next=newLine('<br>',{level:String(level(line))});line.dataset.collapsed='false';line.after(next);this.recordNotesHistory();caret(next);this.rememberNotesSelection();return;}
@@ -721,12 +731,32 @@ function installNotesEditor(App) {
         const tail=document.createRange();tail.selectNodeContents(body(line));tail.setStart(range.startContainer,range.startOffset);
         const atEnd=tail.toString().length===0,child=atEnd&&targets(line).length>0;
         const existingChild=line.nextElementSibling;
-        if(child&&line.dataset.collapsed==='true'&&existingChild&&level(existingChild)===level(line)+1
+        // Pai de lista/checklist recolhido com o cursor no fim: digita no filho vazio
+        // já existente em vez de criar um irmão novo (mantém a hierarquia).
+        if(!line.dataset.heading&&child&&line.dataset.collapsed==='true'&&existingChild&&level(existingChild)===level(line)+1
             &&existingChild.dataset.check===line.dataset.check&&existingChild.dataset.checked!=='true'
             &&(existingChild.dataset.list||'')===(line.dataset.list||'')
             &&!body(existingChild).textContent.trim()&&!body(existingChild).querySelector('img,table,video,audio')
             &&targets(existingChild,lines(),lines().indexOf(existingChild),true).length===0){
             line.dataset.collapsed='false';this.refreshNotesCollapseControls();caret(existingChild);this.recordNotesHistory();return;
+        }
+        // Título/pai recolhido com o cursor no fim: a linha criada abaixo herda a
+        // formatação do item (título, lista e/ou check) e, em listas numeradas,
+        // segue o fluxo de numeração abaixo. Em lista/checklist com filhos, a nova
+        // linha entra como PRIMEIRO FILHO (o pai é expandido) para seguir o fluxo.
+        if(line.dataset.collapsed==='true'&&mark.start[1]===body(line).textContent.length){
+            const group=targets(line);
+            if(group.length||line.dataset.heading||line.dataset.list||line.dataset.check==='true'){
+                const lista=line.dataset.list||'',check=line.dataset.check||'false';
+                const comoFilho=group.length>0&&!line.dataset.heading&&Boolean(lista||check==='true');
+                const next=newLine('<br>',{level:String(level(line)+(comoFilho?1:0)),list:lista,check,checked:'false'});
+                for(const field of ['heading','bold','italic'])if(line.dataset[field])next.dataset[field]=line.dataset[field];
+                if(line.dataset.heading)next.dataset.outlineBreak=line.dataset.heading;
+                if(lista==='ol'&&line.dataset.checkNumber)next.dataset.checkNumber=String(Number(line.dataset.checkNumber)+1);
+                if(comoFilho){line.dataset.collapsed='false';line.after(next);this.refreshNotesCollapseControls();}
+                else{(group.at(-1)||line).after(next);}
+                caret(next);this.recordNotesHistory();this.rememberNotesSelection();return;
+            }
         }
         const next=newLine('<br>',{level:String(level(line)+(child?1:0)),list:line.dataset.list||'',check:line.dataset.check||'false',checked:'false'});
         if(line.dataset.list==='ol'&&line.dataset.checkNumber){
@@ -741,7 +771,7 @@ function installNotesEditor(App) {
         if(!body(line).childNodes.length)body(line).append(document.createElement('br'));
         if(child||line.dataset.heading)line.dataset.collapsed='false';line.after(next);this.refreshNotesCollapseControls();caret(next);this.recordNotesHistory();
     };
-    p.updateNotesToolbarState=function(){const chosen=selected().filter(Boolean);document.querySelectorAll('#notesToolbar [data-command]').forEach(button=>{const command=button.dataset.command;let active=false;if(command.startsWith('heading'))active=getSelection().isCollapsed?chosen.length&&chosen.every(l=>l.dataset.heading===command.slice(-1)):selectedHeading()===command.slice(-1);else if(command==='checklist')active=chosen.length&&chosen.every(l=>l.dataset.check==='true');else if(command.includes('List'))active=chosen.length&&chosen.every(l=>l.dataset.list===(command==='insertOrderedList'?'ol':'ul'));else if(command==='bold'||command==='italic')active=document.queryCommandState(command);button.classList.toggle('is-active',Boolean(active));button.setAttribute('aria-pressed',String(Boolean(active)));});};
+    p.updateNotesToolbarState=function(){const chosen=selected().filter(Boolean);document.querySelectorAll('#notesToolbar [data-command]').forEach(button=>{const command=button.dataset.command;let active=false;if(command.startsWith('heading'))active=getSelection().isCollapsed?chosen.length&&chosen.every(l=>l.dataset.heading===command.slice(-1)):selectedHeading()===command.slice(-1);else if(command==='checklist')active=chosen.length&&chosen.every(l=>l.dataset.check==='true');else if(command.includes('List'))active=chosen.length&&chosen.every(l=>l.dataset.list===(command==='insertOrderedList'?'ol':'ul'));else if(command==='bold'||command==='italic'||command==='underline')active=document.queryCommandState(command);button.classList.toggle('is-active',Boolean(active));button.setAttribute('aria-pressed',String(Boolean(active)));});};
     p.updateNotesChecklistOrder=function(check){
         this.flushNotesTyping();
         const line=lineAt(check),value=String(check.checked),keepCheckboxFocus=document.activeElement===check;
@@ -781,7 +811,7 @@ function installNotesEditor(App) {
         for(const [command,label,glyph]of [['codeBlock','Adicionar bloco de código','</>'],['collapseAll','Expandir/recolher todos','↕']]){
             const button=document.createElement('button');button.type='button';button.className='toolbar-btn';button.dataset.command=command;button.title=label;button.setAttribute('aria-label',label);button.innerHTML=command==='codeBlock'?'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 6-4 4 4 4m8-8 4 4-4 4m-3-10-2 12"/></svg>':glyph;button.onmousedown=event=>event.preventDefault();button.onclick=()=>command==='collapseAll'?this.toggleAllNotesCollapse():this.executeNotesCommand(command);document.getElementById('notesToolbar').append(button);
         }
-        const shortcutLabels={heading1:'Ctrl+Alt+1',heading2:'Ctrl+Alt+2',heading3:'Ctrl+Alt+3',checklist:'Ctrl+Alt+4',insertOrderedList:'Ctrl+Alt+5',insertUnorderedList:'Ctrl+Alt+6',strikeThrough:'Ctrl+Alt+7',bold:'Ctrl+B',italic:'Ctrl+I',undo:'Ctrl+Z',redo:'Ctrl+Shift+Z',indent:'Tab',outdent:'Shift+Tab',moveUp:'Alt+ArrowUp',moveDown:'Alt+ArrowDown'};
+        const shortcutLabels={heading1:'Ctrl+Alt+1',heading2:'Ctrl+Alt+2',heading3:'Ctrl+Alt+3',checklist:'Ctrl+Alt+4',insertOrderedList:'Ctrl+Alt+5',insertUnorderedList:'Ctrl+Alt+6',strikeThrough:'Ctrl+Alt+7',underline:'Ctrl+U',bold:'Ctrl+B',italic:'Ctrl+I',undo:'Ctrl+Z',redo:'Ctrl+Shift+Z',indent:'Tab',outdent:'Shift+Tab',moveUp:'Alt+ArrowUp',moveDown:'Alt+ArrowDown'};
         const labelShortcut=(button,shortcut)=>{if(!button)return;button.title=(button.title||button.getAttribute('aria-label')||button.textContent.trim())+' ('+shortcut.replace('ArrowUp','↑').replace('ArrowDown','↓')+')';button.setAttribute('aria-keyshortcuts',shortcut.replace('Ctrl','Control'));};
         document.querySelectorAll('#notesToolbar [data-command]').forEach(button=>{const shortcut=shortcutLabels[button.dataset.command];if(shortcut)labelShortcut(button,shortcut);});
         labelShortcut(document.querySelector('[data-notes-color="color"]'),'Ctrl+Alt+8');labelShortcut(document.querySelector('[data-notes-color="backgroundColor"]'),'Ctrl+Alt+9');labelShortcut(document.getElementById('notesFullscreenBtn'),'Ctrl+Alt+0');labelShortcut(document.getElementById('notesHeaderCollapseBtn'),'Ctrl+Alt+T');

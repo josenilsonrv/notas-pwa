@@ -40,8 +40,10 @@ const ordemDe=page=>page.evaluate(()=>[...app.chavesToolbar().values()]);
   assert.ok(fabrica.length>10,'barra tem varios botoes');
   assert.equal(await page.evaluate(()=>document.getElementById('notesToolbar').lastElementChild?.dataset.pwa||''),'editar-toolbar','botao de edicao no fim da barra');
 
-  // 2) Em 390px: uma única linha, com rolagem horizontal e sem menu "...".
-  await page.setViewportSize({width:390,height:800});
+  // 2) Em 820px (desktop estreito, NAO mobile): uma única linha, com rolagem
+  // horizontal e sem menu "...". Em 390px de celular a toolbar superior fica
+  // escondida por padrão (ver caso 2b).
+  await page.setViewportSize({width:820,height:800});
   await page.waitForTimeout(400);
   const layout=await page.evaluate(()=>{
     const t=document.getElementById('notesToolbar');
@@ -60,6 +62,23 @@ const ordemDe=page=>page.evaluate(()=>[...app.chavesToolbar().values()]);
   assert.equal(layout.gaveta,0,'gaveta do motor vazia');
   await page.setViewportSize({width:1280,height:960});
   await page.waitForTimeout(300);
+
+  // 2b) Celular (390px com toque): a toolbar superior fica ESCONDIDA por padrão e
+  // o botão de colapso alterna APENAS os chips de notas (não o cabeçalho).
+  await page.setViewportSize({width:390,height:800});
+  await page.waitForTimeout(350);
+  assert.equal(await page.evaluate(()=>document.documentElement.classList.contains('notes-mobile')),true,'modo mobile ligado');
+  assert.equal(await page.locator('#notesToolbar').isVisible(),false,'toolbar superior escondida no mobile');
+  assert.equal(await page.locator('#notesContextNav').isVisible(),true,'chips visiveis no mobile');
+  await page.evaluate(()=>app.toggleNotesHeaderCollapse());
+  await page.waitForTimeout(450);
+  assert.equal(await page.locator('#notesContextNav').isVisible(),false,'botao de colapso esconde os chips');
+  assert.equal(await page.evaluate(()=>document.getElementById('notesModalBackdrop').classList.contains('notes-header-collapsed')),false,'colapso do cabecalho NAO e acionado no mobile');
+  await page.evaluate(()=>app.toggleNotesHeaderCollapse());
+  await page.waitForTimeout(450);
+  assert.equal(await page.locator('#notesContextNav').isVisible(),true,'botao de colapso mostra os chips de volta');
+  await page.setViewportSize({width:1280,height:960});
+  await page.waitForTimeout(350);
 
   // 3) Dock acima do teclado (inset simulado, pois não há teclado no headless).
   // Viewport de celular com altura <= 720px: é aí que o CSS do original dá
@@ -82,6 +101,22 @@ const ordemDe=page=>page.evaluate(()=>[...app.chavesToolbar().values()]);
   assert.ok(Math.abs((visivel.y+visivel.height)-(alturaJanela-260))<5,'barra visivelmente logo acima do teclado ('+JSON.stringify({topoBarra:Math.round(visivel.y+visivel.height),esperado:alturaJanela-260})+')');
   const modalBox=await page.locator('#notesModal').boundingBox();
   assert.ok(Math.abs(visivel.x-modalBox.x)<2&&Math.abs(visivel.width-modalBox.width)<2,'barra alinhada com o modal');
+  // 3c) O cursor fica ACIMA da barra acoplada: com muitas linhas, a linha digitada
+  // nao pode ficar escondida atras da barra do teclado.
+  await page.evaluate(()=>{
+    const editor=document.getElementById('notesEditor');
+    editor.innerHTML=Array.from({length:40},(_,i)=>'<div class="notes-line" data-level="0"><div class="notes-line-text">linha '+(i+1)+'</div></div>').join('');
+    const alvo=editor.lastElementChild.querySelector('.notes-line-text');
+    const r=document.createRange();r.selectNodeContents(alvo);r.collapse(false);
+    const s=getSelection();s.removeAllRanges();s.addRange(r);
+    app.rolarCaretParaAcima();
+  });
+  const cursorAcima=await page.evaluate(()=>{
+    const barra=document.getElementById('notesToolbar').getBoundingClientRect();
+    const caret=getSelection().getRangeAt(0).getBoundingClientRect();
+    return caret.bottom<=barra.top+1;
+  });
+  assert.equal(cursorAcima,true,'cursor visivel acima da barra do teclado');
   await page.evaluate(()=>app.aplicarToolbarTeclado(0));
   assert.equal(await page.evaluate(()=>document.getElementById('notesToolbar').classList.contains('notes-toolbar-docked')),false,'barra volta ao normal');
   assert.equal(await page.evaluate(()=>document.getElementById('notesEditor').style.paddingBottom),'','espaco extra removido');

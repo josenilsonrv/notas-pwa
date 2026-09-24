@@ -5,23 +5,48 @@ Editor de notas avançado como Progressive Web App (PWA) para uso em celular, co
 ## 🌟 Funcionalidades
 
 ### Editor de Notas Completo
-- **Hierarquia**: Sistema de níveis com indentação (nível 0, 1, 2, etc.)
-- **Checklist**: Checkbox com completion tracking, timestamps e batch completion
-- **Formatação**: Bold, italic, tachado, headings (H1-H3)
-- **Listas**: Lista numerada e com marcadores
+- **Hierarquia**: Sistema de níveis com indentação, limitada a **4 níveis** (0 a 4)
+- **Checklist**: Checkbox com completion tracking, timestamps e batch completion; desmarcar devolve o item à posição original
+- **Formatação**: Bold, italic, **sublinhado** (Ctrl+U), tachado, headings (H1-H3)
+- **Listas**: Lista numerada e com marcadores (o Enter segue o fluxo da lista)
 - **Cores**: Paleta de cores personalizadas para texto e destaque (background)
-- **Múltiplas notas**: Botão "+" cria notas novas; chips no topo alternam entre elas (duplo clique/toque longo renomeia ou exclui) e cada chip segue a cor padrão da sua nota
+- **Múltiplas notas**: Botão "+" cria notas novas; chips no topo alternam entre elas (duplo clique/toque longo renomeia ou exclui) e cada chip segue a cor padrão da sua nota. A área dos chips **rola na vertical** a partir de ~2 linhas e o botão "+" fica preso no canto inferior direito
 - **Navegação**: Setas para mover itens, colapso/expansão de hierarquias
 - **Blocos de código**: Bloco de código com realce e linguagem
-- **Tabelas**: Tabela estilo planilha com fórmulas (SOMA, MEDIA, POTENCIA, etc.), formatos de número/moeda/porcentagem, cores e redimensionamento
+- **Tabelas**: Tabela estilo planilha com fórmulas (SOMA, MEDIA, POTENCIA, etc.), formatos de número/moeda/porcentagem, cores e redimensionamento; tocar fora da tabela posiciona o cursor logo após ela
 - **Inserir**: Imagem, arquivo, tabela, data, vídeo do YouTube (incorporado) e divisor
 - **Links**: Inserir/editar links com auto-link do texto digitado
 - **Modelos de nota**: Salvar a nota atual como modelo e reaplicá-la
 - **Undo/Redo**: Histórico de estados com atalhos
-- **Toolbar**: Uma única linha com rolagem horizontal; botão "Editar barra de ferramentas" reordena os botões (ordem guardada no dispositivo); a barra acompanha o teclado, ficando logo acima dele
+- **Toolbar**: Uma única linha com rolagem horizontal; botão "Editar barra de ferramentas" reordena os botões (ordem guardada no dispositivo); a barra acompanha o teclado, ficando logo acima dele, e o cursor é mantido visível acima dela
+- **Modo mobile**: por padrão a toolbar **superior fica escondida** (aparece a barra acoplada ao teclado) e o botão de colapso alterna **apenas os chips** de notas
 - **Fullscreen**: Modo tela cheia
 - **Temas**: Claro e escuro, com um seletor sutil (sol/lua) no cabeçalho do modal para alternar manualmente
-- **Persistência**: Salvo automaticamente no LocalStorage do dispositivo
+- **Persistência**: Salvo automaticamente no LocalStorage do dispositivo (a camada de notas é preparada para persistência remota/Supabase)
+
+### Áreas do app: Notas e Mapa Mental
+- **Seletor de áreas**: barra flutuante (Notas | Mapa Mental) que troca de área sem recarregar; a escolha é lembrada no dispositivo (`notas-pwa-area-ativa`)
+- **Mapa Mental**: área separada do editor, em camadas (pasta `mapa/`), montada só na primeira entrada (lazy) para não pesar o boot
+- **Gestão de mapas**: criar, abrir, renomear, duplicar e excluir (com confirmação); favoritar (estrela) e arquivar/desarquivar
+- **Pastas/workspaces**: criar, renomear, excluir e mover mapas entre pastas
+- **Mapa raiz (Home)**: define um mapa como raiz e destaca-o na lista
+- **Mapas conectados**: nó-ponte liga um mapa a outro (link bidirecional via backlinks) e avisa quando a referência está quebrada
+- **Templates**: templates prontos (Mapa em branco, Simples, Projeto) e “salvar este mapa como template”
+- **Recentes e busca**: atalhos para os últimos mapas abertos, busca por nome e ordenação (nome/recente/favorito)
+- **Canvas infinito**: mundo expansível com `transform` (translate/scale); zoom por botões, `Ctrl+scroll` e pinça, com limites de 25% a 300%
+- **Navegação**: pan por arrastar (Pointer Events, mouse e toque), centralizar, ajustar à tela (fit), ir para a raiz e minimapa clicável
+- **Viewport por mapa**: última posição/zoom restaurada ao reabrir o mapa (persistida com debounce)
+- **Tópicos (nós)**: criar filho/irmão/independente, editar direto no nó (duplo clique, F2 ou toque longo), excluir, duplicar, copiar/recortar/colar e desfazer
+- **Estrutura**: reordenar irmãos (subir/descer), reparenting por menu ou arrastando sobre outro nó (com bloqueio de ciclo) e expandir/recolher ramos (por nó ou tudo)
+- **Ramificações visíveis**: cada filho é ligado ao pai por uma curva (SVG) que sai da borda do pai mais próxima do filho — fica claro quem é filho de quem
+- **Organização do nó**: bloquear (cadeado) e redimensionar a largura (alça e botões, em múltiplos de 8px)
+- **Seleção**: clique, Ctrl/Shift+clique e laço (Shift+arrastar) com barra de ações do nó
+- **Conteúdo do nó**: título, descrição, notas, links (com auto-link), imagens/anexos (limite ~1 MB), emoji/ícone, tags, checkbox de tarefa, prioridade, status, datas (início/prazo), responsável, progresso e referências (painel de propriedades)
+- **Hierarquia**: níveis ilimitados com identificação visual por profundidade e layout em árvore por raiz (bilateral, esquerda→direita, direita→esquerda, vertical, organograma e livre)
+- **Conexões livres**: ligar quaisquer dois nós (independente da hierarquia) por menu, modo “Conectar nós” ou Alt+arrastar; direcionada/simples, com rótulo editável, tipo de linha, espessura, cor e setas, editáveis pelo clique na aresta
+- **Drag & drop inteligente**: mover livre (layout manual), soltar no meio = reparent, soltar em cima/baixo = inserir entre irmãos (com linha-guia), ramificação inteira acompanha e ciclo bloqueado
+- **Atalhos de teclado**: mapa vazio → `Enter`/`Tab`/`Insert` cria o primeiro tópico; com nó selecionado → `Enter` = irmão, `Tab` = filho, `Ctrl/Cmd+Enter` = filho, `Insert` = filho, `Shift+Insert` = irmão, `Shift+Tab` = subir de nível, `F2` = editar, `Delete` = excluir, `Ctrl+C/X/V` = copiar/recortar/colar, `Ctrl+Z`/`Ctrl+Shift+Z` = desfazer/refazer, `Alt+↑/↓` = reordenar, `Esc` = limpar seleção
+- **Isolamento**: a área do mapa não altera o motor de notas (`notes/*`), preservando a paridade estrutural e visual
 
 ### Funcionalidades PWA
 - **Instalável**: Pode ser instalado como app no celular
@@ -129,6 +154,15 @@ notas-pwa/
 │   ├── table-math.js       # Avaliador de fórmulas das tabelas
 │   ├── tables.js           # Ferramentas contextuais de tabela
 │   └── tables.css          # Estilos das tabelas
+├── mapa/
+│   ├── mapa.css            # Estilos da área (tokens do tema, claro/escuro)
+│   ├── mapa-modelo.js      # Modelo (nós/conexões, IDs monotônicos, migração, duplicação)
+│   ├── mapa-store.js       # Persistência local (CRUD de mapas, pastas, recentes, viewport)
+│   ├── mapa-layout.js      # Layout em árvore, limites do mundo e geometria do minimapa
+│   ├── mapa-render.js      # Shell da área, gestão, canvas infinito, conexões SVG e minimapa
+│   ├── mapa-painel.js      # Painel de propriedades do nó (conteúdo, anexos, emoji)
+│   ├── mapa-interacao.js   # Seleção, drag&drop (zonas), conexões e atalhos (Pointer Events)
+│   └── mapa.js             # installMapaMental + controlador da área (montagem lazy)
 ├── icon-192.png            # Ícone 192x192 (PNG real, maskable)
 ├── icon-512.png            # Ícone 512x512 (PNG real, maskable)
 ├── icon.svg                # Ícone SVG
@@ -151,6 +185,15 @@ notas-pwa/
 │   ├── toolbar_pwa.cjs         # Barra em uma linha/rolagem, edição de posições e dock do teclado
 │   ├── tema_switch.cjs         # Switch sutil de tema (claro/escuro) manual
 │   ├── shortcuts.cjs           # Atalhos de teclado (lacunas cobertas)
+│   ├── mapa_area.cjs           # Área Mapa Mental: seletor, troca, lazy e tema
+│   ├── mapa_gestao.cjs         # Gestão de mapas: CRUD, pastas, raiz, conexões, templates
+│   ├── mapa_canvas.cjs         # Canvas infinito: zoom, pan, pinça, fit, minimapa, viewport
+│   ├── mapa_nos.cjs            # Nós: criar/editar/copiar/colar/reparent/recolher/bloquear/largura
+│   ├── mapa_conteudo.cjs       # Conteúdo do nó: sanitização, painel, anexos e nó-ponte
+│   ├── mapa_layout.cjs         # Hierarquia: níveis, layouts em árvore e recolher seguro
+│   ├── mapa_conexoes.cjs       # Conexões livres: criação (3 modos), estilo, edição e remoção
+│   ├── mapa_dragdrop.cjs       # Drag & drop: reparent, irmãos, ramificação e ciclo
+│   ├── mapa_vazio.cjs          # Mapa novo: estado vazio e criação do primeiro tópico
 │   └── helpers/parity.cjs      # Bootstrap comum (PWA e original)
 ├── docs/
 │   ├── INVENTARIO-REGRAS.md    # Todas as unidades de comportamento do motor
@@ -159,6 +202,8 @@ notas-pwa/
 │   ├── PROMPT-MODO-CLARO-VIDRO.md        # Como replicar o tema claro com efeitos de vidro
 │   ├── PROMPT-MULTI-NOTAS-MODELOS-CORES.md  # Botão "+" (multi-notas), modelos e cores/accent
 │   ├── COMO-RODAR-TESTES.md     # Fluxo eficiente: filtros, baseline, retry
+│   ├── PROMPT-MAPA-MENTAL.md    # Plano da área "Mapa Mental" (fases e checklist)
+│   ├── PROBLEMAS-E-MITIGACOES.md # Problemas da suíte por fase e como mitigar
 │   └── RELATORIO-CORRECAO-TRAVAMENTO-CELULAR.md  # Investigação e correção do travamento no celular
 └── README.md               # Este arquivo
 ```
@@ -316,7 +361,10 @@ tudo isso automaticamente.
 
 Este é um fork do editor de notas do sistema original. Para contribuir:
 1. Mantenha a compatibilidade com o sistema `NotesDocument`
-2. Preservar todas as funcionalidades do editor
+2. Preserve as funcionalidades do editor — o motor (`notes/editor.js`, `notes/extras.js`)
+   **deixou de ser byte-a-byte igual** ao original na revisão do bloco de notas: ganhou o
+   teto de 4 níveis de indentação, o sublinhado (Ctrl+U), o retorno do check à posição
+   original e o fluxo do Enter em listas/títulos recolhidos. Ver `docs/INVENTARIO-REGRAS.md`
 3. Teste em múltiplos dispositivos
 4. Mantenha o código limpo e documentado
 
