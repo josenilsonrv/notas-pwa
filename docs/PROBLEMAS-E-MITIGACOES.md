@@ -380,6 +380,12 @@ N/A 1 / TOTAL 44` → **SEM REGRESSÕES** (0 falhas novas). `parity_visual` e `s
 - **Mitigação p/ novas fases**: ao investigar "tecla não faz nada", pedir o erro do
   console — a blindagem registra a causa original. Teste:
   `tests/notes_enter_robust.cjs` (caso da falha simulada do motor).
+- **Desfecho**: era **cache do Service Worker** (o app publicado rodava a versão
+  antiga do `editor.js`). Depois de recarregar, o Enter funcionou normalmente.
+  **Toda vez que um asset cacheado mudar, incrementar o `CACHE_NAME`** (P3/P20) —
+  e, ao testar logo após um deploy, recarregar 1× (o SW novo assume e a página
+  recarrega no `controllerchange`). Uma boa prática é conferir em
+  DevTools → Application → Service Workers qual `notas-pwa-vNN` está ativo.
 
 ### Mapa Mental "não alternava a área" (deploy)
 - **Sintoma**: no site publicado, clicar em "Mapa Mental" continuava em Notas.
