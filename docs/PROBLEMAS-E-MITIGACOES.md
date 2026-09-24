@@ -365,6 +365,22 @@ N/A 1 / TOTAL 44` → **SEM REGRESSÕES** (0 falhas novas). `parity_visual` e `s
   seção.
 - **Teste**: `tests/notes_clear_all.cjs`.
 
+### P34 — Enter "travado" no PC: blindagem contra exceção no motor
+- **Sintoma (relatado)**: com o título recolhido e o cursor no fim, teclar Enter dava
+  "sensação de travamento" e a quebra não acontecia (no **PC**).
+- **Investigação**: NÃO reproduzido — nem no harness, nem no **boot real em viewport de
+  celular**, nem no PC headless. Em todos os cenários a linha-irmã é criada com a
+  formatação herdada (`heading`/`outlineBreak`) e o cursor vai para ela. O keydown do
+  Mapa Mental foi descartado (`tratarTeclaMapa` sai cedo quando a área é `notas`).
+- **Correção (defensiva)**: o `keydown` do editor (em `app.js`) agora envolve
+  `handleNotesEditorShortcut` em `try/catch`. Se o motor lançar exceção:
+  1. o erro vai para o **console** (`[notas] erro ao tratar a tecla …`) para diagnóstico;
+  2. no **Enter**, `quebrarLinhaDeEmergencia()` cria a linha nova (mesma estrutura do
+     editor) e coloca o cursor nela — o app nunca fica "travado".
+- **Mitigação p/ novas fases**: ao investigar "tecla não faz nada", pedir o erro do
+  console — a blindagem registra a causa original. Teste:
+  `tests/notes_enter_robust.cjs` (caso da falha simulada do motor).
+
 ### Mapa Mental "não alternava a área" (deploy)
 - **Sintoma**: no site publicado, clicar em "Mapa Mental" continuava em Notas.
 - **Causa**: os arquivos de `mapa/` estavam **fora do controle de versão** (não

@@ -50,7 +50,24 @@ const {chromium}=require('playwright');
  await page.keyboard.type('Vazio');await page.waitForTimeout(100);
  assert.ok((await page.evaluate(()=>textos())).includes('Vazio'),'digitacao funciona depois do Enter em editor vazio');
 
- assert.deepEqual(errors,[]);
- console.log('OK: Enter sempre quebra (mesmo com o cursor fora de uma linha)');
+ // (d) Blindagem: se o MOTOR falhar no Enter, a quebra acontece pelo fallback e o
+ // erro original vai para o console (para diagnóstico).
+ await load('<h1>Titulo</h1><ul><li>filho</li></ul>');
+ await page.evaluate(()=>{
+  window.__erros=[];
+  const original=console.error.bind(console);
+  console.error=(...args)=>{window.__erros.push(String(args[0]));original(...args);};
+  const base=app.handleNotesEditorShortcut.bind(app);
+  app.handleNotesEditorShortcut=function(ev){if(ev&&ev.key==='Enter')throw new Error('falha simulada no motor');return base(ev);};
+ });
+ await page.evaluate(()=>{const t=document.querySelector('#notesEditor .notes-line-text');const r=document.createRange();r.selectNodeContents(t);r.collapse(false);getSelection().removeAllRanges();getSelection().addRange(r);document.getElementById('notesEditor').focus();app.rememberNotesSelection();});
+ await page.keyboard.press('Enter');
+ await page.waitForTimeout(250);
+ assert.equal(await page.evaluate(()=>linhas()),3,'mesmo com o motor falhando, o Enter quebra (fallback)');
+ assert.ok((await page.evaluate(()=>window.__erros)).some(m=>/erro ao tratar a tecla/.test(m)),'o erro original fica registrado no console');
+
+ // O único erro esperado é o SIMULADO (o resto da página deve ficar limpo).
+ assert.ok(errors.every(m=>/falha simulada/.test(m)),'sem outros erros de página: '+JSON.stringify(errors));
+ console.log('OK: Enter sempre quebra (cursor fora de linha e falha do motor)');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

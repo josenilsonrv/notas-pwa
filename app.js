@@ -604,6 +604,35 @@ class NotesPWA {
         }
     }
 
+    /**
+     * Fallback do Enter: se o motor de notas falhar ao tratar a tecla, cria uma
+     * linha nova depois da linha do cursor (mesma estrutura do editor) para o app
+     * nunca parecer "travado". O erro original é registrado no console.
+     */
+    quebrarLinhaDeEmergencia() {
+        const editor = document.getElementById('notesEditor');
+        if (!editor) return;
+        const selection = window.getSelection();
+        const node = selection?.anchorNode;
+        const elemento = node?.nodeType === 3 ? node.parentElement : node;
+        let linha = elemento?.closest?.('.notes-line') || null;
+        if (!linha) linha = [...editor.querySelectorAll('.notes-line')].filter(item => !item.hidden).at(-1) || null;
+        const nova = document.createElement('div');
+        nova.className = 'notes-line';
+        nova.dataset.level = linha?.dataset.level || '0';
+        nova.innerHTML = '<div class="notes-line-text"><br></div>';
+        if (linha) linha.after(nova); else editor.append(nova);
+        const texto = nova.querySelector('.notes-line-text');
+        const range = document.createRange();
+        range.selectNodeContents(texto);
+        range.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        editor.focus({ preventScroll: true });
+        this.rememberNotesSelection();
+        if (typeof this.refreshNotesCollapseControls === 'function') this.refreshNotesCollapseControls();
+    }
+
     // ⚡ [INÍCIO: INTERAÇÃO/JS - SELEÇÃO DE NOTAS]
     /** Necessário para os comandos de formatação, cores e inserções. */
     rememberNotesSelection() {
@@ -659,7 +688,19 @@ class NotesPWA {
 
         // Atalhos do editor: mesma ligacao do app original (frontend/app.js, "notesEditor.addEventListener('keydown', ...)").
         // Sem esta linha os atalhos (Ctrl+Alt+1..0, Alt+setas, Tab/Shift+Tab, Ctrl+B/I/S/Z/Y) nao funcionam.
-        document.getElementById('notesEditor')?.addEventListener('keydown', event => this.handleNotesEditorShortcut(event));
+        document.getElementById('notesEditor')?.addEventListener('keydown', event => {
+            try {
+                this.handleNotesEditorShortcut(event);
+            } catch (erro) {
+                // Blindagem: se o motor falhar em qualquer tecla, o app NÃO pode parecer
+                // "travado". O erro vai para o console (diagnóstico) e, no Enter, a
+                // quebra acontece por um caminho de emergência.
+                console.error('[notas] erro ao tratar a tecla', event.key, erro);
+                if (event.key === 'Enter' && !event.isComposing) {
+                    try { this.quebrarLinhaDeEmergencia(); } catch (falha) { console.error('[notas] falha no fallback do Enter', falha); }
+                }
+            }
+        });
 
         // Baseline do histórico adiado (notas grandes): captura o estado ANTES da
         // primeira edição. Este listener é registrado antes do motor (`setupNotesEditing`
