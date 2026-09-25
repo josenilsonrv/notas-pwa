@@ -27,6 +27,7 @@
       "notesEditorContainer",
       "notesFullscreenBtn",
       "notesHeaderCollapseBtn",
+      "notesLastEdit",
       "notesModal",
       "notesModalBackdrop",
       "notesModalClose",

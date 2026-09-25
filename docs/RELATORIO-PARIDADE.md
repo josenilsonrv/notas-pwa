@@ -1,13 +1,13 @@
 # Relatório de paridade visual (PWA x projeto original)
 
-> Gerado por `node tests/parity_visual.cjs` em 2026-09-25 19:16:21.
+> Gerado por `node tests/parity_visual.cjs` em 2026-09-25 19:35:41.
 > Compara as propriedades computadas de 18 seletores do modal de notas, em tema claro e escuro.
 > O original é usado **somente como referência** (nenhuma alteração é feita nele).
 
 | Resultado | Quantidade |
 | --- | --- |
 | Divergências reais | 0 |
-| Exceções documentadas | 33 |
+| Exceções documentadas | 37 |
 
 ## Exceções aceitas (com justificativa)
 
@@ -94,6 +94,10 @@ Padronizacao dos icones em 1.125rem (18px): no harness de paridade a barra de No
 ### `.notes-modal-footer` → `alignItems`
 
 Rodape mais baixo/discreto (item E/K): conteudo centralizado verticalmente (items-center) para caber na altura reduzida (2.25rem), igual ao rodape do Mapa.
+
+### `.notes-modal-footer` → `padding`
+
+Rodape mais baixo/discreto (item E/K): padding vertical reduzido de 16px para 8px para igualar a altura do rodape do Mapa. Efeito pedido.
 
 ### `#notesSaveStatus` → `height`
 

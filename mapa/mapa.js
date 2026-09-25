@@ -181,18 +181,23 @@
         }
         // F11: os botões Desfazer/Refazer refletem a pilha sempre que a área é redesenhada.
         atualizarBotoesHistorico.call(this);
-        // Rodapé informativo (espelha o status de Notas).
-        const statusRodape = document.getElementById('mapaStatus');
-        if (statusRodape) {
-            if (dados.mapaAberto) {
-                const total = ((dados.grafo && dados.grafo.nos) || []).length;
-                const sel = this.mapaSelecao ? this.mapaSelecao.size : 0;
-                statusRodape.textContent = total + ' tópico(s)' + (sel ? ' · ' + sel + ' selecionado(s)' : '') + ' · ' + tempoRelativo(dados.mapaAberto.dtAlterado);
-                statusRodape.title = dataAbsoluta(dados.mapaAberto.dtAlterado);
-            } else {
-                statusRodape.textContent = 'Nenhum mapa aberto';
-                statusRodape.removeAttribute('title');
+        // Rodapé informativo (espelha o status de Notas): esquerda = última edição,
+        // centro = tópicos, direita = "Salvo".
+        const preencher = (id, texto) => { const el = document.getElementById(id); if (el) el.textContent = texto; };
+        if (dados.mapaAberto) {
+            const total = ((dados.grafo && dados.grafo.nos) || []).length;
+            const sel = this.mapaSelecao ? this.mapaSelecao.size : 0;
+            const elUltima = document.getElementById('mapaLastEdit');
+            if (elUltima) {
+                elUltima.textContent = tempoRelativo(dados.mapaAberto.dtAlterado);
+                elUltima.title = dataAbsoluta(dados.mapaAberto.dtAlterado);
             }
+            preencher('mapaTopicCount', total + ' tópico(s)' + (sel ? ' · ' + sel + ' selecionado(s)' : ''));
+            preencher('mapaStatus', 'Salvo');
+        } else {
+            preencher('mapaLastEdit', 'Nenhum mapa aberto');
+            preencher('mapaTopicCount', '');
+            preencher('mapaStatus', '');
         }
     }
 

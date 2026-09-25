@@ -336,6 +336,7 @@ class NotesPWA {
         // da abertura (medido em ~270 ms para 2000 linhas) sem necessidade.
         this.refreshNotesCollapseControls();
         if (typeof this.updateNotesTopicCount === 'function') this.updateNotesTopicCount();
+        if (typeof this.updateNotesLastEdit === 'function') this.updateNotesLastEdit(this.notesUltimaEdicao || null);
 
         // Largura do modal: o motor usa var(--notes-width, 50vw) e calcula a largura
         // a partir de notesSavedWidth (undefined na abertura, como no original).
@@ -842,6 +843,34 @@ class NotesPWA {
         const total = document.querySelectorAll('#notesEditor .notes-line').length;
         alvo.textContent = total + ' tópico' + (total === 1 ? '' : 's');
     }
+
+    /** "editado há 5 min" (data/hora relativa em pt-BR) para o rodapé de Notas. */
+    notesTempoRelativo(iso) {
+        const data = iso ? new Date(iso) : null;
+        if (!data || isNaN(data)) return '';
+        let rtf = null;
+        try { rtf = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' }); } catch (_) { rtf = null; }
+        const unidade = (valor, u) => rtf ? rtf.format(-valor, u) : ('há ' + valor + ' ' + u);
+        const seg = Math.round((Date.now() - data.getTime()) / 1000);
+        if (Math.abs(seg) < 60) return 'editado ' + unidade(Math.max(1, Math.abs(seg)), 'second');
+        const min = Math.round(seg / 60);
+        if (Math.abs(min) < 60) return 'editado ' + unidade(min, 'minute');
+        const horas = Math.round(min / 60);
+        if (Math.abs(horas) < 24) return 'editado ' + unidade(horas, 'hour');
+        const dias = Math.round(horas / 24);
+        if (Math.abs(dias) < 30) return 'editado ' + unidade(dias, 'day');
+        return 'editado em ' + data.toLocaleDateString('pt-BR');
+    }
+
+    /** Rodapé de Notas: última edição (relativa; absoluta no `title`). */
+    updateNotesLastEdit(quando) {
+        const alvo = document.getElementById('notesLastEdit');
+        if (!alvo) return;
+        if (quando) this.notesUltimaEdicao = quando;
+        const iso = this.notesUltimaEdicao;
+        alvo.textContent = iso ? this.notesTempoRelativo(iso) : '';
+        alvo.title = iso ? new Date(iso).toLocaleString('pt-BR') : '';
+    }
     // ⚡ [FIM: INTERAÇÃO/JS - AVISOS]
 
     setupEventListeners() {
@@ -854,7 +883,7 @@ class NotesPWA {
         document.getElementById('notesHeaderCollapseBtn')?.addEventListener('click', () => this.toggleNotesHeaderCollapse());
         document.getElementById('notesModalClose')?.addEventListener('click', () => this.closeNotesModal());
         // Contagem de tópicos do rodapé acompanha a digitação.
-        document.getElementById('notesEditor')?.addEventListener('input', () => this.updateNotesTopicCount());
+        document.getElementById('notesEditor')?.addEventListener('input', () => { this.updateNotesTopicCount(); this.updateNotesLastEdit(Date.now()); });
 
         // Atalhos do editor: mesma ligacao do app original (frontend/app.js, "notesEditor.addEventListener('keydown', ...)").
         // Sem esta linha os atalhos (Ctrl+Alt+1..0, Alt+setas, Tab/Shift+Tab, Ctrl+B/I/S/Z/Y) nao funcionam.

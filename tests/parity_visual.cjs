@@ -127,6 +127,11 @@ const EXCECOES = [
     motivo: 'Rodape mais baixo/discreto (item E/K): conteudo centralizado verticalmente (items-center) para caber na altura reduzida (2.25rem), igual ao rodape do Mapa.'
   },
   {
+    seletor: '.notes-modal-footer',
+    propriedade: 'padding',
+    motivo: 'Rodape mais baixo/discreto (item E/K): padding vertical reduzido de 16px para 8px para igualar a altura do rodape do Mapa. Efeito pedido.'
+  },
+  {
     seletor: '#notesSaveStatus',
     propriedade: 'height',
     motivo: 'Consequencia do rodape mais baixo (min-height 2.25rem) e do texto padronizado em 12px: o status fica mais baixo que o original. Efeito pedido para igualar ao rodape do Mapa.'

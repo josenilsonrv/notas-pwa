@@ -102,8 +102,22 @@
              A troca Notas↔Mapa é feita por botões DENTRO de cada área
              ("Ver mapa ao lado" em Notas; "Ver nota ao lado" no Mapa). -->
         <nav id="appAreas" class="app-areas" aria-label="Navegação" hidden>
-            <button type="button" id="appVoltar" class="app-voltar" data-app-voltar="pastas" title="Voltar às pastas" aria-label="Voltar às pastas">‹</button>
+            <button type="button" id="appVoltar" class="app-voltar" data-app-voltar="pastas" title="Voltar às pastas" aria-label="Voltar às pastas">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
         </nav>
+        <!-- Seletor de tema na TELA PRINCIPAL (fora do modal de notas e sempre visível). -->
+        <div class="app-tema-fixo">
+            <button type="button" id="themeToggle" class="app-theme-switch" role="switch" aria-checked="false" aria-label="Alternar tema claro/escuro" title="Alternar tema">
+                <span class="app-theme-switch-icon app-theme-switch-sun" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                </span>
+                <span class="app-theme-switch-icon app-theme-switch-moon" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+                </span>
+                <span class="app-theme-switch-thumb" aria-hidden="true"></span>
+            </button>
+        </div>
         <!-- Área raiz "Pastas": cada pasta é um workspace (Notas + Mapa). Montada lazy. -->
         <section id="pastasArea" class="pastas-area" role="tabpanel" aria-label="Pastas" hidden></section>
         <!-- Área do Mapa Mental: montada lazy na primeira entrada (mapa/mapa.js). -->
@@ -114,15 +128,6 @@
                 <div class="notes-modal-header">
                     <h3 class="text-base font-semibold text-text-main truncate flex-1 mr-4" id="notesModalTitle">Notas</h3>
                     <div class="shrink-0 flex items-center gap-1">
-                            <button type="button" id="themeToggle" class="app-theme-switch" role="switch" aria-checked="false" aria-label="Alternar tema claro/escuro" title="Alternar tema">
-                                <span class="app-theme-switch-icon app-theme-switch-sun" aria-hidden="true">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                                </span>
-                                <span class="app-theme-switch-icon app-theme-switch-moon" aria-hidden="true">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
-                                </span>
-                                <span class="app-theme-switch-thumb" aria-hidden="true"></span>
-                            </button>
                             <button class="toolbar-btn notes-header-collapse-btn" id="notesHeaderCollapseBtn" type="button" title="Recolher cabeçalho" aria-label="Recolher cabeçalho" aria-expanded="true">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 15 7-7 7 7"/></svg>
                             </button>
@@ -198,7 +203,8 @@
                     <div class="notes-editor" id="notesEditor" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true" autocapitalize="sentences" data-placeholder="Digite suas notas aqui..."></div>
                 </div>
 
-                <div class="notes-modal-footer flex justify-start items-center gap-3 mt-0 px-6 py-4 border-t border-border bg-bg-global shrink-0">
+                <div class="notes-modal-footer flex justify-between items-center gap-3 mt-0 px-6 py-2 border-t border-border bg-bg-global shrink-0">
+                    <span id="notesLastEdit" class="notes-footer-meta"></span>
                     <span id="notesTopicCount" class="notes-footer-meta" role="status" aria-live="polite"></span>
                     <button type="button" id="notesSaveStatus" role="status" aria-live="polite" disabled>Salvo</button>
                 </div>

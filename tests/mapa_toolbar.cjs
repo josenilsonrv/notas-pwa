@@ -120,7 +120,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     // (o resto é da visão de lista).
     const topbarVisivel = await page.evaluate(() => [...document.querySelectorAll('.mapa-topbar [data-mapa-acao]')]
       .filter(el => el.offsetParent !== null).map(el => el.dataset.mapaAcao));
-    assert.deepEqual(topbarVisivel, ['voltar-lista', 'alternar-split', 'alternar-colapso', 'fechar-mapa', 'alternar-fullscreen'], 'topbar do mapa mostra "‹ Mapas" + lado a lado + colapso + fechar + expandir');
+    assert.deepEqual(topbarVisivel, ['voltar-lista', 'alternar-colapso', 'alternar-fullscreen', 'alternar-split', 'fechar-mapa'], 'topbar do mapa organiza como Notas: colapso, expandir, lado a lado e fechar');
 
     // ---------------------------------------------------------------- 3) barra de formatação (sempre visível, como em Notas)
     assert.equal(await page.evaluate(() => document.getElementById('mapaFormatBar').hidden), false,

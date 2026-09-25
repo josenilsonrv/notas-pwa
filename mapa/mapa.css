@@ -86,10 +86,20 @@ html[data-theme="dark"] {
 html[data-theme="dark"] .app-voltar { color: var(--mapa-texto-suave); }
 html[data-theme="dark"] .app-voltar:hover { color: var(--mapa-texto-forte); }
 
-/* A seta ‹ é fixa no topo-esquerdo: reserva o espaço nas topbars das áreas
-   (Notas é um cartão centralizado, então não colide). */
+/* A seta ‹ + seletor de tema são fixos no topo-esquerdo: reserva o espaço nas
+   topbars das áreas e no cabeçalho do app (Notas é um cartão centralizado). */
 body:has(#appAreas:not([hidden])) .mapa-topbar,
-body:has(#appAreas:not([hidden])) .pastas-topbar { padding-left: 64px; }
+body:has(#appAreas:not([hidden])) .pastas-topbar,
+body:has(#appAreas:not([hidden])) .app-header { padding-left: 8.5rem; }
+
+/* Ícones das barras do MAPA com a MESMA cor/hover da barra de Notas
+   (`.toolbar-btn` escuro: #94A3B8 → hover #E2E8F0 sobre #202A36). */
+html[data-theme="dark"] .mapa-topbar .toolbar-btn,
+html[data-theme="dark"] .mapa-toolbar .toolbar-btn,
+html[data-theme="dark"] .mapa-format-bar .toolbar-btn { color: #94A3B8; }
+html[data-theme="dark"] .mapa-topbar .toolbar-btn:hover,
+html[data-theme="dark"] .mapa-toolbar .toolbar-btn:hover,
+html[data-theme="dark"] .mapa-format-bar .toolbar-btn:hover { color: #E2E8F0; background: #202A36; }
 
 .app-areas [data-app-area] {
     appearance: none;
@@ -307,7 +317,7 @@ html.notes-mobile #mapaSplitBtn { display: none !important; }
 .mapa-rodape {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
     gap: 12px;
     min-height: 2.25rem;           /* discreto — MESMA altura do rodapé de Notas */
     padding: 0 1rem;

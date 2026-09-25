@@ -125,7 +125,7 @@
         telaCheia.hidden = true;
         telaCheia.setAttribute('aria-pressed', 'false');
 
-        topbar.append(voltar, tituloAtual, espaco, busca, ordem, arquivados, novaPasta, novo, templates, splitBtn, colapso, fechar, telaCheia);
+        topbar.append(voltar, tituloAtual, espaco, busca, ordem, arquivados, novaPasta, novo, templates, colapso, telaCheia, splitBtn, fechar);
 
         const form = document.createElement('form');
         form.id = 'mapaForm';
@@ -148,15 +148,22 @@
         const wrap = criar('div', 'mapa-canvas-wrap');
         wrap.id = 'mapaCanvasWrap';
 
-        // Rodapé informativo (espelha o `.notes-modal-footer` de Notas).
+        // Rodapé informativo (espelha o `.notes-modal-footer` de Notas):
+        // esquerda = última edição, centro = tópicos, direita = "Salvo".
         const rodape = criar('div', 'mapa-rodape');
         rodape.id = 'mapaRodape';
         rodape.hidden = true;
-        const status = criar('span', 'mapa-rodape-status', 'Salvo');
-        status.id = 'mapaStatus';
-        status.setAttribute('role', 'status');
-        status.setAttribute('aria-live', 'polite');
-        rodape.append(status);
+        const ultimaEdicao = criar('span', 'mapa-rodape-meta', '');
+        ultimaEdicao.id = 'mapaLastEdit';
+        const contagem = criar('span', 'mapa-rodape-meta', '');
+        contagem.id = 'mapaTopicCount';
+        contagem.setAttribute('role', 'status');
+        contagem.setAttribute('aria-live', 'polite');
+        const salvo = criar('span', 'mapa-rodape-meta', 'Salvo');
+        salvo.id = 'mapaStatus';
+        salvo.setAttribute('role', 'status');
+        salvo.setAttribute('aria-live', 'polite');
+        rodape.append(ultimaEdicao, contagem, salvo);
 
         shell.append(topbar, toolbar, formatBar, form, wrap, rodape);
         secao.append(shell);

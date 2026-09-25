@@ -712,6 +712,15 @@ html[data-theme="dark"] .app-theme-switch-thumb {
 html[data-theme="dark"] .app-theme-switch-moon { color: #93c5fd; }
 html[data-theme="dark"] .app-theme-switch-sun { color: #64748b; }
 
+/* Seletor de tema FIXO na tela principal (ao lado da seta ‹): precisa ficar ACIMA
+   do overlay do modal de notas (#notesModalBackdrop.active = z-index 2300). */
+.app-tema-fixo {
+    position: fixed;
+    top: 12px;
+    left: 62px;
+    z-index: 2400;
+}
+
 /* ============================================
  * BARRA DE FERRAMENTAS: UMA LINHA COM ROLAGEM
  * Aplicado pelo PWA (classe adicionada no init). O motor de notas continua
