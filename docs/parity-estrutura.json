@@ -14,8 +14,10 @@
       "notesToolbar"
     ],
     "pwa": [
+      "appAbrirMapa",
       "appAreas",
       "appToastRegion",
+      "appVoltarPastas",
       "bootGuard",
       "bootGuardErro",
       "bootGuardReparar",
@@ -78,6 +80,8 @@
       "Título H1",
       "Título H2",
       "Título H3",
+      "Ver o mapa ao lado da nota",
+      "Voltar às pastas",
       "Áreas do aplicativo"
     ],
     "faltando": []
@@ -150,7 +154,6 @@
       "region",
       "status",
       "switch",
-      "tab",
       "tab",
       "tab",
       "tablist",

@@ -90,11 +90,14 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(await page.evaluate(() => Boolean(document.querySelector('.mapa-no-nota-icone'))), true, 'card mostra o atalho da nota');
     assert.equal(await page.evaluate(() => document.querySelector('.mapa-no-nota-icone').closest('.mapa-no').dataset.mapaNoId), await page.evaluate(() => app.noTesteId), 'atalho está no nó certo');
 
-    // ---------------------------------------------------------------- 3) abrir a nota pelo atalho
+    // ---------------------------------------------------------------- 3) abrir a nota LADO A LADO (não por cima)
     await page.evaluate(() => document.querySelector('.mapa-no-nota-icone').click());
     await page.waitForTimeout(150);
+    const aposAtalho = await split();
     assert.equal(await page.evaluate(() => app.currentNotesProjectId), 'nota-x', 'clique no atalho abre a nota vinculada');
-    assert.equal(await page.evaluate(() => document.getElementById('notesModalBackdrop').classList.contains('active')), true, 'vai para a área de Notas');
+    assert.equal(aposAtalho.appSplit, true, 'o atalho abre em modo LADO A LADO (não por cima)');
+    assert.equal(aposAtalho.mapaVisivel, true, 'o mapa continua visível ao lado');
+    assert.equal(aposAtalho.backdropAtivo, true, 'a nota aparece ao lado do mapa');
 
     // ---------------------------------------------------------------- 4) lado a lado (opt-in)
     await page.evaluate(() => app.aplicarArea('mapa'));

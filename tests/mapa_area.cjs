@@ -72,7 +72,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       dentroDoModal: document.querySelectorAll('#notesModalBackdrop [data-app-area]').length,
       contemMapa: document.getElementById('notesModalBackdrop').contains(document.getElementById('mapaArea'))
     }));
-    assert.equal(abas.total, 3, 'seletor tem Pastas, Notas e Mapa Mental');
+    assert.equal(abas.total, 2, 'seletor tem Notas e Mapa Mental (Pastas é a tela raiz, sem aba)');
     assert.equal(abas.dentroDoModal, 0, 'seletor fica FORA do modal de notas');
     assert.equal(abas.contemMapa, false, 'área do mapa fica FORA do modal de notas');
 
@@ -83,6 +83,11 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(inicial.montado, false, 'área do mapa NÃO monta no boot (lazy)');
 
     await page.evaluate(() => app.inicializarAreasMapa());
+
+    // A tela raiz é Pastas: a barra de áreas fica escondida até abrir uma pasta.
+    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), true, 'barra de áreas escondida na tela de Pastas');
+    await page.evaluate(() => app.abrirPasta('pasta-geral'));
+    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), false, 'dentro da pasta a barra de áreas aparece');
 
     // Entra no Mapa Mental.
     await page.getByRole('tab', { name: 'Mapa Mental' }).click();

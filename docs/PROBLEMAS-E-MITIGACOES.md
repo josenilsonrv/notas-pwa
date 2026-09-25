@@ -852,3 +852,19 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
   `notas-pwa-split`). CSS em `mapa/mapa.css` (`html.app-split` divide Nota | Mapa; escondido no mobile).
 - **Teste**: `tests/split_view.cjs` (vincular nota, abrir pelo atalho, ligar/desligar o split e o gesto
   de arrastar trocando o lado).
+
+### P76 — Ajustes de UX após P74/P75 (Pastas fora do seletor; abrir nota lado a lado)
+- **Feedback**: (1) "Pastas" NÃO deve ser uma aba do seletor — a tela de Pastas é a tela principal
+  (a primeira); o seletor Notas|Mapa só existe DENTRO de uma pasta. (2) o "abrir nota" do mapa abria a
+  nota POR CIMA; o correto é abrir o mapa e a nota LADO A LADO; e na área de Notas deve haver um botão
+  "Abrir mapa".
+- **Correções**: `#appAreas` voltou a ter **2 abas** (Notas | Mapa Mental) + `#appVoltarPastas`
+  ("‹ Pastas") + `#appAbrirMapa` ("Abrir mapa"); a barra fica **escondida na tela raiz de Pastas**
+  (`atualizarBarraAreas` em `mapa/mapa.js`). A ação `abrir-nota` agora chama `aplicarSplit(true)` no PC
+  (lado a lado); no celular mantém a troca para Notas. O botão "Abrir mapa" (barra de áreas) chama
+  `aplicarSplit(true)` a partir da área de Notas.
+- **Testes ajustados**: `tests/mapa_area.cjs` (2 abas; abre a pasta antes de trocar de área),
+  `tests/pastas_unificadas.cjs` (2 abas; volta pela "‹ Pastas"), `tests/split_view.cjs`
+  (`abrir nota` abre em lado a lado).
+- **Asset do Service Worker (bump)**: `CACHE_NAME` **v50 → v51** (mudaram `index.html`, `mapa/mapa.js`
+  e `mapa/mapa.css`).

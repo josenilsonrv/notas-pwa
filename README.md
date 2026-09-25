@@ -25,8 +25,8 @@ Editor de notas avançado como Progressive Web App (PWA) para uso em celular, co
 - **Persistência**: Salvo automaticamente no LocalStorage do dispositivo (a camada de notas é preparada para persistência remota/Supabase)
 
 ### Áreas do app: Pastas, Notas e Mapa Mental
-- **Seletor de áreas**: barra flutuante (Pastas | Notas | Mapa Mental) que troca de área sem recarregar; a escolha é lembrada no dispositivo (`notas-pwa-area-ativa`)
-- **Pastas/workspaces (tela raiz)**: cada pasta abrange as **Notas e os Mapas** dela; clicar numa pasta entra nas duas áreas filtradas por ela. A pasta "Geral" adota o que não tem pasta (a escolha fica em `notas-pwa-pasta-ativa`)
+- **Pastas/workspaces (tela principal)**: é a primeira tela; cada pasta abrange as **Notas e os Mapas** dela. A pasta "Geral" adota o que não tem pasta (a escolha fica em `notas-pwa-pasta-ativa`)
+- **Seletor de áreas (dentro da pasta)**: barra flutuante **Notas | Mapa Mental** (a escolha é lembrada em `notas-pwa-area-ativa`), com "‹ Pastas" (volta à tela principal) e "Abrir mapa" (ver o mapa ao lado da nota)
 - **Notas**: chips filtrados pela pasta ativa; clique-direito/toque longo no chip abre o menu (Renomear · Duplicar · Mover para pasta · Excluir)
 - **Mapa Mental**: área separada do editor, em camadas (pasta `mapa/`), montada só na primeira entrada (lazy) para não pesar o boot
 - **Lado a lado (PC)**: botão na topbar mostra a nota e o mapa juntos (o preferência fica em `notas-pwa-split`); **arrastar a barra superior** de um painel para o lado inverso troca os lados

@@ -80,12 +80,12 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 
     // ---------------------------------------------------------------- 1) tela raiz = Pastas
     const inicial = await estado();
-    assert.equal(inicial.abas, 3, 'seletor tem Pastas, Notas e Mapa Mental');
+    assert.equal(inicial.abas, 2, 'seletor tem Notas e Mapa Mental (Pastas é a tela raiz, sem aba)');
     assert.equal(inicial.pastasVisivel, true, 'tela de Pastas abre primeiro');
     assert.equal(inicial.mapaVisivel, false, 'área do mapa começa oculta');
     assert.equal(inicial.backdropAtivo, false, 'o modal de Notas não cobre a tela de Pastas');
     assert.equal(JSON.parse(inicial.area), 'pastas', 'área ativa persistida como "pastas"');
-    assert.equal(await page.evaluate(() => document.querySelector('[data-app-area="pastas"]').getAttribute('aria-selected')), 'true', 'aba Pastas marcada');
+    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), true, 'barra de áreas escondida na tela de Pastas (sem aba Pastas)');
 
     // ---------------------------------------------------------------- 2) cartões de pasta
     const nomes = await page.evaluate(() => [...document.querySelectorAll('#pastasArea .pastas-card-nome')].map(e => e.textContent));
@@ -117,9 +117,9 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal((await estado()).mapaVisivel, true, 'área do mapa abre');
 
     // ---------------------------------------------------------------- 6) voltar para as pastas
-    await page.getByRole('tab', { name: 'Pastas' }).click();
+    await page.locator('#appVoltarPastas').click();
     await page.waitForTimeout(120);
-    assert.equal((await estado()).pastasVisivel, true, 'aba Pastas volta para a tela raiz');
+    assert.equal((await estado()).pastasVisivel, true, 'botão "‹ Pastas" volta para a tela raiz');
 
     assert.deepEqual(erros, [], 'sem erros de página');
     console.log('OK: Pastas como tela raiz (workspaces de notas + mapas)');

@@ -87,6 +87,30 @@ html[data-theme="dark"] {
 
 .app-areas [data-app-area]:focus-visible { outline: 2px solid var(--color-neon-blue); outline-offset: 2px; }
 
+/* A barra de áreas some na tela raiz de Pastas (não há "aba Pastas"). */
+#appAreas[hidden] { display: none !important; }
+
+/* "‹ Pastas" (volta à tela raiz) e "Mapa ao lado" (split) — NÃO são abas. */
+.app-areas-voltar,
+.app-areas-split {
+    appearance: none;
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 14px;
+    min-height: 40px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: transparent;
+    cursor: pointer;
+}
+.app-areas-voltar:hover,
+.app-areas-split:hover { color: var(--color-text-main); }
+.app-areas-split[aria-pressed="true"] { color: #fff; background: var(--color-neon-blue); }
+html[data-theme="dark"] .app-areas-voltar,
+html[data-theme="dark"] .app-areas-split { color: var(--mapa-texto-suave); }
+
 html[data-theme="dark"] .app-areas {
     background: color-mix(in srgb, var(--mapa-container) 92%, transparent);
     border-color: var(--mapa-borda);

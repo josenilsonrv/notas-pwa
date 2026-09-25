@@ -288,12 +288,16 @@
             case 'no-anexo-adicionar': mapaPedirAnexoNo.call(this); return;
             case 'no-anexo-remover': mapaRemoverAnexoNo.call(this, idNo, alvo.dataset.mapaAnexo); break;
             case 'ponte-abrir': abrirMapa.call(this, alvo.dataset.mapaRef); break;
-            // Vínculo Notas↔Mapa: abre a nota vinculada (sai do mapa para a área de Notas).
+            // Vínculo Notas↔Mapa: abre a nota vinculada LADO A LADO com o mapa (no PC).
             case 'abrir-nota': {
                 const idNota = alvo.dataset.mapaNota;
-                if (idNota && typeof this.openNotesModal === 'function') {
+                if (!idNota || typeof this.openNotesModal !== 'function') return;
+                if (typeof this.ehMobile === 'function' && this.ehMobile()) {
                     aplicarArea.call(this, 'notas');
                     this.openNotesModal(idNota);
+                } else {
+                    this.openNotesModal(idNota);
+                    aplicarSplit.call(this, true);
                 }
                 return;
             }
@@ -583,6 +587,32 @@
     // ⚡ [FIM: MAPA - PASTAS (ÁREA RAIZ / WORKSPACES)]
     // ⚡ [INÍCIO: MAPA - LADO A LADO (SPLIT NOTA + MAPA)]
     /**
+     * Barra de áreas: escondida na tela raiz de Pastas; dentro da pasta mostra
+     * "‹ Pastas" + abas (Notas | Mapa). O botão "Abrir mapa" aparece na área de Notas.
+     */
+    function atualizarBarraAreas(alvo) {
+        const nav = document.getElementById('appAreas');
+        if (!nav) return;
+        const naRaiz = alvo === 'pastas';
+        nav.hidden = naRaiz;
+        if (naRaiz) return;
+        nav.querySelectorAll('[data-app-area]').forEach(botao => {
+            botao.setAttribute('aria-selected', String(botao.dataset.appArea === alvo));
+        });
+        const abrir = document.getElementById('appAbrirMapa');
+        if (abrir) {
+            const ligado = Boolean(this.mapaSplit);
+            abrir.hidden = !(alvo === 'notas' || ligado);
+            abrir.textContent = ligado ? 'Fechar mapa' : 'Abrir mapa';
+            abrir.setAttribute('aria-pressed', String(ligado));
+            const rotulo = ligado ? 'Fechar o mapa ao lado' : 'Ver o mapa ao lado da nota';
+            abrir.title = rotulo;
+            abrir.setAttribute('aria-label', rotulo);
+        }
+    }
+
+
+    /**
      * Visão lado a lado (PC): a nota e o mapa aparecem juntos. Opt-in pelo botão da
      * topbar; arrastar a BARRA SUPERIOR de um painel para o lado inverso TROCA os
      * lados. Persistido em `notas-pwa-split`.
@@ -614,8 +644,7 @@
         if (secao) secao.hidden = false;
         if (pastas) pastas.hidden = true;
         if (backdrop) backdrop.classList.add('active');
-        const nav = document.getElementById('appAreas');
-        if (nav) nav.querySelectorAll('[data-app-area]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.appArea === 'mapa')));
+        atualizarBarraAreas.call(this, 'mapa');
     }
 
     /** Troca o lado da nota no split (esquerda/direita). */
@@ -2105,12 +2134,7 @@
         this.mapaAreaAtiva = alvo;
         if (store()) store().salvarAreaAtiva(alvo);
 
-        const nav = document.getElementById('appAreas');
-        if (nav) {
-            nav.querySelectorAll('[data-app-area]').forEach(botao => {
-                botao.setAttribute('aria-selected', String(botao.dataset.appArea === alvo));
-            });
-        }
+        atualizarBarraAreas.call(this, alvo);
 
         const secao = document.getElementById('mapaArea');
         const pastasSecao = document.getElementById('pastasArea');
@@ -2198,8 +2222,10 @@
         if (nav && !this.mapaAreasLigadas) {
             this.mapaAreasLigadas = true;
             nav.addEventListener('click', evento => {
-                const botao = evento.target.closest('[data-app-area]');
-                if (botao) this.aplicarArea(botao.dataset.appArea);
+                const aba = evento.target.closest('[data-app-area]');
+                if (aba) { this.aplicarArea(aba.dataset.appArea); return; }
+                if (evento.target.closest('[data-app-voltar]')) { this.aplicarArea('pastas'); return; }
+                if (evento.target.closest('[data-app-split]')) { aplicarSplit.call(this, !this.mapaSplit); }
             });
             window.addEventListener('themechange', () => aplicarTemaMapa());
             // Atalhos do mapa: no documento (o foco pode ficar no editor de notas oculto).

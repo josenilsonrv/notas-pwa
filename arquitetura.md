@@ -20,7 +20,7 @@
 
 ## Implementação: Estrutura das áreas (Notas | Mapa Mental)
 - **[Linhas 86-95 ~]** `<!-- 🎨 [INÍCIO: PWA - SHELL (HEADER, ÁREAS E MODAL DE NOTAS)] -->` -> `<header class="app-header border-b border-border pt-4 pb-4 px-4">`
-- **[Linhas 96-109 ~]** `<!-- Main Editor Container -->` -> `<main>` + `<nav id="appAreas" role="tablist">` (Pastas | Notas | Mapa Mental) + `<section id="pastasArea" hidden>` + `<section id="mapaArea" hidden>`
+- **[Linhas 96-109 ~]** `<!-- Main Editor Container -->` -> `<main>` + `<nav id="appAreas" role="tablist" hidden>` (Notas | Mapa Mental + `#appVoltarPastas` "‹ Pastas" + `#appAbrirMapa` "Abrir mapa"; escondida na tela raiz de Pastas) + `<section id="pastasArea" hidden>` + `<section id="mapaArea" hidden>`
 
 ## Implementação: Modal de Notas (cabeçalho → chips → toolbar → editor)
 - **[Linhas 108-199 ~]** `<!-- Notes Modal (Always visible in this PWA) -->` -> `<div class="notes-drawer active" id="notesModalBackdrop">`
@@ -106,7 +106,7 @@
 **Propósito:** Service Worker offline-first. Serve o cache na hora e revalida na rede com timeout, garantindo que o app nunca fique preso carregando.
 
 ## Implementação: Constantes, helpers e ciclo de vida
-- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v50';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./mapa/mapa-cores.js`)
+- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v51';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./mapa/mapa-cores.js`)
 - **[Linhas 19-20 ~]** `(sem comentário de ancoragem)` -> `const CACHE_NAME` · `const TIMEOUT_MS`
 - **[Linhas 22-32 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
 - **[Linhas 33-59 ~]** `/** Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
@@ -388,8 +388,8 @@
 - **[Linhas 9-78 ~]** `// 🔄 [INÍCIO: MAPA - ESTADO/HELPERS]` -> `store()`/`modelo()`/`render()`, `dadosGestao()`, `abrirMapa(id)`, `definirRaiz(id)`, `conectarMapa(origemId,destinoId)`, `aplicarTemplatePronto`/`aplicarTemplateSalvo`
 - **[Linhas 80-391 ~]** `// 🔄 [INÍCIO: MAPA - RENDER/CONTROLE]` -> `renderArea()` (guarda de BLINDAGEM; renderiza `#mapaToolbar`/`#mapaFormatBar` ANTES do mapa; reaplica `setMapaBarrasColapsadas`; nome da nota vinculada), `tratarCliqueMapa` (fecha menus; ações de barra/formatação/cores/colapso/split/`abrir-nota`), `tratarSubmitMapa` / `tratarMudancaMapa` / `tratarBuscaMapa`
 - **[Linhas 393-454 ~]** `// ⚡ [INÍCIO: MAPA - COLAPSO DAS BARRAS]` -> `setMapaBarrasColapsadas` · `mapaPanelMotion` · `mapaAlternarColapsoBarras` (botão `#mapaColapsoBarras`; espelha o cabeçalho de Notas)
-- **[Linhas 456-583 ~]** `// ⚡ [INÍCIO: MAPA - PASTAS (ÁREA RAIZ / WORKSPACES)]` -> `botaoPastas` (namespace `data-pastas-acao`), `montarAreaPastas`, `renderPastas` (cartões com contagem de notas+mapas), `abrirPasta` (define a pasta ativa e entra em Notas), `tratarCliquePastas`
-- **[Linhas 584-654 ~]** `// ⚡ [INÍCIO: MAPA - LADO A LADO (SPLIT NOTA + MAPA)]` -> `aplicarSplit` (classe `app-split`), `trocarLadoSplit`, `instalarArrastoSplit` (arrastar a barra superior troca de lado)
+- **[Linhas 460-587 ~]** `// ⚡ [INÍCIO: MAPA - PASTAS (ÁREA RAIZ / WORKSPACES)]` -> `botaoPastas` (namespace `data-pastas-acao`), `montarAreaPastas`, `renderPastas` (cartões com contagem de notas+mapas), `abrirPasta` (define a pasta ativa e entra em Notas), `tratarCliquePastas`
+- **[Linhas 588-683 ~]** `// ⚡ [INÍCIO: MAPA - LADO A LADO (SPLIT NOTA + MAPA)]` -> `atualizarBarraAreas` (esconde a barra na tela raiz; "‹ Pastas" + abas + "Abrir mapa"), `aplicarSplit` (classe `app-split`; `abrir-nota` entra em lado a lado), `trocarLadoSplit`, `instalarArrastoSplit` (arrastar a barra superior troca de lado)
 
 ## Implementação: Canvas, navegação e histórico
 - **[Linhas 374-447 ~]** `// 🔄 [INÍCIO: MAPA - CANVAS/VIEWPORT]` -> `caixaDoCanvas()`, viewport por mapa (persistência com debounce)
