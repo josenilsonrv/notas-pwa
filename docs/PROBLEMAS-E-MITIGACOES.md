@@ -677,3 +677,21 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
 ### P61 — Asset NOVO no Service Worker (bump)
 - **Regra**: `./mapa/mapa-cores.js` é **asset novo** ⇒ entrou em `ESSENCIAIS` e o **`CACHE_NAME`
   v41 → v42**. Sem isso, a instalação do SW falharia/ficaria incompleta (P3/P20).
+
+### P62 — Área do mapa VAZIA no celular (cache do SW) + blindagem visível
+- **Sintoma**: no PWA instalado no celular, a área "Mapa Mental" abria **vazia** — sem a topbar
+  ("Novo mapa", "Templates"…), sem `#mapaToolbar` e sem `#mapaFormatBar`. No PC (servidor local)
+  aparecia tudo; o site publicado servia os **mesmos bytes** do repositório (`index.html` e
+  `mapa/mapa-render.js` idênticos, `sw.js` com o mesmo `CACHE_NAME`).
+- **Causa**: **cache do Service Worker** no aparelho (combinação de versões, ex.: `mapa.js` novo +
+  `mapa-render.js` antigo). Sem `MapaMentalRender.montarShell` válido, `montarAreaMapa()` não montava
+  nada e a área ficava vazia **em silêncio** (nenhum aviso).
+- **Correção**: (1) **`CACHE_NAME` v42 → v43** (P3/P20/P61) para o aparelho descartar o cache antigo;
+  (2) **blindagem** em `mapa/mapa.js`: `diagnosticoModulosMapa()` + `mostrarFalhaMapa()` mostram um
+  aviso VISÍVEL (`.mapa-falha`) com "Recarregar" e "Reparar (limpar cache)" quando falta um módulo ou
+  o mount falha; `montarAreaMapa()` roda em `try/catch`, liga os ouvintes **uma vez**
+  (`mapaAreaOuvintesLigados`) e só marca `mapaAreaMontada` após sucesso — a área pode se recuperar.
+- **Mitigação p/ novas fases**: toda mudança de asset cacheado sobe `CACHE_NAME` no MESMO commit
+  (P3/P20/P61) e, ao testar logo após o deploy, abrir `/reparar.html` no aparelho para limpar o cache;
+  falha de módulo NUNCA pode deixar a área vazia (aviso visível obrigatório).
+- **Teste**: `tests/mapa_area.cjs` cobre a blindagem (falha visível + recuperação ao religar a área).
