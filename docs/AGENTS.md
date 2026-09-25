@@ -39,7 +39,10 @@ Este documento fornece contexto completo para agentes AI que trabalharão neste 
 | Config (`_headers`, `_redirects`) | `#` | `# 🚀 [INÍCIO: DEPLOY - REDIRECTS]` |
 | Testes/ferramentas (`.cjs`) | `//` file-level | `// 🧪 [INÍCIO: TESTE - NOTES MARKDOWN]` |
 
-### Vocabulário de emoji (semântico — não usar 🔄 para tudo)
+### Vocabulário de emoji (semântico — não usar 🔄 para tudo)
+
+> **Regra de leitura:** o **PREFIXO** identifica o módulo/área (ex.: `PWA -`, `AGENDADOR -`, `PÁGINA -`); o **EMOJI** identifica o **tipo de bloco** (🚀 entrada · 🚨 crítico · 🔄 fluxo/API · 💾 persistência · ⚙️ regra · ⚡ interação · 🎨 estilo · 📊 métricas · 🧪 teste). Por isso o **mesmo prefixo pode ter emojis diferentes** — e cada emoji deve ser sempre o mesmo para o mesmo tipo.
+
 | Emoji | Usar para |
 |---|---|
 | 🚀 | boot, instalação, registro, entrada (ex.: `PWA - BOOT`, `INSTALL`, `SW`) |
