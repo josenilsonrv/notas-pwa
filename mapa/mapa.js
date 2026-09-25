@@ -618,6 +618,11 @@
         const ratio = Math.min(limite[1], Math.max(limite[0], Number(this.mapaSplitRatio) || 0.5));
         this.mapaSplitRatio = ratio;
         document.documentElement.style.setProperty('--split-nota', (ratio * 100).toFixed(3) + '%');
+        // O CARD da nota (`#notesModal`) tem `width: var(--notes-width) !important` dentro de
+        // `@layer components` — que VENCE uma regra importante fora de camada. Por isso o
+        // painel só acompanha se controlarmos `--notes-width` (100% do backdrop = a metade).
+        const modal = document.getElementById('notesModal');
+        if (modal && this.mapaSplit) modal.style.setProperty('--notes-width', '100%');
         const divisor = document.getElementById('appSplitDivisor');
         if (divisor) divisor.setAttribute('aria-valuenow', String(Math.round(ratio * 100)));
     }
@@ -643,17 +648,38 @@
      * Arrastar o divisor ajusta a proporção: estreitar/alargar a NOTA redimensiona o
      * MAPA automaticamente (e vice-versa). A proporção é persistida em `notas-pwa-split`.
      */
+    /** X (px) da divisa entre os painéis. */
+    function splitDivisaX() {
+        const largura = window.innerWidth;
+        const ratio = Number(this.mapaSplitRatio) || 0.5;
+        return this.mapaSplitLado === 'direita' ? (1 - ratio) * largura : ratio * largura;
+    }
+
+    /**
+     * Arrastar a DIVISA (o divisor ou a borda de qualquer um dos painéis, perto dela)
+     * ajusta a proporção: estreitar/alargar a NOTA redimensiona o MAPA automaticamente
+     * (e vice-versa). A proporção é persistida em `notas-pwa-split`.
+     * O `pointerdown` é capturado na fase de CAPTURA para o mapa NÃO iniciar o pan.
+     */
     function instalarDivisorSplit() {
         if (this.mapaSplitDivisorLigado) return;
         this.mapaSplitDivisorLigado = true;
         montarDivisorSplit.call(this);
         const obter = () => document.getElementById('appSplitDivisor');
+        const TOLERANCIA = 18;
         document.addEventListener('pointerdown', evento => {
-            if (!this.mapaSplit || !evento.target.closest('#appSplitDivisor')) return;
+            if (!this.mapaSplit) return;
+            const alvo = evento.target;
+            const noDivisor = Boolean(alvo.closest && alvo.closest('#appSplitDivisor'));
+            const pertoDaDivisa = Math.abs(evento.clientX - splitDivisaX.call(this)) <= TOLERANCIA;
+            if (!noDivisor && !pertoDaDivisa) return;
+            if (alvo.closest && alvo.closest('button, input, select, a, [data-mapa-acao], [data-pastas-acao]')) return;
             this.mapaSplitArrastoRatio = true;
             obter()?.classList.add('mapa-split-arrastando');
+            document.documentElement.classList.add('mapa-split-arrastando');
             evento.preventDefault();
-        });
+            evento.stopPropagation();
+        }, true);
         document.addEventListener('pointermove', evento => {
             if (!this.mapaSplitArrastoRatio) return;
             const fracao = Math.min(0.8, Math.max(0.2, evento.clientX / window.innerWidth));
@@ -661,15 +687,18 @@
             this.mapaSplitRatio = this.mapaSplitLado === 'direita' ? (1 - fracao) : fracao;
             aplicarSplitRatio.call(this);
             evento.preventDefault();
-        });
+        }, true);
         const soltar = () => {
             if (!this.mapaSplitArrastoRatio) return;
             this.mapaSplitArrastoRatio = false;
             obter()?.classList.remove('mapa-split-arrastando');
+            document.documentElement.classList.remove('mapa-split-arrastando');
             if (store()) store().salvarSplit({ ligado: this.mapaSplit, lado: this.mapaSplitLado, ratio: this.mapaSplitRatio });
         };
         document.addEventListener('pointerup', soltar);
         document.addEventListener('pointercancel', soltar);
+        // O motor de notas pode reescrever `--notes-width` (ex.: resize da janela); reaplica.
+        window.addEventListener('resize', () => { if (this.mapaSplit) aplicarSplitRatio.call(this); });
     }
 
     /**

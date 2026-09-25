@@ -119,28 +119,34 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.ok(geometria.bRight <= geometria.mLeft + 1, 'o overlay da nota fica só na metade da nota (não cobre o mapa)');
     assert.ok(Math.abs(geometria.bw - geometria.mw) <= 2, 'cada painel ocupa metade da tela');
 
-    // ------------------------------------------- 4.1) divisor ajusta os DOIS painéis
+    // ------------------------------------------- 4.1) arrastar a BORDA DO MAPA ajusta os dois
     const antes = await page.evaluate(() => {
       const b = document.getElementById('notesModalBackdrop').getBoundingClientRect();
+      const c = document.getElementById('notesModal').getBoundingClientRect();
       const m = document.getElementById('mapaArea').getBoundingClientRect();
-      return { nota: Math.round(b.width), mapa: Math.round(m.width) };
+      return { nota: Math.round(b.width), card: Math.round(c.width), mapa: Math.round(m.width), vp: JSON.stringify(window.app.mapaCanvasViewport || {}) };
     });
-    await page.evaluate(() => {
-      const d = document.getElementById('appSplitDivisor');
-      d.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 640, clientY: 400 }));
-      document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, clientX: 400, clientY: 400 }));
-      document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, clientX: 400, clientY: 400 }));
-    });
+    assert.ok(Math.abs(antes.card - antes.nota) <= 2, 'o card da nota preenche o painel (ponto de partida)');
+    // boundary = 640; começa na BORDA DO MAPA (654 = 14px à direita da divisa, fora do divisor).
+    await page.mouse.move(654, 400);
+    await page.mouse.down();
+    await page.mouse.move(520, 400, { steps: 3 });
+    await page.mouse.move(400, 400, { steps: 3 });
+    await page.mouse.up();
     await page.waitForTimeout(60);
     const depois = await page.evaluate(() => {
       const b = document.getElementById('notesModalBackdrop').getBoundingClientRect();
+      const c = document.getElementById('notesModal').getBoundingClientRect();
       const m = document.getElementById('mapaArea').getBoundingClientRect();
-      return { nota: Math.round(b.width), mapa: Math.round(m.width), total: Math.round(b.width + m.width) };
+      return { nota: Math.round(b.width), card: Math.round(c.width), mapa: Math.round(m.width), total: Math.round(b.width + m.width), vp: JSON.stringify(window.app.mapaCanvasViewport || {}) };
     });
     assert.ok(depois.nota < antes.nota, 'estreitar a nota reduz o painel da nota');
+    assert.ok(depois.card < antes.card, 'o CARD da nota acompanha o arraste (não fica com a largura antiga)');
+    assert.ok(Math.abs(depois.card - depois.nota) <= 2, 'o card da nota continua preenchendo o painel após o arraste');
     assert.ok(depois.mapa > antes.mapa, 'o MAPA cresce automaticamente quando a nota estreita');
     assert.equal(depois.total, 1280, 'os dois painéis somam a largura da tela (sem sobra/sobreposição)');
-    assert.ok(Math.abs(depois.nota - 400) <= 2, 'a nota passa a ter ~400px (posição do divisor)');
+    assert.ok(Math.abs(depois.nota - 400) <= 2, 'a nota passa a ter ~400px (posição do arraste)');
+    assert.equal(depois.vp, antes.vp, 'o MAPA não sofre pan: arrastar a borda redimensiona em vez de arrastar o mapa');
     assert.equal(await page.evaluate(() => Math.round(JSON.parse(localStorage.getItem('notas-pwa-split')).ratio * 100)), Math.round(400 / 1280 * 100), 'proporção persistida em notas-pwa-split');
 
     // ---------------------------------------------------------------- 5) arrastar a barra troca os lados

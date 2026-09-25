@@ -896,3 +896,24 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
   a soma das larguras = largura da tela (sem sobra/sobreposição) e a proporção é persistida.
 - **Asset do Service Worker (bump)**: `CACHE_NAME` **v52 → v53** (mudaram `mapa/mapa.js`,
   `mapa/mapa-store.js` e `mapa/mapa.css`).
+
+### P79 — Lado a lado: o CARD da nota não acompanhava o arraste (camadas CSS)
+- **Sintoma**: ao arrastar a borda do mapa (ou o divisor), o **mapa** estreitava/alargava e **não dava
+  pan**, mas o **painel de Notas não acompanhava** o arraste.
+- **Causa**: o painel visível é `#notesModal`, cujo `width` vem de
+  `html #notesModalBackdrop.notes-drawer #notesModal.notes-modal { width: var(--notes-width) !important }`
+  em **`@layer components`** (`notes/editor.css`). Pela cascata, **importante em camada VENCE
+  importante fora de camada** — então o `width:100% !important` do split (fora de camada) era
+  ignorado: o **backdrop** estreitava (daí o mapa acompanhar) mas o **card** mantinha a largura
+  antiga e vazava por cima do mapa. Confirmado depurando: backdrop 400 / card 640.
+- **Correção**: o split passou a controlar a variável que o card realmente usa —
+  `aplicarSplitRatio` grava `--notes-width: 100%` (inline no `#notesModal`) além de `--split-nota`;
+  no `resize` da janela, reaplica (o motor de notas pode reescrever `--notes-width`).
+- **Extras**: divisor com **área de pega de 24px** e linha visível; a pega também inicia
+  **por proximidade** (±18px da divisa) em **fase de captura**, com `stopPropagation` para o mapa
+  **não iniciar o pan** — arrastar a borda do mapa redimensiona em vez de arrastar o mapa.
+- **Blindagem**: `tests/split_view.cjs` §4.1 arrasta a **borda do mapa** e afirma que o **card**
+  acompanha (card ≈ painel), o mapa cresce, a soma = largura da tela, o mapa não sofre pan e a
+  proporção é persistida.
+- **Asset do Service Worker (bump)**: `CACHE_NAME` **v53 → v54** (mudaram `mapa/mapa.js` e
+  `mapa/mapa.css`).
