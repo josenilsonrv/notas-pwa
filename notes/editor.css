@@ -285,3 +285,19 @@ html[data-theme="dark"] #notesEditor ::highlight(notes-comment) { color:#a4afbe;
 #notesEditor[data-large-note="true"] > .notes-line { content-visibility:auto; contain-intrinsic-size:auto 24px; }
 #notesEditor[data-large-note="true"] > .notes-line:focus-within { content-visibility:visible; }
 /* 🎨 [FIM: NOTAS/ESTILO - PALETA DE TONS, CÓDIGO E NOTA GRANDE] */
+
+/* 🎨 [INÍCIO: NOTAS/ESTILO - PADRONIZAÇÃO (ÍCONES, ALTURA DA TOOLBAR, ROLAGEM)] */
+/* Tamanho ÚNICO dos ícones = 1.125rem (18px), o mesmo do <h1> "Notas" (text-lg).
+   Vale para os botões do cabeçalho e da barra de formatação (o seletor de tema,
+   que é um "switch", fica de fora). */
+html #notesModal .toolbar-btn svg { width: 1.125rem; height: 1.125rem; }
+
+/* Barra de formatação: UMA linha, altura PADRONIZADA (--app-toolbar-altura,
+   definida em mapa.css) e menor que a original. O conteúdo que não couber rola
+   na horizontal (rolador padronizado em mapa.css). */
+html #notesModal #notesToolbar.notes-toolbar-inline {
+    min-height: var(--app-toolbar-altura, 2.25rem);
+    padding: 0 .75rem;
+    align-items: center;
+}
+/* 🎨 [FIM: NOTAS/ESTILO - PADRONIZAÇÃO (ÍCONES, ALTURA DA TOOLBAR, ROLAGEM)] */

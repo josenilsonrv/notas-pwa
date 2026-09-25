@@ -1,6 +1,27 @@
 [
   {
     "tema": "light",
+    "seletor": ".notes-modal-header",
+    "propriedade": "height",
+    "pwa": "69px",
+    "origem": "71px"
+  },
+  {
+    "tema": "light",
+    "seletor": ".toolbar-btn",
+    "propriedade": "height",
+    "pwa": "36px",
+    "origem": "38px"
+  },
+  {
+    "tema": "light",
+    "seletor": ".toolbar-btn",
+    "propriedade": "width",
+    "pwa": "36px",
+    "origem": "38px"
+  },
+  {
+    "tema": "light",
     "seletor": "#notesContextNav",
     "propriedade": "backgroundColor",
     "pwa": "rgba(0, 0, 0, 0)",
@@ -29,6 +50,20 @@
   },
   {
     "tema": "light",
+    "seletor": "#notesEditorContainer",
+    "propriedade": "height",
+    "pwa": "706.328px",
+    "origem": "704.328px"
+  },
+  {
+    "tema": "light",
+    "seletor": "#notesEditor",
+    "propriedade": "height",
+    "pwa": "664.328px",
+    "origem": "662.328px"
+  },
+  {
+    "tema": "light",
     "seletor": "#notesEditor",
     "propriedade": "width",
     "pwa": "606.016px",
@@ -47,6 +82,20 @@
     "propriedade": "width",
     "pwa": "580.016px",
     "origem": "567.219px"
+  },
+  {
+    "tema": "light",
+    "seletor": "#notesSaveStatus",
+    "propriedade": "height",
+    "pwa": "19.5px",
+    "origem": "31px"
+  },
+  {
+    "tema": "light",
+    "seletor": ".notes-modal-footer",
+    "propriedade": "alignItems",
+    "pwa": "center",
+    "origem": "normal"
   },
   {
     "tema": "dark",
@@ -68,6 +117,27 @@
     "propriedade": "borderTopColor",
     "pwa": "rgb(15, 23, 42)",
     "origem": "rgb(245, 245, 247)"
+  },
+  {
+    "tema": "dark",
+    "seletor": ".notes-modal-header",
+    "propriedade": "height",
+    "pwa": "69px",
+    "origem": "71px"
+  },
+  {
+    "tema": "dark",
+    "seletor": ".toolbar-btn",
+    "propriedade": "height",
+    "pwa": "36px",
+    "origem": "38px"
+  },
+  {
+    "tema": "dark",
+    "seletor": ".toolbar-btn",
+    "propriedade": "width",
+    "pwa": "36px",
+    "origem": "38px"
   },
   {
     "tema": "dark",
@@ -96,6 +166,20 @@
     "propriedade": "padding",
     "pwa": "20px 22.4px 20px 9.6px",
     "origem": "20px 22.4px"
+  },
+  {
+    "tema": "dark",
+    "seletor": "#notesEditorContainer",
+    "propriedade": "height",
+    "pwa": "704.328px",
+    "origem": "702.328px"
+  },
+  {
+    "tema": "dark",
+    "seletor": "#notesEditor",
+    "propriedade": "height",
+    "pwa": "662.328px",
+    "origem": "660.328px"
   },
   {
     "tema": "dark",
@@ -131,5 +215,19 @@
     "propriedade": "width",
     "pwa": "578.016px",
     "origem": "565.219px"
+  },
+  {
+    "tema": "dark",
+    "seletor": "#notesSaveStatus",
+    "propriedade": "height",
+    "pwa": "19.5px",
+    "origem": "31px"
+  },
+  {
+    "tema": "dark",
+    "seletor": ".notes-modal-footer",
+    "propriedade": "alignItems",
+    "pwa": "center",
+    "origem": "normal"
   }
 ]

@@ -74,18 +74,18 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       pastasVisivel: !document.getElementById('pastasArea').hidden,
       mapaVisivel: !document.getElementById('mapaArea').hidden,
       backdropAtivo: document.getElementById('notesModalBackdrop').classList.contains('active'),
-      abas: document.querySelectorAll('#appAreas [data-app-area]').length,
+      abas: document.querySelectorAll('#appAreas [data-app-voltar]').length,
       pastaAtiva: JSON.parse(localStorage.getItem('notas-pwa-pasta-ativa') || 'null')
     }));
 
     // ---------------------------------------------------------------- 1) tela raiz = Pastas
     const inicial = await estado();
-    assert.equal(inicial.abas, 2, 'seletor tem Notas e Mapa Mental (Pastas é a tela raiz, sem aba)');
+    assert.equal(inicial.abas, 1, 'navegação tem só a seta ‹ (sem abas de área)');
     assert.equal(inicial.pastasVisivel, true, 'tela de Pastas abre primeiro');
     assert.equal(inicial.mapaVisivel, false, 'área do mapa começa oculta');
-    assert.equal(inicial.backdropAtivo, false, 'o modal de Notas não cobre a tela de Pastas');
+    assert.equal(inicial.backdropAtivo, false, 'na raiz o modal de Notas fica fechado (cartões clicáveis)');
     assert.equal(JSON.parse(inicial.area), 'pastas', 'área ativa persistida como "pastas"');
-    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), true, 'barra de áreas escondida na tela de Pastas (sem aba Pastas)');
+    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), false, 'a seta ‹ fica sempre visível (topo-esquerdo)');
 
     // ---------------------------------------------------------------- 2) cartões de pasta
     const nomes = await page.evaluate(() => [...document.querySelectorAll('#pastasArea .pastas-card-nome')].map(e => e.textContent));
@@ -100,8 +100,8 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await page.locator('#pastasArea [data-pastas-acao="abrir-pasta"][data-pasta-id="' + trabId + '"]').click();
     await page.waitForTimeout(150);
     const aberta = await estado();
-    assert.equal(aberta.pastasVisivel, false, 'ao abrir a pasta, a tela de Pastas some');
-    assert.equal(aberta.backdropAtivo, true, 'entra na área de Notas da pasta');
+    assert.equal(aberta.pastasVisivel, true, 'ao abrir a pasta, os cartões continuam ao fundo (modal é subproduto)');
+    assert.equal(aberta.backdropAtivo, true, 'a nota da pasta abre POR CIMA das pastas');
     assert.equal(aberta.pastaAtiva, trabId, 'pasta ativa persistida em notas-pwa-pasta-ativa');
     assert.equal(await page.evaluate(() => app.notaPastaAtiva), trabId, 'pasta ativa sincronizada nas notas');
     assert.equal(await page.evaluate(() => app.mapaFiltroPasta), trabId, 'mapa também fica na pasta');
@@ -112,14 +112,14 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal((await chips().first().textContent()), 'Nota Trabalho', 'chip é o da pasta');
 
     // ---------------------------------------------------------------- 5) mapa da pasta
-    await page.getByRole('tab', { name: 'Mapa Mental' }).click();
+    await page.evaluate(() => app.aplicarArea('mapa'));
     await page.waitForTimeout(120);
     assert.equal((await estado()).mapaVisivel, true, 'área do mapa abre');
 
     // ---------------------------------------------------------------- 6) voltar para as pastas
-    await page.locator('#appVoltarPastas').click();
+    await page.locator('#appVoltar').click();
     await page.waitForTimeout(120);
-    assert.equal((await estado()).pastasVisivel, true, 'botão "‹ Pastas" volta para a tela raiz');
+    assert.equal((await estado()).pastasVisivel, true, 'seta ‹ volta para a tela raiz');
 
     assert.deepEqual(erros, [], 'sem erros de página');
     console.log('OK: Pastas como tela raiz (workspaces de notas + mapas)');

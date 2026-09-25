@@ -1,13 +1,13 @@
 # Relatório de paridade visual (PWA x projeto original)
 
-> Gerado por `node tests/parity_visual.cjs` em 2026-09-25 16:51:33.
+> Gerado por `node tests/parity_visual.cjs` em 2026-09-25 19:16:21.
 > Compara as propriedades computadas de 18 seletores do modal de notas, em tema claro e escuro.
 > O original é usado **somente como referência** (nenhuma alteração é feita nele).
 
 | Resultado | Quantidade |
 | --- | --- |
 | Divergências reais | 0 |
-| Exceções documentadas | 19 |
+| Exceções documentadas | 33 |
 
 ## Exceções aceitas (com justificativa)
 
@@ -74,4 +74,28 @@ Mesma causa do item anterior (largura herdada do editor mais largo).
 ### `.notes-line-text` → `width`
 
 Mesma causa dos itens anteriores (a area de texto acompanha a largura do editor).
+
+### `.notes-modal-header` → `height`
+
+Padronizacao dos icones em 1.125rem (18px, o mesmo tamanho do <h1> "Notas"): os botoes do cabecalho ficam 2px mais baixos e o header acompanha. Efeito pedido.
+
+### `.toolbar-btn` → `height`
+
+Consequencia direta da padronizacao dos icones em 1.125rem (18px): o botao de icone (usado no cabecalho e na barra) fica 2px mais baixo. Efeito pedido.
+
+### `.toolbar-btn` → `width`
+
+Mesma causa da altura do .toolbar-btn: com o icone de 1.125rem (18px) o botao de icone fica 2px mais estreito. Efeito pedido.
+
+### `#notesToolbar` → `height`
+
+Padronizacao dos icones em 1.125rem (18px): no harness de paridade a barra de Notas usa o overflow "..." do motor (sem a classe notes-toolbar-inline, aplicada so no app), entao icones um pouco maiores empurram mais itens para a gaveta e a barra fica mais alta. No app real a classe inline mantem UMA linha com rolagem (toolbar_pwa.cjs).
+
+### `.notes-modal-footer` → `alignItems`
+
+Rodape mais baixo/discreto (item E/K): conteudo centralizado verticalmente (items-center) para caber na altura reduzida (2.25rem), igual ao rodape do Mapa.
+
+### `#notesSaveStatus` → `height`
+
+Consequencia do rodape mais baixo (min-height 2.25rem) e do texto padronizado em 12px: o status fica mais baixo que o original. Efeito pedido para igualar ao rodape do Mapa.
 

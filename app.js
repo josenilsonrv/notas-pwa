@@ -335,6 +335,7 @@ class NotesPWA {
         // Refazer o snapshot completo aqui em cima duplicava o trabalho mais caro
         // da abertura (medido em ~270 ms para 2000 linhas) sem necessidade.
         this.refreshNotesCollapseControls();
+        if (typeof this.updateNotesTopicCount === 'function') this.updateNotesTopicCount();
 
         // Largura do modal: o motor usa var(--notes-width, 50vw) e calcula a largura
         // a partir de notesSavedWidth (undefined na abertura, como no original).
@@ -831,6 +832,16 @@ class NotesPWA {
         status.disabled = !isError;
         status.classList.toggle('is-error', isError);
     }
+
+    /** Rodapé de Notas: contagem de tópicos (linhas) — espelha o rodapé do Mapa.
+     *  Fica num elemento PRÓPRIO (#notesTopicCount) para não sobrescrever o
+     *  status (#notesSaveStatus: "Salvo"/"Falha"). */
+    updateNotesTopicCount() {
+        const alvo = document.getElementById('notesTopicCount');
+        if (!alvo) return;
+        const total = document.querySelectorAll('#notesEditor .notes-line').length;
+        alvo.textContent = total + ' tópico' + (total === 1 ? '' : 's');
+    }
     // ⚡ [FIM: INTERAÇÃO/JS - AVISOS]
 
     setupEventListeners() {
@@ -842,6 +853,8 @@ class NotesPWA {
         document.getElementById('notesFullscreenBtn')?.addEventListener('click', () => this.toggleNotesFullscreen());
         document.getElementById('notesHeaderCollapseBtn')?.addEventListener('click', () => this.toggleNotesHeaderCollapse());
         document.getElementById('notesModalClose')?.addEventListener('click', () => this.closeNotesModal());
+        // Contagem de tópicos do rodapé acompanha a digitação.
+        document.getElementById('notesEditor')?.addEventListener('input', () => this.updateNotesTopicCount());
 
         // Atalhos do editor: mesma ligacao do app original (frontend/app.js, "notesEditor.addEventListener('keydown', ...)").
         // Sem esta linha os atalhos (Ctrl+Alt+1..0, Alt+setas, Tab/Shift+Tab, Ctrl+B/I/S/Z/Y) nao funcionam.

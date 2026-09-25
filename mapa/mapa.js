@@ -146,7 +146,7 @@
         r.atualizarShell({
             mapaAberto: dados.mapaAberto, busca: this.mapaBusca,
             ordenacao: this.mapaOrdenacao, incluirArquivados: this.mapaIncluirArquivados,
-            mostrarTemplates: this.mapaMostrarTemplates
+            mostrarTemplates: this.mapaMostrarTemplates, telaCheia: Boolean(this.mapaFullscreen)
         });
         const acao = this.mapaAcao;
         // O formulário pode agir sobre um mapa que NÃO está aberto (a lista é a
@@ -165,6 +165,8 @@
         dados.barraAberta = Boolean(this.mapaBarraAberta);
         // Menu de OPÇÕES da barra de formatação (fonte/forma/alinhamento) — F12.
         dados.menuBarra = this.mapaMenuBarra || null;
+        // Grade (pontinhos) da superfície: preferência persistida (padrão: desligada).
+        dados.grade = (store() && typeof store().lerGrade === 'function') ? store().lerGrade() : false;
         // Barras padronizadas (F12) ANTES do mapa: o editor de barra lê o DOM da toolbar.
         r.renderBarras(dados);
         // Reaplica o colapso das barras (um re-render não pode "descolapsar").
@@ -179,6 +181,43 @@
         }
         // F11: os botões Desfazer/Refazer refletem a pilha sempre que a área é redesenhada.
         atualizarBotoesHistorico.call(this);
+        // Rodapé informativo (espelha o status de Notas).
+        const statusRodape = document.getElementById('mapaStatus');
+        if (statusRodape) {
+            if (dados.mapaAberto) {
+                const total = ((dados.grafo && dados.grafo.nos) || []).length;
+                const sel = this.mapaSelecao ? this.mapaSelecao.size : 0;
+                statusRodape.textContent = total + ' tópico(s)' + (sel ? ' · ' + sel + ' selecionado(s)' : '') + ' · ' + tempoRelativo(dados.mapaAberto.dtAlterado);
+                statusRodape.title = dataAbsoluta(dados.mapaAberto.dtAlterado);
+            } else {
+                statusRodape.textContent = 'Nenhum mapa aberto';
+                statusRodape.removeAttribute('title');
+            }
+        }
+    }
+
+    /** Data/hora ABSOLUTA (vai no `title` do rodapé). */
+    function dataAbsoluta(iso) {
+        const data = iso ? new Date(iso) : null;
+        return (data && !isNaN(data)) ? data.toLocaleString('pt-BR') : '';
+    }
+
+    /** "editado há 5 min" — última edição em data/hora RELATIVA (pt-BR). */
+    function tempoRelativo(iso) {
+        const data = iso ? new Date(iso) : null;
+        if (!data || isNaN(data)) return 'sem edição';
+        let rtf = null;
+        try { rtf = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' }); } catch (_) { rtf = null; }
+        const unidade = (valor, u) => rtf ? rtf.format(-valor, u) : ('há ' + valor + ' ' + u);
+        const seg = Math.round((Date.now() - data.getTime()) / 1000);
+        if (Math.abs(seg) < 60) return 'editado ' + unidade(Math.max(1, Math.abs(seg)), 'second');
+        const min = Math.round(seg / 60);
+        if (Math.abs(min) < 60) return 'editado ' + unidade(min, 'minute');
+        const horas = Math.round(min / 60);
+        if (Math.abs(horas) < 24) return 'editado ' + unidade(horas, 'hour');
+        const dias = Math.round(horas / 24);
+        if (Math.abs(dias) < 30) return 'editado ' + unidade(dias, 'day');
+        return 'editado em ' + data.toLocaleDateString('pt-BR');
     }
 
     /** Cliques da área do mapa (delegação por `data-mapa-acao`). */
@@ -341,7 +380,23 @@
                 return;
             }
             case 'alternar-colapso': mapaAlternarColapsoBarras.call(this); return;
+            // Expandir/contrair a área (espelha o fullscreen de Notas): alterna o
+            // estado; o re-render abaixo aplica a classe no shell e troca o ícone.
+            case 'alternar-fullscreen': this.mapaFullscreen = !this.mapaFullscreen; break;
+            // Grade (pontinhos) da superfície: alterna e persiste (padrão: desligada).
+            case 'alternar-grade': {
+                const sGrade = store();
+                const novo = !(sGrade && typeof sGrade.lerGrade === 'function' ? sGrade.lerGrade() : false);
+                if (sGrade && typeof sGrade.salvarGrade === 'function') sGrade.salvarGrade(novo);
+                break;
+            }
             case 'alternar-split': aplicarSplit.call(this, !this.mapaSplit); return;
+            // Fechar o MAPA (espelha o #notesModalClose de Notas): em lado a lado fecha
+            // SÓ o mapa (a nota permanece); sozinho, volta à raiz de Pastas.
+            case 'fechar-mapa':
+                if (this.mapaSplit) { aplicarSplit.call(this, false); aplicarArea.call(this, 'notas'); }
+                else { aplicarArea.call(this, 'pastas'); }
+                return;
             default: return;
         }
         renderArea.call(this);
@@ -587,27 +642,25 @@
     // ⚡ [FIM: MAPA - PASTAS (ÁREA RAIZ / WORKSPACES)]
     // ⚡ [INÍCIO: MAPA - LADO A LADO (SPLIT NOTA + MAPA)]
     /**
-     * Barra de áreas: escondida na tela raiz de Pastas; dentro da pasta mostra
-     * "‹ Pastas" + abas (Notas | Mapa). O botão "Abrir mapa" aparece na área de Notas.
+     * Navegação: apenas a seta ‹ (sempre visível, topo-esquerdo) que volta à raiz de
+     * Pastas. A troca Notas↔Mapa é feita por botões DENTRO de cada área — "Ver mapa ao
+     * lado" (cabeçalho de Notas) e "Ver nota ao lado" (topbar do Mapa) ligam o split.
      */
     function atualizarBarraAreas(alvo) {
         const nav = document.getElementById('appAreas');
-        if (!nav) return;
-        const naRaiz = alvo === 'pastas';
-        nav.hidden = naRaiz;
-        if (naRaiz) return;
-        nav.querySelectorAll('[data-app-area]').forEach(botao => {
-            botao.setAttribute('aria-selected', String(botao.dataset.appArea === alvo));
-        });
-        const abrir = document.getElementById('appAbrirMapa');
+        // A seta ‹ fica SEMPRE disponível (topo-esquerdo): volta à raiz de Pastas e,
+        // estando na raiz, fecha o modal de Notas (revelando os cartões).
+        if (nav) nav.hidden = false;
+        // A troca de área vive em botões internos: "Ver mapa ao lado" (Notas) e
+        // "Ver nota ao lado" (Mapa) ligam/desligam o modo lado a lado.
+        const ligado = Boolean(this.mapaSplit);
+        const abrir = document.getElementById('notesAbrirMapa');
         if (abrir) {
-            const ligado = Boolean(this.mapaSplit);
             abrir.hidden = !(alvo === 'notas' || ligado);
-            abrir.textContent = ligado ? 'Fechar mapa' : 'Abrir mapa';
-            abrir.setAttribute('aria-pressed', String(ligado));
             const rotulo = ligado ? 'Fechar o mapa ao lado' : 'Ver o mapa ao lado da nota';
             abrir.title = rotulo;
             abrir.setAttribute('aria-label', rotulo);
+            abrir.setAttribute('aria-pressed', String(ligado));
         }
     }
 
@@ -2230,7 +2283,7 @@
         const secao = document.getElementById('mapaArea');
         const pastasSecao = document.getElementById('pastasArea');
         const backdrop = document.getElementById('notesModalBackdrop');
-        if (pastasSecao) pastasSecao.hidden = alvo !== 'pastas';
+        if (pastasSecao) pastasSecao.hidden = (alvo === 'mapa');
 
         if (alvo === 'mapa') {
             // Sair de Notas: grava a nota atual e esconde o modal (sem encerrar o motor).
@@ -2247,6 +2300,8 @@
             montarAreaPastas.call(this);
             renderPastas.call(this);
             if (secao) secao.hidden = true;
+            // Na RAIZ o modal de Notas fica fechado (os cartões de pasta ficam clicáveis);
+            // ao abrir uma pasta/nota ele reaparece POR CIMA das pastas (subproduto).
             if (backdrop) backdrop.classList.remove('active');
         } else {
             // Ao sair do mapa, grava a viewport pendente do debounce.
@@ -2309,13 +2364,23 @@
 
     /** Liga o seletor de áreas e aplica a área salva (só após `__notasPronto`). */
     function inicializarAreasMapa() {
-        const nav = document.getElementById('appAreas');
-        if (nav && !this.mapaAreasLigadas) {
+        if (!this.mapaAreasLigadas) {
             this.mapaAreasLigadas = true;
-            nav.addEventListener('click', evento => {
+            // Delegação no DOCUMENTO: a seta ‹ está na barra, e os botões de área/split
+            // vivem DENTRO de cada área (cabeçalho de Notas e topbar do Mapa).
+            document.addEventListener('click', evento => {
                 const aba = evento.target.closest('[data-app-area]');
                 if (aba) { this.aplicarArea(aba.dataset.appArea); return; }
-                if (evento.target.closest('[data-app-voltar]')) { this.aplicarArea('pastas'); return; }
+                if (evento.target.closest('[data-app-voltar]')) {
+                    // A seta ‹ sempre volta à raiz de Pastas e FECHA o modal de Notas
+                    // (revelando os cartões de pasta).
+                    const backdrop = document.getElementById('notesModalBackdrop');
+                    if (backdrop && backdrop.classList.contains('active') && typeof this.closeNotesModal === 'function') {
+                        this.closeNotesModal();
+                    }
+                    this.aplicarArea('pastas');
+                    return;
+                }
                 if (evento.target.closest('[data-app-split]')) { aplicarSplit.call(this, !this.mapaSplit); }
             });
             window.addEventListener('themechange', () => aplicarTemaMapa());
@@ -2393,6 +2458,7 @@
             mapaBarraAberta: false,
             mapaMenuBarra: null,
             mapaBarrasColapsadas: false,
+            mapaFullscreen: false,
             mapaFormatBarVisivel: false,
             mapaMotionVersion: 0,
             pastaAtiva: null,

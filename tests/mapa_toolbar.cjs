@@ -120,11 +120,11 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     // (o resto é da visão de lista).
     const topbarVisivel = await page.evaluate(() => [...document.querySelectorAll('.mapa-topbar [data-mapa-acao]')]
       .filter(el => el.offsetParent !== null).map(el => el.dataset.mapaAcao));
-    assert.deepEqual(topbarVisivel, ['voltar-lista', 'alternar-split', 'alternar-colapso'], 'topbar do mapa mostra "‹ Mapas" + lado a lado + colapso');
+    assert.deepEqual(topbarVisivel, ['voltar-lista', 'alternar-split', 'alternar-colapso', 'fechar-mapa', 'alternar-fullscreen'], 'topbar do mapa mostra "‹ Mapas" + lado a lado + colapso + fechar + expandir');
 
-    // ---------------------------------------------------------------- 3) barra de formatação contextual
-    assert.equal(await page.evaluate(() => document.getElementById('mapaFormatBar').hidden), true,
-      'barra de formatação oculta sem seleção');
+    // ---------------------------------------------------------------- 3) barra de formatação (sempre visível, como em Notas)
+    assert.equal(await page.evaluate(() => document.getElementById('mapaFormatBar').hidden), false,
+      'barra de formatação SEMPRE visível (como em Notas)');
     await selecionar(idObjetivo);
     const fmt = await page.evaluate(() => {
       const el = document.getElementById('mapaFormatBar');

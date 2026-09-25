@@ -100,6 +100,36 @@ const EXCECOES = [
     seletor: '.notes-line-text',
     propriedade: 'width',
     motivo: 'Mesma causa dos itens anteriores (a area de texto acompanha a largura do editor).'
+  },
+  {
+    seletor: '.notes-modal-header',
+    propriedade: 'height',
+    motivo: 'Padronizacao dos icones em 1.125rem (18px, o mesmo tamanho do <h1> "Notas"): os botoes do cabecalho ficam 2px mais baixos e o header acompanha. Efeito pedido.'
+  },
+  {
+    seletor: '.toolbar-btn',
+    propriedade: 'height',
+    motivo: 'Consequencia direta da padronizacao dos icones em 1.125rem (18px): o botao de icone (usado no cabecalho e na barra) fica 2px mais baixo. Efeito pedido.'
+  },
+  {
+    seletor: '.toolbar-btn',
+    propriedade: 'width',
+    motivo: 'Mesma causa da altura do .toolbar-btn: com o icone de 1.125rem (18px) o botao de icone fica 2px mais estreito. Efeito pedido.'
+  },
+  {
+    seletor: '#notesToolbar',
+    propriedade: 'height',
+    motivo: 'Padronizacao dos icones em 1.125rem (18px): no harness de paridade a barra de Notas usa o overflow "..." do motor (sem a classe notes-toolbar-inline, aplicada so no app), entao icones um pouco maiores empurram mais itens para a gaveta e a barra fica mais alta. No app real a classe inline mantem UMA linha com rolagem (toolbar_pwa.cjs).'
+  },
+  {
+    seletor: '.notes-modal-footer',
+    propriedade: 'alignItems',
+    motivo: 'Rodape mais baixo/discreto (item E/K): conteudo centralizado verticalmente (items-center) para caber na altura reduzida (2.25rem), igual ao rodape do Mapa.'
+  },
+  {
+    seletor: '#notesSaveStatus',
+    propriedade: 'height',
+    motivo: 'Consequencia do rodape mais baixo (min-height 2.25rem) e do texto padronizado em 12px: o status fica mais baixo que o original. Efeito pedido para igualar ao rodape do Mapa.'
   }
 ];
 

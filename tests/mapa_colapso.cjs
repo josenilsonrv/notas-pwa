@@ -70,7 +70,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(await page.evaluate(() => document.getElementById('mapaColapsoBarras').hidden), false, 'botão não está oculto');
     assert.equal(await ariaBotao(), 'true', 'botão começa expandido (aria-expanded=true)');
     assert.equal(await page.locator('#mapaToolbar').isVisible(), true, 'barra de ferramentas visível');
-    assert.equal(await page.evaluate(() => document.getElementById('mapaFormatBar').hidden), true, 'formatação oculta sem seleção');
+    assert.equal(await page.evaluate(() => document.getElementById('mapaFormatBar').hidden), false, 'formatação sempre visível (como em Notas), mesmo sem seleção');
 
     // ---------------------------------------------------------------- 2) recolhe
     await clicarColapso();
@@ -91,7 +91,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(await classe(), false, 'classe de colapso removida ao expandir');
     assert.equal(await page.locator('#mapaToolbar').isVisible(), true, 'expande mostra a barra de ferramentas');
     assert.equal(await ariaBotao(), 'true', 'aria-expanded=true ao expandir');
-    assert.equal(await page.evaluate(() => document.getElementById('mapaFormatBar').hidden), true, 'formatação continua oculta (sem nó selecionado)');
+    assert.equal(await page.evaluate(() => document.getElementById('mapaFormatBar').hidden), false, 'formatação permanece visível (sem nó selecionado)');
 
     // ---------------------------------------------------------------- 5) formatação contextual
     const idObjetivo = await page.evaluate(() => {

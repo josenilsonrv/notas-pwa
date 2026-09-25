@@ -96,14 +96,13 @@
 
     <!-- Main Editor Container -->
     <main class="flex-1 flex flex-col">
-        <!-- Áreas do aplicativo: Notas | Mapa Mental.
-             Fica FORA do bloco #notesModalBackdrop (parity_* compara o modal de notas). -->
-        <!-- Seletor de áreas: só dentro de uma pasta (Notas | Mapa). A tela raiz é "Pastas". -->
-        <nav id="appAreas" class="app-areas" role="tablist" aria-label="Áreas do aplicativo" hidden>
-            <button type="button" id="appVoltarPastas" class="app-areas-voltar" data-app-voltar="pastas" title="Voltar às pastas" aria-label="Voltar às pastas">‹ Pastas</button>
-            <button type="button" role="tab" data-app-area="notas" aria-selected="true">Notas</button>
-            <button type="button" role="tab" data-app-area="mapa" aria-selected="false">Mapa Mental</button>
-            <button type="button" id="appAbrirMapa" class="app-areas-split" data-app-split="1" title="Ver o mapa ao lado da nota" aria-label="Ver o mapa ao lado da nota" hidden>Mapa ao lado</button>
+        <!-- Áreas do aplicativo (Notas | Mapa Mental) + navegação.
+             Fica FORA do bloco #notesModalBackdrop (parity_* compara o modal de notas).
+             Navegação: APENAS a seta ‹ (topo-esquerdo), que sempre volta à raiz de Pastas.
+             A troca Notas↔Mapa é feita por botões DENTRO de cada área
+             ("Ver mapa ao lado" em Notas; "Ver nota ao lado" no Mapa). -->
+        <nav id="appAreas" class="app-areas" aria-label="Navegação" hidden>
+            <button type="button" id="appVoltar" class="app-voltar" data-app-voltar="pastas" title="Voltar às pastas" aria-label="Voltar às pastas">‹</button>
         </nav>
         <!-- Área raiz "Pastas": cada pasta é um workspace (Notas + Mapa). Montada lazy. -->
         <section id="pastasArea" class="pastas-area" role="tabpanel" aria-label="Pastas" hidden></section>
@@ -132,6 +131,10 @@
                                     <path class="notes-expand-icon" d="M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3"></path>
                                     <path class="notes-restore-icon" d="M16 3v3a2 2 0 0 0 2 2h3M8 21v-3a2 2 0 0 0-2-2H3"></path>
                                 </svg>
+                            </button>
+                            <!-- Ver o mapa ao lado da nota (espelha o "Ver nota ao lado" do Mapa). -->
+                            <button type="button" class="toolbar-btn" id="notesAbrirMapa" data-app-split="1" title="Ver o mapa ao lado da nota" aria-label="Ver o mapa ao lado da nota" aria-pressed="false">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg>
                             </button>
                             <button class="toolbar-btn" id="notesModalClose" aria-label="Fechar notas">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -195,7 +198,8 @@
                     <div class="notes-editor" id="notesEditor" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true" autocapitalize="sentences" data-placeholder="Digite suas notas aqui..."></div>
                 </div>
 
-                <div class="notes-modal-footer flex justify-end gap-3 mt-0 px-6 py-4 border-t border-border bg-bg-global shrink-0">
+                <div class="notes-modal-footer flex justify-start items-center gap-3 mt-0 px-6 py-4 border-t border-border bg-bg-global shrink-0">
+                    <span id="notesTopicCount" class="notes-footer-meta" role="status" aria-live="polite"></span>
                     <button type="button" id="notesSaveStatus" role="status" aria-live="polite" disabled>Salvo</button>
                 </div>
             </div>

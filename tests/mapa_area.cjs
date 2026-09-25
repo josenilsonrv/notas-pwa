@@ -63,18 +63,18 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       backdropAtivo: document.getElementById('notesModalBackdrop').classList.contains('active'),
       mapaOculto: document.getElementById('mapaArea').hidden,
       montado: document.getElementById('mapaArea').querySelector('.mapa-shell') !== null,
-      selecionada: document.querySelector('[data-app-area="mapa"]').getAttribute('aria-selected')
+      seta: document.querySelector('#appAreas [data-app-voltar]') !== null
     }));
 
-    // Estrutura do seletor de áreas (fora do modal de notas).
-    const abas = await page.evaluate(() => ({
-      total: document.querySelectorAll('#appAreas [data-app-area]').length,
-      dentroDoModal: document.querySelectorAll('#notesModalBackdrop [data-app-area]').length,
+    // Estrutura da navegação (fora do modal de notas): SÓ a seta ‹ (sem abas de área).
+    const nav = await page.evaluate(() => ({
+      voltar: document.querySelectorAll('#appAreas [data-app-voltar]').length,
+      abas: document.querySelectorAll('#appAreas [data-app-area]').length,
       contemMapa: document.getElementById('notesModalBackdrop').contains(document.getElementById('mapaArea'))
     }));
-    assert.equal(abas.total, 2, 'seletor tem Notas e Mapa Mental (Pastas é a tela raiz, sem aba)');
-    assert.equal(abas.dentroDoModal, 0, 'seletor fica FORA do modal de notas');
-    assert.equal(abas.contemMapa, false, 'área do mapa fica FORA do modal de notas');
+    assert.equal(nav.voltar, 1, 'navegação tem a seta ‹ (voltar às Pastas)');
+    assert.equal(nav.abas, 0, 'sem abas de área (a troca vive dentro das áreas)');
+    assert.equal(nav.contemMapa, false, 'área do mapa fica FORA do modal de notas');
 
     // Estado inicial: Notas ativa e mapa NÃO montado (lazy).
     const inicial = await estado();
@@ -84,19 +84,19 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 
     await page.evaluate(() => app.inicializarAreasMapa());
 
-    // A tela raiz é Pastas: a barra de áreas fica escondida até abrir uma pasta.
-    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), true, 'barra de áreas escondida na tela de Pastas');
+    // A seta ‹ fica sempre visível (topo-esquerdo), inclusive na tela raiz de Pastas.
+    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), false, 'a seta ‹ fica sempre visível');
     await page.evaluate(() => app.abrirPasta('pasta-geral'));
-    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), false, 'dentro da pasta a barra de áreas aparece');
+    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), false, 'dentro da pasta a seta continua visível');
 
     // Entra no Mapa Mental.
-    await page.getByRole('tab', { name: 'Mapa Mental' }).click();
+    await page.evaluate(() => app.aplicarArea('mapa'));
     const noMapa = await estado();
     assert.equal(JSON.parse(noMapa.area), 'mapa', 'área ativa persistida');
     assert.equal(noMapa.backdropAtivo, false, 'modal de notas some no mapa');
     assert.equal(noMapa.mapaOculto, false, 'área do mapa visível');
     assert.equal(noMapa.montado, true, 'shell monta na primeira entrada (lazy)');
-    assert.equal(noMapa.selecionada, 'true', 'aba do mapa marcada');
+    assert.equal(noMapa.seta, true, 'a seta ‹ continua disponível na área do mapa');
 
     // Tema acompanha o evento `themechange`.
     const tema = await page.evaluate(async () => {
@@ -108,7 +108,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(tema, 'dark', 'evento themechange reflete na área do mapa');
 
     // Volta para Notas.
-    await page.getByRole('tab', { name: 'Notas' }).click();
+    await page.evaluate(() => app.aplicarArea('notas'));
     const deVolta = await estado();
     assert.equal(JSON.parse(deVolta.area), 'notas', 'área volta para Notas');
     assert.equal(deVolta.backdropAtivo, true, 'modal de notas volta a aparecer');

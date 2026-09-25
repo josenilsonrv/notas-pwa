@@ -14,14 +14,14 @@
       "notesToolbar"
     ],
     "pwa": [
-      "appAbrirMapa",
       "appAreas",
       "appToastRegion",
-      "appVoltarPastas",
+      "appVoltar",
       "bootGuard",
       "bootGuardErro",
       "bootGuardReparar",
       "mapaArea",
+      "notesAbrirMapa",
       "notesContextNav",
       "notesEditor",
       "notesEditorContainer",
@@ -33,6 +33,7 @@
       "notesModalTitle",
       "notesSaveStatus",
       "notesToolbar",
+      "notesTopicCount",
       "pastasArea",
       "themeToggle"
     ],
@@ -69,6 +70,7 @@
       "Lista com marcadores",
       "Lista numerada",
       "Mapa Mental",
+      "Navegação",
       "Negrito",
       "Notas deste foco",
       "Pastas",
@@ -81,8 +83,7 @@
       "Título H2",
       "Título H3",
       "Ver o mapa ao lado da nota",
-      "Voltar às pastas",
-      "Áreas do aplicativo"
+      "Voltar às pastas"
     ],
     "faltando": []
   },
@@ -153,10 +154,8 @@
       "region",
       "region",
       "status",
+      "status",
       "switch",
-      "tab",
-      "tab",
-      "tablist",
       "tabpanel",
       "tabpanel",
       "textbox"

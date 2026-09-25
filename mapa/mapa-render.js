@@ -109,12 +109,23 @@
         colapso.hidden = true;
         colapso.setAttribute('aria-expanded', 'true');
 
-        // Lado a lado (PC): ver a nota e o mapa ao mesmo tempo; a barra arrasta p/ trocar de lado.
-        const splitBtn = btnIcone('split', 'split', 'Ver nota e mapa lado a lado', 'alternar-split', null, 'mapaSplitBtn');
+        // Lado a lado: ver a nota e o mapa ao mesmo tempo (espelha o "Ver mapa ao lado" de Notas).
+        const splitBtn = btnIcone('split', 'split', 'Ver nota ao lado', 'alternar-split', null, 'mapaSplitBtn');
         splitBtn.hidden = true;
         splitBtn.setAttribute('aria-pressed', 'false');
 
-        topbar.append(voltar, tituloAtual, espaco, busca, ordem, arquivados, novaPasta, novo, templates, splitBtn, colapso);
+        // Fechar o mapa (espelha o #notesModalClose de Notas): só fecha o mapa,
+        // mantendo a nota (e vice-versa).
+        const fechar = btnIcone('fechar', 'fechar', 'Fechar mapa', 'fechar-mapa', null, 'mapaFechar');
+        fechar.hidden = true;
+
+        // Expandir/contrair a área (espelha o #notesFullscreenBtn de Notas): recolhe
+        // barras + chips e mantém a topbar (com o próprio botão) visível.
+        const telaCheia = btnIcone('tela-cheia', 'tela-cheia', 'Expandir (tela cheia)', 'alternar-fullscreen', null, 'mapaFullscreenBtn');
+        telaCheia.hidden = true;
+        telaCheia.setAttribute('aria-pressed', 'false');
+
+        topbar.append(voltar, tituloAtual, espaco, busca, ordem, arquivados, novaPasta, novo, templates, splitBtn, colapso, fechar, telaCheia);
 
         const form = document.createElement('form');
         form.id = 'mapaForm';
@@ -137,9 +148,19 @@
         const wrap = criar('div', 'mapa-canvas-wrap');
         wrap.id = 'mapaCanvasWrap';
 
-        shell.append(topbar, toolbar, formatBar, form, wrap);
+        // Rodapé informativo (espelha o `.notes-modal-footer` de Notas).
+        const rodape = criar('div', 'mapa-rodape');
+        rodape.id = 'mapaRodape';
+        rodape.hidden = true;
+        const status = criar('span', 'mapa-rodape-status', 'Salvo');
+        status.id = 'mapaStatus';
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+        rodape.append(status);
+
+        shell.append(topbar, toolbar, formatBar, form, wrap, rodape);
         secao.append(shell);
-        return { shell, topbar, toolbar, formatBar, form, wrap };
+        return { shell, topbar, toolbar, formatBar, form, wrap, rodape };
     }
     // 🔄 [FIM: MAPA - SHELL DA ÁREA]
 
@@ -159,6 +180,23 @@
         visivel('mapaToolbar', !lista);
         visivel('mapaColapsoBarras', !lista);
         visivel('mapaSplitBtn', !lista);
+        visivel('mapaFechar', !lista);
+        visivel('mapaRodape', !lista);
+        visivel('mapaFullscreenBtn', !lista);
+        // Estado de "tela cheia" da área (espelha o fullscreen de Notas): aplica a
+        // classe no shell e troca o ícone/título do botão.
+        const telaCheia = document.getElementById('mapaFullscreenBtn');
+        if (telaCheia) {
+            const ativo = Boolean(estado.telaCheia);
+            telaCheia.setAttribute('aria-pressed', String(ativo));
+            const rotulo = ativo ? 'Restaurar tamanho' : 'Expandir (tela cheia)';
+            telaCheia.title = rotulo;
+            telaCheia.setAttribute('aria-label', rotulo);
+            const path = telaCheia.querySelector('svg path');
+            if (path) path.setAttribute('d', ativo ? ICONES['restaurar-tela'].d : ICONES['tela-cheia'].d);
+        }
+        const shellTela = document.querySelector('#mapaArea .mapa-shell');
+        if (shellTela) shellTela.classList.toggle('mapa-fullscreen', Boolean(estado.telaCheia));
         const titulo = document.getElementById('mapaTituloAtual');
         if (titulo) titulo.textContent = estado.mapaAberto ? (estado.mapaAberto.nome || 'Mapa') : '';
         const busca = document.getElementById('mapaBusca');
@@ -292,11 +330,9 @@
     function renderMapaAberto(wrap, dados) {
         if (!wrap) return;
         wrap.innerHTML = '';
-        const mapa = dados.mapaAberto || {};
+        // Campo de edição do mapa espelha o de Notas: NÃO há título/metadados
+        // empilhados acima do canvas (o nome vive no cabeçalho/#mapaTituloAtual).
         const painel = criar('div', 'mapa-aberto');
-        painel.append(criar('h3', 'mapa-aberto-nome', mapa.nome || 'Mapa'));
-        painel.append(criar('p', 'mapa-aberto-meta',
-            'Atualizado ' + dataCurta(mapa.dtAlterado) + ' · ' + (dados.qtdNos || 0) + ' tópico(s)'));
 
         const conexoes = criar('div', 'mapa-conexoes');
         conexoes.append(criar('span', 'mapa-conexoes-rotulo', 'Conectado a:'));
@@ -429,6 +465,7 @@
         centralizar: { d: '<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>' },
         fit: { d: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>' },
         raiz: { d: '<path d="M4 11 12 4l8 7"/><path d="M6 10v10h12V10"/>' },
+        grade: { d: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>' },
         recolher: { d: '<path d="m9 4 3 3 3-3M9 20l3-3 3 3M4 12h16"/>' },
         expandir: { d: '<path d="m15 4-3 3-3-3M15 20l-3-3-3 3M4 12h16"/>' },
         mais: { d: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>' },
@@ -458,7 +495,12 @@
         // Colapso das barras (MESMO desenho da seta do cabeçalho de Notas).
         colapso: { d: '<path d="m5 15 7-7 7 7"/>' },
         // Lado a lado: dois painéis divididos.
-        split: { d: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/>' }
+        split: { d: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/>' },
+        // Fechar (MESMO desenho do #notesModalClose de Notas).
+        fechar: { d: '<path d="M18 6 6 18M6 6l12 12"/>' },
+        // Expandir/contrair (MESMO desenho do #notesFullscreenBtn de Notas).
+        'tela-cheia': { d: '<path d="M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3"/>' },
+        'restaurar-tela': { d: '<path d="M16 3v3a2 2 0 0 0 2 2h3M8 21v-3a2 2 0 0 0-2-2H3"/>' }
     };
 
     /** Cria o SVG padronizado de um ícone (16×16, `stroke: currentColor`). */
@@ -614,7 +656,7 @@
 
         // ---- Grupo: Exibir (zoom, enquadramento, layout, espaçamento, tema, nível) ----
         toolbar.append(divisorBarra());
-        toolbar.append(grupoExibir(grafo));
+        toolbar.append(grupoExibir(grafo, Boolean(info.grade)));
 
         // ---- Grupo: Mais (overflow + atalhos + editar barra) ----
         toolbar.append(divisorBarra());
@@ -624,7 +666,7 @@
         renderFormatBar(formatBar, info);
     }
     /** Grupo "Exibir": zoom, enquadramento, layout, espaçamento, tema e estilo por nível. */
-    function grupoExibir(grafo) {
+    function grupoExibir(grafo, gradeLigado) {
         const g = grupoBarra('exibir', 'Exibir');
         g.append(btnIcone('zoom-out', 'zoom-menos', 'Diminuir zoom', 'zoom-out'));
         const rotuloZoom = criar('span', 'mapa-zoom-atual', '100%');
@@ -634,6 +676,11 @@
         g.append(btnIcone('centralizar', 'centralizar', 'Centralizar', 'centralizar'));
         g.append(btnIcone('fit', 'fit', 'Ajustar à tela', 'fit'));
         g.append(btnIcone('raiz', 'raiz', 'Ir para a raiz', 'ir-raiz'));
+
+        // Grade (pontinhos) da superfície: OPCIONAL, desligada por padrão.
+        const gradeBtn = btnIcone('grade', 'grade', 'Mostrar grade (pontinhos)', 'alternar-grade', null, 'mapaGradeBtn');
+        gradeBtn.setAttribute('aria-pressed', String(Boolean(gradeLigado)));
+        g.append(gradeBtn);
 
         const layoutSel = document.createElement('select');
         layoutSel.id = 'mapaLayout';
@@ -719,14 +766,14 @@
     /** Barra de FORMATAÇÃO (contextual ao nó selecionado) — espelha a `#notesToolbar`. */
     function renderFormatBar(bar, info) {
         const selecionados = (info && info.selecionados) || new Set();
-        if (!selecionados.size) { bar.hidden = true; return; }
-        const grafo = info.grafo;
+        // Espelha a barra de formatação de Notas: SEMPRE visível com o mapa aberto,
+        // mesmo sem nó selecionado — aí os controles ficam desabilitados até haver seleção.
+        const grafo = (info && info.grafo) || null;
         const lista = [...selecionados];
         const no = grafo ? (grafo.nos || []).find(item => item.id === lista[lista.length - 1]) : null;
-        if (!no) { bar.hidden = true; return; }
         bar.hidden = false;
         const m = global.MapaMentalModelo;
-        const efetivo = (m && m.estiloEfetivo) ? m.estiloEfetivo(grafo, no) : {};
+        const efetivo = (m && m.estiloEfetivo && no) ? m.estiloEfetivo(grafo, no) : {};
 
         // ---- Texto: MESMOS ícones da barra de Notas (negrito/itálico) ----
         const gTexto = grupoBarra('fmt-texto', 'Texto');
@@ -1040,6 +1087,8 @@
         const canvas = criar('div', 'mapa-canvas');
         canvas.id = 'mapaCanvas';
         canvas.tabIndex = 0;
+        // Grade (pontinhos) OPCIONAL — desligada por padrão (espelha o editor de Notas).
+        if (dados.grade) canvas.classList.add('mapa-grade');
         canvas.setAttribute('role', 'application');
         canvas.setAttribute('aria-keyshortcuts', 'Enter Tab Insert F2 Delete');
         canvas.setAttribute('aria-label', 'Área de trabalho do mapa');

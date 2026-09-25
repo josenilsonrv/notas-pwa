@@ -16,7 +16,8 @@
         pastaAtiva: 'notas-pwa-pasta-ativa',
         split: 'notas-pwa-split',
         atalhos: 'notas-pwa-mapa-atalhos',
-        barra: 'notas-pwa-mapa-toolbar-order'
+        barra: 'notas-pwa-mapa-toolbar-order',
+        grade: 'notas-pwa-mapa-grade'
     };
     const TETO_RECENTES = 20;
     const chaveGrafo = id => 'notas-pwa-mapa-' + id;
@@ -42,6 +43,13 @@
     const lerAreaAtiva = () => { const valor = ler(CHAVES.area, 'pastas'); return AREAS.includes(valor) ? valor : 'pastas'; };
     const salvarAreaAtiva = area => gravar(CHAVES.area, AREAS.includes(area) ? area : 'notas');
     // 🔄 [FIM: MAPA - ÁREA ATIVA]
+
+    // 🔄 [INÍCIO: MAPA - GRADE DA SUPERFÍCIE]
+    /** Grade (pontinhos) da superfície de edição: OPCIONAL, desligada por padrão
+     *  (sem grade o campo se parece com o editor de Notas). */
+    const lerGrade = () => ler(CHAVES.grade, false) === true;
+    const salvarGrade = ligado => gravar(CHAVES.grade, Boolean(ligado));
+    // 🔄 [FIM: MAPA - GRADE DA SUPERFÍCIE]
 
     // 🔄 [INÍCIO: MAPA - ATALHOS (FASE 10)]
     /** Preferências de atalho do usuário: `{ acaoId: ['ctrl+d', ...] }` (o resto usa o padrão). */
@@ -335,6 +343,7 @@
     global.MapaMentalStore = {
         CHAVES, chaveGrafo, chaveHistorico,
         lerAreaAtiva, salvarAreaAtiva,
+        lerGrade, salvarGrade,
         lerAtalhos, salvarAtalhos, limparAtalhos,
         lerOrdemBarra, salvarOrdemBarra, limparOrdemBarra,
         listarMapas, salvarListaMapas, obterResumo, criarMapa, obterGrafo, salvarGrafo,
