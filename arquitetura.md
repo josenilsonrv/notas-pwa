@@ -2,7 +2,7 @@
 
 > **Como ler:** cada seção `# Nome do Arquivo` lista os blocos por **fluxo lógico** (não pela ordem física). Use `[Linhas XX-YY ~]` para localizar, a **âncora** (1º comentário real) para confirmar e a **assinatura** para pedir o trecho exato.
 > **Manutenção:** ao alterar código, atualize as linhas `~` e as assinaturas afetadas.
-> **⚠️ Regras obrigatórias:** antes de editar, leia **`.clinerules/marcacao-e-arquitetura.md`** (padrão de marcação + Regra de Ouro de atualizar esta bússola).
+> **⚠️ Regras obrigatórias:** antes de editar, leia **`.clinerules/regras-de-edicao.md`** (padrão de marcação + Regra de Ouro de atualizar esta bússola).
 
 **Partes:** `1) Boot/Shell` ✅ · `2) Motor Notas` ✅ · `3) Tabelas` ✅ · `4) Mapa Mental` ✅ · `5) Testes/Ferramentas` ✅
 **Ordem de carga (`index.html`):** `notes/editor.js` → `notes/table-math.js` → `notes/extras.js` → `notes/tables.js` → `app.js` → `mapa/*.js`.

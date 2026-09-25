@@ -1,24 +1,14 @@
-# Guia para Agentes AI - Notas PWA
-
-Este documento fornece contexto completo para agentes AI que trabalharão neste projeto.
-
-## ⚠️ LEIA ANTES DE EDITAR — Marcação de código e Bússola de Arquitetura
-
-1. Ler **`.clinerules/regras-de-edicao.md`** — regras obrigatórias de marcação (`[INÍCIO:]/[FIM:]`, prefixo de comentário por linguagem, vocabulário de emoji semântico, regras de testes/ferramentas) e da **Regra de Ouro** de atualização da bússola.
-2. Consultar **`arquitetura.md`** (Bússola) e os marcadores no código (`Ctrl+Shift+F` por `[INÍCIO:`) para localizar o bloco exato — **não** pedir/editar arquivos inteiros.
-3. Depois de qualquer alteração: atualizar `arquitetura.md` no trecho afetado, validar (`node --check <arquivo>`) e rodar o teste da área (`node tests/<arquivo>.cjs`).
-
-## 📐 Regras de edição — marcação de código e manutenção da bússola (obrigatório)
-
+# Regras de edição — marcação de código e manutenção da Bússola de Arquitetura
+
 > ⚠️ **LEIA ISTO ANTES DE QUALQUER EDIÇÃO.** Vale para todo arquivo de código do projeto, para qualquer IA ou pessoa.
 
-### 1. Fluxo obrigatório antes de editar
+## 1. Fluxo obrigatório antes de editar
 1. Ler este arquivo **inteiro**.
 2. Abrir `arquitetura.md` (Bússola) e localizar o bloco pela **âncora** + **assinatura**.
 3. Trabalhar **por blocos**: perguntar/citar apenas o trecho exato via `[Linhas XX-YY ~]` — nunca pedir o arquivo inteiro.
 4. Ao alterar, **preservar** os marcadores do bloco e fechá-los com o MESMO nome.
 
-### 2. Padrão de marcação (obrigatório em código)
+## 2. Padrão de marcação (obrigatório em código)
 ```
 <prefixo de comentário> <emoji> [INÍCIO: PREFIXO - NOME]
 ... bloco ...
@@ -62,7 +52,7 @@ Este documento fornece contexto completo para agentes AI que trabalharão neste 
 - **Não marcar** arquivos que não aceitam comentário: `manifest.json`, `package.json`, `package-lock.json`, `icon.svg`, `.png`.
 - **Não** documentar/alterar `node_modules/`, `docs/*.json` (relatórios gerados).
 
-### 3. Depois de editar (obrigatório — Regra de Ouro)
+## 3. Depois de editar (obrigatório — Regra de Ouro)
 1. Atualizar `arquitetura.md` no trecho afetado: `[Linhas XX-YY ~]`, âncora e assinatura.
 2. Se o bloco foi criado/removido/movido, ajustar também os índices do doc.
 3. Validar sintaxe: `node --check <arquivo>`; e comportamento: `node tests/<arquivo>.cjs` (ou `npm test`).
@@ -73,55 +63,18 @@ Este documento fornece contexto completo para agentes AI que trabalharão neste 
    (contagem de `CIO:` = contagem de `[FIM:`).
 5. Se a mudança alterar linhas de blocos **posteriores**, atualizar as faixas deles também.
 
-### 4. Estrutura da Bússola (`arquitetura.md`)
+## 4. Estrutura da Bússola (`arquitetura.md`)
 - `# Nome do Arquivo: <caminho>` — um por arquivo/área.
 - `**Propósito:**` — 1 linha cirúrgica.
 - `## Implementação: <fluxo>` — agrupado por **fluxo lógico** (não pela ordem física).
 - Bloco: `- **[Linhas XX-YY ~]** \`âncora real do código\` -> \`assinatura\``
 - No fim: **rodapé fixo** (não remover nem reescrever).
 
-### 5. Onde está o que
+## 5. Onde está o que
 | Item | Caminho |
 |---|---|
 | Bússola | `arquitetura.md` |
 | Mapa do motor de notas (paridade com o original) | `tests/parity_*.cjs` + `docs/RASTREABILIDADE.md` |
 | Relatórios de teste (gerados) | `docs/RELATORIO-TESTES.md`, `docs/relatorio-testes.json` |
 | Testes | `node tests/run-all.cjs` (ou um arquivo: `node tests/<nome>.cjs`) |
-| Ferramentas | `tools/*.cjs` (ex.: `tools/extrair-tema.cjs`, `tools/portar-testes.cjs`) |
-
-## 🎯 Visão Geral do Sistema
-
-PWA vanilla-JS (sem build, sem dependências de runtime) com duas áreas: **Notas** (editor hierárquico) e **Mapa Mental**. Service Worker offline-first.
-
-### Arquitetura Principal
-
-| Camada | Arquivos |
-|---|---|
-| Casca / boot | `index.html`, `app.js`, `sw.js`, `manifest.json` |
-| Motor de notas | `notes/editor.js`, `notes/extras.js`, `notes/tables.js`, `notes/table-math.js` (+ CSS) |
-| Mapa mental | `mapa/mapa.js`, `mapa-modelo.js`, `mapa-store.js`, `mapa-layout.js`, `mapa-render.js`, `mapa-painel.js`, `mapa-interacao.js` (+ `mapa.css`) |
-| Temas | `styles.css`, `theme-origem.css` (**gerado**) |
-| Testes | `tests/*.cjs` + `tests/run-all.cjs` |
-| Ferramentas | `tools/*.cjs` |
-
-### Comandos
-
-```bash
-npm test                       # suite completa (Playwright + Edge)
-node tests/<arquivo>.cjs        # um teste isolado
-npm run rastreabilidade         # docs/INVENTARIO-REGRAS.md + RASTREABILIDADE.md
-npm run icones                  # regenera icon-192/512.png
-```
-
-### 🚫 Não alterar
-- `node_modules/`
-- Arquivos gerados: `theme-origem.css` (use `tools/extrair-tema.cjs`), `docs/*.json` (relatórios de teste/paridade), `icon-192.png`, `icon-512.png`
-
-### Onde está o que
-
-| Item | Caminho |
-|---|---|
-| Bússola de arquitetura | `arquitetura.md` |
-| Regras de marcação | `.clinerules/regras-de-edicao.md` |
-| Mapa do motor (paridade com o original) | `tests/parity_*.cjs` + `docs/RASTREABILIDADE.md` |
-| Relatórios de teste (gerados) | `docs/RELATORIO-TESTES.md`, `docs/relatorio-testes.json` |
+| Ferramentas | `tools/*.cjs` (ex.: `tools/extrair-tema.cjs`, `tools/portar-testes.cjs`) |
