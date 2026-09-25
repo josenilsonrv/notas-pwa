@@ -65,6 +65,21 @@ const servidor=http.createServer((req,res)=>{
   assert.ok(registro,'service worker registrado');
   assert.ok(registro.ativo,'service worker ativo');
   assert.equal(await page.evaluate(()=>window.__notasPronto===true),true,'app iniciou controlado pelo service worker');
+  // Update notification: SW avisa as abas, cabeçalhos sem cache e aviso VISÍVEL ao usuário.
+  assert.ok(sw.texto.includes('SW_ATIVADO'),'activate avisa as abas com a mensagem SW_ATIVADO');
+  assert.ok(/no-store/.test(cabecalhos),'_headers impede o sw.js de ficar retido em cache');
+  assert.ok(fs.readFileSync(path.join(raiz,'app.js'),'utf8').includes('installAtualizacaoPWA'),'app.js instala a atualizacao do PWA');
+  const aviso=await page.evaluate(()=>{
+    const app=window.notesApp;
+    app.recarregarParaNovaVersao=()=>{ /* nao recarrega durante o teste */ };
+    app.avisarNovaVersao(null);
+    const caixa=document.querySelector('.app-toast.is-update');
+    const resultado={existe:!!caixa,botao:caixa?caixa.querySelector('.app-toast-action').textContent:''};
+    if(caixa) caixa.remove();
+    return resultado;
+  });
+  assert.equal(aviso.existe,true,'aviso de nova versao aparece na tela');
+  assert.equal(aviso.botao,'Atualizar agora','aviso traz o botao "Atualizar agora"');
   assert.deepEqual(erros,[],'sem erros de pagina');
   console.log('OK: sw.js na raiz servido como JavaScript (fora do fallback de SPA), registro com updateViaCache none e app inicia controlado');
  }finally{await browser.close();servidor.close();}

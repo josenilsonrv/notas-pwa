@@ -695,3 +695,24 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
   (P3/P20/P61) e, ao testar logo após o deploy, abrir `/reparar.html` no aparelho para limpar o cache;
   falha de módulo NUNCA pode deixar a área vazia (aviso visível obrigatório).
 - **Teste**: `tests/mapa_area.cjs` cobre a blindagem (falha visível + recuperação ao religar a área).
+
+### P63 — Atualização do app em produção (update notification + sw.js sem cache)
+- **Sintoma**: mudanças no PWA apareciam no `localhost` mas **não** no site publicado (celular/PWA).
+- **Causa**: Service Worker offline-first com **cache-first**; sem um fluxo explícito de atualização,
+  o cliente fica preso na versão antiga (P3). O `sw.js` também nunca pode vir do cache HTTP.
+- **Correção**:
+  - `sw.js`: `skipWaiting()` no install + `clients.claim()` no activate e, no `activate`,
+    `postMessage({ type: 'SW_ATIVADO' })` para as abas (novo).
+  - `app.js`: `installAtualizacaoPWA`/`verificarAtualizacaoSW` — deteta `updatefound`/`statechange`,
+    `controllerchange` e a mensagem `SW_ATIVADO`, mostra o aviso `.app-toast.is-update`
+    ("Nova versão disponível" + **Atualizar agora**) e **recarrega UMA vez**
+    (`window.__notasRecarregando`); verifica atualização a cada 60 s (sessões longas).
+  - `styles.css`: `.app-toast.is-update` + `.app-toast-action`.
+  - `index.html`: o reload de `controllerchange` respeita `window.__notasRecarregando` (sem reload duplo).
+  - `_headers`: `/sw.js` com **`Cache-Control: no-store, no-cache, must-revalidate`** (nunca retido em cache).
+- **Mitigação p/ novas fases**: todo asset cacheado que muda exige **bump do `CACHE_NAME`**
+  (P3/P20/P61/P62) e o `sw.js` nunca pode ser cacheado pelo host/CDN.
+- **Teste**: `tests/pwa_service_worker.cjs` cobre `SW_ATIVADO`, o header `no-store` e o aviso visível.
+
+### P64 — Asset do Service Worker (bump)
+- **Regra**: mudaram `sw.js`, `app.js`, `styles.css` e `index.html` ⇒ **`CACHE_NAME` v43 → v44**.

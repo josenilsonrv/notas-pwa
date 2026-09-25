@@ -150,6 +150,8 @@ class NotesPWA {
         // Área do app (Notas | Mapa Mental): só agora ligamos o seletor e aplicamos a
         // área salva — o mapa continua em montagem lazy na primeira entrada.
         if (typeof this.inicializarAreasMapa === 'function') this.inicializarAreasMapa();
+        // Atualização do app: avisa/recarrega quando o Service Worker publicar versão nova.
+        if (typeof this.verificarAtualizacaoSW === 'function') this.verificarAtualizacaoSW();
         // ⚡ [FIM: PWA - BARRA DE FERRAMENTAS INLINE/EDIÇÃO + TECLADO]
         // 🔄 [FIM: ESTADO - MIGRAÇÃO/ABERTURA DA ÚLTIMA NOTA]
     }
@@ -164,6 +166,9 @@ class NotesPWA {
         // Área do Mapa Mental: instala a troca de áreas (o mapa em si monta lazy).
         // Guardado: os harnesses de paridade/shortcuts não carregam mapa/*.js.
         if (typeof installMapaMental === 'function') installMapaMental(NotesPWA);
+        // Atualização do app: deteta uma versão nova do Service Worker e recarrega
+        // (update notification) — ver bloco "PWA - ATUALIZAÇÃO DO APP".
+        if (typeof installAtualizacaoPWA === 'function') installAtualizacaoPWA(NotesPWA);
         // Modo mobile: toolbar superior oculta por padrao e colapso agindo nos chips.
         installModoMobileNotas(NotesPWA);
     }
@@ -1419,6 +1424,91 @@ function installAjustesNotaGrande(App) {
 }
 
 // 🔄 [FIM: PWA - AJUSTES DE NOTA GRANDE (installAjustesNotaGrande)]
+
+// 🚀 [INÍCIO: PWA - ATUALIZAÇÃO DO APP (UPDATE NOTIFICATION)]
+/**
+ * Garante que uma versão NOVA publicada chegue ao dispositivo (o clássico "funciona só
+ * no localhost"): o `sw.js` faz `skipWaiting()` no install e `clients.claim()` no activate;
+ * AQUI detetamos a versão nova (`updatefound`/`statechange`, `controllerchange` e a
+ * mensagem `SW_ATIVADO`), avisamos o usuário e recarregamos UMA vez para aplicar o código.
+ * Também verifica atualização a cada 60 s (sessões longas no celular).
+ */
+function installAtualizacaoPWA(App) {
+    if (!App || !App.prototype) return false;
+
+    /** Recarrega uma única vez (`window.__notasRecarregando` evita recargas em loop). */
+    App.prototype.recarregarParaNovaVersao = function () {
+        if (window.__notasRecarregando) return;
+        window.__notasRecarregando = true;
+        location.reload();
+    };
+
+    /** Aviso VISÍVEL de versão nova, com botão "Atualizar agora". */
+    App.prototype.avisarNovaVersao = function (registration) {
+        if (document.querySelector('.app-toast.is-update')) return;
+        const regiao = document.getElementById('appToastRegion');
+        if (!regiao) { this.recarregarParaNovaVersao(); return; }
+        const aviso = document.createElement('div');
+        aviso.className = 'app-toast is-update';
+        aviso.setAttribute('role', 'status');
+        const texto = document.createElement('span');
+        texto.textContent = 'Nova versão disponível.';
+        const atualizar = document.createElement('button');
+        atualizar.type = 'button';
+        atualizar.className = 'app-toast-action';
+        atualizar.textContent = 'Atualizar agora';
+        atualizar.addEventListener('click', () => {
+            if (registration && registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            this.recarregarParaNovaVersao();
+        });
+        aviso.append(texto, atualizar);
+        regiao.append(aviso);
+        // Mesmo sem clique, aplica sozinho (o SW já assumiu o controle com skipWaiting).
+        setTimeout(() => this.recarregarParaNovaVersao(), 4000);
+    };
+
+    /** Liga a deteção e a reaplicação das atualizações do Service Worker. */
+    App.prototype.verificarAtualizacaoSW = function () {
+        if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+        const tinhaControlador = Boolean(navigator.serviceWorker.controller);
+        // Só recarrega se ESTA aba já era controlada (senão é a 1ª instalação).
+        const aplicar = () => { if (tinhaControlador) this.recarregarParaNovaVersao(); };
+
+        // (1) Um Service Worker NOVO assumiu o controle desta aba.
+        navigator.serviceWorker.addEventListener('controllerchange', aplicar);
+        // (2) O próprio SW avisa, no activate, que a versão nova está no controle.
+        navigator.serviceWorker.addEventListener('message', evento => {
+            if (evento.data && evento.data.type === 'SW_ATIVADO') aplicar();
+        });
+
+        navigator.serviceWorker.getRegistration().then(registration => {
+            if (!registration) return;
+            const observar = trabalhador => {
+                if (!trabalhador) return;
+                trabalhador.addEventListener('statechange', () => {
+                    if (trabalhador.state === 'installed' && navigator.serviceWorker.controller) {
+                        this.avisarNovaVersao(registration);
+                    }
+                });
+            };
+            registration.addEventListener('updatefound', () => observar(registration.installing));
+            observar(registration.installing);
+            if (registration.waiting && navigator.serviceWorker.controller) this.avisarNovaVersao(registration);
+        }).catch(() => { /* sem registro: o index.html registra no load */ });
+
+        // (3) Sessões longas: procura atualização a cada 60 s (o index.html também
+        //     verifica ao carregar e ao voltar para a aba).
+        setInterval(() => {
+            if (!navigator.serviceWorker.controller) return;
+            navigator.serviceWorker.getRegistration()
+                .then(registration => registration && registration.update())
+                .catch(() => { /* offline: tenta depois */ });
+        }, 60000);
+    };
+
+    return true;
+}
+// 🚀 [FIM: PWA - ATUALIZAÇÃO DO APP (UPDATE NOTIFICATION)]
 
 // 🚀 [INÍCIO: PWA - BOOT (DOMContentLoaded)]
 // Inicializar a aplicação quando o DOM estiver pronto

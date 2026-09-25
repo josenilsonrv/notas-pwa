@@ -385,6 +385,30 @@ html #notesModal #notesEditorContainer {
     color: var(--color-neon-red);
 }
 
+/* Aviso de NOVA VERSÃO do app (update notification): precisa de clique, então o
+   toast volta a aceitar ponteiro (a região é `pointer-events: none`). */
+.app-toast.is-update {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-color: var(--color-neon-blue);
+    pointer-events: auto;
+}
+
+.app-toast-action {
+    flex: none;
+    padding: 6px 12px;
+    border: 1px solid var(--color-neon-blue);
+    border-radius: 8px;
+    background: var(--color-neon-blue);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
 @keyframes app-toast-in {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }

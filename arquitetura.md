@@ -34,12 +34,12 @@
 ## Implementação: Carga de módulos e registro do Service Worker
 - **[Linhas 204-209 ~]** `<!-- 🚀 [INÍCIO: PWA - CARGA DE MÓDULOS E SERVICE WORKER] -->` -> `<script src="./notes/editor.js"> … <script src="./app.js">`
 - **[Linhas 210-217 ~]** `(sem comentário de ancoragem)` -> `<script src="./mapa/mapa-modelo.js"> … <script src="./mapa/mapa.js">` (inclui `mapa-cores.js`)
-- **[Linhas 217-272 ~]** `/* Service Worker.` -> `(function () { var SW_URL = new URL('sw.js', ...); … })();`
+- **[Linhas 217-273 ~]** `/* Service Worker.` -> `(function () { var SW_URL = new URL('sw.js', ...); … })();` (registro com `updateViaCache: 'none'`; `controllerchange` recarrega 1× — plano B do update notification do `app.js`)
 
 ---
 
 # Nome do Arquivo: app.js
-**Propósito:** Aplicação principal (`NotesPWA` + `ThemeManager`). Instala o motor de notas no protótipo, faz a persistência local (LocalStorage), a UI de múltiplas notas (chips), a toolbar PWA (ordem + teclado) e os ajustes para notas grandes.
+**Propósito:** Aplicação principal (`NotesPWA` + `ThemeManager`). Instala o motor de notas no protótipo, faz a persistência local (LocalStorage), a UI de múltiplas notas (chips), a toolbar PWA (ordem + teclado), os ajustes para notas grandes e a ATUALIZAÇÃO do app (update notification).
 
 ## Implementação: Boot, tema e limites de nota grande
 - **[Linhas 1-5 ~]** `// NOTAS PWA - Aplicação Principal (100% no dispositivo)` -> cabeçalho do módulo
@@ -47,57 +47,58 @@
 - **[Linhas 19-83 ~]** `// 🔄 [INÍCIO: PWA - TEMA (ThemeManager)]` -> `class ThemeManager` (`getStoredTheme` / `getSystemTheme` / `bindEvents` / `applyTheme(theme, animate = true)`)
 - **[Linhas 85-91 ~]** `// 🔄 [INÍCIO: PWA - APLICAÇÃO (NotesPWA boot/instalação)]` -> `class NotesPWA {`
 - **[Linhas 92-129 ~]** `(constructor)` -> `constructor()` (estado do editor, histórico, toolbar; `this.themeManager = new ThemeManager()` → `this.init()`)
-- **[Linhas 130-157 ~]** `// 🔄 [INÍCIO: ESTADO - MIGRAÇÃO/ABERTURA DA ÚLTIMA NOTA]` -> `init()` (migra nota única → lista; aplica área salva; `window.__notasPronto`)
-- **[Linhas 158-170 ~]** `/** Instala o mesmo motor de notas do sistema sobre este protótipo. */` -> `installNotesFeatures()`
-- **[Linhas 1423-1428 ~]** `// 🔄 [INÍCIO: PWA - BOOT (DOMContentLoaded)]` -> `document.addEventListener('DOMContentLoaded', () => { window.notesApp = new NotesPWA(); });`
+- **[Linhas 130-157 ~]** `// 🔄 [INÍCIO: ESTADO - MIGRAÇÃO/ABERTURA DA ÚLTIMA NOTA]` -> `init()` (migra nota única → lista; aplica área salva; `window.__notasPronto`; liga `verificarAtualizacaoSW()`)
+- **[Linhas 159-174 ~]** `/** Instala o mesmo motor de notas do sistema sobre este protótipo. */` -> `installNotesFeatures()` (+ `installAtualizacaoPWA`)
+- **[Linhas 1428-1511 ~]** `// 🚀 [INÍCIO: PWA - ATUALIZAÇÃO DO APP (UPDATE NOTIFICATION)]` -> `installAtualizacaoPWA(App)` (`recarregarParaNovaVersao` · `avisarNovaVersao` · `verificarAtualizacaoSW`: `updatefound`/`statechange` + `controllerchange` + mensagem `SW_ATIVADO` + `setInterval` 60 s)
+- **[Linhas 1513-1518 ~]** `// 🚀 [INÍCIO: PWA - BOOT (DOMContentLoaded)]` -> `document.addEventListener('DOMContentLoaded', () => { window.notesApp = new NotesPWA(); });`
 
 ## Implementação: Persistência local (sem backend)
-- **[Linhas 173-198 ~]** `// 🔄 [INÍCIO: ESTADO - PERSISTÊNCIA LOCAL (SEM BACKEND)]` -> `loadContentFromStorage()` · `saveContentToStorage(html)`
-- **[Linhas 199-227 ~]** `// 🔄 [INÍCIO: ESTADO - MÚLTIPLAS NOTAS LOCAIS]` -> `lerNotasLocais()`
-- **[Linhas 228-236 ~]** `/** Seam de persistência das notas.` -> `notasBackend()` (`listar` / `obter` / `salvar`)
-- **[Linhas 237-260 ~]** `/** Grava a lista de notas e o id da nota ativa no dispositivo. */` -> `gravarNotasLocais(lista)` · `salvarNotasLocais()` · `marcarNotaAtiva(id)` · `lerNotaAtiva()`
-- **[Linhas 264-295 ~]** `/** Substitui o cliente HTTP do sistema: qualquer gravação fica no dispositivo. */` -> `async apiCall(endpoint, options = {})` · `persistNow()`
+- **[Linhas 178-203 ~]** `// 🔄 [INÍCIO: ESTADO - PERSISTÊNCIA LOCAL (SEM BACKEND)]` -> `loadContentFromStorage()` · `saveContentToStorage(html)`
+- **[Linhas 204-232 ~]** `// 🔄 [INÍCIO: ESTADO - MÚLTIPLAS NOTAS LOCAIS]` -> `lerNotasLocais()`
+- **[Linhas 233-241 ~]** `/** Seam de persistência das notas.` -> `notasBackend()` (`listar` / `obter` / `salvar`)
+- **[Linhas 242-265 ~]** `/** Grava a lista de notas e o id da nota ativa no dispositivo. */` -> `gravarNotasLocais(lista)` · `salvarNotasLocais()` · `marcarNotaAtiva(id)` · `lerNotaAtiva()`
+- **[Linhas 269-300 ~]** `/** Substitui o cliente HTTP do sistema: qualquer gravação fica no dispositivo. */` -> `async apiCall(endpoint, options = {})` · `persistNow()`
 
 ## Implementação: Abrir/editar nota no modal
-- **[Linhas 297-339 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - ABRIR NOTAS]` -> `openNotesModal(id)`
-- **[Linhas 340-343 ~]** `(sem comentário de ancoragem)` -> `openStageNotesModal(stageId)`
-- **[Linhas 525-539 ~]** `// Placeholders chamados pelo motor antes de serem substituídos pelo install.` -> `closeNotesModal()` · `setupModalListeners()` · `toggleNotesFullscreen()` · `toggleNotesHeaderCollapse()`
-- **[Linhas 541-563 ~]** `/**` (doc de `placeNotesCursorAtEnd`) -> `placeNotesCursorAtEnd(editor)`
-- **[Linhas 564-592 ~]** `/**` (doc de `focusNotesEditorFromEmptyArea`) -> `focusNotesEditorFromEmptyArea(event)`
-- **[Linhas 593-619 ~]** `/**` (doc de `rolarCaretParaAcima`) -> `rolarCaretParaAcima()`
-- **[Linhas 620-643 ~]** `/**` (doc de `quebrarLinhaDeEmergencia`) -> `quebrarLinhaDeEmergencia()`
+- **[Linhas 302-344 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - ABRIR NOTAS]` -> `openNotesModal(id)`
+- **[Linhas 345-348 ~]** `(sem comentário de ancoragem)` -> `openStageNotesModal(stageId)`
+- **[Linhas 530-544 ~]** `// Placeholders chamados pelo motor antes de serem substituídos pelo install.` -> `closeNotesModal()` · `setupModalListeners()` · `toggleNotesFullscreen()` · `toggleNotesHeaderCollapse()`
+- **[Linhas 546-568 ~]** `/**` (doc de `placeNotesCursorAtEnd`) -> `placeNotesCursorAtEnd(editor)`
+- **[Linhas 569-597 ~]** `/**` (doc de `focusNotesEditorFromEmptyArea`) -> `focusNotesEditorFromEmptyArea(event)`
+- **[Linhas 598-624 ~]** `/**` (doc de `rolarCaretParaAcima`) -> `rolarCaretParaAcima()`
+- **[Linhas 625-648 ~]** `/**` (doc de `quebrarLinhaDeEmergencia`) -> `quebrarLinhaDeEmergencia()`
 ## Implementação: Múltiplas notas (chips + botão "+")
-- **[Linhas 344-393 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - MÚLTIPLAS NOTAS (CHIPS + BOTÃO "+")]` -> `renderNotesNav()`
-- **[Linhas 394-413 ~]** `/**` (doc de `accentDaNota`) -> `accentDaNota(nota)` · `invalidarAccentDaNota(id)`
-- **[Linhas 414-447 ~]** `/** Cria uma nota nova em branco e abre em seguida (o motor salva a anterior). */` -> `criarNota()` · `criarNotaLocal(nome = 'Nova nota')` · `renomearNota(id)`
-- **[Linhas 448-474 ~]** `/** Exclui a nota, sempre com confirmação; se for a última, cria uma vazia. */` -> `async excluirNota(id)`
-- **[Linhas 475-524 ~]** `/** Pequeno menu de ações da nota (renomear/excluir), aberto pelo chip. */` -> `abrirMenuNota(nota, chip)` · `fecharMenuNota()` · `setupChipLongPress(chip, nota)`
+- **[Linhas 349-398 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - MÚLTIPLAS NOTAS (CHIPS + BOTÃO "+")]` -> `renderNotesNav()`
+- **[Linhas 399-418 ~]** `/**` (doc de `accentDaNota`) -> `accentDaNota(nota)` · `invalidarAccentDaNota(id)`
+- **[Linhas 419-452 ~]** `/** Cria uma nota nova em branco e abre em seguida (o motor salva a anterior). */` -> `criarNota()` · `criarNotaLocal(nome = 'Nova nota')` · `renomearNota(id)`
+- **[Linhas 453-479 ~]** `/** Exclui a nota, sempre com confirmação; se for a última, cria uma vazia. */` -> `async excluirNota(id)`
+- **[Linhas 480-529 ~]** `/** Pequeno menu de ações da nota (renomear/excluir), aberto pelo chip. */` -> `abrirMenuNota(nota, chip)` · `fecharMenuNota()` · `setupChipLongPress(chip, nota)`
 
 ## Implementação: Seleção, avisos e listeners gerais
-- **[Linhas 644-664 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - SELEÇÃO DE NOTAS]` -> `rememberNotesSelection()`
-- **[Linhas 658-665 ~]** `(sem comentário de ancoragem)` -> `updateNotesHistoryButtons()`
-- **[Linhas 666-685 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - AVISOS]` -> `showToast(message, type = 'success')` · `updateSaveStatus(text, isError = false)`
-- **[Linhas 687-740 ~]** `// Comandos da toolbar (undo/redo, headings, listas, cores, etc.)` -> `setupEventListeners()` (keydown/atalhos + blindagem do Enter)
-- **[Linhas 741-747 ~]** `(sem comentário de ancoragem)` -> `setupResize()`
+- **[Linhas 649-669 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - SELEÇÃO DE NOTAS]` -> `rememberNotesSelection()`
+- **[Linhas 663-670 ~]** `(sem comentário de ancoragem)` -> `updateNotesHistoryButtons()`
+- **[Linhas 671-690 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - AVISOS]` -> `showToast(message, type = 'success')` · `updateSaveStatus(text, isError = false)`
+- **[Linhas 692-745 ~]** `// Comandos da toolbar (undo/redo, headings, listas, cores, etc.)` -> `setupEventListeners()` (keydown/atalhos + blindagem do Enter)
+- **[Linhas 746-752 ~]** `(sem comentário de ancoragem)` -> `setupResize()`
 
 ## Implementação: Toolbar PWA (ordem persistida + edição por arraste)
-- **[Linhas 748-764 ~]** `// ⚡ [INÍCIO: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]` -> `filhosToolbar()` · `chavesToolbar()`
-- **[Linhas 774-789 ~]** `(sem comentário de ancoragem)` -> `lerOrdemToolbar()` · `salvarOrdemToolbar(ordem)`
-- **[Linhas 790-849 ~]** `/**` (doc de `aplicarOrdemToolbar`) -> `aplicarOrdemToolbar(ordem = null, opcoes = {})` (trava de reentrância)
-- **[Linhas 850-864 ~]** `/** (Re)liga o observer da barra (ele fica desligado enquanto aplicamos a ordem). */` -> `agendarOrdemToolbar()`
-- **[Linhas 865-901 ~]** `/** Ativa a barra em uma linha com rolagem + botão de edição + ordem salva. */` -> `configurarToolbarPWA()` · `criarBotaoEditarToolbar(toolbar)` · `rotuloBotaoToolbar(el)`
-- **[Linhas 902-917 ~]** `/** Move um botão uma posição e persiste a nova ordem. */` -> `moverBotaoToolbar(el, delta)`
-- **[Linhas 918-1067 ~]** `/** Diálogo "Editar barra de ferramentas": reordena arrastando (ou pelo teclado) e persiste. */` -> `abrirEditorToolbar()`
-- **[Linhas 1068-1074 ~]** `(sem comentário de ancoragem)` -> `restaurarOrdemToolbar()`
+- **[Linhas 753-769 ~]** `// ⚡ [INÍCIO: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]` -> `filhosToolbar()` · `chavesToolbar()`
+- **[Linhas 779-794 ~]** `(sem comentário de ancoragem)` -> `lerOrdemToolbar()` · `salvarOrdemToolbar(ordem)`
+- **[Linhas 795-854 ~]** `/**` (doc de `aplicarOrdemToolbar`) -> `aplicarOrdemToolbar(ordem = null, opcoes = {})` (trava de reentrância)
+- **[Linhas 855-869 ~]** `/** (Re)liga o observer da barra (ele fica desligado enquanto aplicamos a ordem). */` -> `agendarOrdemToolbar()`
+- **[Linhas 870-906 ~]** `/** Ativa a barra em uma linha com rolagem + botão de edição + ordem salva. */` -> `configurarToolbarPWA()` · `criarBotaoEditarToolbar(toolbar)` · `rotuloBotaoToolbar(el)`
+- **[Linhas 907-922 ~]** `/** Move um botão uma posição e persiste a nova ordem. */` -> `moverBotaoToolbar(el, delta)`
+- **[Linhas 923-1072 ~]** `/** Diálogo "Editar barra de ferramentas": reordena arrastando (ou pelo teclado) e persiste. */` -> `abrirEditorToolbar()`
+- **[Linhas 1073-1079 ~]** `(sem comentário de ancoragem)` -> `restaurarOrdemToolbar()`
 
 ## Implementação: Toolbar acoplada ao teclado virtual
-- **[Linhas 1075-1142 ~]** `/** Mantém a barra logo acima do teclado virtual (visualViewport). */` -> `ativarToolbarTeclado()`
-- **[Linhas 1143-1194 ~]** `/**` (doc de `aplicarToolbarTeclado`) -> `aplicarToolbarTeclado(insetForcado)`
+- **[Linhas 1080-1147 ~]** `/** Mantém a barra logo acima do teclado virtual (visualViewport). */` -> `ativarToolbarTeclado()`
+- **[Linhas 1148-1199 ~]** `/**` (doc de `aplicarToolbarTeclado`) -> `aplicarToolbarTeclado(insetForcado)`
 
 ## Implementação: Modo mobile e módulos instaladores
-- **[Linhas 1203-1252 ~]** `// 🔄 [INÍCIO: PWA - MODO MOBILE (installModoMobileNotas)]` -> `function installModoMobileNotas(App)`
-- **[Linhas 1258-1370 ~]** `// 🔄 [INÍCIO: PWA - CAMADA LOCAL DE EXTRAS/TABELAS (installLocalNotesStorage)]` -> `function installLocalNotesStorage(App)`
-- **[Linhas 1380-1421 ~]** `// 🔄 [INÍCIO: PWA - AJUSTES DE NOTA GRANDE (installAjustesNotaGrande)]` -> `function installAjustesNotaGrande(App)`
+- **[Linhas 1208-1257 ~]** `// 🔄 [INÍCIO: PWA - MODO MOBILE (installModoMobileNotas)]` -> `function installModoMobileNotas(App)`
+- **[Linhas 1263-1375 ~]** `// 🔄 [INÍCIO: PWA - CAMADA LOCAL DE EXTRAS/TABELAS (installLocalNotesStorage)]` -> `function installLocalNotesStorage(App)`
+- **[Linhas 1385-1426 ~]** `// 🔄 [INÍCIO: PWA - AJUSTES DE NOTA GRANDE (installAjustesNotaGrande)]` -> `function installAjustesNotaGrande(App)`
 
 ---
 
@@ -105,23 +106,23 @@
 **Propósito:** Service Worker offline-first. Serve o cache na hora e revalida na rede com timeout, garantindo que o app nunca fique preso carregando.
 
 ## Implementação: Constantes, helpers e ciclo de vida
-- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v43';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./mapa/mapa-cores.js`)
+- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v44';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./mapa/mapa-cores.js`)
 - **[Linhas 19-20 ~]** `(sem comentário de ancoragem)` -> `const CACHE_NAME` · `const TIMEOUT_MS`
 - **[Linhas 22-32 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
 - **[Linhas 33-59 ~]** `/** Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
 - **[Linhas 60-109 ~]** `// 💾 [INÍCIO: PWA - HELPERS DE CACHE/FETCH (retry/timeout/revalidar)]` -> `adicionarComRetry` · `buscarComTimeout` · `guardarNoCache` · `revalidar`
 - **[Linhas 110-132 ~]** `// 🚀 [INÍCIO: PWA - INSTALL (CACHE INICIAL)]` -> `self.addEventListener('install', (event) => {...})` (aborta se algum essencial faltar)
-- **[Linhas 133-149 ~]** `// 🚀 [INÍCIO: PWA - ACTIVATE (LIMPEZA DE CACHES ANTIGOS)]` -> `self.addEventListener('activate', ...)` (limpa caches + `clients.claim()`)
+- **[Linhas 134-153 ~]** `// 🚀 [INÍCIO: PWA - ACTIVATE (LIMPEZA DE CACHES ANTIGOS)]` -> `self.addEventListener('activate', ...)` (limpa caches + `clients.claim()` + avisa as abas com `postMessage({ type: 'SW_ATIVADO' })` — base do update notification)
 
 ## Implementação: Estratégia de rede/cache em runtime
 - **[Linhas 62-80 ~]** `/** fetch + timeout + cache.put (evita travar a instalação com rede lenta/instável). */` -> `const adicionarComRetry = async (cache, asset, tentativas = 3) => {...}`
 - **[Linhas 81-92 ~]** `/** Busca na rede com limite de tempo (nunca deixa o carregamento pendurado). */` -> `const buscarComTimeout = (request, ms) => new Promise(...)`
 - **[Linhas 93-101 ~]** `/** Guarda a resposta no cache sem bloquear quem está esperando. */` -> `const guardarNoCache = (request, response) => {...}`
 - **[Linhas 102-108 ~]** `/** Revalida em segundo plano (stale-while-revalidate) sem bloquear a resposta. */` -> `const revalidar = (request) => {...}`
-- **[Linhas 150-189 ~]** `// 🚨 [INÍCIO: CRÍTICO - FETCH STRATEGY (CACHE-FIRST + TIMEOUT)]` -> `self.addEventListener('fetch', ...)` (cache → rede com timeout → fallback `index.html`/`OFFLINE_HTML`)
+- **[Linhas 155-193 ~]** `// 🚨 [INÍCIO: CRÍTICO - FETCH STRATEGY (CACHE-FIRST + TIMEOUT)]` -> `self.addEventListener('fetch', ...)` (cache → rede com timeout → fallback `index.html`/`OFFLINE_HTML`)
 
 ## Implementação: Mensagens do cliente
-- **[Linhas 190-207 ~]** `// 🔄 [INÍCIO: ESTADO/API - MESSAGE HANDLING]` -> `self.addEventListener('message', ...)` (`SKIP_WAITING`, `CACHE_UPDATED`)
+- **[Linhas 195-212 ~]** `// 🔄 [INÍCIO: ESTADO/API - MESSAGE HANDLING]` -> `self.addEventListener('message', ...)` (`SKIP_WAITING`, `CACHE_UPDATED`)
 
 ---
 
@@ -134,14 +135,14 @@
 # Nome do Arquivo: _redirects / _headers
 **Propósito:** Regras de deploy (Cloudflare Pages/Netlify) — impedem que `/sw.js` e `/manifest.json` caiam no fallback de SPA (SW servido como HTML é rejeitado em silêncio) e definem os cabeçalhos de cache/content-type.
 - **[Linhas 1-8 ~]** `# Cloudflare Pages / Netlify: regras avaliadas de cima para baixo.` -> `_redirects`: `/sw.js → /sw.js 200` · `/manifest.json → /manifest.json 200`
-- **[Linhas 1-21 ~]** `# Cloudflare Pages - regras de resposta HTTP` -> `_headers`: `Cache-Control: must-revalidate` + `Content-Type: application/javascript` e `Service-Worker-Allowed: /` para `/sw.js`
+- **[Linhas 1-21 ~]** `# Cloudflare Pages - regras de resposta HTTP` -> `_headers`: `Cache-Control: must-revalidate` para `/*` + para `/sw.js` `Cache-Control: no-store, no-cache, must-revalidate`, `Content-Type: application/javascript` e `Service-Worker-Allowed: /` (SW nunca retido em cache)
 
 ---
 
 # Nome do Arquivo: styles.css
 **Propósito:** CSS base do PWA (tokens de tema, cor da barra de status, base e componentes próprios). Distinto de `theme-origem.css` (tema portado do original).
-- **[Linhas 5-34 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - VARIÁVEIS DE TEMA] */` -> `:root { --color-* }` + tokens da barra de status (claro/escuro)
-- **[Linhas 35-794 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - BASE E COMPONENTES] */` -> `body`, `button` e componentes próprios do app
+- **[Linhas 5-36 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - VARIÁVEIS DE TEMA] */` -> `:root { --color-* }` + tokens da barra de status (claro/escuro)
+- **[Linhas 38-818 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - BASE E COMPONENTES] */` -> `body`, `button` e componentes próprios do app (inclui `.app-toast*` e o aviso de nova versão `.app-toast.is-update`/`.app-toast-action`)
 
 # Nome do Arquivo: theme-origem.css
 **Propósito:** Tema portado do CSS COMPILADO do projeto original (tokens + classes do sistema antigo). Regenerado por `tools/extrair-tema.cjs`.

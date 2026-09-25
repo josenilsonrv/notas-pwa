@@ -16,7 +16,7 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
-const CACHE_NAME = 'notas-pwa-v43';
+const CACHE_NAME = 'notas-pwa-v44';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -142,6 +142,10 @@ self.addEventListener('activate', (event) => {
         // Passa a controlar as abas ja abertas (sem esperar uma navegacao nova).
 
         await self.clients.claim();
+        // Avisa as abas ABERTAS de que a versao nova assumiu o controle: a pagina usa isso
+        // para mostrar "nova versao disponivel" e recarregar uma unica vez (update notification).
+        const clientes = await self.clients.matchAll({ type: 'window' });
+        clientes.forEach((client) => client.postMessage({ type: 'SW_ATIVADO', cacheName: CACHE_NAME }));
         console.log('Service Worker: ativado');
     })());
 });

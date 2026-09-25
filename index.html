@@ -264,8 +264,10 @@
                 });
             });
             // Assumiu um Service Worker NOVO? Recarrega uma vez para o app usar a versao nova.
+            // (O app.js também trata isso — este é o plano B caso o app não tenha iniciado.)
             navigator.serviceWorker.addEventListener('controllerchange', function () {
                 if (!tinhaControlador || recarregando) return;
+                if (window.__notasRecarregando) return; // o app já está atualizando/recarregando
                 recarregando = true;
                 location.reload();
             });
