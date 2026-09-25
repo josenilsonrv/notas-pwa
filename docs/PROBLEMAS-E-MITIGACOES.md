@@ -868,3 +868,18 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
   (`abrir nota` abre em lado a lado).
 - **Asset do Service Worker (bump)**: `CACHE_NAME` **v50 → v51** (mudaram `index.html`, `mapa/mapa.js`
   e `mapa/mapa.css`).
+
+### P77 — Lado a lado: o mapa aparecia "embaçado" (overlay do modal cobria a tela toda)
+- **Sintoma**: ao ligar "nota e mapa lado a lado", o mapa **não aparecia de fato** — o lado do mapa
+  ficava **embaçado**.
+- **Causa**: `theme-origem.css` define `html #notesModalBackdrop.notes-drawer { width: 100%; ... }` com
+  `background: rgba(0,0,0,.3) !important` e `backdrop-filter: blur(8px) !important`. O split só
+  ajustava `right: 50%`, mas com `width: 100%` fixado o `right` é **ignorado** (caixa sobre-restrita) →
+  o backdrop continuava com **largura total** e o overlay escuro/desfocado cobria o mapa.
+  Confirmado depurando: `getBoundingClientRect().width` do backdrop = **1280** (tela toda).
+- **Correção** (`mapa/mapa.css`, split): além de `left`/`right`, o backdrop recebe
+  `width: 50% !important` + `background: transparent !important` + `backdrop-filter: none !important`
+  (deixa de ser overlay e vira coluna). O lado do mapa (`left: 50%`) fica sem sobreposição.
+- **Blindagem**: `tests/split_view.cjs` passou a medir as caixas e afirmar que o `right` do backdrop
+  ≤ `left` do mapa e que cada painel ocupa metade da tela.
+- **Asset do Service Worker (bump)**: `CACHE_NAME` **v51 → v52** (mudou `mapa/mapa.css`).

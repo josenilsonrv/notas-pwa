@@ -110,6 +110,14 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(ligado.backdropAtivo, true, 'nota visível no split');
     assert.equal(ligado.notaDireita, false, 'nota começa à esquerda');
     assert.equal(await page.evaluate(() => window.app.mapaSplitLado), 'esquerda', 'lado padrão da nota = esquerda');
+    // O overlay do modal NÃO pode cobrir o mapa (senão ele fica "embaçado" atrás do blur).
+    const geometria = await page.evaluate(() => {
+      const b = document.getElementById('notesModalBackdrop').getBoundingClientRect();
+      const m = document.getElementById('mapaArea').getBoundingClientRect();
+      return { bRight: Math.round(b.right), mLeft: Math.round(m.left), bw: Math.round(b.width), mw: Math.round(m.width) };
+    });
+    assert.ok(geometria.bRight <= geometria.mLeft + 1, 'o overlay da nota fica só na metade da nota (não cobre o mapa)');
+    assert.ok(Math.abs(geometria.bw - geometria.mw) <= 2, 'cada painel ocupa metade da tela');
 
     // ---------------------------------------------------------------- 5) arrastar a barra troca os lados
     await page.evaluate(() => {
