@@ -1247,6 +1247,62 @@
         return true;
     }
 
+    /**
+     * Menus/telas flutuantes do mapa que devem FECHAR ao clicar fora deles.
+     * `gatilhos` = seletores do(s) botão(ões) que ABRE(M) o menu (clicar nele NÃO fecha —
+     * ele mesmo alterna o estado). `somenteEstado` = não remover o nó (caso do `<details>`).
+     *
+     * ⚠️ Fechamos removendo o nó do DOM + limpando o estado, SEM chamar `renderArea` —
+     * mesmo padrão do fechamento do menu contextual. Assim nada que esteja digitado no
+     * painel de propriedades se perde por causa do clique fora.
+     */
+    const MENUS_FLUTUANTES = [
+        { seletor: '#mapaMenu', gatilhos: [], fechar: app => { app.mapaMenuNo = null; app.mapaMenuCanvas = null; } },
+        { seletor: '#mapaMenuOpcoes', gatilhos: ['[data-mapa-acao="barra-menu"]'], fechar: app => { app.mapaMenuBarra = null; } },
+        { seletor: '#mapaConexaoMenu', gatilhos: ['[data-mapa-acao="cx-menu"]'], fechar: app => { app.mapaConexaoMenuId = null; } },
+        {
+            seletor: '#mapaAtalhos', gatilhos: ['[data-mapa-acao="atalhos-abrir"]'],
+            fechar: app => { app.mapaAtalhosAberto = false; app.mapaAtalhoCapturando = null; app.mapaAtalhoAviso = ''; }
+        },
+        { seletor: '#mapaBarraEditor', gatilhos: ['[data-mapa-acao="barra-editar"]'], fechar: app => { app.mapaBarraAberta = false; } },
+        // Overflow "Mais" é um `<details>`: fechar = tirar o `open` (o clique no resumo alterna).
+        { seletor: '.mapa-tb-mais[open]', gatilhos: ['.mapa-tb-mais-resumo'], somenteEstado: true, fechar: (app, el) => { el.open = false; } }
+    ];
+
+    /** Fecha TODOS os menus flutuantes abertos (usado no clique fora e no `Esc`). */
+    function fecharMenusAbertos(excepto) {
+        let fechou = false;
+        MENUS_FLUTUANTES.forEach(menu => {
+            const aberto = document.querySelector(menu.seletor);
+            if (!aberto || aberto === excepto) return;
+            if (!menu.somenteEstado) aberto.remove();
+            if (menu.fechar) menu.fechar(this, aberto);
+            fechou = true;
+        });
+        return fechou;
+    }
+
+    /**
+     * Handler de CLIQUE FORA: se o alvo não estiver dentro de nenhum menu aberto nem for o
+     * botão que o abre, o menu fecha. Usado em `click` (e não `pointerdown`) de propósito:
+     * não interfere no arrasto/pan do canvas nem na digitação do painel.
+     */
+    function fecharMenusFora(evento) {
+        const alvo = evento && evento.target;
+        if (!alvo || !alvo.closest) return false;
+        let fechou = false;
+        MENUS_FLUTUANTES.forEach(menu => {
+            const aberto = document.querySelector(menu.seletor);
+            if (!aberto) return;
+            if (aberto.contains(alvo)) return;                         // clique DENTRO: mantém
+            if (menu.gatilhos.some(sel => alvo.closest(sel))) return;  // clique no gatilho: mantém
+            if (!menu.somenteEstado) aberto.remove();
+            if (menu.fechar) menu.fechar(this, aberto);
+            fechou = true;
+        });
+        return fechou;
+    }
+
     /** Ordem ATUAL dos grupos da barra (lida do DOM, na ordem visual). */
     function ordemBarraAtual() {
         const ordem = {};
@@ -1817,6 +1873,15 @@
             mapaFecharAtalhos.call(this);
             return;
         }
+        // `Esc` fecha QUALQUER outro menu/tela flutuante aberto (F12).
+        if (evento.key === 'Escape') {
+            const aberto = document.querySelector(MENUS_FLUTUANTES.map(m => m.seletor).join(','));
+            if (aberto) {
+                evento.preventDefault();
+                fecharMenusAbertos.call(this);
+                return;
+            }
+        }
         const alvo = evento.target;
         if (!alvo || !alvo.closest) return;
         const campo = alvo.closest('input, textarea, select, [contenteditable]:not(.mapa-no-editor)');
@@ -1837,6 +1902,9 @@
             window.addEventListener('themechange', () => aplicarTemaMapa());
             // Atalhos do mapa: no documento (o foco pode ficar no editor de notas oculto).
             document.addEventListener('keydown', evento => tratarTeclaMapa.call(this, evento));
+            // Clicar FORA de qualquer menu flutuante fecha o menu (F12) — em `click` e na
+            // fase de CAPTURA, para rodar ANTES da delegação das ações (data-mapa-acao).
+            document.addEventListener('click', evento => fecharMenusFora.call(this, evento), true);
         }
         const salva = store() ? store().lerAreaAtiva() : 'notas';
         return this.aplicarArea(salva);
@@ -1905,6 +1973,7 @@
             atualizarBotoesHistorico,
             mapaAbrirMenuNo, mapaAbrirMenuCanvas, mapaFecharMenus,
             mapaAlternarMenuBarra,
+            fecharMenusFora, fecharMenusAbertos,
             mapaMoverBotaoBarra, mapaRestaurarBarra,
             mapaAlternarEstiloRapido, mapaDefinirEstiloRapido, mapaPassoEstiloRapido,
             mapaAbrirCor, mapaGravarCorRecente,

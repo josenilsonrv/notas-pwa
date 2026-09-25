@@ -106,7 +106,7 @@
 **Propósito:** Service Worker offline-first. Serve o cache na hora e revalida na rede com timeout, garantindo que o app nunca fique preso carregando.
 
 ## Implementação: Constantes, helpers e ciclo de vida
-- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v45';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./mapa/mapa-cores.js`)
+- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v46';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./mapa/mapa-cores.js`)
 - **[Linhas 19-20 ~]** `(sem comentário de ancoragem)` -> `const CACHE_NAME` · `const TIMEOUT_MS`
 - **[Linhas 22-32 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
 - **[Linhas 33-59 ~]** `/** Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
@@ -397,15 +397,15 @@
 ## Implementação: Comandos de nó, atalhos, estilo, barras e isolamento
 - **[Linhas 743-890 ~]** `// 🔄 [INÍCIO: MAPA - COMANDOS DE NÓ]` -> criar filho/irmão/independente, excluir, duplicar, copiar/recortar/colar
   - **[Linhas 745-794 ~]** `// 🔄 [INÍCIO: MAPA - POSICIONAMENTO DO NÓ NOVO]` -> `posicionarNovoNo(grafo,no,idReferencia)` (`garantirNoVisivel`)
-- **[Linhas 892-1626 ~]** `// 🔄 [INÍCIO: MAPA - MOVER/RECOLHER/ESTILO DO NÓ]`
+- **[Linhas 892-1682 ~]** `// 🔄 [INÍCIO: MAPA - MOVER/RECOLHER/ESTILO DO NÓ]`
   - **[Linhas 1011-1139 ~]** `// 🔄 [INÍCIO: MAPA - CONTEÚDO DO NÓ (FASE 4)]` ... `[FIM ... PARTE 1]` / `[PARTE 2]` -> aplicar conteúdo do painel ao nó
   - **[Linhas 1141-1220 ~]** `// 🔄 [INÍCIO: MAPA - ATALHOS (FASE 10)]` -> `dadosAtalhos`, `mapaAbrirAtalhos`/`mapaFecharAtalhos`, `mapaCapturarAtalho`, `mapaLigarAtalho` (conflito), `mapaRestaurarAtalhosPadrao`
-  - **[Linhas 1222-1295 ~]** `// 🔄 [INÍCIO: MAPA - BARRAS/MENU/CORES (FASE 12)]` -> `mapaAbrirMenuNo`/`mapaAbrirMenuCanvas`/`mapaFecharMenus` (fecha também o menu de opções da barra), `ordemBarraAtual`, `mapaMoverBotaoBarra`, `mapaRestaurarBarra`, `mapaAlternarMenuBarra` (fonte/forma/alinhamento em UM botão)
-  - **[Linhas 1297-1383 ~]** `// 🔄 [INÍCIO: MAPA - FORMATAÇÃO RÁPIDA E CORES (FASE 12)]` -> `mapaAlternarEstiloRapido`, `mapaDefinirEstiloRapido`, `mapaPassoEstiloRapido`, `mapaAbrirCor`, `mapaGravarCorRecente`
-  - **[Linhas 1385-1473 ~]** `// 🔄 [INÍCIO: MAPA - ESTILO DO NÓ/MAPA (FASE 9)]` -> `mapaSalvarEstiloNo`, `mapaCopiarEstiloNo`, `mapaAplicarEstiloCopiadoNo`, `mapaRestaurarEstiloNo`, `mapaDefinirTema`, `mapaDefinirEstiloNivel`, `mapaLimparEstiloNivel`
-  - **[Linhas 1475-1538 ~]** `// 🔄 [INÍCIO: MAPA - HIERARQUIA/LAYOUT (FASE 5)]` -> `mapaDefinirLayout` (F8: pede confirmação se manual), `mapaConfirmarLayout`, `mapaDefinirEspacamento`
-  - **[Linhas 1540-1613 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES LIVRES (FASE 6)]` -> criar/remover conexões manuais + `mapaCommitarTituloNo` (F11: coalescência de digitação)
-- **[Linhas 1628-1916 ~]** `// 🔄 [INÍCIO: MAPA - ÁREA/ISOLAMENTO]` -> `diagnosticoModulosMapa()`/`mostrarFalhaMapa()` (BLINDAGEM), `montarAreaMapa()` (montagem lazy em `try/catch`, ouvintes ligados UMA vez via `mapaAreaOuvintesLigados`, só marca `mapaAreaMontada` após sucesso), `aplicarArea`, listener único de teclado + `contextmenu` (F12), `installMapaMental` (estado `mapaMenuBarra` + export de `mapaAlternarMenuBarra`), isolamento do motor de notas
+  - **[Linhas 1222-1351 ~]** `// 🔄 [INÍCIO: MAPA - BARRAS/MENU/CORES (FASE 12)]` -> `mapaAbrirMenuNo`/`mapaAbrirMenuCanvas`/`mapaFecharMenus` (fecha também o menu de opções da barra), `ordemBarraAtual`, `mapaMoverBotaoBarra`, `mapaRestaurarBarra`, `mapaAlternarMenuBarra` (fonte/forma/alinhamento em UM botão), **`MENUS_FLUTUANTES`** + **`fecharMenusAbertos()`** + **`fecharMenusFora(evento)`** (clicar FORA fecha qualquer menu — sem `renderArea`)
+  - **[Linhas 1353-1439 ~]** `// 🔄 [INÍCIO: MAPA - FORMATAÇÃO RÁPIDA E CORES (FASE 12)]` -> `mapaAlternarEstiloRapido`, `mapaDefinirEstiloRapido`, `mapaPassoEstiloRapido`, `mapaAbrirCor`, `mapaGravarCorRecente`
+  - **[Linhas 1441-1529 ~]** `// 🔄 [INÍCIO: MAPA - ESTILO DO NÓ/MAPA (FASE 9)]` -> `mapaSalvarEstiloNo`, `mapaCopiarEstiloNo`, `mapaAplicarEstiloCopiadoNo`, `mapaRestaurarEstiloNo`, `mapaDefinirTema`, `mapaDefinirEstiloNivel`, `mapaLimparEstiloNivel`
+  - **[Linhas 1531-1594 ~]** `// 🔄 [INÍCIO: MAPA - HIERARQUIA/LAYOUT (FASE 5)]` -> `mapaDefinirLayout` (F8: pede confirmação se manual), `mapaConfirmarLayout`, `mapaDefinirEspacamento`
+  - **[Linhas 1596-1669 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES LIVRES (FASE 6)]` -> criar/remover conexões manuais + `mapaCommitarTituloNo` (F11: coalescência de digitação)
+- **[Linhas 1684-1985 ~]** `// 🔄 [INÍCIO: MAPA - ÁREA/ISOLAMENTO]` -> `diagnosticoModulosMapa()`/`mostrarFalhaMapa()` (BLINDAGEM), `montarAreaMapa()` (montagem lazy em `try/catch`, ouvintes ligados UMA vez via `mapaAreaOuvintesLigados`, só marca `mapaAreaMontada` após sucesso), `aplicarArea`, listener único de teclado + `contextmenu` (F12) + **listener de `click` em captura (`fecharMenusFora`)** + `Esc` fecha menus, `installMapaMental` (estado `mapaMenuBarra` + exports `mapaAlternarMenuBarra`/`fecharMenusFora`), isolamento do motor de notas
 
 # Nome do Arquivo: mapa/mapa-cores.js
 **Propósito:** Paleta de cores do mapa (F12) — MESMO padrão de lógica/visual dos botões de cor/destaque de Notas (`setupNotesColors`): grade 8x10 (80 cores), cores personalizadas (recentes máx. 12 + "+" + conta-gotas), reset, "Aplicar", popover preso ao `visualViewport`, `Esc`/clique fora e foco preso.

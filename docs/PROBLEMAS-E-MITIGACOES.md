@@ -739,3 +739,26 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
 
 ### P66 — Asset do Service Worker (bump)
 - **Regra**: mudaram `mapa/mapa-render.js`, `mapa/mapa.js` e `mapa/mapa.css` ⇒ **`CACHE_NAME` v44 → v45**.
+
+### P67 — Clicar FORA fecha TODOS os menus (Notas já fazia; o mapa ganhou o mesmo)
+- **Pedido**: em todas as modais de menu, clicar fora deve fechar.
+- **Estado inicial**: em **Notas** já funcionava — o `notesExtraDialog` é um `<dialog>` que fecha
+  pelo *backdrop* (`notes/extras.js`, linha 22), e a paleta de tons/cores e os painéis de tabela
+  também tinham fechamento por clique fora. No **mapa** faltava em: menu contextual do card/canvas
+  (`#mapaMenu`), menu de opções da barra (`#mapaMenuOpcoes`), menu da conexão (`#mapaConexaoMenu`),
+  painel de atalhos (`#mapaAtalhos`), editor da barra (`#mapaBarraEditor`) e no overflow "Mais"
+  (`<details class="mapa-tb-mais">`, que por natureza **nunca** fechava sozinho).
+- **Implementação** (`mapa/mapa.js`): `MENUS_FLUTUANTES` (seletor + `gatilhos` + como fechar) e
+  `fecharMenusFora(evento)`, ligados em `document` no **`click` em fase de CAPTURA** — e **não** em
+  `pointerdown`, para não interferir no pan/seleção do canvas nem na digitação do painel. O
+  fechamento **remove o nó + limpa o estado sem chamar `renderArea`** (mesmo padrão do menu
+  contextual), então nada digitado se perde. Clicar no **botão que abre** o menu não o fecha (é ele
+  que alterna) e clicar **dentro** também não. `Esc` fecha pela mesma lista.
+- **Fora do escopo (proposital)**: `#mapaPainel` (propriedades) e `#mapaForm` (formulário inline)
+  NÃO fecham ao clicar fora — são formulários, e fechar descartaria o que está sendo digitado
+  (ambos têm "Cancelar"/"Fechar").
+- **Teste**: `tests/mapa_toolbar.cjs` (§3.3) valida cada menu fechando no clique fora, mantendo-se
+  aberto no clique interno, e o `Esc`.
+
+### P68 — Asset do Service Worker (bump)
+- **Regra**: mudou `mapa/mapa.js` ⇒ **`CACHE_NAME` v45 → v46**.

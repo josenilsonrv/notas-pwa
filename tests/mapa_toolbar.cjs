@@ -216,6 +216,38 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await clicar('#mapaMenuOpcoes [data-mapa-estilo="alinhamento"][data-mapa-valor="centro"]');
     assert.equal((await estiloDe('Objetivo')).alinhamento, 'centro', 'alinhamento escolhido aplicado no nó');
 
+    // ------------------------------------------- 3.3) clicar FORA fecha os menus flutuantes
+    const foraFecha = async (abrir, seletor, rotulo) => {
+      await abrir();
+      assert.ok(await page.evaluate(s => Boolean(document.querySelector(s)), seletor), rotulo + ': abre');
+      await page.evaluate(() => {
+        const alvo = document.getElementById('mapaCanvas') || document.getElementById('mapaArea');
+        alvo.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      });
+      assert.equal(await page.evaluate(s => Boolean(document.querySelector(s)), seletor), false,
+        rotulo + ': fecha ao clicar fora');
+    };
+
+    await foraFecha(() => menuNo(idObjetivo), '#mapaMenu', 'menu contextual do card');
+    await foraFecha(() => clicar('#mapaFormatBar [data-mapa-acao="barra-menu"][data-mapa-menu="forma"]'),
+      '#mapaMenuOpcoes', 'menu de opções (forma)');
+    await foraFecha(() => clicar('#mapaToolbar [data-mapa-acao="atalhos-abrir"]'), '#mapaAtalhos', 'painel de atalhos');
+    await foraFecha(() => clicar('#mapaToolbar [data-mapa-acao="barra-editar"]'), '#mapaBarraEditor', 'editor da barra');
+    await foraFecha(() => page.evaluate(() => { document.querySelector('.mapa-tb-mais').open = true; }),
+      '.mapa-tb-mais[open]', 'overflow "Mais"');
+
+    // Clicar DENTRO do menu não fecha (o gatilho continua funcionando).
+    await clicar('#mapaToolbar [data-mapa-acao="barra-editar"]');
+    await page.evaluate(() => document.querySelector('#mapaBarraEditor .mapa-barra-editor-lista').dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })));
+    assert.ok(await page.evaluate(() => Boolean(document.getElementById('mapaBarraEditor'))), 'clicar dentro NÃO fecha');
+
+    // E o Esc também fecha (mesma família de menus).
+    await menuNo(idObjetivo);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => Boolean(document.getElementById('mapaMenu'))), false, 'Esc fecha o menu aberto');
+    await page.evaluate(() => window.app.fecharMenusAbertos());
+
     // ---------------------------------------------------------------- 4) menu contextual do card
     await menuNo(idObjetivo);
     const menu = await page.evaluate(() => {
