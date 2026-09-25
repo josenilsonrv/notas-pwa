@@ -141,6 +141,81 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await clicar('#mapaFormatBar [data-mapa-acao="estilo-toggle"][data-mapa-estilo="negrito"]');
     assert.equal((await estiloDe('Objetivo')).negrito, true, 'barra de formatação aplica negrito');
 
+    // ------------------------------------------- 3.1) ícones padronizados nas DUAS barras
+    const icones = await page.evaluate(() => {
+      const botoes = [...document.querySelectorAll('#mapaToolbar .mapa-tb-btn, #mapaFormatBar .mapa-tb-btn')];
+      const svgs = botoes.map(b => b.querySelector(':scope > svg'));
+      return {
+        total: botoes.length,
+        comIcone: svgs.filter(Boolean).length,
+        tamanhos: [...new Set(svgs.filter(Boolean).map(s => s.getAttribute('width') + 'x' + s.getAttribute('height')))],
+        tracos: [...new Set(svgs.filter(Boolean).map(s => s.getAttribute('stroke-width')))],
+        cores: [...new Set(svgs.filter(Boolean).map(s => s.getAttribute('stroke')))],
+        vazios: svgs.filter(s => s && s.children.length === 0).length
+      };
+    });
+    assert.ok(icones.total >= 20, 'barras têm botões suficientes (' + icones.total + ')');
+    assert.equal(icones.comIcone, icones.total, 'TODO botão das barras usa ícone SVG');
+    assert.equal(icones.vazios, 0, 'nenhum ícone vazio (desenho presente)');
+    assert.deepEqual(icones.tamanhos, ['16x16'], 'ícones com o MESMO tamanho (16x16)');
+    assert.deepEqual(icones.tracos, ['2'], 'ícones com o MESMO traço (stroke-width 2)');
+    assert.deepEqual(icones.cores, ['currentColor'], 'ícones seguem a cor do tema (currentColor)');
+
+    // As funções que existem também em Notas usam o MESMO desenho de lá.
+    const iguaisNotas = await page.evaluate(() => {
+      const ler = sel => { const b = document.querySelector(sel); return b && b.querySelector('svg') ? b.querySelector('svg').innerHTML : null; };
+      return {
+        negrito: ler('#mapaFormatBar [data-mapa-estilo="negrito"]'),
+        italico: ler('#mapaFormatBar [data-mapa-estilo="italico"]'),
+        desfazer: ler('#mapaToolbar [data-mapa-acao="no-desfazer"]'),
+        refazer: ler('#mapaToolbar [data-mapa-acao="no-refazer"]'),
+        cor: ler('#mapaFormatBar [data-mapa-cor="cor"]'),
+        fundo: ler('#mapaFormatBar [data-mapa-cor="fundo"]')
+      };
+    });
+    assert.ok(/M6 4h8a4 4 0 0 1 4 4/.test(iguaisNotas.negrito), 'negrito usa o desenho da barra de Notas');
+    assert.ok(/19" y1="4" x2="10"/.test(iguaisNotas.italico), 'itálico usa o desenho da barra de Notas');
+    assert.ok(/M9 7 4 12l5 5/.test(iguaisNotas.desfazer), 'desfazer usa o desenho da barra de Notas');
+    assert.ok(/m15 7 5 5-5 5/.test(iguaisNotas.refazer), 'refazer usa o desenho da barra de Notas');
+    assert.ok(/M6\.5 12\.5 10 3\.5/.test(iguaisNotas.cor), 'cor usa o desenho da barra de Notas');
+    assert.ok(/m14 3 7 7-10 10H4v-7z/.test(iguaisNotas.fundo), 'destaque usa o desenho da barra de Notas');
+
+    // ------------------------------------------- 3.2) Fonte/Forma/Alinhamento em UM botão (menu de opções)
+    const opcoes = await page.evaluate(() => [...document.querySelectorAll('#mapaFormatBar [data-mapa-acao="barra-menu"]')]
+      .map(b => ({ menu: b.dataset.mapaMenu, popup: b.getAttribute('aria-haspopup') })));
+    assert.deepEqual(opcoes.map(o => o.menu).sort(), ['alinhamento', 'fonte', 'forma'],
+      'fonte/forma/alinhamento têm UM botão próprio cada');
+    assert.ok(opcoes.every(o => o.popup === 'menu'), 'botões de opções anunciam aria-haspopup="menu"');
+
+    await clicar('#mapaFormatBar [data-mapa-acao="barra-menu"][data-mapa-menu="fonte"]');
+    const menuFonte = await page.evaluate(() => {
+      const el = document.getElementById('mapaMenuOpcoes');
+      return el ? {
+        role: el.getAttribute('role'),
+        valores: [...el.querySelectorAll('[data-mapa-estilo="fonte"]')].map(b => b.dataset.mapaValor),
+        comIcone: [...el.querySelectorAll('[data-mapa-estilo="fonte"] svg')].length
+      } : null;
+    });
+    assert.ok(menuFonte, 'botão Fonte abre o menu de opções');
+    assert.equal(menuFonte.role, 'menu', 'menu de opções com role="menu"');
+    assert.deepEqual(menuFonte.valores, ['sistema', 'serif', 'mono', 'cursiva'], 'opções de fonte listadas');
+    assert.equal(menuFonte.comIcone, 4, 'opções também usam ícone padronizado');
+
+    await clicar('#mapaMenuOpcoes [data-mapa-estilo="fonte"][data-mapa-valor="serif"]');
+    assert.equal((await estiloDe('Objetivo')).fonte, 'serif', 'opção escolhida é aplicada no nó');
+    assert.equal(await page.evaluate(() => Boolean(document.getElementById('mapaMenuOpcoes'))), false, 'menu fecha ao escolher');
+
+    await clicar('#mapaFormatBar [data-mapa-acao="barra-menu"][data-mapa-menu="forma"]');
+    const menuForma = await page.evaluate(() => [...document.querySelectorAll('#mapaMenuOpcoes [data-mapa-estilo="forma"]')]
+      .map(b => b.dataset.mapaValor));
+    assert.deepEqual(menuForma, ['retangulo', 'pilula', 'elipse', 'nota'], 'opções de forma listadas');
+    await clicar('#mapaMenuOpcoes [data-mapa-estilo="forma"][data-mapa-valor="pilula"]');
+    assert.equal((await estiloDe('Objetivo')).forma, 'pilula', 'forma escolhida aplicada no nó');
+
+    await clicar('#mapaFormatBar [data-mapa-acao="barra-menu"][data-mapa-menu="alinhamento"]');
+    await clicar('#mapaMenuOpcoes [data-mapa-estilo="alinhamento"][data-mapa-valor="centro"]');
+    assert.equal((await estiloDe('Objetivo')).alinhamento, 'centro', 'alinhamento escolhido aplicado no nó');
+
     // ---------------------------------------------------------------- 4) menu contextual do card
     await menuNo(idObjetivo);
     const menu = await page.evaluate(() => {

@@ -820,6 +820,14 @@ html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); bord
 .mapa-tb-grupo { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
 .mapa-tb-divisor { width: 1px; height: 24px; margin: 0 6px; background: var(--mapa-divisor); flex: 0 0 auto; }
 .mapa-tb-btn { font-size: 13px; }
+/* Ícones PADRONIZADOS das barras do mapa: sempre 16×16 (mesma grade da barra de Notas),
+   `stroke: currentColor` — o desenho vem do dicionário ICONES em mapa-render.js. */
+.mapa-tb-btn svg { width: 16px; height: 16px; display: block; flex: none; }
+.mapa-tb-mais-resumo svg { width: 18px; height: 18px; display: block; }
+/* Menu de OPÇÕES de um botão da barra (fonte/forma/alinhamento) — popover fixo. */
+.mapa-menu-opcoes { min-width: 200px; }
+.mapa-menu-item-texto { flex: 1; }
+.mapa-menu-item-ativo { background: var(--mapa-hover); color: var(--color-neon-blue); font-weight: 600; }
 .mapa-tb-campos { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; }
 .mapa-tb-mais { position: relative; flex: 0 0 auto; }
 .mapa-tb-mais-resumo { cursor: pointer; list-style: none; padding: 6px 10px; border-radius: 6px; color: var(--color-text-label); }
@@ -839,7 +847,8 @@ html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); bord
     background: var(--mapa-container);
     box-shadow: 0 10px 28px rgba(0, 0, 0, .18);
 }
-.mapa-tb-mais-lista .mapa-tb-btn { justify-content: flex-start; width: 100%; min-height: 34px; font-size: 13px; }
+.mapa-tb-mais-lista .mapa-tb-btn { justify-content: flex-start; gap: 8px; width: 100%; min-height: 34px; font-size: 13px; }
+.mapa-menu-item svg { width: 16px; height: 16px; flex: none; }
 
 /* Menu contextual (F12): comandos ESPECÍFICOS DE CARD (botão direito / toque longo). */
 .mapa-menu {

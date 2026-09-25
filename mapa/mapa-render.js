@@ -386,8 +386,157 @@
     }
     const divisorBarra = () => criar('span', 'mapa-tb-divisor', '');
 
-    /** Botão de ícone de texto (fallback leve quando não há SVG específico). */
-    const btnTexto = (chave, rotulo, titulo, acao, dados, id) => btnBarra(chave, rotulo, titulo, acao, dados, id);
+    /** Botão de menu com ÍCONE + TEXTO (overflow "Mais") — mesmo ícone padronizado. */
+    function btnMenu(chave, nome, rotulo, acao, dados, id) {
+        const el = btnBarra(chave, '', rotulo, acao, dados, id);
+        el.append(icone(nome), criar('span', 'mapa-menu-item-texto', rotulo));
+        return el;
+    }
+
+    /**
+     * Ícones PADRONIZADOS das barras do mapa: sempre 16×16, `stroke: currentColor`,
+     * `stroke-width: 2`, `linecap/linejoin: round` e grade 24×24.
+     * As funções que TAMBÉM existem na barra de Notas reaproveitam o MESMO desenho de lá
+     * (`negrito`, `italico`, `cor`, `fundo`, `desfazer`, `refazer`) — mesma linguagem visual.
+     */
+    const ICONES = {
+        // ---- Mesmos ícones da barra de Notas ----
+        negrito: { d: '<path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>' },
+        italico: { d: '<line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/>' },
+        cor: { vb: '0 0 20 20', d: '<path d="M6.5 12.5 10 3.5l3.5 9M7.7 9.5h4.6" stroke-width="1.4" stroke-linejoin="round"/><path d="M1 17.5h18" stroke-width="2.5"/>' },
+        fundo: { d: '<path d="m14 3 7 7-10 10H4v-7zM11 6l7 7M3 23h18"/>' },
+        desfazer: { d: '<path d="M9 7 4 12l5 5"/><path d="M4 12h9a7 7 0 0 1 7 7"/>' },
+        refazer: { d: '<path d="m15 7 5 5-5 5"/><path d="M20 12h-9a7 7 0 0 0-7 7"/>' },
+        // ---- Ícones próprios do mapa (mesmo traço/grade) ----
+        novo: { d: '<path d="M12 5v14M5 12h14"/>' },
+        templates: { d: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M3 9h6"/>' },
+        topico: { d: '<rect x="3" y="3" width="12" height="12" rx="2"/><path d="M19 12v9M14.5 16.5h9"/>' },
+        'zoom-menos': { d: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6"/>' },
+        'zoom-mais': { d: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/>' },
+        centralizar: { d: '<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>' },
+        fit: { d: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>' },
+        raiz: { d: '<path d="M4 11 12 4l8 7"/><path d="M6 10v10h12V10"/>' },
+        recolher: { d: '<path d="m9 4 3 3 3-3M9 20l3-3 3 3M4 12h16"/>' },
+        expandir: { d: '<path d="m15 4-3 3-3-3M15 20l-3-3-3 3M4 12h16"/>' },
+        mais: { d: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>' },
+        'tamanho-menos': { d: '<path d="M3 19 8 5l5 14M4.6 14.5h6.8"/><path d="M15 12h6"/>' },
+        'tamanho-mais': { d: '<path d="M3 19 8 5l5 14M4.6 14.5h6.8"/><path d="M18 9v6M15 12h6"/>' },
+        fonte: { d: '<path d="M5 5h14M12 5v14M9 19h6"/>' },
+        borda: { d: '<rect x="4" y="4" width="16" height="16" rx="2"/>' },
+        forma: { d: '<circle cx="8" cy="16" r="4"/><rect x="12" y="4" width="9" height="9" rx="2"/>' },
+        alinhamento: { d: '<path d="M4 6h16M4 12h10M4 18h16"/>' },
+        'linha-menos': { d: '<path d="M4 12h16" stroke-width="1.4"/>' },
+        'linha-mais': { d: '<path d="M4 12h16" stroke-width="4"/>' },
+        'ramo-menos': { d: '<path d="M3 16c4 0 5-8 9-8s5 8 9 8" stroke-width="1.4"/>' },
+        'ramo-mais': { d: '<path d="M3 16c4 0 5-8 9-8s5 8 9 8" stroke-width="3"/>' },
+        pincel: { d: '<path d="m15 4 5 5-4 4-5-5z"/><path d="M11 8 4 15v5h5l7-7"/>' },
+        aplicar: { d: '<path d="M5 13l4 4L19 7"/>' },
+        restaurar: { d: '<path d="M4 10a8 8 0 1 1 2.3 6.3"/><path d="M4 4v6h6"/>' },
+        subir: { d: '<path d="M12 20V5"/><path d="m6 11 6-6 6 6"/>' },
+        descer: { d: '<path d="M12 4v15"/><path d="m6 13 6 6 6-6"/>' },
+        'conectar-nos': { d: '<path d="M9 12h6"/><path d="M7 8H6a4 4 0 0 0 0 8h1"/><path d="M17 8h1a4 4 0 0 1 0 8h-1"/>' },
+        'conectar-mapa': { d: '<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>' },
+        'template-salvar': { d: '<path d="M6 3h12v18l-6-4-6 4z"/>' },
+        atalhos: { d: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>' },
+        'barra-editar': { d: '<path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h13"/><circle cx="16" cy="6" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="19" cy="18" r="2.2"/>' }
+    };
+
+    /** Cria o SVG padronizado de um ícone (16×16, `stroke: currentColor`). */
+    function icone(nome) {
+        const def = ICONES[nome] || ICONES.forma;
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', def.vb || '0 0 24 24');
+        svg.setAttribute('width', '16');
+        svg.setAttribute('height', '16');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('stroke-width', '2');
+        svg.setAttribute('stroke-linecap', 'round');
+        svg.setAttribute('stroke-linejoin', 'round');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.innerHTML = def.d;
+        return svg;
+    }
+
+    /** Botão de ÍCONE da barra: mesma caixa do `.toolbar-btn` (32×32) e ícone padronizado. */
+    function btnIcone(chave, nome, titulo, acao, dados, id) {
+        const el = btnBarra(chave, '', titulo, acao, dados, id);
+        el.dataset.mapaIcone = nome;
+        el.append(icone(nome));
+        return el;
+    }
+
+    /**
+     * Opções que ficam em UM botão só (abre um menu) em vez de vários botões soltos:
+     * Fonte, Forma e Alinhamento. O `data-mapa-acao` do botão é `barra-menu`.
+     */
+    const OPCOES_BARRA = {
+        fonte: {
+            rotulo: 'Fonte', icone: 'fonte',
+            itens: [['sistema', 'Sistema'], ['serif', 'Serifada'], ['mono', 'Monoespaçada'], ['cursiva', 'Cursiva']]
+        },
+        forma: {
+            rotulo: 'Forma', icone: 'forma',
+            itens: [['retangulo', 'Retângulo'], ['pilula', 'Pílula'], ['elipse', 'Elipse'], ['nota', 'Nota']]
+        },
+        alinhamento: {
+            rotulo: 'Alinhamento', icone: 'alinhamento',
+            itens: [['esquerda', 'Esquerda'], ['centro', 'Centro'], ['direita', 'Direita']]
+        }
+    };
+
+    /** Nome legível da opção ativa (para o `title`/`aria-label` do botão que abre as opções). */
+    function rotuloOpcao(chave, valor) {
+        const def = OPCOES_BARRA[chave];
+        if (!def) return '';
+        const achado = def.itens.find(([v]) => v === valor);
+        return achado ? achado[1] : '(herdar)';
+    }
+
+    /** Botão único que ABRE as opções de um grupo (fonte/forma/alinhamento). */
+    function btnOpcoes(chave, efetivo) {
+        const def = OPCOES_BARRA[chave];
+        if (!def) return null;
+        const titulo = def.rotulo + ': ' + rotuloOpcao(chave, efetivo && efetivo[chave]);
+        const el = btnIcone(chave, def.icone, titulo, 'barra-menu', { mapaMenu: chave });
+        el.setAttribute('aria-haspopup', 'menu');
+        return el;
+    }
+
+    /** Menu de OPÇÕES do botão aberto (popover fixo, como o menu contextual do card). */
+    function menuOpcoesBarra(bar, info, efetivo) {
+        const aberto = info && info.menuBarra;
+        const def = aberto && OPCOES_BARRA[aberto.chave];
+        if (!def) return null;
+        const botao = bar.querySelector('[data-mapa-botao="' + aberto.chave + '"]');
+        if (!botao) return null;
+        const caixa = criar('div', 'mapa-menu mapa-menu-opcoes');
+        caixa.id = 'mapaMenuOpcoes';
+        caixa.setAttribute('role', 'menu');
+        caixa.setAttribute('aria-label', def.rotulo);
+        const ret = botao.getBoundingClientRect();
+        const largura = 200;
+        caixa.style.left = Math.max(8, Math.min(ret.left, (global.innerWidth || 1024) - largura - 8)) + 'px';
+        caixa.style.top = Math.max(8, ret.bottom + 6) + 'px';
+        def.itens.forEach(([valor, rotulo]) => {
+            const ativo = efetivo && efetivo[aberto.chave] === valor;
+            const item = criar('button', 'mapa-menu-item', '');
+            item.type = 'button';
+            item.setAttribute('role', 'menuitemradio');
+            item.setAttribute('aria-checked', String(Boolean(ativo)));
+            item.dataset.mapaAcao = 'estilo-definir';
+            item.dataset.mapaEstilo = aberto.chave;
+            item.dataset.mapaValor = valor;
+            if (ativo) item.classList.add('mapa-menu-item-ativo');
+            item.append(icone(def.icone), criar('span', 'mapa-menu-item-texto', rotulo));
+            caixa.append(item);
+        });
+        const fechar = criar('button', 'mapa-menu-item mapa-menu-item-fechar', 'Fechar');
+        fechar.type = 'button';
+        fechar.dataset.mapaAcao = 'menu-barra-fechar';
+        caixa.append(fechar);
+        return caixa;
+    }
 
     /** Reordena um grupo conforme a ordem salva (chaves desconhecidas ficam no fim). */
     function aplicarOrdemBarra(grupo, ordem) {
@@ -426,21 +575,21 @@
         // ---- Grupo: Mapa (arquivo) ----
         // "‹ Mapas" fica na TOPBAR (cabeçalho da área); aqui ficam só os atalhos de mapa.
         const gMapa = grupoBarra('mapa', 'Mapa');
-        gMapa.append(btnTexto('novo', '＋', 'Novo mapa', 'novo'));
-        gMapa.append(btnTexto('templates', '🗂', 'Templates', 'templates'));
+        gMapa.append(btnIcone('novo', 'novo', 'Novo mapa', 'novo'));
+        gMapa.append(btnIcone('templates', 'templates', 'Templates', 'templates'));
         toolbar.append(gMapa);
 
-        // ---- Grupo: Histórico ----
+        // ---- Grupo: Histórico (MESMOS ícones da barra de Notas) ----
         toolbar.append(divisorBarra());
         const gHist = grupoBarra('historico', 'Histórico');
-        gHist.append(btnTexto('desfazer', '↶', 'Desfazer', 'no-desfazer'));
-        gHist.append(btnTexto('refazer', '↷', 'Refazer', 'no-refazer'));
+        gHist.append(btnIcone('desfazer', 'desfazer', 'Desfazer', 'no-desfazer'));
+        gHist.append(btnIcone('refazer', 'refazer', 'Refazer', 'no-refazer'));
         toolbar.append(gHist);
 
         // ---- Grupo: Inserir (somente o tópico RAIZ; filho/irmão vão no menu do card) ----
         toolbar.append(divisorBarra());
         const gInserir = grupoBarra('inserir', 'Inserir');
-        gInserir.append(btnTexto('novo-topico', '＋ Tópico', 'Novo tópico (raiz)', 'no-independente', null, 'mapaNovoTopico'));
+        gInserir.append(btnIcone('novo-topico', 'topico', 'Novo tópico (raiz)', 'no-independente', null, 'mapaNovoTopico'));
         toolbar.append(gInserir);
 
         // ---- Grupo: Exibir (zoom, enquadramento, layout, espaçamento, tema, nível) ----
@@ -457,14 +606,14 @@
     /** Grupo "Exibir": zoom, enquadramento, layout, espaçamento, tema e estilo por nível. */
     function grupoExibir(grafo) {
         const g = grupoBarra('exibir', 'Exibir');
-        g.append(btnTexto('zoom-out', '−', 'Diminuir zoom', 'zoom-out'));
+        g.append(btnIcone('zoom-out', 'zoom-menos', 'Diminuir zoom', 'zoom-out'));
         const rotuloZoom = criar('span', 'mapa-zoom-atual', '100%');
         rotuloZoom.id = 'mapaZoomAtual';
         g.append(rotuloZoom);
-        g.append(btnTexto('zoom-in', '＋', 'Aumentar zoom', 'zoom-in'));
-        g.append(btnTexto('centralizar', '⌖', 'Centralizar', 'centralizar'));
-        g.append(btnTexto('fit', '⤢', 'Ajustar à tela', 'fit'));
-        g.append(btnTexto('raiz', '⌂', 'Ir para a raiz', 'ir-raiz'));
+        g.append(btnIcone('zoom-in', 'zoom-mais', 'Aumentar zoom', 'zoom-in'));
+        g.append(btnIcone('centralizar', 'centralizar', 'Centralizar', 'centralizar'));
+        g.append(btnIcone('fit', 'fit', 'Ajustar à tela', 'fit'));
+        g.append(btnIcone('raiz', 'raiz', 'Ir para a raiz', 'ir-raiz'));
 
         const layoutSel = document.createElement('select');
         layoutSel.id = 'mapaLayout';
@@ -506,8 +655,8 @@
         nivel.dataset.mapaBotao = 'nivel';
         g.append(nivel);
 
-        g.append(btnTexto('recolher-tudo', '⊟', 'Recolher tudo', 'recolher-tudo'));
-        g.append(btnTexto('expandir-tudo', '⊞', 'Expandir tudo', 'expandir-tudo'));
+        g.append(btnIcone('recolher-tudo', 'recolher', 'Recolher tudo', 'recolher-tudo'));
+        g.append(btnIcone('expandir-tudo', 'expandir', 'Expandir tudo', 'expandir-tudo'));
         return g;
     }
 
@@ -515,20 +664,21 @@
     function grupoMais(info) {
         const g = grupoBarra('mais', 'Mais');
         const detalhes = criar('details', 'mapa-tb-mais');
-        const resumo = criar('summary', 'mapa-tb-mais-resumo', '⋯');
+        const resumo = criar('summary', 'mapa-tb-mais-resumo', '');
+        resumo.append(icone('mais'));
         resumo.title = 'Mais ferramentas';
         resumo.setAttribute('aria-label', 'Mais ferramentas');
         detalhes.append(resumo);
         const lista = criar('div', 'mapa-tb-mais-lista');
         [
-            ['conectar-nos', 'Conectar nós', 'conectar-nos'],
-            ['conectar-mapa', 'Conectar a mapa…', 'conectar'],
-            ['template-salvar', 'Salvar como template', 'template-salvar'],
-            ['atalhos', 'Atalhos', 'atalhos-abrir'],
-            ['barra-editar', 'Editar barra', 'barra-editar'],
-            ['barra-restaurar', 'Restaurar barra', 'barra-restaurar']
-        ].forEach(([chave, rotulo, acao]) => {
-            const el = btnBarra(chave, rotulo, rotulo, acao);
+            ['conectar-nos', 'conectar-nos', 'Conectar nós', 'conectar-nos'],
+            ['conectar-mapa', 'conectar-mapa', 'Conectar a mapa…', 'conectar'],
+            ['template-salvar', 'template-salvar', 'Salvar como template', 'template-salvar'],
+            ['atalhos', 'atalhos', 'Atalhos', 'atalhos-abrir'],
+            ['barra-editar', 'barra-editar', 'Editar barra', 'barra-editar'],
+            ['barra-restaurar', 'restaurar', 'Restaurar barra', 'barra-restaurar']
+        ].forEach(([chave, nome, rotulo, acao]) => {
+            const el = btnMenu(chave, nome, rotulo, acao);
             if (acao === 'conectar-nos') {
                 el.id = 'mapaModoConexao';
                 el.setAttribute('aria-pressed', String(Boolean(info && info.modoConexao)));
@@ -558,61 +708,60 @@
         const m = global.MapaMentalModelo;
         const efetivo = (m && m.estiloEfetivo) ? m.estiloEfetivo(grafo, no) : {};
 
+        // ---- Texto: MESMOS ícones da barra de Notas (negrito/itálico) ----
         const gTexto = grupoBarra('fmt-texto', 'Texto');
-        gTexto.append(comEstado(btnBarra('negrito', 'B', 'Negrito', 'estilo-toggle', { mapaEstilo: 'negrito' }), efetivo.negrito === true));
-        gTexto.append(comEstado(btnBarra('italico', 'I', 'Itálico', 'estilo-toggle', { mapaEstilo: 'italico' }), efetivo.italico === true));
+        gTexto.append(comEstado(btnIcone('negrito', 'negrito', 'Negrito', 'estilo-toggle', { mapaEstilo: 'negrito' }), efetivo.negrito === true));
+        gTexto.append(comEstado(btnIcone('italico', 'italico', 'Itálico', 'estilo-toggle', { mapaEstilo: 'italico' }), efetivo.italico === true));
         bar.append(gTexto);
 
-        bar.append(divisorBarra());
-        const gTamanho = grupoBarra('fmt-tamanho', 'Tamanho e fonte');
-        gTamanho.append(btnBarra('tamanho-menos', 'A−', 'Diminuir tamanho', 'estilo-passo', { mapaEstilo: 'tamanho', mapaPasso: '-1' }));
-        gTamanho.append(btnBarra('tamanho-mais', 'A+', 'Aumentar tamanho', 'estilo-passo', { mapaEstilo: 'tamanho', mapaPasso: '1' }));
-        [['sistema', 'Sistema'], ['serif', 'Serifada'], ['mono', 'Monoespaçada'], ['cursiva', 'Cursiva']]
-            .forEach(([valor, rotulo]) => gTamanho.append(comEstado(
-                btnBarra('fonte-' + valor, rotulo, 'Fonte ' + rotulo, 'estilo-definir', { mapaEstilo: 'fonte', mapaValor: valor }),
-                efetivo.fonte === valor
-            )));
-        bar.append(gTamanho);
-
-        // Cores: abrem o MESMO popover dos botões de cor/destaque de Notas.
+        // ---- Cores: MESMOS ícones de Cor/Destaque de Notas (+ borda do nó) ----
         bar.append(divisorBarra());
         const gCores = grupoBarra('fmt-cores', 'Cores');
-        [['cor', 'A', 'Cor do texto'], ['fundo', '▨', 'Fundo do nó'], ['borda', '▢', 'Borda do nó']]
-            .forEach(([prop, rotulo, titulo]) => {
-                const b = btnBarra('cor-' + prop, rotulo, titulo, 'cor-abrir', { mapaCor: prop });
+        [['cor', 'cor', 'Cor do texto'], ['fundo', 'fundo', 'Fundo do nó'], ['borda', 'borda', 'Borda do nó']]
+            .forEach(([prop, nome, titulo]) => {
+                const b = btnIcone('cor-' + prop, nome, titulo, 'cor-abrir', { mapaCor: prop });
                 b.setAttribute('aria-haspopup', 'dialog');
                 gCores.append(b);
             });
         bar.append(gCores);
 
+        // ---- Tamanho (passo) + FONTE (UM botão abre as opções) ----
+        bar.append(divisorBarra());
+        const gTamanho = grupoBarra('fmt-tamanho', 'Tamanho e fonte');
+        gTamanho.append(btnIcone('tamanho-menos', 'tamanho-menos', 'Diminuir tamanho', 'estilo-passo', { mapaEstilo: 'tamanho', mapaPasso: '-1' }));
+        gTamanho.append(btnIcone('tamanho-mais', 'tamanho-mais', 'Aumentar tamanho', 'estilo-passo', { mapaEstilo: 'tamanho', mapaPasso: '1' }));
+        gTamanho.append(btnOpcoes('fonte', efetivo));
+        bar.append(gTamanho);
+
+        // ---- FORMA (UM botão abre as opções) ----
         bar.append(divisorBarra());
         const gForma = grupoBarra('fmt-forma', 'Forma');
-        [['retangulo', '▭'], ['pilula', '⬭'], ['elipse', '◯'], ['nota', '🗒']].forEach(([valor, rotulo]) => gForma.append(comEstado(
-            btnBarra('forma-' + valor, rotulo, 'Forma ' + valor, 'estilo-definir', { mapaEstilo: 'forma', mapaValor: valor }),
-            efetivo.forma === valor
-        )));
+        gForma.append(btnOpcoes('forma', efetivo));
         bar.append(gForma);
 
+        // ---- ALINHAMENTO (UM botão abre as opções) ----
         bar.append(divisorBarra());
         const gAlinha = grupoBarra('fmt-alinhamento', 'Alinhamento');
-        [['esquerda', '⇤'], ['centro', '↔'], ['direita', '⇥']].forEach(([valor, rotulo]) => gAlinha.append(comEstado(
-            btnBarra('alinha-' + valor, rotulo, 'Alinhar: ' + valor, 'estilo-definir', { mapaEstilo: 'alinhamento', mapaValor: valor }),
-            efetivo.alinhamento === valor
-        )));
+        gAlinha.append(btnOpcoes('alinhamento', efetivo));
         bar.append(gAlinha);
 
+        // ---- Linhas do nó/ramo + pincel ----
         bar.append(divisorBarra());
         const gLinhas = grupoBarra('fmt-linhas', 'Linhas e pincel');
-        gLinhas.append(btnBarra('borda-menos', '▬−', 'Borda mais fina', 'estilo-passo', { mapaEstilo: 'espessuraBorda', mapaPasso: '-1' }));
-        gLinhas.append(btnBarra('borda-mais', '▬+', 'Borda mais grossa', 'estilo-passo', { mapaEstilo: 'espessuraBorda', mapaPasso: '1' }));
-        gLinhas.append(btnBarra('ramo-menos', '〜−', 'Ramo mais fino', 'estilo-passo', { mapaEstilo: 'espessuraRamo', mapaPasso: '-1' }));
-        gLinhas.append(btnBarra('ramo-mais', '〜+', 'Ramo mais grosso', 'estilo-passo', { mapaEstilo: 'espessuraRamo', mapaPasso: '1' }));
-        gLinhas.append(btnBarra('estilo-copiar', '🖌', 'Copiar estilo (pincel)', 'no-estilo-copiar'));
-        const aplicar = btnBarra('estilo-aplicar', 'Aplicar estilo', 'Aplicar o estilo copiado', 'no-estilo-aplicar');
+        gLinhas.append(btnIcone('borda-menos', 'linha-menos', 'Borda mais fina', 'estilo-passo', { mapaEstilo: 'espessuraBorda', mapaPasso: '-1' }));
+        gLinhas.append(btnIcone('borda-mais', 'linha-mais', 'Borda mais grossa', 'estilo-passo', { mapaEstilo: 'espessuraBorda', mapaPasso: '1' }));
+        gLinhas.append(btnIcone('ramo-menos', 'ramo-menos', 'Ramo mais fino', 'estilo-passo', { mapaEstilo: 'espessuraRamo', mapaPasso: '-1' }));
+        gLinhas.append(btnIcone('ramo-mais', 'ramo-mais', 'Ramo mais grosso', 'estilo-passo', { mapaEstilo: 'espessuraRamo', mapaPasso: '1' }));
+        gLinhas.append(btnIcone('estilo-copiar', 'pincel', 'Copiar estilo (pincel)', 'no-estilo-copiar'));
+        const aplicar = btnIcone('estilo-aplicar', 'aplicar', 'Aplicar o estilo copiado', 'no-estilo-aplicar');
         aplicar.disabled = !(info.estiloCopiado && Object.keys(info.estiloCopiado).length);
         gLinhas.append(aplicar);
-        gLinhas.append(btnBarra('estilo-restaurar', 'Restaurar', 'Restaurar o estilo padrão', 'no-estilo-restaurar'));
+        gLinhas.append(btnIcone('estilo-restaurar', 'restaurar', 'Restaurar o estilo padrão', 'no-estilo-restaurar'));
         bar.append(gLinhas);
+
+        // Menu de OPÇÕES do botão aberto (fonte/forma/alinhamento) — sempre por último.
+        const opcoes = menuOpcoesBarra(bar, info, efetivo);
+        if (opcoes) bar.append(opcoes);
     }
     /**
      * Menu contextual (F12): os comandos ESPECÍFICOS DE CARD vivem aqui — aberto por

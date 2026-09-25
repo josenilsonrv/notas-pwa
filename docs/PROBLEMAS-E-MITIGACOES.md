@@ -716,3 +716,26 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
 
 ### P64 — Asset do Service Worker (bump)
 - **Regra**: mudaram `sw.js`, `app.js`, `styles.css` e `index.html` ⇒ **`CACHE_NAME` v43 → v44**.
+
+### P65 — Ícones padronizados nas barras do mapa + fonte/forma em UM botão
+- **Pedido**: padronizar os ícones das barras (ferramentas e formatação) com o MESMO tamanho/estilo,
+  dar **um botão próprio** para as opções de **fonte** e outro para as de **forma**, e usar os
+  **mesmos ícones e a mesma organização** da barra de Notas nos botões de função equivalente.
+- **Implementação**:
+  - `mapa/mapa-render.js`: dicionário `ICONES` + `icone()` / `btnIcone()` / `btnMenu()` (SVG **16×16**,
+    `stroke: currentColor`, `stroke-width: 2`, grade 24×24) e `OPCOES_BARRA` / `rotuloOpcao()` /
+    `btnOpcoes()` / `menuOpcoesBarra()` (UM botão abre um menu `role="menu"` com as opções — popover
+    **FIXO**, para não ser cortado pelo `overflow` da barra).
+  - Os desenhos de **negrito / itálico / cor / destaque / desfazer / refazer** são **os mesmos** de
+    `index.html` (`#notesToolbar`), mantendo a linguagem visual entre as duas áreas.
+  - `mapa/mapa.js`: estado `mapaMenuBarra` + `mapaAlternarMenuBarra()` (ações `barra-menu` /
+    `menu-barra-fechar`); o menu fecha em qualquer outra ação, no clique fora e no `Esc`.
+  - `mapa/mapa.css`: tamanhos fixos por barra (`.mapa-tb-btn svg` 16×16, `.mapa-tb-mais-resumo svg`
+    18×18, `.mapa-menu-item svg` 16×16) e o visual do menu de opções.
+- **Contratos preservados**: todos os `data-mapa-acao`/`data-mapa-botao`/`data-mapa-cor`/`data-mapa-estilo`,
+  os ids (`#mapaNovoTopico`, `#mapaZoomAtual`, `#mapaModoConexao`) e a **ordem persistida** da barra.
+- **Teste**: `tests/mapa_toolbar.cjs` valida ícones 16×16 / traço 2 / `currentColor`, a igualdade dos
+  desenhos com a barra de Notas e o menu de opções (fonte/forma/alinhamento).
+
+### P66 — Asset do Service Worker (bump)
+- **Regra**: mudaram `mapa/mapa-render.js`, `mapa/mapa.js` e `mapa/mapa.css` ⇒ **`CACHE_NAME` v44 → v45**.

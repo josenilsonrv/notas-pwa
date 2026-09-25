@@ -158,6 +158,8 @@
         dados.menuNo = this.mapaMenuNo || null;
         dados.menuCanvas = this.mapaMenuCanvas || null;
         dados.barraAberta = Boolean(this.mapaBarraAberta);
+        // Menu de OPÇÕES da barra de formatação (fonte/forma/alinhamento) — F12.
+        dados.menuBarra = this.mapaMenuBarra || null;
         // Barras padronizadas (F12) ANTES do mapa: o editor de barra lê o DOM da toolbar.
         r.renderBarras(dados);
         const wrap = document.getElementById('mapaCanvasWrap');
@@ -175,7 +177,12 @@
     /** Cliques da área do mapa (delegação por `data-mapa-acao`). */
     function tratarCliqueMapa(evento) {
         const alvo = evento.target.closest('[data-mapa-acao]');
-        if (!alvo) return;
+        if (!alvo) {
+            // Clique fora de um botão: fecha o menu de OPÇÕES da barra, se estiver aberto
+            // (só re-renderiza nesse caso, para não atrapalhar o painel de propriedades).
+            if (this.mapaMenuBarra) { this.mapaMenuBarra = null; renderArea.call(this); }
+            return;
+        }
         const acao = alvo.dataset.mapaAcao;
         const id = alvo.dataset.mapaId || null;
         const s = store();
@@ -189,6 +196,9 @@
         }
         // Ações de nó usam o id do próprio botão (alternador) ou o nó selecionado.
         const idNo = alvo.dataset.mapaNoId || (interacao ? interacao.idPrincipal(this) : null);
+        // O menu de OPÇÕES da barra (fonte/forma/alinhamento) fecha em QUALQUER ação,
+        // menos no próprio botão que o abre/fecha.
+        if (this.mapaMenuBarra && acao !== 'barra-menu') this.mapaMenuBarra = null;
         // Ações do canvas são resolvidas sem re-renderizar a área.
         if (ACOES_CANVAS.includes(acao)) { tratarAcaoCanvas.call(this, acao, evento); return; }
         switch (acao) {
@@ -258,6 +268,8 @@
             case 'barra-editar': this.mapaBarraAberta = true; break;
             case 'barra-fechar': this.mapaBarraAberta = false; break;
             case 'barra-restaurar': mapaRestaurarBarra.call(this); break;
+            case 'barra-menu': mapaAlternarMenuBarra.call(this, alvo.dataset.mapaMenu); break;
+            case 'menu-barra-fechar': this.mapaMenuBarra = null; break;
             case 'barra-mover':
                 mapaMoverBotaoBarra.call(this, alvo.dataset.mapaGrupo, alvo.dataset.mapaBotao, Number(alvo.dataset.mapaDir) || 1);
                 break;
@@ -1227,9 +1239,10 @@
     }
 
     function mapaFecharMenus() {
-        if (!this.mapaMenuNo && !this.mapaMenuCanvas) return false;
+        if (!this.mapaMenuNo && !this.mapaMenuCanvas && !this.mapaMenuBarra) return false;
         this.mapaMenuNo = null;
         this.mapaMenuCanvas = null;
+        this.mapaMenuBarra = null;
         renderArea.call(this);
         return true;
     }
@@ -1266,6 +1279,16 @@
     function mapaRestaurarBarra() {
         store().limparOrdemBarra();
         renderArea.call(this);
+        return true;
+    }
+
+    /**
+     * Abre/fecha o menu de OPÇÕES de um botão da barra de formatação
+     * (`fonte` / `forma` / `alinhamento`) — um botão só, com as opções dentro.
+     */
+    function mapaAlternarMenuBarra(chave) {
+        if (!chave) return false;
+        this.mapaMenuBarra = (this.mapaMenuBarra && this.mapaMenuBarra.chave === chave) ? null : { chave };
         return true;
     }
 
@@ -1864,6 +1887,7 @@
             mapaMenuNo: null,
             mapaMenuCanvas: null,
             mapaBarraAberta: false,
+            mapaMenuBarra: null,
             aplicarArea, inicializarAreasMapa, montarAreaMapa, aplicarTemaMapa, renderArea,
             definirViewport, salvarViewportAgora,
             mapaCriarFilhoDeNo, mapaCriarIrmaoDeNo, mapaCriarNoIndependente, mapaExcluirNo,
@@ -1880,6 +1904,7 @@
             mapaAbrirAtalhos, mapaFecharAtalhos, mapaCapturarAtalho, mapaLigarAtalho, mapaRestaurarAtalhosPadrao,
             atualizarBotoesHistorico,
             mapaAbrirMenuNo, mapaAbrirMenuCanvas, mapaFecharMenus,
+            mapaAlternarMenuBarra,
             mapaMoverBotaoBarra, mapaRestaurarBarra,
             mapaAlternarEstiloRapido, mapaDefinirEstiloRapido, mapaPassoEstiloRapido,
             mapaAbrirCor, mapaGravarCorRecente,
