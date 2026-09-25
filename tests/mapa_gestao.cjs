@@ -160,9 +160,10 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await clicarAcao('pasta-nova');
     await enviarForm('Trabalho');
     const pastas = await page.evaluate(() => window.MapaMentalStore.listarPastas());
-    assert.equal(pastas.length, 1, 'pasta criada');
-    assert.equal(pastas[0].nome, 'Trabalho');
-    const pastaId = pastas[0].id;
+    assert.equal(pastas.length, 2, 'pasta criada (+ a pasta padrão "Geral")');
+    const criada = pastas.find(p => p.nome === 'Trabalho');
+    assert.ok(criada, 'a pasta "Trabalho" existe');
+    const pastaId = criada.id;
 
     await acaoItem('Alpha Renomeado', 'mover');
     await page.selectOption('#mapaFormPasta', pastaId);

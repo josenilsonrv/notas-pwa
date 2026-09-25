@@ -72,7 +72,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       dentroDoModal: document.querySelectorAll('#notesModalBackdrop [data-app-area]').length,
       contemMapa: document.getElementById('notesModalBackdrop').contains(document.getElementById('mapaArea'))
     }));
-    assert.equal(abas.total, 2, 'seletor tem Notas e Mapa Mental');
+    assert.equal(abas.total, 3, 'seletor tem Pastas, Notas e Mapa Mental');
     assert.equal(abas.dentroDoModal, 0, 'seletor fica FORA do modal de notas');
     assert.equal(abas.contemMapa, false, 'área do mapa fica FORA do modal de notas');
 

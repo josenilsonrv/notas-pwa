@@ -131,6 +131,28 @@
         return bloco;
     }
 
+    /**
+     * Vínculo com uma NOTA do app (vínculo Notas↔Mapa): um `select` com as notas
+     * da pasta ativa e um atalho "Abrir nota". Salvo junto do conteúdo do nó.
+     */
+    function blocoNotaRef(no, contexto) {
+        const bloco = criar('div', 'mapa-painel-nota');
+        bloco.append(criar('span', 'mapa-painel-rotulo', 'Nota vinculada'));
+        const notas = (global.app && global.app.projectsData)
+            || (contexto && contexto.notas) || [];
+        const linha = criar('div', 'mapa-painel-nota-linha');
+        const sel = document.createElement('select');
+        sel.id = 'mapaPainelNotaRef';
+        sel.className = 'mapa-ordem';
+        sel.setAttribute('aria-label', 'Nota vinculada');
+        sel.append(new Option('— nenhuma —', ''));
+        notas.forEach(nota => sel.append(new Option(nota.nome || 'Nota', nota.id)));
+        sel.value = no.notaRef || '';
+        linha.append(sel);
+        if (no.notaRef) linha.append(botao('mapa-chip', '📄 Abrir nota', 'abrir-nota', { mapaNota: no.notaRef }));
+        bloco.append(linha);
+        return bloco;
+    }
     // 🔄 [FIM: MAPA - BLOCOS DE CONTEÚDO (links/anexos/ponte)]
 
     // 🔄 [INÍCIO: MAPA - SEÇÃO ESTILO (FASE 9)]
@@ -332,6 +354,8 @@
         form.append(blocoAnexos(no));
         const ponte = blocoPonte(no, contexto);
         if (ponte) form.append(ponte);
+        // Vínculo Notas↔Mapa (abre a nota ao clicar no atalho).
+        form.append(blocoNotaRef(no, contexto));
         // Estilo do nó (Fase 9) — dentro do mesmo form (nunca um form aninhado).
         form.append(blocoEstilo(no, contexto));
 
@@ -350,7 +374,7 @@
     // 🔄 [INÍCIO: MAPA - API PÚBLICA]
     global.MapaMentalPainel = {
         EMOJIS, ROTULO_PRIORIDADE, ROTULO_STATUS, montarPainel,
-        blocoLinksDetectados, blocoAnexos, blocoPonte, blocoEstilo
+        blocoLinksDetectados, blocoAnexos, blocoPonte, blocoEstilo, blocoNotaRef
     };
     // 🔄 [FIM: MAPA - API PÚBLICA]
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -791,3 +791,64 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
 - **Documentação completa**: `docs/ATUALIZACAO-PWA.md` — sintoma → diagnóstico (comparação de bytes
   local × publicado) → causa (cache-first + `sw.js` cacheado) → correção → **cabeçalhos por host**
   (Firebase Hosting, Cloudflare Pages, Netlify, Nginx) → checklist de release.
+
+### P72 — Mapa: colapso das barras da área (paridade com o cabeçalho de Notas)
+- **Pedido**: um botão de colapso das barras do Mapa, com a MESMA lógica/organização de Notas.
+- **Implementação**: `#mapaColapsoBarras` na `.mapa-topbar` (ícone `ICONES.colapso`, MESMO desenho da
+  seta de Notas) + bloco `⚡ [INÍCIO: MAPA - COLAPSO DAS BARRAS]` em `mapa/mapa.js`
+  (`setMapaBarrasColapsadas` · `mapaPanelMotion` · `mapaAlternarColapsoBarras`). A classe
+  `.mapa-shell.mapa-barras-colapsadas` esconde `#mapaToolbar`/`#mapaFormatBar` (a topbar permanece,
+  como o cabeçalho de Notas). Estado `mapaBarrasColapsadas` resetado ao voltar para a lista.
+- **Detalhe**: o `hidden` das barras é recalculado por `atualizarShell`/`renderBarras` a cada render;
+  por isso a **CLASSE** é o guardião persistente (o CSS `display:none !important` vence). O botão
+  `.toolbar-btn` precisou de `#mapaColapsoBarras[hidden] { display:none !important; }` — senão o
+  `display:flex` de `.toolbar-btn` sobrepõe o atributo `[hidden]`.
+- **Asset do Service Worker (bump)**: `CACHE_NAME` **v47 → v48** (mudaram `mapa/mapa.js`,
+  `mapa/mapa-render.js` e `mapa/mapa.css`).
+- **Teste**: `tests/mapa_colapso.cjs`; `tests/mapa_toolbar.cjs` §2 atualizado (a topbar do mapa passou
+  a mostrar `voltar-lista` + `alternar-colapso`).
+
+### P73 — Notas: menu do chip com Duplicar/Mover para pasta (+ z-index do menu)
+- **Pedido**: botão direito / toque longo no chip abre um menu com **duplicar**, **excluir** e
+  **mover entre pastas**.
+- **Implementação** (`app.js`): menu refatorado (`criarMenuNota`/`mostrarMenuNota`) com
+  `Renomear` · `Duplicar` · `Mover para pasta…` · `Excluir`; novos `duplicarNota`, `pastasDeNotas`
+  (usa `MapaMentalStore.listarPastas`, tolerante à ausência do módulo), `moverNotaParaPasta`,
+  `abrirMenuMoverNota`. Notas ganharam `pastaId` (migração leve em `lerNotasLocais` e em
+  `criarNotaLocal`); `notasBackend().listar` passou a expor `pastaId`.
+- **BUG encontrado**: `.notes-chip-menu` tinha `z-index: 1000`, **abaixo** de
+  `#notesModalBackdrop.active { z-index: 2300 }` ⇒ no PC o menu ficava ATRÁS do modal e o clique era
+  **interceptado** (mesma família do P1). **Correção**: `z-index: 2400` (+ estilo da pasta atual).
+- **Asset do Service Worker (bump)**: `CACHE_NAME` **v48 → v49** (mudaram `app.js` e `styles.css`).
+- **Teste**: `tests/notes_chip_menu.cjs` (4 ações, duplicação com id novo, mover para pasta com
+  persistência, excluir com confirmação).
+
+### P74 — Pastas como PRIMEIRA tela (workspaces que abrangem Notas + Mapa)
+- **Pedido**: a tela de pastas passa a ser a raiz da hierarquia; cada pasta contém as Notas **e** os
+  Mapas dela (workspace). Ao clicar numa pasta, entram as áreas de Notas e de Mapas daquela pasta.
+- **Implementação**: 3ª área "Pastas" (`#pastasArea` + aba `data-app-area="pastas"`, **primeira**),
+  padrão de `lerAreaAtiva` = `pastas`. Em `mapa/mapa-store.js`: `AREAS`, `ID_PASTA_PADRAO`
+  (`'pasta-geral'`), `garantirPastaPadrao` (a pasta "Geral" adota os itens sem pasta), `lerPastaAtiva`/
+  `salvarPastaAtiva`, `contarMapasDaPasta`. Em `mapa/mapa.js`: bloco `⚡ MAPA - PASTAS (ÁREA RAIZ /
+  WORKSPACES)` (`montarAreaPastas`/`renderPastas`/`abrirPasta`/`tratarCliquePastas`, com namespace
+  próprio `data-pastas-acao`). Em `app.js`: `notaPastaAtiva`, `notaPertenceAPasta`, `notasDaPasta`,
+  `definirPastaAtivaNotas`, `contarNotasDaPasta`; `renderNotesNav` filtra pelos chips da pasta;
+  `criarNota`/`excluirNota` gravam `pastaId`.
+- **Ajustes de teste**: `tests/mapa_area.cjs` (2→3 abas), `tests/mapa_gestao.cjs` (pasta padrão "Geral"
+  criada automaticamente), `tests/notes_chip_menu.cjs` (chips seguem a pasta ativa).
+- **Asset do Service Worker (bump)**: `CACHE_NAME` **v49 → v50**.
+- **Teste**: `tests/pastas_unificadas.cjs` (tela raiz, cartões com contagem, abrir pasta, chips e mapa
+  filtrados, volta às pastas).
+
+### P75 — Vínculo Notas↔Mapa + visão lado a lado (arrastar troca o lado)
+- **Pedido**: um tópico do mapa pode apontar para uma NOTA (atalho que abre a nota); e, no PC, ver a
+  nota e o mapa lado a lado — **arrastar a barra superior** de um painel para o lado inverso troca os lados.
+- **Implementação (vínculo)**: `notaRef` no modelo (`criarNo`/`duplicarGrafo`/`atualizarConteudo` +
+  `definirNotaRef`); no painel, `blocoNotaRef` (select `#mapaPainelNotaRef` + atalho "Abrir nota");
+  no card do nó, `.mapa-no-nota-icone` (`data-mapa-acao="abrir-nota"`). A ação `abrir-nota` troca para a
+  área de Notas e abre a nota.
+- **Implementação (split)**: botão `#mapaSplitBtn` na topbar do mapa; bloco `⚡ MAPA - LADO A LADO` em
+  `mapa/mapa.js` (`aplicarSplit`/`trocarLadoSplit`/`instalarArrastoSplit`, persistido em
+  `notas-pwa-split`). CSS em `mapa/mapa.css` (`html.app-split` divide Nota | Mapa; escondido no mobile).
+- **Teste**: `tests/split_view.cjs` (vincular nota, abrir pelo atalho, ligar/desligar o split e o gesto
+  de arrastar trocando o lado).

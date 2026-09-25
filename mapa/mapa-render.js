@@ -103,7 +103,18 @@
         const templates = botao('mapa-btn', 'Templates', 'templates');
         templates.id = 'mapaTemplates';
 
-        topbar.append(voltar, tituloAtual, espaco, busca, ordem, arquivados, novaPasta, novo, templates);
+        // Botão de COLAPSO das barras (mesma lógica do cabeçalho de Notas): vive na
+        // topbar (que permanece visível) e recolhe `#mapaToolbar` + `#mapaFormatBar`.
+        const colapso = btnIcone('colapso', 'colapso', 'Recolher barras', 'alternar-colapso', null, 'mapaColapsoBarras');
+        colapso.hidden = true;
+        colapso.setAttribute('aria-expanded', 'true');
+
+        // Lado a lado (PC): ver a nota e o mapa ao mesmo tempo; a barra arrasta p/ trocar de lado.
+        const splitBtn = btnIcone('split', 'split', 'Ver nota e mapa lado a lado', 'alternar-split', null, 'mapaSplitBtn');
+        splitBtn.hidden = true;
+        splitBtn.setAttribute('aria-pressed', 'false');
+
+        topbar.append(voltar, tituloAtual, espaco, busca, ordem, arquivados, novaPasta, novo, templates, splitBtn, colapso);
 
         const form = document.createElement('form');
         form.id = 'mapaForm';
@@ -146,6 +157,8 @@
         visivel('mapaNovo', lista);
         visivel('mapaTemplates', lista);
         visivel('mapaToolbar', !lista);
+        visivel('mapaColapsoBarras', !lista);
+        visivel('mapaSplitBtn', !lista);
         const titulo = document.getElementById('mapaTituloAtual');
         if (titulo) titulo.textContent = estado.mapaAberto ? (estado.mapaAberto.nome || 'Mapa') : '';
         const busca = document.getElementById('mapaBusca');
@@ -441,7 +454,11 @@
         'conectar-mapa': { d: '<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>' },
         'template-salvar': { d: '<path d="M6 3h12v18l-6-4-6 4z"/>' },
         atalhos: { d: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>' },
-        'barra-editar': { d: '<path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h13"/><circle cx="16" cy="6" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="19" cy="18" r="2.2"/>' }
+        'barra-editar': { d: '<path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h13"/><circle cx="16" cy="6" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="19" cy="18" r="2.2"/>' },
+        // Colapso das barras (MESMO desenho da seta do cabeçalho de Notas).
+        colapso: { d: '<path d="m5 15 7-7 7 7"/>' },
+        // Lado a lado: dois painéis divididos.
+        split: { d: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/>' }
     };
 
     /** Cria o SVG padronizado de um ícone (16×16, `stroke: currentColor`). */
@@ -994,6 +1011,14 @@
             ponte.title = 'Abrir mapa conectado';
             ponte.setAttribute('aria-label', 'Abrir mapa conectado');
             elemento.append(ponte);
+        }
+
+        // Vínculo Notas↔Mapa: atalho que abre a nota vinculada.
+        if (no.notaRef) {
+            const nota = botao('mapa-no-nota-icone', '📄', 'abrir-nota', { mapaNota: no.notaRef });
+            nota.title = 'Abrir a nota vinculada';
+            nota.setAttribute('aria-label', 'Abrir a nota vinculada');
+            elemento.append(nota);
         }
 
         if (no.bloqueado) {

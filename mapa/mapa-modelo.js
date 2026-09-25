@@ -168,7 +168,7 @@
             anexos: clonar(origem.anexos), tarefa: origem.tarefa, concluido: origem.concluido,
             prioridade: origem.prioridade, status: origem.status, inicio: origem.inicio,
             prazo: origem.prazo, responsavel: origem.responsavel, progresso: origem.progresso,
-            refs: clonar(origem.refs), mapaRef: origem.mapaRef
+            refs: clonar(origem.refs), mapaRef: origem.mapaRef, notaRef: origem.notaRef
         };
     }
 
@@ -236,6 +236,7 @@
             progresso: cfg.progresso,
             refs: cfg.refs,
             mapaRef: cfg.mapaRef || null,
+            notaRef: cfg.notaRef || null,
             colapsado: Boolean(cfg.colapsado),
             bloqueado: Boolean(cfg.bloqueado),
             posicao: cfg.posicao ? { x: Number(cfg.posicao.x) || 0, y: Number(cfg.posicao.y) || 0 } : null,
@@ -640,6 +641,8 @@
         if (tem('tags')) no.tags = normalizarTags(mudancas.tags);
         if (tem('links')) no.links = normalizarLinks(mudancas.links);
         if (tem('refs')) no.refs = normalizarRefs(mudancas.refs);
+        // Vínculo Notas↔Mapa: id da nota aberta ao clicar no nó (`null` limpa).
+        if (tem('notaRef')) no.notaRef = mudancas.notaRef ? sanitizarTexto(mudancas.notaRef) : null;
         if (tem('prioridade')) {
             no.prioridade = PRIORIDADES.includes(mudancas.prioridade) ? mudancas.prioridade : null;
         }
@@ -650,6 +653,14 @@
         if (tem('inicio')) no.inicio = normalizarData(mudancas.inicio);
         if (tem('prazo')) no.prazo = normalizarData(mudancas.prazo);
         if (no.concluido) no.progresso = 100;
+        return true;
+    }
+
+    /** Define (ou limpa) a NOTA vinculada ao nó — vínculo Notas↔Mapa. */
+    function definirNotaRef(grafo, idNo, notaId) {
+        const no = obterNo(grafo, idNo);
+        if (!no) return false;
+        no.notaRef = notaId ? sanitizarTexto(notaId) : null;
         return true;
     }
 
@@ -930,7 +941,7 @@
         PRIORIDADES, STATUS_NO, LIMITE_ANEXO, LIMITE_TEXTO, LIMITE_TAGS, CAMPOS_CONTEUDO,
         sanitizarTexto, escaparHtml, urlSegura, extrairLinks, htmlSeguro, normalizarData, limitarProgresso,
         normalizarTags, normalizarLinks, normalizarRefs, normalizarConteudoNo, dadosConteudoNo,
-        atualizarConteudo, alternarConcluido, adicionarAnexo, removerAnexo,
+        atualizarConteudo, definirNotaRef, alternarConcluido, adicionarAnexo, removerAnexo,
         TIPOS_LINHA, ESTILOS_SETA, LARGURA_CONEXAO, normalizarCor, limitarEspessura, normalizarConexao,
         FORMAS_NO, ALINHAMENTOS_NO, FONTES_NO, TAMANHOS_NO, ESPESSURAS_BORDA, TEMAS_MAPA,
         normalizarEstilo, normalizarEstilosNivel, temaDoMapa, nivelDoNo, estiloEfetivo,

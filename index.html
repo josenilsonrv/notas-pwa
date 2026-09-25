@@ -99,9 +99,12 @@
         <!-- Áreas do aplicativo: Notas | Mapa Mental.
              Fica FORA do bloco #notesModalBackdrop (parity_* compara o modal de notas). -->
         <nav id="appAreas" class="app-areas" role="tablist" aria-label="Áreas do aplicativo">
-            <button type="button" role="tab" data-app-area="notas" aria-selected="true">Notas</button>
+            <button type="button" role="tab" data-app-area="pastas" aria-selected="true">Pastas</button>
+            <button type="button" role="tab" data-app-area="notas" aria-selected="false">Notas</button>
             <button type="button" role="tab" data-app-area="mapa" aria-selected="false">Mapa Mental</button>
         </nav>
+        <!-- Área raiz "Pastas": cada pasta é um workspace (Notas + Mapa). Montada lazy. -->
+        <section id="pastasArea" class="pastas-area" role="tabpanel" aria-label="Pastas" hidden></section>
         <!-- Área do Mapa Mental: montada lazy na primeira entrada (mapa/mapa.js). -->
         <section id="mapaArea" class="mapa-area" role="tabpanel" aria-label="Mapa Mental" hidden></section>
         <!-- Notes Modal (Always visible in this PWA) -->

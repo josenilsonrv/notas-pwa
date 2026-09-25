@@ -13,6 +13,8 @@
         recentes: 'notas-pwa-mapa-recentes',
         ativo: 'notas-pwa-mapa-ativo',
         area: 'notas-pwa-area-ativa',
+        pastaAtiva: 'notas-pwa-pasta-ativa',
+        split: 'notas-pwa-split',
         atalhos: 'notas-pwa-mapa-atalhos',
         barra: 'notas-pwa-mapa-toolbar-order'
     };
@@ -35,8 +37,10 @@
     const modelo = global.MapaMentalModelo;
 
     // 🔄 [INÍCIO: MAPA - ÁREA ATIVA]
-    const lerAreaAtiva = () => (ler(CHAVES.area, 'notas') === 'mapa' ? 'mapa' : 'notas');
-    const salvarAreaAtiva = area => gravar(CHAVES.area, area === 'mapa' ? 'mapa' : 'notas');
+    // Áreas do app: "Pastas" (tela raiz) | "Notas" | "Mapa".
+    const AREAS = ['pastas', 'notas', 'mapa'];
+    const lerAreaAtiva = () => { const valor = ler(CHAVES.area, 'pastas'); return AREAS.includes(valor) ? valor : 'pastas'; };
+    const salvarAreaAtiva = area => gravar(CHAVES.area, AREAS.includes(area) ? area : 'notas');
     // 🔄 [FIM: MAPA - ÁREA ATIVA]
 
     // 🔄 [INÍCIO: MAPA - ATALHOS (FASE 10)]
@@ -237,6 +241,43 @@
         return true;
     }
 
+    /** Id fixo da pasta "Geral" (adota itens sem pasta — notas e mapas). */
+    const ID_PASTA_PADRAO = 'pasta-geral';
+
+    /** Garante a existência da pasta padrão "Geral" (workspace raiz). */
+    function garantirPastaPadrao() {
+        const lista = listarPastas();
+        let geral = lista.find(p => p.id === ID_PASTA_PADRAO);
+        if (!geral) {
+            geral = { id: ID_PASTA_PADRAO, nome: 'Geral', paiId: null };
+            lista.unshift(geral);
+            gravar(CHAVES.pastas, lista);
+        }
+        return geral;
+    }
+
+    /** Pasta/workspace ativa (tela raiz). */
+    const lerPastaAtiva = () => {
+        const valor = ler(CHAVES.pastaAtiva, null);
+        return typeof valor === 'string' && valor ? valor : null;
+    };
+    const salvarPastaAtiva = id => gravar(CHAVES.pastaAtiva, id || null);
+
+    /** Preferências da visão lado a lado (Nota + Mapa no PC). */
+    const lerSplit = () => {
+        const valor = ler(CHAVES.split, {});
+        return {
+            ligado: Boolean(valor && valor.ligado),
+            lado: (valor && valor.lado === 'direita') ? 'direita' : 'esquerda'
+        };
+    };
+    const salvarSplit = pref => gravar(CHAVES.split, { ligado: Boolean(pref && pref.ligado), lado: (pref && pref.lado === 'direita') ? 'direita' : 'esquerda' });
+
+    /** Quantos mapas pertencem a uma pasta (a "Geral" também conta os sem pasta). */
+    function contarMapasDaPasta(pastaId) {
+        return listarMapas().filter(m => (m.pastaId || ID_PASTA_PADRAO) === pastaId).length;
+    }
+
     const listarRecentes = () => {
         const lista = ler(CHAVES.recentes, []);
         return Array.isArray(lista) ? lista : [];
@@ -290,6 +331,8 @@
         moverMapaParaPasta, definirMapaRaiz, obterMapaRaiz, listarMapasFiltrados,
         listarBacklinks, listarSaidas, listarReferenciasQuebradas,
         listarPastas, criarPasta, renomearPasta, excluirPasta,
+        ID_PASTA_PADRAO, garantirPastaPadrao, lerPastaAtiva, salvarPastaAtiva, contarMapasDaPasta,
+        lerSplit, salvarSplit,
         listarRecentes, salvarRecentes, registrarRecente,
         listarTemplates, salvarTemplate, criarMapaDeTemplateSalvo, excluirTemplate,
         lerMapaAtivo, salvarMapaAtivo

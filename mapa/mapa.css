@@ -110,6 +110,76 @@ html[data-theme="dark"] .app-areas [data-app-area]:hover { color: var(--mapa-tex
 
 .mapa-area[hidden] { display: none !important; }
 
+/* ------------------------------------------------------------
+ * Área raiz "Pastas" (workspaces que abrangem Notas + Mapa).
+ * Mesmo padrão visual da área do Mapa.
+ * ------------------------------------------------------------ */
+.pastas-area {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    display: flex;
+    flex-direction: column;
+    background: var(--mapa-espaco);
+    color: var(--mapa-texto);
+}
+.pastas-area[hidden] { display: none !important; }
+.pastas-shell { display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: auto; }
+.pastas-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: none;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--mapa-borda);
+    background: var(--mapa-superficie);
+}
+.pastas-titulo { font-size: 16px; font-weight: 600; color: var(--mapa-texto-titulo); }
+.pastas-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 18px; }
+.pastas-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--mapa-borda);
+    border-radius: 12px;
+    background: var(--mapa-container);
+}
+.pastas-card.is-active { border-color: var(--color-neon-blue); box-shadow: 0 0 0 2px rgba(0, 113, 227, .25); }
+.pastas-card-abrir {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    width: 100%;
+    padding: 4px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.pastas-card-nome { font-size: 15px; font-weight: 600; }
+.pastas-card-meta { font-size: 12px; color: var(--mapa-texto-suave); }
+.pastas-card-acoes { display: flex; gap: 6px; }
+
+/* ------------------------------------------------------------
+ * Lado a lado (PC): Nota | Mapa. Opt-in pelo botão; arrastar a BARRA
+ * SUPERIOR de um painel para o lado inverso troca os lados.
+ * ------------------------------------------------------------ */
+html.notes-mobile #mapaSplitBtn { display: none !important; }
+@media (min-width: 768px) {
+    html.app-split .mapa-area { left: 50%; }
+    html.app-split #notesModalBackdrop { right: 50%; }
+    html.app-split.app-split-nota-direita .mapa-area { left: 0; right: 50%; }
+    html.app-split.app-split-nota-direita #notesModalBackdrop { left: 50%; right: 0; }
+    html.app-split #notesModalBackdrop.active { z-index: 900; }
+    html.app-split #notesModal { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; }
+    html.app-split .notes-modal-header,
+    html.app-split .mapa-topbar { cursor: grab; touch-action: none; }
+    html.app-split .mapa-split-arrastando { cursor: grabbing; }
+}
+
 .mapa-shell { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 
 .mapa-topbar {
@@ -493,6 +563,14 @@ html[data-theme="dark"] .mapa-no-editor { background: var(--mapa-espaco); }
     cursor: pointer; font-size: 12px; min-height: 24px;
 }
 
+/* Vínculo Notas↔Mapa: atalho "abrir nota" no card e no painel. */
+.mapa-no-nota-icone {
+    flex: none; margin-left: 6px; border: 0; background: transparent;
+    cursor: pointer; font-size: 12px; min-height: 24px;
+}
+.mapa-painel-nota { display: flex; flex-direction: column; gap: 4px; }
+.mapa-painel-nota-linha { display: flex; align-items: center; gap: 8px; }
+
 .mapa-painel {
     flex: none; margin: 8px; padding: 12px; max-height: 46vh; overflow: auto;
     border: 1px solid var(--color-border); border-radius: 12px;
@@ -817,6 +895,17 @@ html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); bord
 .mapa-format-bar { background: var(--mapa-container); }
 .mapa-toolbar[hidden],
 .mapa-format-bar[hidden] { display: none !important; }
+/* Colapso das barras da área (mesma lógica do cabeçalho de Notas): a topbar
+   permanece (com o botão) e as duas barras recolhem quando o shell é marcado. */
+.mapa-shell.mapa-barras-colapsadas #mapaToolbar,
+.mapa-shell.mapa-barras-colapsadas #mapaFormatBar { display: none !important; }
+#mapaColapsoBarras[hidden] { display: none !important; }
+#mapaColapsoBarras svg { transition: transform 220ms ease-in-out; }
+#mapaColapsoBarras[aria-expanded="true"] svg { transform: rotate(180deg); }
+#mapaColapsoBarras[aria-expanded="false"] svg { transform: rotate(0deg); }
+@media (prefers-reduced-motion: reduce) {
+    #mapaColapsoBarras svg { transition: none; }
+}
 .mapa-tb-grupo { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
 .mapa-tb-divisor { width: 1px; height: 24px; margin: 0 6px; background: var(--mapa-divisor); flex: 0 0 auto; }
 .mapa-tb-btn { font-size: 13px; }

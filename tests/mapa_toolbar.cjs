@@ -116,10 +116,11 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       .filter(el => !el.closest('#mapaToolbar, #mapaFormatBar, .mapa-topbar, .mapa-menu, #mapaAtalhos, #mapaBarraEditor, .mapa-painel, #mapaForm, .mapa-canvas-vazio, .mapa-no, .mapa-conexoes, #mapaMinimapa'))
       .map(el => el.dataset.mapaAcao));
     assert.deepEqual(soltos, [], 'nenhum botão solto fora das barras/menus/painel');
-    // No mapa aberto, a topbar mostra SÓ "‹ Mapas" (o resto é da visão de lista).
+    // No mapa aberto, a topbar mostra SÓ "‹ Mapas" + o botão de colapso das barras
+    // (o resto é da visão de lista).
     const topbarVisivel = await page.evaluate(() => [...document.querySelectorAll('.mapa-topbar [data-mapa-acao]')]
       .filter(el => el.offsetParent !== null).map(el => el.dataset.mapaAcao));
-    assert.deepEqual(topbarVisivel, ['voltar-lista'], 'topbar do mapa só mostra "‹ Mapas"');
+    assert.deepEqual(topbarVisivel, ['voltar-lista', 'alternar-split', 'alternar-colapso'], 'topbar do mapa mostra "‹ Mapas" + lado a lado + colapso');
 
     // ---------------------------------------------------------------- 3) barra de formatação contextual
     assert.equal(await page.evaluate(() => document.getElementById('mapaFormatBar').hidden), true,

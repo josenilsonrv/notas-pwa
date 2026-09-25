@@ -115,6 +115,11 @@
                 dados.nomeMapaRef = ref ? ref.nome : null;
                 dados.refQuebrada = !ref;
             }
+            // Vínculo Notas↔Mapa: nome da nota vinculada (para o rótulo do atalho).
+            if (dados.painelNo && dados.painelNo.notaRef) {
+                const nota = ((this.projectsData || []).find(n => n.id === dados.painelNo.notaRef)) || null;
+                dados.nomeNotaRef = nota ? (nota.nome || 'Nota') : null;
+            }
             // Conexões livres (Fase 6): menu contextual + estado do modo de conexão.
             dados.conexaoMenu = this.mapaConexaoMenuId ? m.obterConexao(grafo, this.mapaConexaoMenuId) : null;
             if (!dados.conexaoMenu) this.mapaConexaoMenuId = null;
@@ -162,6 +167,8 @@
         dados.menuBarra = this.mapaMenuBarra || null;
         // Barras padronizadas (F12) ANTES do mapa: o editor de barra lê o DOM da toolbar.
         r.renderBarras(dados);
+        // Reaplica o colapso das barras (um re-render não pode "descolapsar").
+        setMapaBarrasColapsadas.call(this, Boolean(this.mapaBarrasColapsadas));
         const wrap = document.getElementById('mapaCanvasWrap');
         if (dados.mapaAberto) {
             r.renderMapaAberto(wrap, dados);
@@ -207,6 +214,7 @@
                 if (this.mapaSelecao) this.mapaSelecao.clear();
                 this.mapaAbertaId = null;
                 this.mapaAcao = null;
+                this.mapaBarrasColapsadas = false;
                 break;
             case 'novo': this.mapaAcao = { tipo: 'novo' }; break;
             case 'templates': this.mapaMostrarTemplates = !this.mapaMostrarTemplates; break;
@@ -280,6 +288,15 @@
             case 'no-anexo-adicionar': mapaPedirAnexoNo.call(this); return;
             case 'no-anexo-remover': mapaRemoverAnexoNo.call(this, idNo, alvo.dataset.mapaAnexo); break;
             case 'ponte-abrir': abrirMapa.call(this, alvo.dataset.mapaRef); break;
+            // Vínculo Notas↔Mapa: abre a nota vinculada (sai do mapa para a área de Notas).
+            case 'abrir-nota': {
+                const idNota = alvo.dataset.mapaNota;
+                if (idNota && typeof this.openNotesModal === 'function') {
+                    aplicarArea.call(this, 'notas');
+                    this.openNotesModal(idNota);
+                }
+                return;
+            }
             case 'conectar-nos': mapaAlternarModoConexao.call(this); break;
             case 'no-conectar-para':
                 this.mapaAcao = { tipo: 'no-conectar-para', id: idNo };
@@ -319,6 +336,8 @@
                 mapaDefinirEspacamento.call(this, { nos: lerNum('mapaEspacoNos'), niveis: lerNum('mapaEspacoNiveis') });
                 return;
             }
+            case 'alternar-colapso': mapaAlternarColapsoBarras.call(this); return;
+            case 'alternar-split': aplicarSplit.call(this, !this.mapaSplit); return;
             default: return;
         }
         renderArea.call(this);
@@ -370,6 +389,272 @@
         renderArea.call(this);
     }
     // 🔄 [FIM: MAPA - RENDER/CONTROLE]
+
+    // ⚡ [INÍCIO: MAPA - COLAPSO DAS BARRAS]
+    /**
+     * Recolhe/expande as barras da área do mapa. Espelha o padrão de Notas
+     * (`setNotesHeaderCollapsed` + `notesPanelMotion`): o botão vive na topbar
+     * (que permanece visível) e apenas `#mapaToolbar`/`#mapaFormatBar` recolhem.
+     */
+    function setMapaBarrasColapsadas(collapsed) {
+        const shell = document.querySelector('#mapaArea .mapa-shell');
+        const botao = document.getElementById('mapaColapsoBarras');
+        if (shell) shell.classList.toggle('mapa-barras-colapsadas', Boolean(collapsed));
+        if (botao) {
+            botao.setAttribute('aria-expanded', String(!collapsed));
+            botao.title = collapsed ? 'Mostrar barras' : 'Recolher barras';
+            botao.setAttribute('aria-label', botao.title);
+        }
+    }
+
+    /** Animação de painel (altura/opacidade) com versão — igual ao motion de Notas. */
+    function mapaPanelMotion(elemento, esconder, versao) {
+        if (!elemento || this.mapaMotionVersion !== versao) return Promise.resolve();
+        elemento.getAnimations().forEach(a => a.cancel());
+        const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        elemento.hidden = false;
+        let animacao = null;
+        if (!reduced) {
+            const altura = elemento.getBoundingClientRect().height;
+            const estilo = getComputedStyle(elemento);
+            const aberto = { height: altura + 'px', opacity: 1, paddingTop: estilo.paddingTop, paddingBottom: estilo.paddingBottom };
+            const fechado = { height: '0px', opacity: 0, paddingTop: '0px', paddingBottom: '0px' };
+            animacao = elemento.animate(esconder ? [aberto, fechado] : [fechado, aberto], { duration: 220, easing: 'ease-in-out' });
+        }
+        const fim = animacao ? animacao.finished.catch(() => { }) : Promise.resolve();
+        return fim.then(() => {
+            if (this.mapaMotionVersion === versao) elemento.hidden = esconder;
+        });
+    }
+
+    /** Alterna o colapso das barras da área (botão da topbar). */
+    async function mapaAlternarColapsoBarras() {
+        const toolbar = document.getElementById('mapaToolbar');
+        const formatBar = document.getElementById('mapaFormatBar');
+        const botao = document.getElementById('mapaColapsoBarras');
+        if (!toolbar) return;
+        const esconder = !this.mapaBarrasColapsadas;
+        const versao = this.mapaMotionVersion = (this.mapaMotionVersion || 0) + 1;
+        [toolbar, formatBar].filter(Boolean).forEach(e => e.getAnimations().forEach(a => a.cancel()));
+        if (botao) botao.setAttribute('aria-expanded', String(!esconder));
+        if (esconder) {
+            // Só anima a formatação se ela estiver visível (nó selecionado).
+            this.mapaFormatBarVisivel = Boolean(formatBar && !formatBar.hidden);
+        } else {
+            const shell = document.querySelector('#mapaArea .mapa-shell');
+            if (shell) shell.classList.remove('mapa-barras-colapsadas');
+        }
+        await mapaPanelMotion.call(this, toolbar, esconder, versao);
+        if (this.mapaFormatBarVisivel) await mapaPanelMotion.call(this, formatBar, esconder, versao);
+        if (versao === this.mapaMotionVersion) {
+            this.mapaBarrasColapsadas = esconder;
+            setMapaBarrasColapsadas.call(this, esconder);
+        }
+    }
+    // ⚡ [FIM: MAPA - COLAPSO DAS BARRAS]
+
+    // ⚡ [INÍCIO: MAPA - PASTAS (ÁREA RAIZ / WORKSPACES)]
+    /** Botão da área de Pastas (mesma delegação `data-mapa-acao`). */
+    function botaoPastas(rotulo, acao, dados) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'mapa-btn';
+        b.textContent = rotulo;
+        // Namespace PRÓPRIO (`data-pastas-acao`) para não colidir com as ações do Mapa.
+        b.dataset.pastasAcao = acao;
+        Object.assign(b.dataset, dados || {});
+        return b;
+    }
+
+    function textoPastas(tag, classe, texto) {
+        const el = document.createElement(tag);
+        el.className = classe;
+        el.textContent = texto;
+        return el;
+    }
+
+    /** Monta o shell da área de Pastas (lazy, uma vez). */
+    function montarAreaPastas() {
+        if (this.pastasAreaMontada) return;
+        const secao = document.getElementById('pastasArea');
+        if (!secao) return;
+        secao.innerHTML = '';
+        const shell = document.createElement('div');
+        shell.className = 'pastas-shell';
+        secao.append(shell);
+        if (!this.pastasAreaOuvintesLigados) {
+            secao.addEventListener('click', evento => tratarCliquePastas.call(this, evento));
+            this.pastasAreaOuvintesLigados = true;
+        }
+        this.pastasAreaMontada = true;
+    }
+
+    /** Renderiza a lista de pastas (tela raiz). Cada pasta é um workspace. */
+    function renderPastas() {
+        const secao = document.getElementById('pastasArea');
+        if (!secao) return;
+        const shell = secao.querySelector('.pastas-shell');
+        if (!shell) return;
+        const s = store();
+        if (s && typeof s.garantirPastaPadrao === 'function') s.garantirPastaPadrao();
+        const pastas = (s && s.listarPastas) ? s.listarPastas() : [];
+        shell.innerHTML = '';
+
+        const topo = document.createElement('div');
+        topo.className = 'pastas-topbar';
+        topo.append(textoPastas('h2', 'pastas-titulo', 'Pastas'));
+        const espaco = document.createElement('div');
+        espaco.className = 'mapa-topbar-espaco';
+        topo.append(espaco, botaoPastas('Nova pasta', 'pasta-nova'));
+        shell.append(topo);
+
+        const grade = document.createElement('div');
+        grade.className = 'pastas-grade';
+        pastas.forEach(pasta => {
+            const card = document.createElement('div');
+            card.className = 'pastas-card' + (pasta.id === this.pastaAtiva ? ' is-active' : '');
+            const abrir = botaoPastas('', 'abrir-pasta', { pastaId: pasta.id });
+            abrir.classList.add('pastas-card-abrir');
+            abrir.append(textoPastas('span', 'pastas-card-nome', pasta.nome || 'Pasta'));
+            const nMaps = (s && s.contarMapasDaPasta) ? s.contarMapasDaPasta(pasta.id) : 0;
+            const nNotas = typeof this.contarNotasDaPasta === 'function' ? this.contarNotasDaPasta(pasta.id) : 0;
+            abrir.append(textoPastas('span', 'pastas-card-meta', nNotas + ' nota(s) · ' + nMaps + ' mapa(s)'));
+            card.append(abrir);
+            const acoes = document.createElement('div');
+            acoes.className = 'pastas-card-acoes';
+            acoes.append(botaoPastas('Renomear', 'pasta-renomear', { pastaId: pasta.id }));
+            if (!s || pasta.id !== s.ID_PASTA_PADRAO) acoes.append(botaoPastas('Excluir', 'pasta-excluir', { pastaId: pasta.id }));
+            card.append(acoes);
+            grade.append(card);
+        });
+        shell.append(grade);
+    }
+
+    /** Abre um workspace: define a pasta ativa (notas + mapas) e entra em Notas. */
+    function abrirPasta(id) {
+        const s = store();
+        const pastaId = id || (s && s.ID_PASTA_PADRAO) || 'pasta-geral';
+        this.pastaAtiva = pastaId;
+        if (s && typeof s.salvarPastaAtiva === 'function') s.salvarPastaAtiva(pastaId);
+        this.mapaFiltroPasta = pastaId;
+        this.mapaAbertaId = null;
+        if (typeof this.definirPastaAtivaNotas === 'function') this.definirPastaAtivaNotas(pastaId);
+        renderPastas.call(this);
+        aplicarArea.call(this, 'notas');
+    }
+
+    /** Cliques da área de Pastas (criar/abrir/renomear/excluir). */
+    function tratarCliquePastas(evento) {
+        const alvo = evento.target.closest('[data-pastas-acao]');
+        if (!alvo) return;
+        const acao = alvo.dataset.pastasAcao;
+        const s = store();
+        if (acao === 'abrir-pasta') { abrirPasta.call(this, alvo.dataset.pastaId); return; }
+        if (acao === 'pasta-nova') {
+            let nome = null;
+            try { nome = window.prompt('Nome da pasta', 'Nova pasta'); } catch (_) { nome = null; }
+            if (nome === null || !s) return;
+            s.criarPasta(String(nome).trim() || 'Nova pasta');
+            renderPastas.call(this);
+            return;
+        }
+        if (acao === 'pasta-renomear') {
+            const pasta = s ? s.listarPastas().find(p => p.id === alvo.dataset.pastaId) : null;
+            if (!pasta) return;
+            let nome = null;
+            try { nome = window.prompt('Nome da pasta', pasta.nome); } catch (_) { nome = null; }
+            if (nome === null) return;
+            s.renomearPasta(pasta.id, String(nome).trim() || pasta.nome);
+            renderPastas.call(this);
+            return;
+        }
+        if (acao === 'pasta-excluir') {
+            const pasta = s ? s.listarPastas().find(p => p.id === alvo.dataset.pastaId) : null;
+            if (!pasta || (s && pasta.id === s.ID_PASTA_PADRAO)) return;
+            let ok = false;
+            try { ok = window.confirm('Excluir a pasta "' + pasta.nome + '"?'); } catch (_) { ok = false; }
+            if (!ok) return;
+            s.excluirPasta(pasta.id);
+            if (this.pastaAtiva === pasta.id) { this.pastaAtiva = s.ID_PASTA_PADRAO; s.salvarPastaAtiva(s.ID_PASTA_PADRAO); }
+            renderPastas.call(this);
+            return;
+        }
+    }
+    // ⚡ [FIM: MAPA - PASTAS (ÁREA RAIZ / WORKSPACES)]
+    // ⚡ [INÍCIO: MAPA - LADO A LADO (SPLIT NOTA + MAPA)]
+    /**
+     * Visão lado a lado (PC): a nota e o mapa aparecem juntos. Opt-in pelo botão da
+     * topbar; arrastar a BARRA SUPERIOR de um painel para o lado inverso TROCA os
+     * lados. Persistido em `notas-pwa-split`.
+     */
+    function aplicarSplit(ligado) {
+        const html = document.documentElement;
+        this.mapaSplit = Boolean(ligado) && !(typeof this.ehMobile === 'function' && this.ehMobile());
+        html.classList.toggle('app-split', this.mapaSplit);
+        html.classList.toggle('app-split-nota-direita', this.mapaSplit && this.mapaSplitLado === 'direita');
+        if (store()) store().salvarSplit({ ligado: this.mapaSplit, lado: this.mapaSplitLado });
+        const botao = document.getElementById('mapaSplitBtn');
+        if (botao) {
+            botao.setAttribute('aria-pressed', String(this.mapaSplit));
+            const rotulo = this.mapaSplit ? 'Sair do modo lado a lado' : 'Ver nota e mapa lado a lado';
+            botao.title = rotulo;
+            botao.setAttribute('aria-label', rotulo);
+        }
+        if (!this.mapaSplit) {
+            aplicarArea.call(this, this.mapaAreaAtiva === 'pastas' ? 'notas' : (this.mapaAreaAtiva || 'notas'));
+            return;
+        }
+        // Ligado: mantém o mapa E o modal de notas visíveis ao mesmo tempo.
+        this.mapaAreaAtiva = 'mapa';
+        if (store()) store().salvarAreaAtiva('mapa');
+        const secao = document.getElementById('mapaArea');
+        const pastas = document.getElementById('pastasArea');
+        const backdrop = document.getElementById('notesModalBackdrop');
+        montarAreaMapa.call(this);
+        if (secao) secao.hidden = false;
+        if (pastas) pastas.hidden = true;
+        if (backdrop) backdrop.classList.add('active');
+        const nav = document.getElementById('appAreas');
+        if (nav) nav.querySelectorAll('[data-app-area]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.appArea === 'mapa')));
+    }
+
+    /** Troca o lado da nota no split (esquerda/direita). */
+    function trocarLadoSplit(novoLado) {
+        const lado = novoLado === 'direita' ? 'direita' : 'esquerda';
+        if (lado === this.mapaSplitLado) return;
+        this.mapaSplitLado = lado;
+        if (store()) store().salvarSplit({ ligado: this.mapaSplit, lado });
+        document.documentElement.classList.toggle('app-split-nota-direita', Boolean(this.mapaSplit) && lado === 'direita');
+    }
+
+    /** Arrastar a barra superior (nota ou mapa) para o lado inverso troca os lados. */
+    function instalarArrastoSplit() {
+        if (this.mapaSplitArrastoLigado) return;
+        this.mapaSplitArrastoLigado = true;
+        document.addEventListener('pointerdown', evento => {
+            if (!this.mapaSplit) return;
+            const cabecalho = evento.target.closest('.notes-modal-header, .mapa-topbar');
+            if (!cabecalho) return;
+            if (evento.target.closest('button, input, select, a, [data-mapa-acao], [data-pastas-acao]')) return;
+            this.mapaSplitArrasto = { painel: cabecalho.classList.contains('mapa-topbar') ? 'mapa' : 'nota' };
+            cabecalho.classList.add('mapa-split-arrastando');
+        });
+        const soltar = evento => {
+            const estado = this.mapaSplitArrasto;
+            this.mapaSplitArrasto = null;
+            document.querySelectorAll('.mapa-split-arrastando').forEach(el => el.classList.remove('mapa-split-arrastando'));
+            if (!estado || !this.mapaSplit) return;
+            const soltouNaDireita = evento.clientX > (window.innerWidth / 2);
+            const notaQuerDireita = estado.painel === 'nota' ? soltouNaDireita : !soltouNaDireita;
+            trocarLadoSplit.call(this, notaQuerDireita ? 'direita' : 'esquerda');
+        };
+        document.addEventListener('pointerup', soltar);
+        document.addEventListener('pointercancel', soltar);
+    }
+    // ⚡ [FIM: MAPA - LADO A LADO (SPLIT NOTA + MAPA)]
+
+
+
 
     // 🔄 [INÍCIO: MAPA - CANVAS/VIEWPORT]
     const viewportNormalizado = vp => ({
@@ -1070,7 +1355,9 @@
             responsavel: val('mapaPainelResponsavel'),
             inicio: val('mapaPainelInicio'),
             prazo: val('mapaPainelPrazo'),
-            progresso: val('mapaPainelProgresso')
+            progresso: val('mapaPainelProgresso'),
+            // Vínculo Notas↔Mapa (o select fica no painel; salva junto do conteúdo).
+            notaRef: val('mapaPainelNotaRef')
         });
         aposComandoNo.call(this);
         return true;
@@ -1806,9 +2093,15 @@
         }
     }
 
-    /** Troca de área (Notas | Mapa Mental); persiste em `notas-pwa-area-ativa`. */
+    /** Troca de área (Pastas | Notas | Mapa Mental); persiste em `notas-pwa-area-ativa`. */
     function aplicarArea(area) {
-        const alvo = area === 'mapa' ? 'mapa' : 'notas';
+        // Trocar de aba sai do modo lado a lado (evita estados inconsistentes).
+        if (this.mapaSplit) {
+            this.mapaSplit = false;
+            document.documentElement.classList.remove('app-split', 'app-split-nota-direita');
+            if (store()) store().salvarSplit({ ligado: false, lado: this.mapaSplitLado });
+        }
+        const alvo = (area === 'mapa' || area === 'pastas') ? area : 'notas';
         this.mapaAreaAtiva = alvo;
         if (store()) store().salvarAreaAtiva(alvo);
 
@@ -1820,7 +2113,9 @@
         }
 
         const secao = document.getElementById('mapaArea');
+        const pastasSecao = document.getElementById('pastasArea');
         const backdrop = document.getElementById('notesModalBackdrop');
+        if (pastasSecao) pastasSecao.hidden = alvo !== 'pastas';
 
         if (alvo === 'mapa') {
             // Sair de Notas: grava a nota atual e esconde o modal (sem encerrar o motor).
@@ -1831,6 +2126,13 @@
             // Foco no canvas: superficie dos atalhos de criacao/navegacao por teclado.
             const interacaoArea = global.MapaMentalInteracao;
             if (interacaoArea && interacaoArea.focarCanvas) interacaoArea.focarCanvas.call(this);
+        } else if (alvo === 'pastas') {
+            // Tela raiz: lista os workspaces (pastas) com notas + mapas.
+            if (typeof this.persistNow === 'function') this.persistNow();
+            montarAreaPastas.call(this);
+            renderPastas.call(this);
+            if (secao) secao.hidden = true;
+            if (backdrop) backdrop.classList.remove('active');
         } else {
             // Ao sair do mapa, grava a viewport pendente do debounce.
             salvarViewportAgora.call(this);
@@ -1906,8 +2208,23 @@
             // fase de CAPTURA, para rodar ANTES da delegação das ações (data-mapa-acao).
             document.addEventListener('click', evento => fecharMenusFora.call(this, evento), true);
         }
-        const salva = store() ? store().lerAreaAtiva() : 'notas';
-        return this.aplicarArea(salva);
+        const s = store();
+        // Pasta ativa (workspace): garante a "Geral" e sincroniza as notas.
+        if (s) {
+            if (typeof s.garantirPastaPadrao === 'function') s.garantirPastaPadrao();
+            this.pastaAtiva = (typeof s.lerPastaAtiva === 'function' ? s.lerPastaAtiva() : null) || s.ID_PASTA_PADRAO;
+            if (typeof this.definirPastaAtivaNotas === 'function') this.definirPastaAtivaNotas(this.pastaAtiva);
+        }
+        // Lado a lado (split): preferência lembrada + arrasto da barra p/ trocar de lado.
+        let splitSalvo = null;
+        if (s && typeof s.lerSplit === 'function') {
+            splitSalvo = s.lerSplit();
+            this.mapaSplitLado = splitSalvo.lado;
+        }
+        instalarArrastoSplit.call(this);
+        const resultado = this.aplicarArea(s ? s.lerAreaAtiva() : 'pastas');
+        if (splitSalvo && splitSalvo.ligado) aplicarSplit.call(this, true);
+        return resultado;
     }
 
     function installMapaMental(NotesPWA) {
@@ -1956,6 +2273,16 @@
             mapaMenuCanvas: null,
             mapaBarraAberta: false,
             mapaMenuBarra: null,
+            mapaBarrasColapsadas: false,
+            mapaFormatBarVisivel: false,
+            mapaMotionVersion: 0,
+            pastaAtiva: null,
+            pastasAreaMontada: false,
+            pastasAreaOuvintesLigados: false,
+            mapaSplit: false,
+            mapaSplitLado: 'esquerda',
+            mapaSplitArrasto: null,
+            mapaSplitArrastoLigado: false,
             aplicarArea, inicializarAreasMapa, montarAreaMapa, aplicarTemaMapa, renderArea,
             definirViewport, salvarViewportAgora,
             mapaCriarFilhoDeNo, mapaCriarIrmaoDeNo, mapaCriarNoIndependente, mapaExcluirNo,
@@ -1975,6 +2302,9 @@
             mapaAlternarMenuBarra,
             fecharMenusFora, fecharMenusAbertos,
             mapaMoverBotaoBarra, mapaRestaurarBarra,
+            mapaAlternarColapsoBarras, setMapaBarrasColapsadas,
+            montarAreaPastas, renderPastas, abrirPasta,
+            aplicarSplit, trocarLadoSplit,
             mapaAlternarEstiloRapido, mapaDefinirEstiloRapido, mapaPassoEstiloRapido,
             mapaAbrirCor, mapaGravarCorRecente,
             mapaAlternarModoConexao, mapaCriarConexaoEntre, mapaCliqueConexaoNo,

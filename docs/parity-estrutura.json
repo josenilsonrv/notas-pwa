@@ -31,6 +31,7 @@
       "notesModalTitle",
       "notesSaveStatus",
       "notesToolbar",
+      "pastasArea",
       "themeToggle"
     ],
     "faltando": []
@@ -68,6 +69,7 @@
       "Mapa Mental",
       "Negrito",
       "Notas deste foco",
+      "Pastas",
       "Recolher cabeçalho",
       "Refazer",
       "Subir linha",
@@ -150,7 +152,9 @@
       "switch",
       "tab",
       "tab",
+      "tab",
       "tablist",
+      "tabpanel",
       "tabpanel",
       "textbox"
     ],

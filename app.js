@@ -114,6 +114,8 @@ class NotesPWA {
         this.currentNotesProjectId = null;
         this.currentNotesStageId = null;
         this.notesChipMenu = null;
+        // Pasta/workspace ativo das notas (compartilhado com a área de Pastas do Mapa).
+        this.notaPastaAtiva = null;
         this.notesToolbarConfigurada = false;
         this.notesToolbarObserver = null;
         this.notesToolbarTecladoAtivo = false;
@@ -218,7 +220,11 @@ class NotesPWA {
             const bruto = localStorage.getItem('notas-pwa-notes');
             if (bruto) {
                 const lista = JSON.parse(bruto);
-                if (Array.isArray(lista) && lista.length) return lista;
+                if (Array.isArray(lista) && lista.length) {
+                    // Migração leve: notas antigas ganham `pastaId` (ver chip "Mover para pasta").
+                    return lista.map(nota => (nota && typeof nota === 'object' && 'pastaId' in nota)
+                        ? nota : Object.assign({ pastaId: null }, nota));
+                }
             }
         } catch (error) {
             console.error('Erro ao ler as notas locais:', error);
@@ -238,7 +244,7 @@ class NotesPWA {
      */
     notasBackend() {
         return {
-            listar: () => (this.projectsData || []).map(nota => ({ id: nota.id, nome: nota.nome, accent: this.accentDaNota(nota) })),
+            listar: () => (this.projectsData || []).map(nota => ({ id: nota.id, nome: nota.nome, accent: this.accentDaNota(nota), pastaId: nota.pastaId ?? null })),
             obter: id => (this.projectsData || []).find(nota => nota.id === id) || null,
             salvar: lista => this.gravarNotasLocais(lista)
         };
@@ -353,6 +359,47 @@ class NotesPWA {
     }
 
     // ⚡ [INÍCIO: INTERAÇÃO/JS - MÚLTIPLAS NOTAS (CHIPS + BOTÃO "+")]
+    /** Id da pasta "Geral" (mesmo valor do MapaMentalStore.ID_PASTA_PADRAO). */
+    get pastaPadraoId() { return 'pasta-geral'; }
+
+    /** A nota pertence à pasta informada? (a "Geral" adota as notas sem pasta). */
+    notaPertenceAPasta(nota, pastaId) {
+        const alvo = pastaId || this.notaPastaAtiva || this.pastaPadraoId;
+        return (nota.pastaId || this.pastaPadraoId) === alvo;
+    }
+
+    /** Notas da pasta ativa (a tela raiz de Pastas filtra por workspace). */
+    notasDaPasta(pastaId) {
+        return (this.projectsData || []).filter(nota => this.notaPertenceAPasta(nota, pastaId));
+    }
+
+    /** Quantas notas a pasta tem (usado no cartão da pasta). */
+    contarNotasDaPasta(pastaId) {
+        return this.notasDaPasta(pastaId).length;
+    }
+
+    /** Define a pasta ativa das notas: repinta os chips e garante ao menos 1 nota. */
+    definirPastaAtivaNotas(pastaId) {
+        this.notaPastaAtiva = pastaId || this.pastaPadraoId;
+        const daPasta = this.notasDaPasta();
+        if (!daPasta.length) {
+            const nota = this.criarNotaLocal('Nova nota');
+            nota.pastaId = this.notaPastaAtiva;
+            this.projectsData = this.projectsData || [];
+            this.projectsData.push(nota);
+            this.salvarNotasLocais();
+            this.renderNotesNav();
+            if (typeof this.openNotesModal === 'function') this.openNotesModal(nota.id);
+            return;
+        }
+        const atual = (this.projectsData || []).find(n => n.id === this.currentNotesProjectId);
+        if (!atual || !this.notaPertenceAPasta(atual, this.notaPastaAtiva)) {
+            if (typeof this.openNotesModal === 'function') this.openNotesModal(daPasta[0].id);
+        } else {
+            this.renderNotesNav();
+        }
+    }
+
     /**
      * Renderiza os chips das notas no `#notesContextNav` + o botão "+".
      * Cada chip recebe `--notes-accent` lido do conteúdo da sua nota, então
@@ -364,7 +411,7 @@ class NotesPWA {
         const ativa = this.currentNotesProjectId;
         nav.replaceChildren();
 
-        for (const nota of this.projectsData || []) {
+        for (const nota of this.notasDaPasta()) {
             const chip = document.createElement('button');
             chip.type = 'button';
             chip.className = 'notes-context-chip' + (nota.id === ativa ? ' is-active' : '');
@@ -425,6 +472,7 @@ class NotesPWA {
     criarNota() {
         this.persistNow();
         const nota = this.criarNotaLocal();
+        nota.pastaId = this.notaPastaAtiva || this.pastaPadraoId;
         this.projectsData = this.projectsData || [];
         this.projectsData.push(nota);
         this.salvarNotasLocais();
@@ -434,7 +482,7 @@ class NotesPWA {
     criarNotaLocal(nome = 'Nova nota') {
         const id = 'nota-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
         const agora = new Date().toISOString();
-        return { id, nome, notas: '', criadaEm: agora, atualizadaEm: agora };
+        return { id, nome, notas: '', pastaId: null, criadaEm: agora, atualizadaEm: agora };
     }
 
     /** Renomeia a nota (duplo clique no chip ou opção do menu). */
@@ -466,7 +514,11 @@ class NotesPWA {
 
         const indice = lista.indexOf(nota);
         lista.splice(indice, 1);
-        if (!lista.length) lista.push(this.criarNotaLocal());
+        if (!lista.length) {
+            const nova = this.criarNotaLocal();
+            nova.pastaId = this.notaPastaAtiva || this.pastaPadraoId;
+            lista.push(nova);
+        }
 
         if (id === this.currentNotesProjectId) {
             // Descarta a sessão atual antes de trocar: sem isso o motor salvaria
@@ -482,16 +534,71 @@ class NotesPWA {
         }
     }
 
-    /** Pequeno menu de ações da nota (renomear/excluir), aberto pelo chip. */
-    abrirMenuNota(nota, chip) {
-        this.fecharMenuNota();
+    /** Duplica a nota (novo id, mesmo conteúdo/pasta), logo depois do original. */
+    duplicarNota(id) {
+        const lista = this.projectsData || [];
+        const indice = lista.findIndex(item => item.id === id);
+        if (indice < 0) return null;
+        const original = lista[indice];
+        const copia = this.criarNotaLocal((original.nome || 'Nota') + ' (cópia)');
+        copia.notas = original.notas || '';
+        copia.pastaId = original.pastaId ?? null;
+        if (typeof original.accent === 'string') copia.accent = original.accent;
+        lista.splice(indice + 1, 0, copia);
+        this.invalidarAccentDaNota(copia.id);
+        this.salvarNotasLocais();
+        this.renderNotesNav();
+        return copia;
+    }
+
+    /** Pastas disponíveis (compartilhadas com o Mapa); opcional, nunca quebra. */
+    pastasDeNotas() {
+        try {
+            const store = (typeof window !== 'undefined' && window.MapaMentalStore)
+                || (typeof MapaMentalStore !== 'undefined' ? MapaMentalStore : null);
+            if (store && typeof store.listarPastas === 'function') return store.listarPastas() || [];
+        } catch (_) { /* pastas são opcionais */ }
+        return [];
+    }
+
+    /** Move a nota para uma pasta (ou para "Sem pasta" com `null`). */
+    moverNotaParaPasta(id, pastaId) {
+        const nota = (this.projectsData || []).find(item => item.id === id);
+        if (!nota) return false;
+        nota.pastaId = pastaId || null;
+        this.salvarNotasLocais();
+        this.renderNotesNav();
+        return true;
+    }
+
+    /** Cria um menu de chip vazio já com o papel/estilo padrão. */
+    criarMenuNota(rotulo) {
         const menu = document.createElement('div');
         menu.id = 'notesChipMenu';
         menu.className = 'notes-chip-menu';
         menu.setAttribute('role', 'menu');
-        menu.setAttribute('aria-label', 'Ações da nota');
+        menu.setAttribute('aria-label', rotulo || 'Ações da nota');
+        return menu;
+    }
+
+    /** Posiciona (preso ao chip, com clamp de viewport) e registra o menu aberto. */
+    mostrarMenuNota(menu, chip) {
+        document.body.append(menu);
+        const caixa = chip.getBoundingClientRect();
+        menu.style.left = Math.max(8, Math.min(caixa.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+        menu.style.top = Math.min(caixa.bottom + 6, window.innerHeight - menu.offsetHeight - 8) + 'px';
+        menu.querySelector('button')?.focus();
+        this.notesChipMenu = menu;
+    }
+
+    /** Menu de ações da nota (renomear/duplicar/mover para pasta/excluir), aberto pelo chip. */
+    abrirMenuNota(nota, chip) {
+        this.fecharMenuNota();
+        const menu = this.criarMenuNota('Ações da nota');
         const acoes = [
             ['Renomear', () => this.renomearNota(nota.id)],
+            ['Duplicar', () => this.duplicarNota(nota.id)],
+            ['Mover para pasta…', () => this.abrirMenuMoverNota(nota, chip)],
             ['Excluir', () => this.excluirNota(nota.id)]
         ];
         for (const [texto, acao] of acoes) {
@@ -502,12 +609,27 @@ class NotesPWA {
             botao.addEventListener('click', () => { this.fecharMenuNota(); acao(); });
             menu.append(botao);
         }
-        document.body.append(menu);
-        const caixa = chip.getBoundingClientRect();
-        menu.style.left = Math.max(8, Math.min(caixa.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
-        menu.style.top = Math.min(caixa.bottom + 6, window.innerHeight - menu.offsetHeight - 8) + 'px';
-        menu.querySelector('button')?.focus();
-        this.notesChipMenu = menu;
+        this.mostrarMenuNota(menu, chip);
+    }
+
+    /** Submenu "Mover para pasta": lista as pastas (a atual marcada). */
+    abrirMenuMoverNota(nota, chip) {
+        this.fecharMenuNota();
+        const menu = this.criarMenuNota('Mover nota para pasta');
+        const opcoes = [['Sem pasta', null]].concat(
+            this.pastasDeNotas().map(pasta => [pasta.nome || 'Pasta', pasta.id]));
+        for (const [texto, pastaId] of opcoes) {
+            const botao = document.createElement('button');
+            botao.type = 'button';
+            botao.setAttribute('role', 'menuitemradio');
+            const atual = (nota.pastaId ?? null) === (pastaId ?? null);
+            botao.setAttribute('aria-checked', String(atual));
+            if (atual) botao.classList.add('is-active');
+            botao.textContent = texto;
+            botao.addEventListener('click', () => { this.fecharMenuNota(); this.moverNotaParaPasta(nota.id, pastaId); });
+            menu.append(botao);
+        }
+        this.mostrarMenuNota(menu, chip);
     }
 
     fecharMenuNota() {
