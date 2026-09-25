@@ -1,4 +1,4 @@
-﻿# ðŸš€ [INÃCIO: DEPLOY - HEADERS (CACHE E CONTENT-TYPE DOS ASSETS)]
+# 🚀 [INÍCIO: DEPLOY - HEADERS (CACHE E CONTENT-TYPE DOS ASSETS)]
 # Cloudflare Pages - regras de resposta HTTP
 # https://developers.cloudflare.com/pages/configuration/headers/
 #
@@ -20,4 +20,4 @@
 /manifest.json
   Content-Type: application/manifest+json
   Cache-Control: no-cache
-# ðŸš€ [FIM: DEPLOY - HEADERS (CACHE E CONTENT-TYPE DOS ASSETS)]
+# 🚀 [FIM: DEPLOY - HEADERS (CACHE E CONTENT-TYPE DOS ASSETS)]
