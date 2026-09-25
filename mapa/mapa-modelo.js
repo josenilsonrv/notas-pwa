@@ -8,6 +8,24 @@
 
     const SCHEMA_VERSION = 1;
     const LAYOUTS = ['bilateral', 'tradicional', 'esquerda-direita', 'direita-esquerda', 'arvore-vertical', 'organograma', 'livre'];
+    // Espaçamento do layout automático (Fase 8): default por mapa + limite do aceitável.
+    const ESPACO_NO_PADRAO = 32;
+    const ESPACO_NIVEL_PADRAO = 80;
+    const ESPACO_MAX = 400;
+
+    /** Normaliza `{ nos, niveis }` (inteiros 0..ESPACO_MAX) com default por campo. */
+    function normalizarEspacamento(espacamento) {
+        const base = espacamento || {};
+        const limitar = (valor, padrao) => {
+            const numero = Math.round(Number(valor));
+            if (!Number.isFinite(numero)) return padrao;
+            return Math.min(ESPACO_MAX, Math.max(0, numero));
+        };
+        return {
+            nos: limitar(base.nos, ESPACO_NO_PADRAO),
+            niveis: limitar(base.niveis, ESPACO_NIVEL_PADRAO)
+        };
+    }
 
     // 🔄 [INÍCIO: MAPA - MODELO/GRAFO]
     const isoAgora = () => new Date().toISOString();
@@ -165,9 +183,10 @@
             temaId: cfg.temaId || 'padrao',
             nos: [],
             conexoes: [],
+            estilosNivel: {},
             viewport: { x: 0, y: 0, zoom: 1 },
             layout: LAYOUTS.includes(cfg.layout) ? cfg.layout : 'bilateral',
-            espacamento: { nos: 32, niveis: 80 },
+            espacamento: normalizarEspacamento(cfg.espacamento),
             idSeq: 0,
             cxSeq: 0,
             dtCriado: isoAgora(),
@@ -265,8 +284,10 @@
         grafo.nos = Array.isArray(grafo.nos) ? grafo.nos : [];
         grafo.conexoes = Array.isArray(grafo.conexoes) ? grafo.conexoes : [];
         grafo.viewport = grafo.viewport || { x: 0, y: 0, zoom: 1 };
-        grafo.espacamento = grafo.espacamento || { nos: 32, niveis: 80 };
+        grafo.espacamento = normalizarEspacamento(grafo.espacamento);
         grafo.layout = LAYOUTS.includes(grafo.layout) ? grafo.layout : 'bilateral';
+        grafo.temaId = TEMAS_MAPA.some(t => t.id === grafo.temaId) ? grafo.temaId : 'padrao';
+        grafo.estilosNivel = normalizarEstilosNivel(grafo.estilosNivel);
         grafo.idSeq = Number(grafo.idSeq || 0);
         grafo.cxSeq = Number(grafo.cxSeq || 0);
         grafo.schemaVersion = SCHEMA_VERSION;
@@ -276,11 +297,18 @@
     /** Garante integridade: IDs únicos, pais existentes e `ordem` normalizada. */
     function normalizarGrafo(grafo) {
         migrarGrafo(grafo);
+        // Fase 8: garante layout/espaçamento válidos mesmo em grafos já migrados.
+        grafo.layout = LAYOUTS.includes(grafo.layout) ? grafo.layout : 'bilateral';
+        grafo.espacamento = normalizarEspacamento(grafo.espacamento);
+        // Fase 9: tema e estilos por nível válidos mesmo em grafos já migrados.
+        grafo.temaId = TEMAS_MAPA.some(t => t.id === grafo.temaId) ? grafo.temaId : 'padrao';
+        grafo.estilosNivel = normalizarEstilosNivel(grafo.estilosNivel);
         const ids = new Set();
         grafo.nos.forEach(no => {
             if (!no.id || ids.has(no.id)) no.id = proximoIdNo(grafo);
             ids.add(no.id);
             no.paiId = no.paiId || null;
+            no.estilo = normalizarEstilo(no.estilo);
             normalizarConteudoNo(no);
         });
         // Referência quebrada de pai vira raiz (nunca descarta o nó).
@@ -308,6 +336,7 @@
         novo.temaId = origem.temaId || 'padrao';
         novo.layout = LAYOUTS.includes(origem.layout) ? origem.layout : 'bilateral';
         novo.espacamento = Object.assign({}, novo.espacamento, origem.espacamento || {});
+        novo.estilosNivel = Object.assign({}, origem.estilosNivel || {});
         const mapa = new Map();
         (origem.nos || []).forEach(no => {
             const copia = criarNo(novo, Object.assign(dadosConteudoNo(no), {
@@ -671,6 +700,141 @@
     }
     // 🔄 [FIM: MAPA - COMANDOS DE CONTEÚDO]
 
+    // 🔄 [INÍCIO: MAPA - ESTILO (FASE 9)]
+    // Formas, fontes, alinhamento, tamanhos e temas do mapa (paleta) — só o VISUAL.
+    const FORMAS_NO = ['retangulo', 'pilula', 'elipse', 'nota'];
+    const ALINHAMENTOS_NO = ['esquerda', 'centro', 'direita'];
+    const FONTES_NO = ['sistema', 'serif', 'mono', 'cursiva'];
+    const TAMANHOS_NO = [12, 13, 14, 16, 18, 20];
+    const ESPESSURAS_BORDA = [1, 2, 3, 4];
+    const LIMITE_RAMO = 8;
+    const TEMAS_MAPA = [
+        { id: 'padrao', nome: 'Padrão', no: null },
+        { id: 'neon', nome: 'Neon', no: { cor: '#e6f1ff', fundo: '#0d1b2a', borda: '#4cc9f0' } },
+        { id: 'pastel', nome: 'Pastel', no: { cor: '#3b3b4f', fundo: '#fdf2f8', borda: '#f0abfc' } },
+        { id: 'monocromatico', nome: 'Monocromático', no: { cor: '#f5f5f7', fundo: '#2b2b33', borda: '#8b8b9a' } }
+    ];
+
+    /** Normaliza o estilo VISUAL (nó ou nível): só chaves conhecidas, valores validados. */
+    function normalizarEstilo(estilo) {
+        const item = (estilo && typeof estilo === 'object') ? estilo : {};
+        const saida = {};
+        const cor = chave => {
+            const valor = normalizarCor(item[chave]);
+            if (valor) saida[chave] = valor;
+        };
+        cor('cor');
+        cor('fundo');
+        cor('borda');
+        if (FORMAS_NO.includes(item.forma)) saida.forma = item.forma;
+        if (FONTES_NO.includes(item.fonte)) saida.fonte = item.fonte;
+        if (ALINHAMENTOS_NO.includes(item.alinhamento)) saida.alinhamento = item.alinhamento;
+        if (TAMANHOS_NO.includes(Number(item.tamanho))) saida.tamanho = Number(item.tamanho);
+        if (ESPESSURAS_BORDA.includes(Number(item.espessuraBorda))) saida.espessuraBorda = Number(item.espessuraBorda);
+        const ramo = item.espessuraRamo;
+        if (ramo !== undefined && ramo !== null && ramo !== '' && Number.isFinite(Number(ramo))) {
+            saida.espessuraRamo = Math.max(1, Math.min(LIMITE_RAMO, Math.round(Number(ramo))));
+        }
+        if (typeof item.negrito === 'boolean') saida.negrito = item.negrito;
+        if (typeof item.italico === 'boolean') saida.italico = item.italico;
+        return saida;
+    }
+
+    /** Normaliza o mapa de estilos por nível (`{ '2': {...} }`); níveis vazios são removidos. */
+    function normalizarEstilosNivel(mapa) {
+        const saida = {};
+        if (!mapa || typeof mapa !== 'object') return saida;
+        Object.keys(mapa).forEach(chave => {
+            const nivel = Number(chave);
+            if (!Number.isFinite(nivel) || nivel < 1) return;
+            const estilo = normalizarEstilo(mapa[chave]);
+            if (Object.keys(estilo).length) saida[String(nivel)] = estilo;
+        });
+        return saida;
+    }
+
+    /** Tema (paleta) do mapa; cai no `padrao` quando o id é desconhecido. */
+    function temaDoMapa(grafo) {
+        const id = (grafo && grafo.temaId) || 'padrao';
+        return TEMAS_MAPA.find(t => t.id === id) || TEMAS_MAPA[0];
+    }
+
+    /** Nível do nó na árvore (1 = raiz) — base dos estilos por nível. */
+    function nivelDoNo(grafo, idNo) {
+        const porId = new Map(((grafo && grafo.nos) || []).map(no => [no.id, no]));
+        let nivel = 1;
+        let atual = porId.get(idNo);
+        const vistos = new Set();
+        while (atual && atual.paiId && !vistos.has(atual.id)) {
+            vistos.add(atual.id);
+            atual = porId.get(atual.paiId);
+            if (!atual) break;
+            nivel += 1;
+        }
+        return nivel;
+    }
+
+    /** Precedência de estilo: NÓ > NÍVEL > TEMA do mapa. Sempre devolve estilo normalizado. */
+    function estiloEfetivo(grafo, no) {
+        if (!no) return {};
+        const base = temaDoMapa(grafo).no || {};
+        const nivel = nivelDoNo(grafo, no.id);
+        const porNivel = (grafo && grafo.estilosNivel && grafo.estilosNivel[String(nivel)]) || {};
+        return normalizarEstilo(Object.assign({}, base, porNivel, no.estilo || {}));
+    }
+
+    /** Copia SÓ o visual do nó (nunca conteúdo/tarefa) — alimenta o "pincel". */
+    function copiarEstiloNo(no) {
+        return no ? normalizarEstilo(no.estilo) : {};
+    }
+
+    /** Aplica mudanças no estilo do nó (merge). Devolve `true` quando algo mudou. */
+    function atualizarEstiloNo(grafo, idNo, mudancas) {
+        const no = obterNo(grafo, idNo);
+        if (!no) return false;
+        const antes = JSON.stringify(no.estilo || {});
+        no.estilo = normalizarEstilo(Object.assign({}, no.estilo || {}, mudancas || {}));
+        return antes !== JSON.stringify(no.estilo);
+    }
+
+    /** Limpa o estilo próprio do nó (volta a herdar nível/tema) — "restaurar padrão". */
+    function limparEstiloNo(grafo, idNo) {
+        const no = obterNo(grafo, idNo);
+        if (!no) return false;
+        no.estilo = {};
+        return true;
+    }
+
+    /** Define/limpa o estilo de um NÍVEL (1 = raiz). Sem chaves válidas, o nível é removido. */
+    function definirEstiloNivel(grafo, nivel, mudancas) {
+        const numero = Number(nivel);
+        if (!grafo || !Number.isFinite(numero) || numero < 1) return false;
+        const mapa = normalizarEstilosNivel(grafo.estilosNivel);
+        const novo = normalizarEstilo(Object.assign({}, mapa[String(numero)] || {}, mudancas || {}));
+        if (Object.keys(novo).length) mapa[String(numero)] = novo;
+        else delete mapa[String(numero)];
+        grafo.estilosNivel = mapa;
+        return true;
+    }
+
+    /** Remove COMPLETAMENTE o estilo de um nível (volta a herdar tema) — "limpar nível". */
+    function removerEstiloNivel(grafo, nivel) {
+        const numero = Number(nivel);
+        if (!grafo || !Number.isFinite(numero) || numero < 1) return false;
+        const mapa = normalizarEstilosNivel(grafo.estilosNivel);
+        delete mapa[String(numero)];
+        grafo.estilosNivel = mapa;
+        return true;
+    }
+
+    /** Troca o tema (paleta) do mapa. */
+    function definirTemaMapa(grafo, temaId) {
+        if (!grafo || !TEMAS_MAPA.some(t => t.id === temaId)) return false;
+        grafo.temaId = temaId;
+        return true;
+    }
+    // 🔄 [FIM: MAPA - ESTILO (FASE 9)]
+
     // 🔄 [INÍCIO: MAPA - CONEXÕES LIVRES (FASE 6)]
     const TIPOS_LINHA = ['reta', 'curva', 'ortogonal'];
     const ESTILOS_SETA = ['nenhuma', 'fim', 'inicio', 'ambos'];
@@ -761,12 +925,16 @@
 
     global.MapaMentalModelo = {
         SCHEMA_VERSION, LAYOUTS, TEMPLATES_PRONTOS,
+        ESPACO_NO_PADRAO, ESPACO_NIVEL_PADRAO, ESPACO_MAX, normalizarEspacamento,
         LARGURA_NO, LARGURA_MIN, LARGURA_MAX, PASSO_LARGURA,
         PRIORIDADES, STATUS_NO, LIMITE_ANEXO, LIMITE_TEXTO, LIMITE_TAGS, CAMPOS_CONTEUDO,
         sanitizarTexto, escaparHtml, urlSegura, extrairLinks, htmlSeguro, normalizarData, limitarProgresso,
         normalizarTags, normalizarLinks, normalizarRefs, normalizarConteudoNo, dadosConteudoNo,
         atualizarConteudo, alternarConcluido, adicionarAnexo, removerAnexo,
         TIPOS_LINHA, ESTILOS_SETA, LARGURA_CONEXAO, normalizarCor, limitarEspessura, normalizarConexao,
+        FORMAS_NO, ALINHAMENTOS_NO, FONTES_NO, TAMANHOS_NO, ESPESSURAS_BORDA, TEMAS_MAPA,
+        normalizarEstilo, normalizarEstilosNivel, temaDoMapa, nivelDoNo, estiloEfetivo,
+        copiarEstiloNo, atualizarEstiloNo, limparEstiloNo, definirEstiloNivel, removerEstiloNivel, definirTemaMapa,
         criarConexao, obterConexao, listarConexoes, listarConexoesDoNo, atualizarConexao, removerConexao,
         criarGrafo, proximoIdNo, proximoIdConexao, criarNo, obterNo,
         listarFilhos, normalizarOrdem, contemCiclo, migrarGrafo, normalizarGrafo, duplicarGrafo,

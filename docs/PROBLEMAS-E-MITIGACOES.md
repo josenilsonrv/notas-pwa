@@ -125,6 +125,9 @@ N/A 1 / TOTAL 44` → **SEM REGRESSÕES** (0 falhas novas). `parity_visual` e `s
   `Delete` exclui, `Ctrl+C/X/V` copiar/recortar/colar, `Ctrl+Z` desfaz, `Alt+↑/↓` reordena.
 - **Mitigação p/ novas fases**: nunca bloquear o foco do canvas; testar atalhos com `page.keyboard`
   após um clique no nó (o foco é o próprio canvas).
+- **Atualização (F12)**: o **toque longo** deixou de abrir a edição inline — agora abre o **menu
+  contextual do card** (ver **P58**). A edição inline continua no duplo clique, `F2` e no item
+  “Editar texto” do menu.
 
 ### P12 — Edição por caractere não gera histórico
 - **Regra**: `registrarHistorico()` roda **uma vez por comando** (criar/excluir/mover/etc.) e ao
@@ -400,3 +403,277 @@ N/A 1 / TOTAL 44` → **SEM REGRESSÕES** (0 falhas novas). `parity_visual` e `s
 - `notes_cascade_defaults.cjs` (`#1122aa` vs `#aa1122`) e `notes_navigation_completion.cjs`
   (histórico de accent) continuam falhando: o helper de cor do PWA mantém a ordem dos canais
   invertida em relação ao original. Registrado como pendência separada.
+
+---
+
+## Seção C — Fases 8 a 11 (apresentação e produtividade)
+
+### F8 — Layout automático
+
+**Suíte (parte de mapa)**: `mapa_area`, `mapa_gestao`, `mapa_canvas`, `mapa_nos`, `mapa_conteudo`,
+`mapa_conexoes`, `mapa_dragdrop`, `mapa_vazio`, `mapa_layout`, `parity_structure`, `parity_visual`
+e `shortcuts` **verdes**.
+
+**Suíte completa** (`node tests/run-all.cjs --baseline`): `PASSOU 46 / FALHOU 11 / N/A 1 / TOTAL 58`.
+As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressões” apontadas
+(`parity_visual`, `tema_vidro`) foram investigadas e **não** são do F8 — ver **P41**.
+
+### P35 — Medição real sem perder o determinismo (decisão de arquitetura)
+- **Regra**: `MapaMentalLayout.calcularPosicoes` continua sendo uma função **pura/determinística**
+  (testável sem navegador). As dimensões REAIS entram por **injeção** (`cfg.medidas`: Map
+  `id → {largura,altura}`), lidas do DOM por `medidasDoDom()`.
+- **No app**, o refino roda em **duas etapas**: `reposicionarAuto()` estima (altura por nº de
+  linhas) e, **depois do render**, `refinarLayoutPorMedicao()` mede `offsetWidth/offsetHeight`
+  e recalcula. Sem DOM (Node/vm), o cálculo cai na estimativa — nada quebra.
+- **Mitigação p/ novas fases**: nunca medir antes de renderizar (a caixa só existe depois do
+  DOM); manter a estimativa como fallback.
+
+### P36 — Refino não pode “piscar” nem entrar em loop
+- **Sintoma (prevenido)**: o refino chama `renderArea()` de novo; sem guarda, um nó cujo
+  conteúdo/fonte muda entre renders poderia oscilar posições indefinidamente.
+- **Correção**: flag `this.mapaRefinandoLayout` — a passada de refino roda **uma vez** por render
+  (`if (… || this.mapaRefinandoLayout) return;`) e só re-renderiza **se** as posições mudaram.
+- **Mitigação p/ novas fases**: qualquer “re-render por medição” precisa de guarda de reentrância.
+
+### P37 — Transição suave NÃO pode ser global (quebraria o arrasto)
+- **Sintoma (prevenido)**: uma `transition: left/top` fixa em `.mapa-no` faria o nó “perseguir”
+  o ponteiro no arrasto e atrasaria o redimensionamento.
+- **Correção**: transição **opt-in** — `#mapaNos.mapa-transicao .mapa-no { transition: … }`,
+  ativada só durante o relayout (`reposicionarSuave`) e removida após 320 ms.
+- **Extra**: `reposicionarSuave()` atualiza `left/top`/ramos/minimapa **sem** `renderArea()`
+  (preserva pan/zoom/seleção e evita recriar o canvas — ver P7).
+- **Mitigação p/ novas fases**: nunca animar propriedades que o gesto escreve por frame
+  (`left/top` durante drag/resize).
+
+### P38 — Layout “sem sobreposição” exige folga garantida (não só espaçamento médio)
+- **Regra**: folhas acumulam pela **altura/ largura real + espaçamento**; nós internos ficam
+  **centrados** nos filhos; a coluna de cada nível usa a **maior dimensão do nível**. Uma passada
+  final (`desobrepor`) empurra os nós da mesma coluna até a folga mínima.
+- **Teste**: `mapa_layout.cjs` compara **retângulos** (posição do modelo + `offsetWidth/Height`)
+  de todos os nós e exige **zero interseção** em `bilateral`, `esquerda-direita`,
+  `arvore-vertical` e `organograma`, com um título longo forçando caixa alta.
+- **Cuidado**: medir posição pelo **modelo** (não por `getBoundingClientRect`) — a transição
+  CSS poderia devolver valores intermediários e tornar o teste flaky.
+
+### P39 — Trocar para automático descarta posições manuais → confirmação em duas etapas
+- **Regra**: `mapaDefinirLayout` só troca direto se o mapa **não** está `'manual'` com posições
+  gravadas; senão abre a barra `.mapa-confirmacao` (ações `layout-confirmar` / `layout-cancelar`).
+- **Estilo**: dois passos inline (como `excluir` → `excluir-confirmar`), **sem** `window.confirm`.
+- **Persistência**: `grafo.layout` e `grafo.espacamento` são normalizados no modelo
+  (`normalizarEspacamento`, teto 400) ao carregar — mapas antigos ganham default válido.
+
+### P40 — Asset do Service Worker (bump)
+- **Regra**: assets cacheados mudaram (`mapa/mapa-layout.js`, `mapa-modelo.js`, `mapa-render.js`,
+  `mapa/mapa.js`, `mapa/mapa.css`) ⇒ **`CACHE_NAME` v36 → v37**. Nenhum asset NOVO foi criado,
+  então `ESSENCIAIS` permanece igual.
+
+### P41 — “Regressões” do `--baseline` que NÃO eram do F8 (baseline desatualizado)
+- **Sintoma**: `node tests/run-all.cjs --baseline` terminou
+  `PASSOU 46 / FALHOU 11 / N/A 1 / TOTAL 58` e marcou
+  `REGRESSAO (parity_visual.cjs, tema_vidro.cjs)`.
+- **Investigação**:
+  1. `parity_visual.cjs` **passa isolado** (`node tests/parity_visual.cjs` → OK) — é a flakiness
+     de sincronização já registrada em **P2** (250 ms fixos + CPU carregada na suíte).
+  2. `tema_vidro.cjs` **falha também com `git stash` das mudanças do F8** → é divergência
+     **pré-existente**: em `#notesContextNav`, o PWA está transparente (`backdrop-filter:none`)
+     e o original tem vidro (`blur(18px)`) — efeito do ajuste documentado em **P30**. O
+     `docs/relatorio-testes.json` usado como baseline era de um estado ANTERIOR a esse ajuste.
+- **Mitigação p/ novas fases**: se o `--baseline` acusar “regressão” num teste que **não** toca a
+  área alterada: (a) rodar o teste **isolado**; (b) se ainda falhar, `git stash` as mudanças e
+  rodar de novo — falhar sem as mudanças = baseline desatualizado, **não** regressão nova.
+  Depois de confirmar, o próprio `--baseline` reescreve o baseline (próxima rodada fica correta).
+
+### F9 — Editor visual
+
+**Suíte (mapa)**: `mapa_area`, `mapa_gestao`, `mapa_canvas`, `mapa_nos`, `mapa_conteudo`,
+`mapa_conexoes`, `mapa_dragdrop`, `mapa_vazio`, `mapa_layout`, `mapa_estilo`,
+`parity_structure`, `parity_visual` e `shortcuts` **verdes**.
+
+### P42 — Estilo vive no MODELO e a precedência é resolvida num único lugar
+- **Regra**: `no.estilo` (e `grafo.estilosNivel` / `grafo.temaId`) guardam só o VISUAL e passam por
+  `normalizarEstilo` (cores `#rrggbb`, enums e limites). Nada de estilo inline solto.
+- **Precedência**: `MapaMentalModelo.estiloEfetivo(grafo, no)` = **tema → nível → nó** (merge).
+  O render só lê o resultado e aplica **classes + CSS vars** (`--mapa-no-cor/-fundo/-borda/…`).
+- **Mitigação p/ novas fases**: nunca redefinir tokens globais do tema no `mapa.css` (quebraria
+  `parity_visual`); usar sempre o par `var(--mapa-…, var(--color-…))`.
+
+### P43 — Dark mode sobrescrevia o estilo do nó (var com fallback)
+- **Sintoma (prevenido pelo desenho)**: `html[data-theme="dark"] .mapa-no` fixava
+  `background/border/color` e venceria as CSS vars do estilo.
+- **Correção**: a regra escura também usa as vars com fallback escuro
+  (`background: var(--mapa-no-fundo, #11161D)`), então o estilo do nó vale nos DOIS temas.
+- **Teste**: `mapa_estilo.cjs` confere `rgb(17, 22, 29)` para nó sem estilo no escuro e
+  `rgb(18, 52, 86)` para o nó estilizado.
+
+### P44 — Mutação direta no modelo NÃO persiste (armadilha ao testar o mapa)
+- **Sintoma**: ao setar `estilo`/`estilosNivel` direto em `window.app.mapaCanvasGrafo` e chamar
+  `renderArea()`, o estilo "sumia".
+- **Causa**: `renderArea()` faz `store().obterGrafo(id)`, que **recarrega do localStorage**
+  (`normalizarGrafo`) — a mutação em memória não salva é descartada.
+- **Correção no teste**: `MapaMentalStore.salvarGrafo(grafo)` antes de re-renderizar; o ideal é
+  usar as funções do app (que passam por `aposComandoNo`, que persiste).
+- **Mitigação p/ novas fases**: em testes, toda mutação de modelo precisa ser salva (ou use as
+  ações `mapa*`); o mesmo vale para níveis/tema.
+
+### P45 — Asset do Service Worker (bump)
+- **Regra**: mudaram `mapa/mapa-modelo.js`, `mapa-render.js`, `mapa-painel.js`, `mapa/mapa.js` e
+  `mapa/mapa.css` ⇒ **`CACHE_NAME` v37 → v38**. Nenhum asset NOVO foi criado (`ESSENCIAIS` igual),
+  mas o teste novo `tests/mapa_estilo.cjs` entra na suíte (não é asset do app).
+
+### F10 — Atalhos de teclado
+
+**Suíte (mapa)**: `mapa_area`, `mapa_gestao`, `mapa_canvas`, `mapa_nos`, `mapa_conteudo`,
+`mapa_conexoes`, `mapa_dragdrop`, `mapa_vazio`, `mapa_layout`, `mapa_estilo`, `mapa_atalhos`,
+`parity_structure`, `parity_visual` e `shortcuts` **verdes**.
+
+### P46 — Keymap por ASSINATURA canônica (nunca por `keyCode`)
+- **Regra**: `assinaturaTecla(evento)` monta `ctrl+alt+shift+<tecla>` (letras em minúsculo) — cobre
+  `Ctrl+Shift+Z`, `Ctrl+Y`, `Alt+Setas` e layouts de teclado sem depender de `keyCode` (a doc proíbe).
+- **Catálogo**: `ACOES_ATALHO` guarda os PADRÕES; as preferências do usuário
+  (`notas-pwa-mapa-atalhos`) só sobrescrevem a ação remapeada — o resto continua no padrão.
+- **Mitigação p/ novas fases**: ao adicionar ação, declare o padrão em `ACOES_ATALHO` (o painel e a
+  detecção de conflito passam a incluí-la automaticamente).
+
+### P47 — Edição inline BLOQUEIA os atalhos globais (regra descoberta ao testar)
+- **Sintoma**: no teste, `Ctrl+Z` logo após `Enter` "não fazia nada" e o `F4` recém-configurado
+  também não duplicava.
+- **Causa**: `Enter`/`Tab` **criam o nó e abrem a edição inline** (`mapaCriarIrmaoDeNo(id, true)`);
+  com `mapaEditandoId` ativo, `atalho()` trata só `Esc`/`Enter`/`Tab` e **retorna** para o resto —
+  comportamento correto (a edição tem regras próprias).
+- **Correção**: o teste sai da edição (`Esc`) antes de usar um atalho global; a suíte ganhou o caso
+  e **espera o editor aparecer** (`#mapaNos .mapa-no-editor`) — `iniciarEdicaoDepois` abre a edição
+  de forma **assíncrona** (`setTimeout 0`), então mandar `Esc` cedo demais deixava o atalho "morto"
+  (flakiness detectada ao rodar 2×).
+- **Mitigação p/ novas fases**: qualquer teste que use atalhos depois de criar nó precisa
+  **confirmar/cancelar a edição** antes (e aguardar o editor), senão o atalho é ignorado por design.
+
+### P48 — Painel/captura rodam ANTES do guard de campos (listener único)
+- **Regra**: `tratarTeclaMapa` (listener **único** no `document`, ver P21) trata primeiro
+  **captura de atalho** e depois **`Esc` fecha o painel**; só então aplica o guard de
+  `input/textarea/select/contenteditable`. Sem essa ordem, a captura não funcionaria com o foco no
+  botão "Alterar" (e o `Esc` fecharia a área em vez do painel).
+- **Mitigação**: manter a ordem captura → painel → campos → keymap; nunca duplicar o listener.
+
+### P49 — Conflito ao remapear: `ctrl+d` fica LIVRE quando "duplicar" vira `F4`
+- **Sintoma**: o teste de conflito falhou porque tentava registrar `ctrl+d` em "editar" e não havia
+  conflito (o padrão de "duplicar" foi substituído por `F4`).
+- **Regra**: a detecção de conflito usa o mapa EFETIVO (preferências + padrões restantes). Remapear
+  uma ação libera as teclas antigas dela.
+- **Mitigação**: ao testar conflito, use uma tecla **em uso no momento** (ex.: a própria `F4`).
+
+### P50 — Asset do Service Worker (bump)
+- **Regra**: mudaram `mapa/mapa-store.js`, `mapa-interacao.js`, `mapa-render.js`, `mapa/mapa.js` e
+  `mapa/mapa.css` ⇒ **`CACHE_NAME` v38 → v39** (`ESSENCIAIS` inalterado). Entra o teste
+  `tests/mapa_atalhos.cjs`.
+
+### F11 — Undo/Redo
+
+**Suíte (mapa)**: `mapa_area`, `mapa_gestao`, `mapa_canvas`, `mapa_nos`, `mapa_conteudo`,
+`mapa_conexoes`, `mapa_dragdrop`, `mapa_vazio`, `mapa_layout`, `mapa_estilo`, `mapa_atalhos`,
+`mapa_undo`, `parity_structure`, `parity_visual` e `shortcuts` **verdes**.
+
+### P51 — Snapshot PRECISA incluir os campos de nível do grafo
+- **Regra**: `instantaneoGrafo` passou a guardar `layout`, `posicionamento`, `espacamento`, `temaId`
+  e `estilosNivel` (além de `nos`/`conexoes`/seqs) — sem isso, `Ctrl+Z` **não** voltava layout nem
+  tema (eles ficavam fora do undo). `aplicarInstantaneo` restaura todos.
+- **Mitigação p/ novas fases**: qualquer campo NOVO no grafo que seja editável precisa entrar no
+  `instantaneoGrafo` **e** no `aplicarInstantaneo`.
+
+### P52 — Comando que NÃO re-renderiza deixava os botões desatualizados (bug real)
+- **Sintoma**: depois de `mapaDefinirLayout`, o clique em **Desfazer** não fazia nada (o layout
+  continuava igual); o teste falhou em "Desfazer volta o layout".
+- **Causa**: ações como layout/tema/estilo usam `reposicionarSuave` + `registrarHistorico` **sem**
+  `renderArea`, então `atualizarBotoesHistorico` não rodava e o botão permanecia `disabled` do
+  render anterior — e `element.click()` em botão `disabled` **não dispara** evento.
+- **Correção**: `registrarHistorico` (ponto único de todas as ações) agora chama
+  `atualizarBotoesHistorico` nos dois ramos (empilhar e coalescer).
+- **Mitigação p/ novas fases**: estado de botão ligado à pilha deve ser atualizado **no**
+  `registrarHistorico`, nunca só no render.
+
+### P53 — Coalescência × ramo de redo (truncar muda o tamanho da pilha)
+- **Sintoma**: a asserção "a rajada vira UM passo" (`len + 1`) falhou.
+- **Causa**: se havia **ramo de redo**, o primeiro commit da rajada **trunca** a pilha antes de
+  empilhar — então o tamanho pode não crescer.
+- **Correção no teste**: assertar `len <= antes + 1` + "topo = atual" + o comportamento funcional
+  (**um único undo** volta ao título original).
+- **Mitigação**: ao testar coalescência, valide o EFEITO (1 undo por gesto) e não o tamanho exato,
+  ou garanta que a pilha está no topo antes da rajada.
+
+### P54 — Cap de 100 exige comando BARATO no teste
+- **Sintoma**: o laço de 110 comandos estourou o tempo (cada comando re-renderiza e refina layout).
+- **Correção**: no trecho do cap, o teste fixa `posicionamento = 'manual'` (pula layout + refino) —
+  o teste caiu de >30 s para **6 s**.
+- **Mitigação p/ novas fases**: testes de pilha/cap devem evitar recálculo de layout.
+
+### P55 — Asset do Service Worker (bump)
+- **Regra**: mudaram `mapa/mapa.js`, `mapa-render.js` e `mapa.css` ⇒ **`CACHE_NAME` v39 → v40**.
+  Entra o teste `tests/mapa_undo.cjs`.
+
+### P56 — Dark da área do mapa ESPELHA o dark de Notas (tokens `--mapa-*`)
+- **Pedido**: o modo escuro do mapa deve usar as **mesmas cores** do dark de Notas.
+- **Problema**: o mapa tinha valores próprios (`#0B0F14` para a área/área de trabalho,
+  `#3A4657` para o ramo) que **não** existem no tema de Notas — ficava mais escuro/azulado que o
+  modal.
+- **Correção**: criado o bloco de **tokens `--mapa-*`** no topo do `mapa.css`:
+  claro = tokens globais (`--color-*`); escuro = **exatamente** os valores do compilado do modal
+  (`theme-origem.css`): superfície de barra `#151B23` (header/nav/toolbar/footer), container
+  `#11161D`, área de trabalho `#0D1218` (`notesEditorContainer`), bordas `#2A3543`/`#263241`,
+  divisor `#334155`, textos `#CBD5E1`/`#E2E8F0`/`#F8FAFC`/`#94A3B8`, hover `#202A36`.
+  Todas as regras dark do mapa passaram a usar as variáveis (`#0B0F14` → `#0D1218`,
+  ramo `#3A4657` → `#334155`, topbar/painel/menus → `#151B23`, hover de botões/chips → `#202A36`).
+- **Ganho**: qualquer ajuste futuro no dark de Notas pode ser propagado só mexendo nesse bloco.
+- **Cuidado**: o **nó** continua com fallback `#11161D` (o mesmo do container de Notas) — o
+  `mapa_estilo.cjs` valida `rgb(17, 22, 29)` no escuro; **não** trocar por `#151B23`.
+- **Bump**: `mapa.css` mudou ⇒ **`CACHE_NAME` v40 → v41**.
+
+### F12 — Menus de interação + barras padronizadas
+
+**Suíte (mapa)**: `mapa_area`, `mapa_gestao`, `mapa_canvas`, `mapa_nos`, `mapa_conteudo`,
+`mapa_conexoes`, `mapa_dragdrop`, `mapa_vazio`, `mapa_layout`, `mapa_estilo`, `mapa_atalhos`,
+`mapa_undo`, `mapa_toolbar`, `parity_structure`, `parity_visual` e `shortcuts` **verdes**.
+
+### P57 — Duas barras (ferramentas fixa + formatação contextual), sem botão solto
+- **Regra**: `#mapaToolbar` (fixa, `role="toolbar"`, uma linha com rolagem, grupos + divisores,
+  `.toolbar-btn` = cores de Notas) concentra **ferramentas/visão/estrutura**; `#mapaFormatBar`
+  (contextual ao nó selecionado) espelha a `#notesToolbar` (texto/tamanho/fonte/cores/forma/
+  alinhamento/linhas/pincel). Saíram daqui: `controlesCanvas` e `acoesNo` (removidos).
+- **Contratos preservados**: `#mapaArea .mapa-shell`, `#mapaCanvas`, `.mapa-canvas-vazio button`,
+  todos os `data-mapa-acao` e os ids (`#mapaLayout`, `#mapaTema`, `#mapaEspacoNos`,
+  `#mapaEspacoNivel*`, `#mapaNovoTopico`, `#mapaZoomAtual`).
+- **Topbar**: no mapa aberto mostra **só** “‹ Mapas” (`#mapaNovaPasta` passou a ter id e é ocultada
+  na visão de mapa); “Conectar a mapa…” e “Salvar como template” foram para o grupo **Mais**.
+- **Teste**: `mapa_toolbar.cjs` valida `flex-wrap: nowrap`, `overflow-x`, grupos/divisores e
+  **zero botão solto** (excluindo afinidades do card, chips de mapa conectado, minimapa e estado vazio).
+
+### P58 — Ações de CARD foram para o MENU CONTEXTUAL (botão direito / toque longo)
+- **Pedido**: o que é específico de um card (duplicar, colar, excluir, bloquear, largura, mover…)
+  fica num **menu**, aberto por **botão direito** (PC) ou **toque longo** — nada de botão solto.
+- **Implementação**: `contextMenu()` na interação (delegado no `#mapaArea`) + `mapaAbrirMenuNo`/
+  `mapaAbrirMenuCanvas`/`mapaFecharMenus`; o menu (`role="menu"`, itens com `role="menuitem"`) usa os
+  **mesmos `data-mapa-acao`** (as ações e os testes continuam funcionando) e fecha em **qualquer ação**.
+- **Mudança de gesto**: o **toque longo não abre mais a edição inline** — agora abre o menu. A edição
+  continua no **duplo clique/F2** e pelo item “Editar texto”. Atualizado em `P11` (nota).
+- **Impacto nos testes**: adicionado nos helpers `[data-mapa-acao]` um *fallback* que **abre o menu**
+  no nó selecionado quando o botão não está visível (`mapa_nos`, `mapa_layout`, `mapa_canvas`,
+  `mapa_conteudo`, `mapa_conexoes`, `mapa_undo`).
+
+### P59 — `page.click` NÃO acha botão dentro de `<details>` fechado (flakiness de 30 s)
+- **Sintoma**: `mapa_atalhos.cjs` passou a **estourar o tempo** depois da F12.
+- **Causa**: o botão “Atalhos” foi para o overflow (`<details class="mapa-tb-mais">`, fechado) e o
+  `page.click` do Playwright espera o elemento ficar visível — timeout infinito.
+- **Correção**: o teste passou a clicar via **JS** (`el.click()` em `page.evaluate`), que funciona em
+  elemento oculto; o mesmo cuidado vale para qualquer botão do overflow.
+- **Mitigação p/ novas fases**: testes devem clicar via JS em itens de overflow/menus fechados.
+
+### P60 — Paleta de cores REPLICADA de Notas + integração com o canvas
+- **Regra**: `mapa/mapa-cores.js` implementa o **mesmo padrão** de `setupNotesColors` (grade 8x10,
+  recentes máx. 12, “+”, conta-gotas, “Sem cor”, “Aplicar”, popover preso ao `visualViewport`,
+  `Esc`/clique fora, foco preso) sem tocar em `notes/*.js` (paridade byte-a-byte).
+- **Recentes por mapa**: `grafo.coresRecentes = { cor|fundo|borda: [...] }` (máx. 12) — persistido no
+  grafo (não no dataset, como em Notas).
+- **Integração**: `#mapaCoresPaleta` entrou em `alvoInterativo` (P8 — não inicia pan/seleção) e usa
+  `z-index: 2500` (> 2300 do modal de Notas, P1).
+
+### P61 — Asset NOVO no Service Worker (bump)
+- **Regra**: `./mapa/mapa-cores.js` é **asset novo** ⇒ entrou em `ESSENCIAIS` e o **`CACHE_NAME`
+  v41 → v42**. Sem isso, a instalação do SW falharia/ficaria incompleta (P3/P20).

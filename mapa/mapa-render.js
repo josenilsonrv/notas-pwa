@@ -29,6 +29,35 @@
         return isNaN(data) ? '' : data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
     };
 
+    /** Campo numérico rotulado (controles do canvas — Fase 8). */
+    const campoNumero = (id, rotulo, valor, maximo) => {
+        const wrap = criar('label', 'mapa-campo-numero');
+        wrap.append(criar('span', 'mapa-campo-numero-rotulo', rotulo));
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.id = id;
+        input.min = '0';
+        input.max = String(maximo || 400);
+        input.step = '4';
+        input.value = String(Number(valor) || 0);
+        input.setAttribute('aria-label', rotulo);
+        wrap.append(input);
+        return wrap;
+    };
+
+    /** Campo de cor rotulado (controles de estilo do mapa — Fase 9). */
+    const campoCor = (id, rotulo, valor) => {
+        const wrap = criar('label', 'mapa-campo-cor');
+        wrap.append(criar('span', 'mapa-campo-numero-rotulo', rotulo));
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.id = id;
+        input.value = /^#[0-9a-f]{6}$/i.test(valor || '') ? valor : '#4cc9f0';
+        input.setAttribute('aria-label', rotulo);
+        wrap.append(input);
+        return wrap;
+    };
+
     // 🔄 [INÍCIO: MAPA - SHELL DA ÁREA]
     /** Monta o esqueleto da área (topbar + formulário inline + superfície). */
     function montarShell(secao) {
@@ -68,6 +97,7 @@
         const arquivados = botao('mapa-btn', 'Arquivados', 'alternar-arquivados');
         arquivados.id = 'mapaMostrarArquivados';
         const novaPasta = botao('mapa-btn', 'Nova pasta', 'pasta-nova');
+        novaPasta.id = 'mapaNovaPasta';
         const novo = botao('mapa-btn mapa-btn-primario', 'Novo mapa', 'novo');
         novo.id = 'mapaNovo';
         const templates = botao('mapa-btn', 'Templates', 'templates');
@@ -81,12 +111,24 @@
         form.noValidate = true;
         form.hidden = true;
 
+        // Barras padronizadas (F12): ferramentas (fixa) + formatação (contextual).
+        const toolbar = criar('div', 'mapa-toolbar');
+        toolbar.id = 'mapaToolbar';
+        toolbar.setAttribute('role', 'toolbar');
+        toolbar.setAttribute('aria-label', 'Ferramentas do mapa');
+        toolbar.hidden = true;
+        const formatBar = criar('div', 'mapa-format-bar');
+        formatBar.id = 'mapaFormatBar';
+        formatBar.setAttribute('role', 'toolbar');
+        formatBar.setAttribute('aria-label', 'Formatação do nó');
+        formatBar.hidden = true;
+
         const wrap = criar('div', 'mapa-canvas-wrap');
         wrap.id = 'mapaCanvasWrap';
 
-        shell.append(topbar, form, wrap);
+        shell.append(topbar, toolbar, formatBar, form, wrap);
         secao.append(shell);
-        return { shell, topbar, form, wrap };
+        return { shell, topbar, toolbar, formatBar, form, wrap };
     }
     // 🔄 [FIM: MAPA - SHELL DA ÁREA]
 
@@ -100,8 +142,10 @@
         visivel('mapaBusca', lista);
         visivel('mapaOrdem', lista);
         visivel('mapaMostrarArquivados', lista);
+        visivel('mapaNovaPasta', lista);
         visivel('mapaNovo', lista);
         visivel('mapaTemplates', lista);
+        visivel('mapaToolbar', !lista);
         const titulo = document.getElementById('mapaTituloAtual');
         if (titulo) titulo.textContent = estado.mapaAberto ? (estado.mapaAberto.nome || 'Mapa') : '';
         const busca = document.getElementById('mapaBusca');
@@ -254,13 +298,16 @@
             chip.title = id;
             conexoes.append(chip);
         });
-        conexoes.append(botao('mapa-btn', 'Conectar a mapa...', 'conectar'));
         painel.append(conexoes);
 
-        const acoes = criar('div', 'mapa-aberto-acoes');
-        acoes.append(botao('mapa-btn', 'Salvar como template', 'template-salvar', { mapaId: mapa.id }));
-        painel.append(acoes);
-        painel.append(controlesCanvas(dados));
+        // F12: "Conectar a mapa…" e "Salvar como template" saíram daqui e viraram itens da
+        // barra de ferramentas (grupo "Mais") — a área do mapa NÃO tem botão solto.
+        // Confirmação em duas etapas antes de descartar as posições manuais (Fase 8).
+        if (dados.acao && dados.acao.tipo === 'layout-confirmar') painel.append(barraConfirmacaoLayout());
+        // Painel "Configurar atalhos" (Fase 10).
+        if (dados.atalhos) painel.append(renderAtalhos(dados.atalhos));
+        // Painel "Editar barra" (Fase 12).
+        if (dados.barraAberta) painel.append(editorBarra());
         // Painel de propriedades do nó (Fase 4) — só quando aberto.
         const moduloPainel = global.MapaMentalPainel;
         if (moduloPainel && dados.painelNo) {
@@ -272,7 +319,9 @@
             const menu = menuConexao(dados.conexaoMenu, dados);
             if (menu) painel.append(menu);
         }
-        painel.append(acoesNo(dados));
+        // Menu contextual do card/canvas (Fase 12) — comandos específicos de card.
+        const menu = menuContextual(dados);
+        if (menu) painel.append(menu);
         painel.append(canvasInfinito(dados.grafo, dados));
         wrap.append(painel);
         // Conexões (Fase 6): desenha após o DOM existir (mede os nós reais).
@@ -284,23 +333,139 @@
         }
     }
 
-    /** Barra de controles do canvas (zoom, enquadramento, raiz e recolher/expandir). */
-    function controlesCanvas(dados) {
-        const grafo = (dados && dados.grafo) || null;
-        const controles = criar('div', 'mapa-canvas-controles');
-        // Ação principal SEMPRE visível: sem nós não existe barra de ações de nó,
-        // então é por aqui que se cria o primeiro tópico do mapa.
-        const novoTopico = botao('mapa-btn mapa-btn-primario', 'Novo tópico', 'no-independente');
-        novoTopico.id = 'mapaNovoTopico';
-        controles.append(novoTopico);
-        const menos = botao('mapa-btn mapa-canvas-btn', '−', 'zoom-out');
-        menos.setAttribute('aria-label', 'Diminuir zoom');
-        const mais = botao('mapa-btn mapa-canvas-btn', '+', 'zoom-in');
-        mais.setAttribute('aria-label', 'Aumentar zoom');
-        const rotulo = criar('span', 'mapa-zoom-atual', '100%');
-        rotulo.id = 'mapaZoomAtual';
-        controles.append(menos, rotulo, mais);
-        // Seletor de layout em árvore (Fase 5).
+    /** Estilos por nível (Fase 9): nível + fundo/borda e ações aplicar/limpar. */
+    function estiloNivelControles(grafo) {
+        const detalhes = criar('details', 'mapa-estilo-nivel');
+        detalhes.append(criar('summary', 'mapa-estilo-nivel-titulo', 'Estilo por nível'));
+        const linha = criar('div', 'mapa-estilo-nivel-linha');
+        const sel = document.createElement('select');
+        sel.id = 'mapaEstiloNivel';
+        sel.setAttribute('aria-label', 'Nível');
+        for (let n = 1; n <= 6; n += 1) {
+            const opcao = document.createElement('option');
+            opcao.value = String(n);
+            opcao.textContent = 'Nível ' + n;
+            sel.append(opcao);
+        }
+        const nivel = (grafo && grafo.estilosNivel) || {};
+        const atual = nivel['1'] || {};
+        linha.append(sel,
+            campoCor('mapaEstiloNivelFundo', 'Fundo', atual.fundo),
+            campoCor('mapaEstiloNivelBorda', 'Borda', atual.borda));
+        linha.append(botao('mapa-btn mapa-btn-primario', 'Aplicar ao nível', 'estilo-nivel-aplicar'));
+        linha.append(botao('mapa-btn', 'Limpar nível', 'estilo-nivel-limpar'));
+        detalhes.append(linha);
+        return detalhes;
+    }
+
+    // 🔄 [INÍCIO: MAPA - BARRAS PADRONIZADAS (FASE 12)]
+    /**
+     * Botão da barra no MESMO padrão de Notas: `.toolbar-btn` (32x32, ícone/texto),
+     * `title`/`aria-label`, `data-mapa-acao` (os testes e as ações dependem disso) e
+     * `data-mapa-botao` (chave para a ordem persistida).
+     */
+    function btnBarra(chave, rotulo, titulo, acao, dados, id) {
+        const el = criar('button', 'toolbar-btn mapa-tb-btn', rotulo);
+        el.type = 'button';
+        el.title = titulo || rotulo;
+        el.setAttribute('aria-label', titulo || rotulo);
+        el.dataset.mapaAcao = acao;
+        el.dataset.mapaBotao = chave;
+        if (dados) Object.assign(el.dataset, dados);
+        if (id) el.id = id;
+        return el;
+    }
+
+    /** Grupo da barra (divisores separam os grupos, igual à barra de Notas). */
+    function grupoBarra(id, rotulo) {
+        const g = criar('div', 'mapa-tb-grupo');
+        g.dataset.mapaGrupo = id;
+        g.setAttribute('role', 'group');
+        g.setAttribute('aria-label', rotulo);
+        return g;
+    }
+    const divisorBarra = () => criar('span', 'mapa-tb-divisor', '');
+
+    /** Botão de ícone de texto (fallback leve quando não há SVG específico). */
+    const btnTexto = (chave, rotulo, titulo, acao, dados, id) => btnBarra(chave, rotulo, titulo, acao, dados, id);
+
+    /** Reordena um grupo conforme a ordem salva (chaves desconhecidas ficam no fim). */
+    function aplicarOrdemBarra(grupo, ordem) {
+        const salva = (ordem && ordem[grupo.dataset.mapaGrupo]) || null;
+        if (!salva || !salva.length) return;
+        const porChave = new Map();
+        [...grupo.children].forEach(filho => {
+            if (filho.dataset && filho.dataset.mapaBotao) porChave.set(filho.dataset.mapaBotao, filho);
+        });
+        salva.forEach(chave => {
+            const el = porChave.get(chave);
+            if (el) grupo.append(el);
+        });
+    }
+
+    /** Campo numérico compacto da barra (espaçamento). */
+    const campoBarra = (id, rotulo, valor) => campoNumero(id, rotulo, valor);
+
+    /**
+     * Preenche `#mapaToolbar` (ferramentas, FIXA) e `#mapaFormatBar` (formatação,
+     * CONTEXTUAL ao nó selecionado). Sem mapa aberto, ambas ficam vazias/ocultas.
+     * Regra de ouro (F12): NADA de botão solto — ferramentas aqui, formatação na
+     * `#mapaFormatBar` e comandos específicos de card no MENU CONTEXTUAL do nó.
+     */
+    function renderBarras(dados) {
+        const toolbar = document.getElementById('mapaToolbar');
+        const formatBar = document.getElementById('mapaFormatBar');
+        if (!toolbar || !formatBar) return;
+        toolbar.innerHTML = '';
+        formatBar.innerHTML = '';
+        const info = dados || {};
+        if (!info.mapaAberto) { toolbar.hidden = true; formatBar.hidden = true; return; }
+        const grafo = info.grafo || null;
+        const ordem = (global.MapaMentalStore && global.MapaMentalStore.lerOrdemBarra) ? global.MapaMentalStore.lerOrdemBarra() : {};
+
+        // ---- Grupo: Mapa (arquivo) ----
+        // "‹ Mapas" fica na TOPBAR (cabeçalho da área); aqui ficam só os atalhos de mapa.
+        const gMapa = grupoBarra('mapa', 'Mapa');
+        gMapa.append(btnTexto('novo', '＋', 'Novo mapa', 'novo'));
+        gMapa.append(btnTexto('templates', '🗂', 'Templates', 'templates'));
+        toolbar.append(gMapa);
+
+        // ---- Grupo: Histórico ----
+        toolbar.append(divisorBarra());
+        const gHist = grupoBarra('historico', 'Histórico');
+        gHist.append(btnTexto('desfazer', '↶', 'Desfazer', 'no-desfazer'));
+        gHist.append(btnTexto('refazer', '↷', 'Refazer', 'no-refazer'));
+        toolbar.append(gHist);
+
+        // ---- Grupo: Inserir (somente o tópico RAIZ; filho/irmão vão no menu do card) ----
+        toolbar.append(divisorBarra());
+        const gInserir = grupoBarra('inserir', 'Inserir');
+        gInserir.append(btnTexto('novo-topico', '＋ Tópico', 'Novo tópico (raiz)', 'no-independente', null, 'mapaNovoTopico'));
+        toolbar.append(gInserir);
+
+        // ---- Grupo: Exibir (zoom, enquadramento, layout, espaçamento, tema, nível) ----
+        toolbar.append(divisorBarra());
+        toolbar.append(grupoExibir(grafo));
+
+        // ---- Grupo: Mais (overflow + atalhos + editar barra) ----
+        toolbar.append(divisorBarra());
+        toolbar.append(grupoMais(info));
+
+        [...toolbar.querySelectorAll('.mapa-tb-grupo')].forEach(g => aplicarOrdemBarra(g, ordem));
+        renderFormatBar(formatBar, info);
+    }
+    /** Grupo "Exibir": zoom, enquadramento, layout, espaçamento, tema e estilo por nível. */
+    function grupoExibir(grafo) {
+        const g = grupoBarra('exibir', 'Exibir');
+        g.append(btnTexto('zoom-out', '−', 'Diminuir zoom', 'zoom-out'));
+        const rotuloZoom = criar('span', 'mapa-zoom-atual', '100%');
+        rotuloZoom.id = 'mapaZoomAtual';
+        g.append(rotuloZoom);
+        g.append(btnTexto('zoom-in', '＋', 'Aumentar zoom', 'zoom-in'));
+        g.append(btnTexto('centralizar', '⌖', 'Centralizar', 'centralizar'));
+        g.append(btnTexto('fit', '⤢', 'Ajustar à tela', 'fit'));
+        g.append(btnTexto('raiz', '⌂', 'Ir para a raiz', 'ir-raiz'));
+
         const layoutSel = document.createElement('select');
         layoutSel.id = 'mapaLayout';
         layoutSel.className = 'mapa-ordem';
@@ -312,37 +477,285 @@
             layoutSel.append(opcao);
         });
         layoutSel.value = (grafo && grafo.layout) || 'bilateral';
-        controles.append(layoutSel);
-        controles.append(botao('mapa-btn', 'Centralizar', 'centralizar'));
-        controles.append(botao('mapa-btn', 'Ajustar à tela', 'fit'));
-        controles.append(botao('mapa-btn', 'Ir para a raiz', 'ir-raiz'));
-        controles.append(botao('mapa-btn', 'Recolher tudo', 'recolher-tudo'));
-        controles.append(botao('mapa-btn', 'Expandir tudo', 'expandir-tudo'));
-        // Modo "Conectar nós" (Fase 6): 1º clique = origem, 2º = destino.
-        const conectar = botao('mapa-btn', 'Conectar nós', 'conectar-nos');
-        conectar.id = 'mapaModoConexao';
-        conectar.setAttribute('aria-pressed', String(Boolean(dados && dados.modoConexao)));
-        controles.append(conectar);
-        return controles;
+        layoutSel.dataset.mapaBotao = 'layout';
+        g.append(layoutSel);
+
+        const espaco = criar('span', 'mapa-tb-campos');
+        espaco.dataset.mapaBotao = 'espacamento';
+        const cfgEspaco = (grafo && grafo.espacamento) || { nos: 32, niveis: 80 };
+        espaco.append(campoBarra('mapaEspacoNos', 'Entre nós', cfgEspaco.nos));
+        espaco.append(campoBarra('mapaEspacoNiveis', 'Entre níveis', cfgEspaco.niveis));
+        espaco.append(botao('mapa-btn mapa-btn-compacto', 'Aplicar', 'espacamento-aplicar'));
+        g.append(espaco);
+
+        const temaSel = document.createElement('select');
+        temaSel.id = 'mapaTema';
+        temaSel.className = 'mapa-ordem';
+        temaSel.setAttribute('aria-label', 'Tema do mapa');
+        ((global.MapaMentalModelo && global.MapaMentalModelo.TEMAS_MAPA) || []).forEach(t => {
+            const opcao = document.createElement('option');
+            opcao.value = t.id;
+            opcao.textContent = t.nome;
+            temaSel.append(opcao);
+        });
+        temaSel.value = (grafo && grafo.temaId) || 'padrao';
+        temaSel.dataset.mapaBotao = 'tema';
+        g.append(temaSel);
+
+        const nivel = estiloNivelControles(grafo);
+        nivel.dataset.mapaBotao = 'nivel';
+        g.append(nivel);
+
+        g.append(btnTexto('recolher-tudo', '⊟', 'Recolher tudo', 'recolher-tudo'));
+        g.append(btnTexto('expandir-tudo', '⊞', 'Expandir tudo', 'expandir-tudo'));
+        return g;
     }
 
-    /** Barra de ações dos nós selecionados. */
-    function acoesNo(dados) {
-        const barra = criar('div', 'mapa-no-acoes');
-        const selecionados = (dados && dados.selecionados) || new Set();
-        barra.hidden = selecionados.size === 0;
-        const botoes = [
-            ['no-filho', 'Filho'], ['no-irmao', 'Irmão'], ['no-independente', 'Independente'],
-            ['no-editar', 'Editar'], ['no-propriedades', 'Propriedades'], ['no-concluir', 'Concluir'],
-            ['no-conectar-para', 'Conectar a…'],
-            ['no-excluir', 'Excluir'], ['no-duplicar', 'Duplicar'],
-            ['no-copiar', 'Copiar'], ['no-recortar', 'Recortar'], ['no-colar', 'Colar'],
-            ['no-subir', 'Subir'], ['no-descer', 'Descer'], ['no-mover-para', 'Mover para...'],
-            ['no-recolher', 'Recolher'], ['no-expandir', 'Expandir'], ['no-bloquear', 'Bloquear'],
-            ['no-largura-menos', 'Largura −'], ['no-largura-mais', 'Largura +'], ['no-desfazer', 'Desfazer']
+    /** Grupo "Mais": overflow com conexões, atalhos e a edição da barra. */
+    function grupoMais(info) {
+        const g = grupoBarra('mais', 'Mais');
+        const detalhes = criar('details', 'mapa-tb-mais');
+        const resumo = criar('summary', 'mapa-tb-mais-resumo', '⋯');
+        resumo.title = 'Mais ferramentas';
+        resumo.setAttribute('aria-label', 'Mais ferramentas');
+        detalhes.append(resumo);
+        const lista = criar('div', 'mapa-tb-mais-lista');
+        [
+            ['conectar-nos', 'Conectar nós', 'conectar-nos'],
+            ['conectar-mapa', 'Conectar a mapa…', 'conectar'],
+            ['template-salvar', 'Salvar como template', 'template-salvar'],
+            ['atalhos', 'Atalhos', 'atalhos-abrir'],
+            ['barra-editar', 'Editar barra', 'barra-editar'],
+            ['barra-restaurar', 'Restaurar barra', 'barra-restaurar']
+        ].forEach(([chave, rotulo, acao]) => {
+            const el = btnBarra(chave, rotulo, rotulo, acao);
+            if (acao === 'conectar-nos') {
+                el.id = 'mapaModoConexao';
+                el.setAttribute('aria-pressed', String(Boolean(info && info.modoConexao)));
+            }
+            lista.append(el);
+        });
+        detalhes.append(lista);
+        detalhes.dataset.mapaBotao = 'mais';
+        g.append(detalhes);
+        return g;
+    }
+    /** Marca `aria-pressed` nos toggles da formatação. */
+    function comEstado(el, ativo) {
+        el.setAttribute('aria-pressed', String(Boolean(ativo)));
+        return el;
+    }
+
+    /** Barra de FORMATAÇÃO (contextual ao nó selecionado) — espelha a `#notesToolbar`. */
+    function renderFormatBar(bar, info) {
+        const selecionados = (info && info.selecionados) || new Set();
+        if (!selecionados.size) { bar.hidden = true; return; }
+        const grafo = info.grafo;
+        const lista = [...selecionados];
+        const no = grafo ? (grafo.nos || []).find(item => item.id === lista[lista.length - 1]) : null;
+        if (!no) { bar.hidden = true; return; }
+        bar.hidden = false;
+        const m = global.MapaMentalModelo;
+        const efetivo = (m && m.estiloEfetivo) ? m.estiloEfetivo(grafo, no) : {};
+
+        const gTexto = grupoBarra('fmt-texto', 'Texto');
+        gTexto.append(comEstado(btnBarra('negrito', 'B', 'Negrito', 'estilo-toggle', { mapaEstilo: 'negrito' }), efetivo.negrito === true));
+        gTexto.append(comEstado(btnBarra('italico', 'I', 'Itálico', 'estilo-toggle', { mapaEstilo: 'italico' }), efetivo.italico === true));
+        bar.append(gTexto);
+
+        bar.append(divisorBarra());
+        const gTamanho = grupoBarra('fmt-tamanho', 'Tamanho e fonte');
+        gTamanho.append(btnBarra('tamanho-menos', 'A−', 'Diminuir tamanho', 'estilo-passo', { mapaEstilo: 'tamanho', mapaPasso: '-1' }));
+        gTamanho.append(btnBarra('tamanho-mais', 'A+', 'Aumentar tamanho', 'estilo-passo', { mapaEstilo: 'tamanho', mapaPasso: '1' }));
+        [['sistema', 'Sistema'], ['serif', 'Serifada'], ['mono', 'Monoespaçada'], ['cursiva', 'Cursiva']]
+            .forEach(([valor, rotulo]) => gTamanho.append(comEstado(
+                btnBarra('fonte-' + valor, rotulo, 'Fonte ' + rotulo, 'estilo-definir', { mapaEstilo: 'fonte', mapaValor: valor }),
+                efetivo.fonte === valor
+            )));
+        bar.append(gTamanho);
+
+        // Cores: abrem o MESMO popover dos botões de cor/destaque de Notas.
+        bar.append(divisorBarra());
+        const gCores = grupoBarra('fmt-cores', 'Cores');
+        [['cor', 'A', 'Cor do texto'], ['fundo', '▨', 'Fundo do nó'], ['borda', '▢', 'Borda do nó']]
+            .forEach(([prop, rotulo, titulo]) => {
+                const b = btnBarra('cor-' + prop, rotulo, titulo, 'cor-abrir', { mapaCor: prop });
+                b.setAttribute('aria-haspopup', 'dialog');
+                gCores.append(b);
+            });
+        bar.append(gCores);
+
+        bar.append(divisorBarra());
+        const gForma = grupoBarra('fmt-forma', 'Forma');
+        [['retangulo', '▭'], ['pilula', '⬭'], ['elipse', '◯'], ['nota', '🗒']].forEach(([valor, rotulo]) => gForma.append(comEstado(
+            btnBarra('forma-' + valor, rotulo, 'Forma ' + valor, 'estilo-definir', { mapaEstilo: 'forma', mapaValor: valor }),
+            efetivo.forma === valor
+        )));
+        bar.append(gForma);
+
+        bar.append(divisorBarra());
+        const gAlinha = grupoBarra('fmt-alinhamento', 'Alinhamento');
+        [['esquerda', '⇤'], ['centro', '↔'], ['direita', '⇥']].forEach(([valor, rotulo]) => gAlinha.append(comEstado(
+            btnBarra('alinha-' + valor, rotulo, 'Alinhar: ' + valor, 'estilo-definir', { mapaEstilo: 'alinhamento', mapaValor: valor }),
+            efetivo.alinhamento === valor
+        )));
+        bar.append(gAlinha);
+
+        bar.append(divisorBarra());
+        const gLinhas = grupoBarra('fmt-linhas', 'Linhas e pincel');
+        gLinhas.append(btnBarra('borda-menos', '▬−', 'Borda mais fina', 'estilo-passo', { mapaEstilo: 'espessuraBorda', mapaPasso: '-1' }));
+        gLinhas.append(btnBarra('borda-mais', '▬+', 'Borda mais grossa', 'estilo-passo', { mapaEstilo: 'espessuraBorda', mapaPasso: '1' }));
+        gLinhas.append(btnBarra('ramo-menos', '〜−', 'Ramo mais fino', 'estilo-passo', { mapaEstilo: 'espessuraRamo', mapaPasso: '-1' }));
+        gLinhas.append(btnBarra('ramo-mais', '〜+', 'Ramo mais grosso', 'estilo-passo', { mapaEstilo: 'espessuraRamo', mapaPasso: '1' }));
+        gLinhas.append(btnBarra('estilo-copiar', '🖌', 'Copiar estilo (pincel)', 'no-estilo-copiar'));
+        const aplicar = btnBarra('estilo-aplicar', 'Aplicar estilo', 'Aplicar o estilo copiado', 'no-estilo-aplicar');
+        aplicar.disabled = !(info.estiloCopiado && Object.keys(info.estiloCopiado).length);
+        gLinhas.append(aplicar);
+        gLinhas.append(btnBarra('estilo-restaurar', 'Restaurar', 'Restaurar o estilo padrão', 'no-estilo-restaurar'));
+        bar.append(gLinhas);
+    }
+    /**
+     * Menu contextual (F12): os comandos ESPECÍFICOS DE CARD vivem aqui — aberto por
+     * botão direito (PC) ou toque longo. `role="menu"`; fecha com `Esc`/clique fora.
+     * No canvas vazio, mostra as ações de mapa/tela.
+     */
+    function menuContextual(dados) {
+        const info = dados || {};
+        const noMenu = info.menuNo;
+        const canvasMenu = info.menuCanvas;
+        if (!noMenu && !canvasMenu) return null;
+        const menu = criar('div', 'mapa-menu');
+        menu.id = 'mapaMenu';
+        menu.setAttribute('role', 'menu');
+        menu.setAttribute('aria-label', noMenu ? 'Ações do card' : 'Ações do mapa');
+        const pos = noMenu || canvasMenu;
+        menu.style.left = Math.max(8, Math.min(pos.x || 0, (global.innerWidth || 1024) - 232)) + 'px';
+        menu.style.top = Math.max(8, Math.min(pos.y || 0, (global.innerHeight || 768) - 340)) + 'px';
+        const itens = noMenu ? [
+            ['filho', 'Adicionar filho', 'no-filho'],
+            ['irmao', 'Adicionar irmão', 'no-irmao'],
+            ['editar', 'Editar texto', 'no-editar'],
+            ['propriedades', 'Propriedades', 'no-propriedades'],
+            ['concluir', 'Concluir / desconcluir', 'no-concluir'],
+            ['duplicar', 'Duplicar', 'no-duplicar'],
+            ['copiar', 'Copiar', 'no-copiar'],
+            ['recortar', 'Recortar', 'no-recortar'],
+            ['colar', 'Colar', 'no-colar'],
+            ['subir', 'Subir', 'no-subir'],
+            ['descer', 'Descer', 'no-descer'],
+            ['mover', 'Mover para…', 'no-mover-para'],
+            ['recolher', 'Recolher', 'no-recolher'],
+            ['expandir', 'Expandir', 'no-expandir'],
+            ['bloquear', 'Bloquear / desbloquear', 'no-bloquear'],
+            ['largura-menos', 'Largura −', 'no-largura-menos'],
+            ['largura-mais', 'Largura +', 'no-largura-mais'],
+            ['conectar', 'Conectar a…', 'no-conectar-para'],
+            ['excluir', 'Excluir', 'no-excluir']
+        ] : [
+            ['novo-topico', 'Novo tópico (raiz)', 'no-independente'],
+            ['colar', 'Colar', 'no-colar'],
+            ['recolher-tudo', 'Recolher tudo', 'recolher-tudo'],
+            ['expandir-tudo', 'Expandir tudo', 'expandir-tudo'],
+            ['centralizar', 'Centralizar', 'centralizar'],
+            ['fit', 'Ajustar à tela', 'fit'],
+            ['ir-raiz', 'Ir para a raiz', 'ir-raiz']
         ];
-        botoes.forEach(([acao, rotulo]) => barra.append(botao('mapa-btn mapa-no-btn', rotulo, acao)));
+        itens.forEach(([chave, rotulo, acao]) => {
+            const item = criar('button', 'mapa-menu-item', rotulo);
+            item.type = 'button';
+            item.setAttribute('role', 'menuitem');
+            item.dataset.mapaAcao = acao;
+            item.dataset.mapaBotao = chave;
+            if (noMenu) item.dataset.mapaNoId = noMenu.id;
+            if (acao === 'no-excluir') item.classList.add('mapa-menu-item-perigo');
+            menu.append(item);
+        });
+        const fechar = criar('button', 'mapa-menu-item mapa-menu-item-fechar', 'Fechar');
+        fechar.type = 'button';
+        fechar.setAttribute('role', 'menuitem');
+        fechar.dataset.mapaAcao = 'menu-fechar';
+        menu.append(fechar);
+        return menu;
+    }
+
+    /** Painel "Editar barra" (F12): reordena os botões de cada grupo e restaura o padrão. */
+    function editorBarra() {
+        const toolbar = document.getElementById('mapaToolbar');
+        if (!toolbar) return null;
+        const secao = criar('section', 'mapa-barra-editor');
+        secao.id = 'mapaBarraEditor';
+        secao.setAttribute('role', 'dialog');
+        secao.setAttribute('aria-label', 'Editar barra de ferramentas');
+        const topo = criar('div', 'mapa-atalhos-topo');
+        topo.append(criar('h4', 'mapa-atalhos-titulo', 'Editar barra de ferramentas'));
+        topo.append(criar('div', 'mapa-topbar-espaco'));
+        topo.append(botao('mapa-btn', 'Restaurar padrão', 'barra-restaurar'));
+        topo.append(botao('mapa-btn', 'Fechar', 'barra-fechar'));
+        secao.append(topo);
+        const lista = criar('div', 'mapa-barra-editor-lista');
+        [...toolbar.querySelectorAll('.mapa-tb-grupo')].forEach(grupo => {
+            const bloco = criar('div', 'mapa-barra-editor-grupo');
+            bloco.append(criar('span', 'mapa-atalhos-rotulo', grupo.getAttribute('aria-label') || grupo.dataset.mapaGrupo));
+            [...grupo.children].forEach(filho => {
+                if (!filho.dataset || !filho.dataset.mapaBotao) return;
+                const chave = filho.dataset.mapaBotao;
+                const item = criar('span', 'mapa-barra-editor-item');
+                item.append(criar('span', 'mapa-barra-editor-nome', String(filho.title || filho.textContent || chave).slice(0, 24)));
+                const dados = { mapaBotao: chave, mapaGrupo: grupo.dataset.mapaGrupo };
+                item.append(botao('mapa-btn mapa-no-btn', '↑', 'barra-mover', Object.assign({}, dados, { mapaDir: '-1' })));
+                item.append(botao('mapa-btn mapa-no-btn', '↓', 'barra-mover', Object.assign({}, dados, { mapaDir: '1' })));
+                bloco.append(item);
+            });
+            lista.append(bloco);
+        });
+        secao.append(lista);
+        return secao;
+    }
+    // 🔄 [FIM: MAPA - BARRAS PADRONIZADAS (FASE 12)]
+
+    /** Confirmação inline (duas etapas) antes de descartar as posições manuais (Fase 8). */
+    function barraConfirmacaoLayout() {
+        const barra = criar('div', 'mapa-confirmacao');
+        barra.setAttribute('role', 'alertdialog');
+        barra.setAttribute('aria-label', 'Confirmar troca de layout');
+        barra.append(criar('span', 'mapa-confirmacao-texto',
+            'Trocar para layout automático descarta as posições manuais dos nós.'));
+        barra.append(botao('mapa-btn mapa-btn-primario', 'Confirmar', 'layout-confirmar'));
+        barra.append(botao('mapa-btn', 'Cancelar', 'layout-cancelar'));
         return barra;
+    }
+
+    /**
+     * Painel "Configurar atalhos" (Fase 10): lista as ações com as teclas atuais, captura
+     * uma tecla por vez e permite restaurar o padrão. Fechado por `Esc`/clique no botão.
+     */
+    function renderAtalhos(dados) {
+        const info = dados || {};
+        const secao = criar('section', 'mapa-atalhos');
+        secao.id = 'mapaAtalhos';
+        secao.setAttribute('role', 'dialog');
+        secao.setAttribute('aria-label', 'Configurar atalhos');
+        const topo = criar('div', 'mapa-atalhos-topo');
+        topo.append(criar('h4', 'mapa-atalhos-titulo', 'Atalhos do mapa'));
+        const espaco = criar('div', 'mapa-topbar-espaco');
+        topo.append(espaco);
+        topo.append(botao('mapa-btn', 'Restaurar padrão', 'atalho-padrao'));
+        topo.append(botao('mapa-btn', 'Fechar', 'atalho-fechar'));
+        secao.append(topo);
+        const lista = criar('ul', 'mapa-atalhos-lista');
+        (info.itens || []).forEach(item => {
+            const linha = criar('li', 'mapa-atalhos-item');
+            linha.append(criar('span', 'mapa-atalhos-rotulo', item.rotulo));
+            linha.append(criar('span', 'mapa-atalhos-teclas',
+                info.capturando === item.id ? 'Pressione a tecla…' : (item.teclas || []).join(' · ')));
+            const alterar = botao('mapa-btn mapa-no-btn', 'Alterar', 'atalho-alterar', { mapaAtalho: item.id });
+            alterar.setAttribute('aria-label', 'Alterar o atalho de ' + item.rotulo);
+            linha.append(alterar);
+            lista.append(linha);
+        });
+        secao.append(lista);
+        if (info.aviso) secao.append(criar('p', 'mapa-atalhos-aviso', info.aviso));
+        return secao;
     }
 
     /** Um nó no canvas: texto, alternador de ramo, cadeado e alça de redimensionar. */
@@ -370,6 +783,21 @@
         if (no.mapaRef) elemento.classList.add('mapa-no-ponte');
         elemento.dataset.mapaNivel = String((dados.niveis && dados.niveis.get(no.id)) || 1);
         if (no.prazo) elemento.title = 'Prazo: ' + no.prazo;
+
+        // Estilo (Fase 9): classes + variáveis CSS do estilo EFETIVO (nó > nível > tema).
+        const modeloEstilo = global.MapaMentalModelo;
+        const estilo = (modeloEstilo && modeloEstilo.estiloEfetivo) ? modeloEstilo.estiloEfetivo(dados.grafo, no) : {};
+        if (estilo.fundo) elemento.style.setProperty('--mapa-no-fundo', estilo.fundo);
+        if (estilo.cor) elemento.style.setProperty('--mapa-no-cor', estilo.cor);
+        if (estilo.borda) elemento.style.setProperty('--mapa-no-borda', estilo.borda);
+        if (estilo.tamanho) elemento.style.setProperty('--mapa-no-tamanho', estilo.tamanho + 'px');
+        if (estilo.espessuraBorda) elemento.style.setProperty('--mapa-no-borda-espessura', estilo.espessuraBorda + 'px');
+        if (estilo.forma) elemento.classList.add('mapa-no-forma-' + estilo.forma);
+        if (estilo.fonte) elemento.classList.add('mapa-no-fonte-' + estilo.fonte);
+        if (estilo.alinhamento) elemento.classList.add('mapa-no-alinha-' + estilo.alinhamento);
+        if (estilo.negrito) elemento.classList.add('mapa-no-negrito');
+        if (estilo.italico) elemento.classList.add('mapa-no-italico');
+        if (estilo.espessuraRamo) elemento.dataset.mapaRamo = String(estilo.espessuraRamo);
 
         if (dados.comFilhos && dados.comFilhos.has(no.id)) {
             elemento.setAttribute('aria-expanded', String(!no.colapsado));
@@ -709,6 +1137,10 @@
             ramo.setAttribute('class', 'mapa-ramo');
             ramo.setAttribute('fill', 'none');
             ramo.dataset.mapaRamo = no.id;
+            // Espessura do ramo (Fase 9): estilo EFETIVO do filho (nó > nível > tema).
+            const modeloRamo = global.MapaMentalModelo;
+            const estiloRamo = (modeloRamo && modeloRamo.estiloEfetivo) ? modeloRamo.estiloEfetivo(grafo, no) : {};
+            if (estiloRamo.espessuraRamo) ramo.style.strokeWidth = estiloRamo.espessuraRamo + 'px';
             ramos.append(ramo);
         });
         svg.append(ramos);
@@ -875,6 +1307,7 @@
     global.MapaMentalRender = {
         montarShell, atualizarShell, renderForm, renderGestao, renderMapaAberto,
         atualizarSelecao, atualizarNo, aplicarTema, dataCurta,
-        desenharConexoes, atualizarConexoes, caminhoConexao, caminhoRamo, dimensoesNos, menuConexao
+        desenharConexoes, atualizarConexoes, caminhoConexao, caminhoRamo, dimensoesNos, menuConexao,
+        renderAtalhos, renderBarras, menuContextual, editorBarra
     };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -41,9 +41,9 @@
     const render = () => global.MapaMentalRender;
     const modelo = () => global.MapaMentalModelo;
 
-    /** Controles/minimapa NÃO iniciam pan, arrasto nem zoom (stopPropagation consciente). */
+    /** Controles/minimapa/paleta/menu NÃO iniciam pan, arrasto nem zoom (stopPropagation consciente). */
     const alvoInterativo = evento => Boolean(evento.target && evento.target.closest
-        && evento.target.closest('#mapaMinimapa, .mapa-canvas-controles, .mapa-no-acoes, button, input, select, a, .mapa-chip, .mapa-conexao-hit'));
+        && evento.target.closest('#mapaMinimapa, #mapaCoresPaleta, #mapaMenu, #mapaBarraEditor, #mapaToolbar, #mapaFormatBar, .mapa-canvas-controles, .mapa-no-acoes, button, input, select, a, .mapa-chip, .mapa-conexao-hit'));
     const alvoAlternador = evento => Boolean(evento.target && evento.target.closest && evento.target.closest('.mapa-no-toggle'));
 
     const noAtual = (app, id) => {
@@ -170,19 +170,21 @@
             y: (no.posicao && no.posicao.y) || 0
         }));
         this.mapaArrastoNo = {
-            principal: idNo, ids: [...ids], originais, inicio: local, zoom, moveu: false, alvo: null, zona: null
+            principal: idNo, ids: [...ids], originais, inicio: local, zoom, moveu: false, alvo: null, zona: null,
+            cliente: { x: evento.clientX, y: evento.clientY }
         };
         alvos.forEach(no => {
             const el = document.querySelector('#mapaNos .mapa-no[data-mapa-no-id="' + no.id + '"]');
             if (el) el.classList.add('mapa-no-arrastando');
         });
-        // Toque longo (celular) abre a edição quando não houve arrasto.
+        // Toque longo (celular) abre o MENU do card (F12). A edição continua no duplo clique/F2.
         clearTimeout(this.mapaLongPressTimer);
         this.mapaLongPressTimer = setTimeout(() => {
             if (this.mapaArrastoNo && !this.mapaArrastoNo.moveu) {
                 const id = this.mapaArrastoNo.principal;
+                const cliente = this.mapaArrastoNo.cliente || { x: 0, y: 0 };
                 limparArrasto.call(this);
-                iniciarEdicao.call(this, id);
+                if (typeof this.mapaAbrirMenuNo === 'function') this.mapaAbrirMenuNo(id, cliente);
             }
         }, TOQUE_LONGO_MS);
         return true;
@@ -573,6 +575,85 @@
     }
     // 🔄 [FIM: MAPA - PONTEIRO/RODA]
 
+    // 🔄 [INÍCIO: MAPA - MAPA DE ATALHOS (FASE 10)]
+    /**
+     * Catálogo de ações com o atalho PADRÃO. O usuário pode trocar em "Configurar atalhos"
+     * (persistido em `notas-pwa-mapa-atalhos`). As assinaturas são normalizadas por
+     * `assinaturaTecla` (ordem ctrl+alt+shift+tecla; letras em minúsculo) — nunca por `keyCode`.
+     */
+    const ACOES_ATALHO = [
+        { id: 'no-filho', rotulo: 'Criar filho', padrao: ['Tab', 'ctrl+Enter', 'Insert'] },
+        { id: 'no-irmao', rotulo: 'Criar irmão', padrao: ['Enter', 'shift+Insert'] },
+        { id: 'mover-para-pai', rotulo: 'Mover para o pai (desindentar)', padrao: ['shift+Tab'] },
+        { id: 'editar', rotulo: 'Editar o nó', padrao: ['F2'] },
+        { id: 'excluir', rotulo: 'Excluir o nó', padrao: ['Delete', 'Backspace'] },
+        { id: 'duplicar', rotulo: 'Duplicar o nó', padrao: ['ctrl+d'] },
+        { id: 'copiar', rotulo: 'Copiar o nó', padrao: ['ctrl+c'] },
+        { id: 'recortar', rotulo: 'Recortar o nó', padrao: ['ctrl+x'] },
+        { id: 'colar', rotulo: 'Colar', padrao: ['ctrl+v'] },
+        { id: 'desfazer', rotulo: 'Desfazer', padrao: ['ctrl+z'] },
+        { id: 'refazer', rotulo: 'Refazer', padrao: ['ctrl+shift+z', 'ctrl+y'] },
+        { id: 'selecionar-tudo', rotulo: 'Selecionar todos os nós', padrao: ['ctrl+a'] },
+        { id: 'navegar-pai', rotulo: 'Ir para o pai', padrao: ['ArrowLeft'] },
+        { id: 'navegar-filho', rotulo: 'Ir para o primeiro filho', padrao: ['ArrowRight'] },
+        { id: 'navegar-anterior', rotulo: 'Irmão anterior', padrao: ['ArrowUp'] },
+        { id: 'navegar-proximo', rotulo: 'Próximo irmão', padrao: ['ArrowDown'] },
+        { id: 'subir-ordem', rotulo: 'Subir na ordem', padrao: ['alt+ArrowUp'] },
+        { id: 'descer-ordem', rotulo: 'Descer na ordem', padrao: ['alt+ArrowDown'] },
+        { id: 'limpar-selecao', rotulo: 'Limpar seleção', padrao: ['Escape'] }
+    ];
+
+    /** Assinatura canônica de uma tecla: `ctrl+alt+shift+<tecla>` (letras em minúsculo). */
+    function assinaturaTecla(evento) {
+        const partes = [];
+        if (evento.ctrlKey || evento.metaKey) partes.push('ctrl');
+        if (evento.altKey) partes.push('alt');
+        if (evento.shiftKey) partes.push('shift');
+        let chave = String((evento && evento.key) || '');
+        if (chave.length === 1) chave = chave.toLowerCase();
+        partes.push(chave);
+        return partes.join('+');
+    }
+
+    /** Preferências do usuário (`{ acaoId: [assinatura] }`) normalizadas (só ids conhecidos). */
+    function normalizarPreferenciasAtalho(prefs) {
+        const saida = {};
+        const base = (prefs && typeof prefs === 'object') ? prefs : {};
+        ACOES_ATALHO.forEach(acao => {
+            const lista = Array.isArray(base[acao.id]) ? base[acao.id] : null;
+            if (!lista) return;
+            const limpa = [...new Set(lista.map(String).filter(Boolean))];
+            if (limpa.length) saida[acao.id] = limpa;
+        });
+        return saida;
+    }
+
+    /** Mapa assinatura -> acaoId (padrões + preferências; a preferência vence o padrão). */
+    function mapaDeAtalhos(prefs) {
+        const preferencias = normalizarPreferenciasAtalho(prefs);
+        const mapa = new Map();
+        ACOES_ATALHO.forEach(acao => {
+            const lista = preferencias[acao.id] || acao.padrao;
+            lista.forEach(ass => { if (!mapa.has(ass)) mapa.set(ass, acao.id); });
+        });
+        return mapa;
+    }
+
+    /** Ação em conflito com `assinatura` (ou null) — usado ao configurar os atalhos. */
+    function conflitoDeAtalho(prefs, acaoId, assinatura) {
+        const dono = mapaDeAtalhos(prefs).get(assinatura);
+        return dono && dono !== acaoId ? dono : null;
+    }
+
+    /** Teclas em uso por uma ação (preferência do usuário ou padrão). */
+    function teclasDaAcao(prefs, acaoId) {
+        const acao = ACOES_ATALHO.find(item => item.id === acaoId);
+        if (!acao) return [];
+        const preferencias = normalizarPreferenciasAtalho(prefs);
+        return preferencias[acaoId] || acao.padrao;
+    }
+    // 🔄 [FIM: MAPA - MAPA DE ATALHOS (FASE 10)]
+
     // 🔄 [INÍCIO: MAPA - ATALHOS]
     /** Atalhos de teclado dos nós (edição inline tem regras próprias — ver iniciarEdicao). */
     function atalho(evento) {
@@ -587,43 +668,118 @@
             }
             return;
         }
-        const shift = evento.shiftKey;
-        const ctrl = evento.ctrlKey || evento.metaKey;
-        // Shift+Tab e outdent (nao criacao); os demais atalhos de criacao entram em `soCria`.
-        const outdent = evento.key === 'Tab' && shift;
-        const soCria = !outdent && (evento.key === 'Enter' || evento.key === 'Tab' || evento.key === 'Insert');
+        const prefs = (global.MapaMentalStore && global.MapaMentalStore.lerAtalhos)
+            ? global.MapaMentalStore.lerAtalhos() : {};
+        const acao = mapaDeAtalhos(prefs).get(assinaturaTecla(evento));
+        if (!acao) return;
 
         const selecao = this.mapaSelecao || new Set();
-        if (!selecao.size) {
-            // Sem selecao nao ha irmao/filho de referencia: criamos o primeiro topico (raiz).
-            if (soCria) {
+        const id = [...selecao][selecao.size - 1] || null;
+
+        // Ações globais (não dependem de seleção).
+        if (acao === 'selecionar-tudo') { evento.preventDefault(); selecionarTodos.call(this); return; }
+        if (acao === 'desfazer') { evento.preventDefault(); this.mapaDesfazer(); return; }
+        if (acao === 'refazer') { evento.preventDefault(); this.mapaRefazer(); return; }
+        if (acao === 'limpar-selecao') { selecionarNo.call(this, null, false); return; }
+
+        if (!id) {
+            // Sem seleção não há irmão/filho de referência: criamos o primeiro tópico (raiz).
+            if (acao === 'no-filho' || acao === 'no-irmao') {
                 evento.preventDefault();
                 if (typeof this.mapaCriarNoIndependente === 'function') this.mapaCriarNoIndependente();
             }
             return;
         }
 
-        const id = [...selecao][selecao.size - 1];
-        if (soCria) {
+        switch (acao) {
+            case 'no-filho': evento.preventDefault(); this.mapaCriarFilhoDeNo(id, true); break;
+            case 'no-irmao': evento.preventDefault(); this.mapaCriarIrmaoDeNo(id, true); break;
+            case 'mover-para-pai':
+                evento.preventDefault();
+                if (typeof this.mapaMoverNoParaPai === 'function') this.mapaMoverNoParaPai(id);
+                break;
+            case 'editar': evento.preventDefault(); iniciarEdicao.call(this, id); break;
+            case 'excluir': evento.preventDefault(); this.mapaExcluirNo(id); break;
+            case 'duplicar':
+                evento.preventDefault();
+                if (typeof this.mapaDuplicarNo === 'function') this.mapaDuplicarNo(id);
+                break;
+            case 'copiar': this.mapaCopiarNo(id); break;
+            case 'recortar': this.mapaRecortarNo(id); break;
+            case 'colar': this.mapaColarNo(); break;
+            case 'navegar-pai': evento.preventDefault(); navegar.call(this, id, 'pai'); break;
+            case 'navegar-filho': evento.preventDefault(); navegar.call(this, id, 'filho'); break;
+            case 'navegar-anterior': evento.preventDefault(); navegar.call(this, id, 'anterior'); break;
+            case 'navegar-proximo': evento.preventDefault(); navegar.call(this, id, 'proximo'); break;
+            case 'subir-ordem': evento.preventDefault(); this.mapaMoverNoOrdem(id, -1); break;
+            case 'descer-ordem': evento.preventDefault(); this.mapaMoverNoOrdem(id, 1); break;
+        }
+    }
+
+    /** Seleciona TODOS os nós do mapa (Ctrl+A). */
+    function selecionarTodos() {
+        const grafo = this.mapaCanvasGrafo;
+        if (!grafo) return;
+        this.mapaSelecao = new Set((grafo.nos || []).map(no => no.id));
+        const r = render();
+        if (r && r.atualizarSelecao) r.atualizarSelecao(this.mapaSelecao);
+    }
+
+    /**
+     * Navegação estrutural por setas: pai (`ArrowLeft`), primeiro filho (`ArrowRight`),
+     * irmão anterior/próximo (`ArrowUp`/`ArrowDown`, em ciclo). Seleciona o destino e
+     * garante que ele fique visível (paneja a viewport quando cai fora da tela).
+     */
+    function navegar(idNo, direcao) {
+        const m = modelo();
+        if (!m) return;
+        let grafo = this.mapaCanvasGrafo;
+        let no = grafo ? m.obterNo(grafo, idNo) : null;
+        if (!no) return;
+        // Descer para um ramo recolhido precisa expandir antes (senão o filho não existe no DOM).
+        if (direcao === 'filho' && no.colapsado && typeof this.mapaExpandirNo === 'function') {
+            this.mapaExpandirNo(no.id);
+            grafo = this.mapaCanvasGrafo;
+            no = m.obterNo(grafo, idNo);
+            if (!no) return;
+        }
+        let destino = null;
+        if (direcao === 'pai') {
+            destino = no.paiId ? m.obterNo(grafo, no.paiId) : null;
+        } else if (direcao === 'filho') {
+            destino = m.listarFilhos(grafo, no.id)[0] || null;
+        } else {
+            const irmaos = m.listarFilhos(grafo, no.paiId || null);
+            const indice = irmaos.findIndex(item => item.id === idNo);
+            if (indice < 0) return;
+            const passo = direcao === 'anterior' ? -1 : 1;
+            destino = irmaos[indice + passo] || (passo < 0 ? irmaos[irmaos.length - 1] : irmaos[0]) || null;
+        }
+        if (!destino) return;
+        selecionarNo.call(this, destino.id, false);
+        if (typeof this.garantirNoVisivel === 'function') this.garantirNoVisivel(destino.id);
+    }
+
+    /**
+     * Botão direito (PC) abre o MENU CONTEXTUAL (F12): no card → ações do card;
+     * no canvas vazio → ações do mapa. Controles/barras/menus são ignorados.
+     */
+    function contextMenu(evento) {
+        if (this.mapaEditandoId) return;
+        if (alvoInterativo(evento)) return;
+        const alvo = evento.target;
+        if (!alvo || !alvo.closest) return;
+        const posicao = { x: evento.clientX, y: evento.clientY };
+        const elNo = alvo.closest('#mapaNos .mapa-no');
+        if (elNo) {
             evento.preventDefault();
-            // Filho: Tab, Insert ou Ctrl/Cmd+Enter - Irmao: Enter ou Shift+Insert.
-            const criarFilho = (evento.key === 'Tab' || evento.key === 'Insert') ? !shift : Boolean(ctrl);
-            if (criarFilho) this.mapaCriarFilhoDeNo(id, true);
-            else this.mapaCriarIrmaoDeNo(id, true);
-        } else if (outdent) {
+            if (typeof this.mapaAbrirMenuNo === 'function') this.mapaAbrirMenuNo(elNo.dataset.mapaNoId, posicao);
+            return;
+        }
+        if (alvo.closest('#mapaCanvas')) {
             evento.preventDefault();
-            if (typeof this.mapaMoverNoParaPai === 'function') this.mapaMoverNoParaPai(id);
-        } else if (evento.key === 'F2') { evento.preventDefault(); iniciarEdicao.call(this, id); }
-        else if (evento.key === 'Delete') { evento.preventDefault(); this.mapaExcluirNo(id); }
-        else if (ctrl && (evento.key === 'c' || evento.key === 'C')) this.mapaCopiarNo(id);
-        else if (ctrl && (evento.key === 'x' || evento.key === 'X')) this.mapaRecortarNo(id);
-        else if (ctrl && (evento.key === 'v' || evento.key === 'V')) this.mapaColarNo();
-        else if (ctrl && (evento.key === 'z' || evento.key === 'Z')) {
-            evento.preventDefault();
-            if (evento.shiftKey) this.mapaRefazer(); else this.mapaDesfazer();
-        } else if (evento.key === 'Escape') selecionarNo.call(this, null, false);
-        else if (evento.altKey && evento.key === 'ArrowUp') { evento.preventDefault(); this.mapaMoverNoOrdem(id, -1); }
-        else if (evento.altKey && evento.key === 'ArrowDown') { evento.preventDefault(); this.mapaMoverNoOrdem(id, 1); }
+            if (typeof this.mapaAbrirMenuCanvas === 'function') this.mapaAbrirMenuCanvas(posicao);
+        }
     }
 
     /** Duplo clique (ou duplo toque) no nó entra em edição inline. */
@@ -650,9 +806,11 @@
         ZOOM_MIN, ZOOM_MAX, PASSO_ZOOM, TOQUE_LONGO_MS,
         limitarZoom, zoomEmPonto,
         pointerDown, pointerMove, pointerUp, wheel,
-        atalho, duploClique, focarCanvas,
+        atalho, duploClique, focarCanvas, contextMenu,
         selecionarNo, idPrincipal, limparArrasto,
-        iniciarEdicao, confirmarEdicao, cancelarEdicao
+        iniciarEdicao, confirmarEdicao, cancelarEdicao,
+        ACOES_ATALHO, assinaturaTecla, normalizarPreferenciasAtalho,
+        mapaDeAtalhos, conflitoDeAtalho, teclasDaAcao, selecionarTodos, navegar
     };
 })(typeof window !== 'undefined' ? window : globalThis);
 

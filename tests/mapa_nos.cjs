@@ -61,7 +61,17 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 
     // ---------------------------------------------------------------- helpers
     const clicarAcao = acao => page.evaluate(a => {
-      const el = document.querySelector('[data-mapa-acao="' + a + '"]');
+      let el = document.querySelector('[data-mapa-acao="' + a + '"]');
+      if (!el) {
+        // Ações de CARD (F12) vivem no MENU CONTEXTUAL: abre no nó selecionado e tenta de novo.
+        const sel = [...(window.app.mapaSelecao || [])];
+        const id = sel[sel.length - 1];
+        const noEl = id ? document.querySelector('#mapaNos .mapa-no[data-mapa-no-id="' + id + '"]') : null;
+        if (noEl) {
+          noEl.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 120, clientY: 120 }));
+          el = document.querySelector('[data-mapa-acao="' + a + '"]');
+        }
+      }
       if (!el) throw new Error('ação não encontrada: ' + a);
       el.click();
     }, acao);

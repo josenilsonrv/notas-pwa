@@ -12,7 +12,9 @@
         templates: 'notas-pwa-mapa-templates',
         recentes: 'notas-pwa-mapa-recentes',
         ativo: 'notas-pwa-mapa-ativo',
-        area: 'notas-pwa-area-ativa'
+        area: 'notas-pwa-area-ativa',
+        atalhos: 'notas-pwa-mapa-atalhos',
+        barra: 'notas-pwa-mapa-toolbar-order'
     };
     const TETO_RECENTES = 20;
     const chaveGrafo = id => 'notas-pwa-mapa-' + id;
@@ -36,6 +38,24 @@
     const lerAreaAtiva = () => (ler(CHAVES.area, 'notas') === 'mapa' ? 'mapa' : 'notas');
     const salvarAreaAtiva = area => gravar(CHAVES.area, area === 'mapa' ? 'mapa' : 'notas');
     // 🔄 [FIM: MAPA - ÁREA ATIVA]
+
+    // 🔄 [INÍCIO: MAPA - ATALHOS (FASE 10)]
+    /** Preferências de atalho do usuário: `{ acaoId: ['ctrl+d', ...] }` (o resto usa o padrão). */
+    const lerAtalhos = () => {
+        const mapa = ler(CHAVES.atalhos, {});
+        return (mapa && typeof mapa === 'object' && !Array.isArray(mapa)) ? mapa : {};
+    };
+    const salvarAtalhos = mapa => gravar(CHAVES.atalhos, (mapa && typeof mapa === 'object') ? mapa : {});
+    const limparAtalhos = () => remover(CHAVES.atalhos);
+
+    /** Ordem da barra de ferramentas por GRUPO: `{ grupo: [chaves...] }` (F12). */
+    const lerOrdemBarra = () => {
+        const mapa = ler(CHAVES.barra, {});
+        return (mapa && typeof mapa === 'object' && !Array.isArray(mapa)) ? mapa : {};
+    };
+    const salvarOrdemBarra = mapa => gravar(CHAVES.barra, (mapa && typeof mapa === 'object') ? mapa : {});
+    const limparOrdemBarra = () => remover(CHAVES.barra);
+    // 🔄 [FIM: MAPA - ATALHOS (FASE 10)]
 
     // 🔄 [INÍCIO: MAPA - ÍNDICE/CRUD]
     const listarMapas = () => {
@@ -263,6 +283,8 @@
     global.MapaMentalStore = {
         CHAVES, chaveGrafo, chaveHistorico,
         lerAreaAtiva, salvarAreaAtiva,
+        lerAtalhos, salvarAtalhos, limparAtalhos,
+        lerOrdemBarra, salvarOrdemBarra, limparOrdemBarra,
         listarMapas, salvarListaMapas, obterResumo, criarMapa, obterGrafo, salvarGrafo,
         renomearMapa, excluirMapa, duplicarMapa, favoritarMapa, arquivarMapa,
         moverMapaParaPasta, definirMapaRaiz, obterMapaRaiz, listarMapasFiltrados,

@@ -33,7 +33,7 @@
 
 ## Implementação: Carga de módulos e registro do Service Worker
 - **[Linhas 204-209 ~]** `<!-- 🚀 [INÍCIO: PWA - CARGA DE MÓDULOS E SERVICE WORKER] -->` -> `<script src="./notes/editor.js"> … <script src="./app.js">`
-- **[Linhas 210-216 ~]** `(sem comentário de ancoragem)` -> `<script src="./mapa/mapa-modelo.js"> … <script src="./mapa/mapa.js">`
+- **[Linhas 210-217 ~]** `(sem comentário de ancoragem)` -> `<script src="./mapa/mapa-modelo.js"> … <script src="./mapa/mapa.js">` (inclui `mapa-cores.js`)
 - **[Linhas 217-272 ~]** `/* Service Worker.` -> `(function () { var SW_URL = new URL('sw.js', ...); … })();`
 
 ---
@@ -105,7 +105,7 @@
 **Propósito:** Service Worker offline-first. Serve o cache na hora e revalida na rede com timeout, garantindo que o app nunca fique preso carregando.
 
 ## Implementação: Constantes, helpers e ciclo de vida
-- **[Linhas 14-59 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v36';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]`
+- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v42';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./mapa/mapa-cores.js`)
 - **[Linhas 19-20 ~]** `(sem comentário de ancoragem)` -> `const CACHE_NAME` · `const TIMEOUT_MS`
 - **[Linhas 22-32 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
 - **[Linhas 33-59 ~]** `/** Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
@@ -161,8 +161,8 @@
 - **[Linhas 1-30 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */` -> `.notes-table-*`, `#notesEditor[data-table-resize]`
 
 # Nome do Arquivo: mapa/mapa.css
-**Propósito:** Estilos da área do mapa (shell, topbar, chips de gestão, canvas/nós, conexões, minimapa e painel de propriedades).
-- **[Linhas 1-618 ~]** `/* 🎨 [INÍCIO: MAPA/ESTILO - ÁREA, CANVAS, NÓS, PAINEL E CONEXÕES] */` -> classes `mapa-*`
+**Propósito:** Estilos da área do mapa (shell, topbar, chips de gestão, canvas/nós, conexões, minimapa, painel de propriedades e controles do layout automático).
+- **[Linhas 1-933 ~]** `/* 🎨 [INÍCIO: MAPA/ESTILO - ÁREA, CANVAS, NÓS, PAINEL E CONEXÕES] */` -> tokens `--mapa-*` (espelho do tema de Notas: claro = tokens globais; escuro = `#151B23`/`#11161D`/`#0D1218`/`#2A3543`/`#263241`/`#334155`/`#CBD5E1`/`#E2E8F0`/`#F8FAFC`/`#94A3B8`/`#202A36`) + classes `mapa-*` (F8: `#mapaNos.mapa-transicao`, `.mapa-espacamento`, `.mapa-campo-numero`, `.mapa-confirmacao`; F9: `.mapa-no-forma-*`/`-fonte-*`/`-alinha-*`/`-negrito`/`-italico`, `.mapa-estilo-nivel*`, `.mapa-campo-cor`, `.mapa-painel-estilo`; F10: `.mapa-atalhos*`; F11: `.mapa-btn:disabled`; F12: `.mapa-toolbar`/`.mapa-format-bar`/`.mapa-tb-*` (uma linha com rolagem, cores de Notas), `.mapa-menu*`, `.mapa-barra-editor*`, `.mapa-cor-paleta*`)
 
 ---
 
@@ -293,107 +293,122 @@
 ---
 
 # Nome do Arquivo: mapa/mapa-modelo.js
-**Propósito:** Modelo do grafo mental (domínio puro, sem DOM): nós, hierarquia, conteúdo/sanitização, templates/interligação, comandos de nó e de conteúdo, conexões livres.
+**Propósito:** Modelo do grafo mental (domínio puro, sem DOM): nós, hierarquia, conteúdo/sanitização, templates/interligação, comandos de nó e de conteúdo, estilo visual/temas (F9), conexões livres e normalização do layout/espaçamento/tema (F8/F9).
 
 ## Implementação: Modelo/grafo e conteúdo/sanitização
-- **[Linhas 12-329 ~]** `// 🔄 [INÍCIO: MAPA - MODELO/GRAFO]` -> `global.MapaMentalModelo` (`LARGURA_NO`, `obterNo`/`listarFilhos`/`criarFilhoDe`/`criarIrmaoDe`/`criarNoIndependente`, `excluirSubarvore`/`duplicarSubarvore`/`copiarSubarvore`/`colarSubarvore`)
-  - **[Linhas 15-78 ~]** `// 🔄 [INÍCIO: MAPA - CONTEÚDO/SANITIZAÇÃO]` ... `// 🔄 [FIM: ... - PARTE 1]` -> sanitização do HTML do nó
-  - **[Linhas 79-141 ~]** (continuação) -> `// 🔄 [FIM: MAPA - CONTEÚDO/SANITIZAÇÃO - PARTE 2]` (`extrairLinks`, normalização de campos)
-- **[Linhas 331-372 ~]** `// 🔄 [INÍCIO: MAPA - TEMPLATES/INTERLIGAÇÃO]` -> `TEMPLATES_PRONTOS`, criação a partir de template, nó-ponte/backlinks
-- **[Linhas 374-594 ~]** `// 🔄 [INÍCIO: MAPA - COMANDOS DE NÓ]` -> criar/editar/excluir/mover/recolher/estilo do nó
-- **[Linhas 596-672 ~]** `// 🔄 [INÍCIO: MAPA - COMANDOS DE CONTEÚDO]` -> anexos, tags, links, refs, emoji/ícone, tarefa
-- **[Linhas 674-760 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES LIVRES (FASE 6)]` -> conexões manuais entre nós
+- **[Linhas 30-358 ~]** `// 🔄 [INÍCIO: MAPA - MODELO/GRAFO]` -> `global.MapaMentalModelo` (`LARGURA_NO`, `obterNo`/`listarFilhos`/`criarFilhoDe`/`criarIrmaoDe`/`criarNoIndependente`, `excluirSubarvore`/`duplicarSubarvore`/`copiarSubarvore`/`colarSubarvore`; F8: `ESPACO_NO_PADRAO`/`ESPACO_NIVEL_PADRAO`/`ESPACO_MAX`/`normalizarEspacamento`; F9: `estilosNivel`/`temaId` em `criarGrafo`/`migrarGrafo`/`normalizarGrafo`/`duplicarGrafo`)
+  - **[Linhas 33-96 ~]** `// 🔄 [INÍCIO: MAPA - CONTEÚDO/SANITIZAÇÃO]` ... `// 🔄 [FIM: ... - PARTE 1]` -> sanitização do HTML do nó
+  - **[Linhas 97-159 ~]** (continuação) -> `// 🔄 [FIM: MAPA - CONTEÚDO/SANITIZAÇÃO - PARTE 2]` (`extrairLinks`, normalização de campos)
+- **[Linhas 360-401 ~]** `// 🔄 [INÍCIO: MAPA - TEMPLATES/INTERLIGAÇÃO]` -> `TEMPLATES_PRONTOS`, criação a partir de template, nó-ponte/backlinks
+- **[Linhas 403-623 ~]** `// 🔄 [INÍCIO: MAPA - COMANDOS DE NÓ]` -> criar/editar/excluir/mover/recolher/largura do nó
+- **[Linhas 625-701 ~]** `// 🔄 [INÍCIO: MAPA - COMANDOS DE CONTEÚDO]` -> anexos, tags, links, refs, emoji/ícone, tarefa
+- **[Linhas 703-836 ~]** `// 🔄 [INÍCIO: MAPA - ESTILO (FASE 9)]` -> `FORMAS_NO`/`ALINHAMENTOS_NO`/`FONTES_NO`/`TAMANHOS_NO`/`ESPESSURAS_BORDA`/`TEMAS_MAPA`, `normalizarEstilo`, `normalizarEstilosNivel`, `temaDoMapa`, `nivelDoNo`, `estiloEfetivo` (nó > nível > tema), `copiarEstiloNo`, `atualizarEstiloNo`, `limparEstiloNo`, `definirEstiloNivel`, `removerEstiloNivel`, `definirTemaMapa`
+- **[Linhas 838-924 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES LIVRES (FASE 6)]` -> conexões manuais entre nós
 
 ---
 
 # Nome do Arquivo: mapa/mapa-store.js
-**Propósito:** Persistência local (LocalStorage) do índice de mapas, pastas, recentes, templates, mapa ativo e área ativa. Chaves com prefixo `notas-pwa-`.
+**Propósito:** Persistência local (LocalStorage) do índice de mapas, pastas, recentes, templates, mapa ativo, área ativa e atalhos do mapa. Chaves com prefixo `notas-pwa-`.
 
-## Implementação: Chaves e área ativa (Notas | Mapa)
-- **[Linhas 9-20 ~]** `(sem marcador de ancoragem)` -> `CHAVES{}`, `TETO_RECENTES`, `chaveGrafo(id)`, `chaveHistorico(id)`, `novoId(prefixo)`
-- **[Linhas 35-38 ~]** `// 🔄 [INÍCIO: MAPA - ÁREA ATIVA]` -> `lerAreaAtiva()` · `salvarAreaAtiva(area)` (`notas-pwa-area-ativa`)
+## Implementação: Chaves, área ativa, atalhos e barra
+- **[Linhas 9-22 ~]** `(sem marcador de ancoragem)` -> `CHAVES{}` (`atalhos`, `barra`), `TETO_RECENTES`, `chaveGrafo(id)`, `chaveHistorico(id)`, `novoId(prefixo)`
+- **[Linhas 37-40 ~]** `// 🔄 [INÍCIO: MAPA - ÁREA ATIVA]` -> `lerAreaAtiva()` · `salvarAreaAtiva(area)` (`notas-pwa-area-ativa`)
+- **[Linhas 42-58 ~]** `// 🔄 [INÍCIO: MAPA - ATALHOS (FASE 10)]` -> `lerAtalhos`/`salvarAtalhos`/`limparAtalhos` (`notas-pwa-mapa-atalhos`) + `lerOrdemBarra`/`salvarOrdemBarra`/`limparOrdemBarra` (`notas-pwa-mapa-toolbar-order`, F12)
 
 ## Implementação: Índice / CRUD de mapas
-- **[Linhas 40-191 ~]** `// 🔄 [INÍCIO: MAPA - ÍNDICE/CRUD]` -> `listarMapas` / `salvarListaMapas` / `obterResumo` / `obterGrafo` / `criarMapa` / renomear / duplicar / excluir / arquivar
+- **[Linhas 60-211 ~]** `// 🔄 [INÍCIO: MAPA - ÍNDICE/CRUD]` -> `listarMapas` / `salvarListaMapas` / `obterResumo` / `obterGrafo` / `criarMapa` / renomear / duplicar / excluir / arquivar
 
 ## Implementação: Pastas, recentes, templates e ativo
-- **[Linhas 193-261 ~]** `// 🔄 [INÍCIO: MAPA - PASTAS/RECENTES/TEMPLATES/ATIVO]` -> pastas (CRUD), `listarRecentes`, `salvarTemplate`, `obterMapaRaiz`, histórico do grafo
+- **[Linhas 213-281 ~]** `// 🔄 [INÍCIO: MAPA - PASTAS/RECENTES/TEMPLATES/ATIVO]` -> pastas (CRUD), `listarRecentes`, `salvarTemplate`, `obterMapaRaiz`, histórico do grafo
 
 ---
 
 # Nome do Arquivo: mapa/mapa-layout.js
-**Propósito:** Layout e medição do canvas (fase 2/5): posições em árvore por raiz, limites do mundo, geometria do minimapa e medição de nó.
+**Propósito:** Layout e medição do canvas (fases 2/5/8): posições em árvore por raiz SEM SOBREPOSIÇÃO (dimensões reais), espaçamento normalizado, limites do mundo, geometria do minimapa e medição dos nós no DOM.
 
 ## Implementação: Constantes/dimensões, layout e API
-- **[Linhas 9-20 ~]** `// 🔄 [INÍCIO: MAPA - CONSTANTES/DIMENSÕES]` -> `LARGURA_PADRAO`/`ALTURA_PADRAO`/`FOLGA`/`LAYOUTS[]`/`dimensoesNo(no)`
-- **[Linhas 31-115 ~]** `// 🔄 [INÍCIO: MAPA - LAYOUT EM ÁRVORE (calcularPosicoes)]` -> `function calcularPosicoes(grafo, opcoes)` (bilateral/tradicional/esquerda-direita/arvore-vertical/organograma/livre; travessia iterativa)
-- **[Linhas 117-135 ~]** `// 🔄 [INÍCIO: MAPA - POSIÇÕES GARANTIDAS (garantirPosicoes)]` -> `function garantirPosicoes(grafo)`
-- **[Linhas 137-163 ~]** `// 🔄 [INÍCIO: MAPA - LIMITES/FIT (limites)]` -> `function limites(grafo, lista)`
-- **[Linhas 165-202 ~]** `// 🔄 [INÍCIO: MAPA - MINIMAPA (minimapa/pontoDoMinimapa/medirNo)]` -> `minimapa(estado)` · `pontoDoMinimapa(estado,mx,my)` · `medirNo(elemento)`
-- **[Linhas 204-209 ~]** `// 🔄 [INÍCIO: MAPA - API PÚBLICA]` -> `global.MapaMentalLayout = {...}`
+- **[Linhas 9-60 ~]** `// 🔄 [INÍCIO: MAPA - CONSTANTES/DIMENSÕES]` -> `LARGURA_PADRAO`/`ALTURA_PADRAO`/`ALTURA_LINHA`/`PADDING_VERTICAL`/`FOLGA`/`ESPACO_MIN`/`ESPACO_MAX`/`LAYOUTS[]` + `normalizarEspacamento(espacamento)` + `estimarAltura(no, largura)` + `dimensoesNo(no, medidas)`
+- **[Linhas 77-233 ~]** `// 🔄 [INÍCIO: MAPA - LAYOUT EM ÁRVORE (calcularPosicoes)]` -> `function calcularPosicoes(grafo, opcoes)` (bilateral/tradicional/esquerda-direita/arvore-vertical/organograma/livre; travessia iterativa; F8: altura/largura reais via `cfg.medidas`, coluna por profundidade e `desobrepor` para folga mínima)
+- **[Linhas 235-253 ~]** `// 🔄 [INÍCIO: MAPA - POSIÇÕES GARANTIDAS (garantirPosicoes)]` -> `function garantirPosicoes(grafo)`
+- **[Linhas 255-281 ~]** `// 🔄 [INÍCIO: MAPA - LIMITES/FIT (limites)]` -> `function limites(grafo, lista)`
+- **[Linhas 283-320 ~]** `// 🔄 [INÍCIO: MAPA - MINIMAPA (minimapa/pontoDoMinimapa/medirNo)]` -> `minimapa(estado)` · `pontoDoMinimapa(estado,mx,my)` · `medirNo(elemento)`
+- **[Linhas 322-342 ~]** `// 🔄 [INÍCIO: MAPA - MEDIÇÃO DO DOM (medidasDoDom)]` -> `function medidasDoDom(grafo, raiz)` (`offsetWidth/offsetHeight` dos nós renderizados — F8)
+- **[Linhas 344-350 ~]** `// 🔄 [INÍCIO: MAPA - API PÚBLICA]` -> `global.MapaMentalLayout = {...}`
 
 ---
 
 # Nome do Arquivo: mapa/mapa-painel.js
-**Propósito:** Painel de propriedades do nó (fase 4). Monta o formulário de conteúdo (título/descrição/notas/links/tags/emoji/ícone/tarefa/prioridade/status/datas/anexos/ponte). Só monta quando aberto.
+**Propósito:** Painel de propriedades do nó (fases 4/9). Monta o formulário de conteúdo (título/descrição/notas/links/tags/emoji/ícone/tarefa/prioridade/status/datas/anexos/ponte) e a seção **Estilo** (cores/forma/fonte/tamanho/alinhamento + pincel). Só monta quando aberto.
 
 ## Implementação: Helpers de DOM/rótulos, blocos, meta e formulário
-- **[Linhas 10-43 ~]** `// 🔄 [INÍCIO: MAPA - HELPERS DE DOM / RÓTULOS]` -> `EMOJIS[]` · `criar(...)` · `campo(...)` · `botao(...)` · `ROTULO_PRIORIDADE`/`ROTULO_STATUS`
-- **[Linhas 45-102 ~]** `// 🔄 [INÍCIO: MAPA - BLOCOS DE CONTEÚDO (links/anexos/ponte)]` -> `blocoLinksDetectados(no)` · `blocoAnexos(no)` · `blocoPonte(no, contexto)`
-- **[Linhas 104-147 ~]** `// 🔄 [INÍCIO: MAPA - LINHAS META (prioridade/status/datas)]` -> `linhaMeta(no)` · `linhaDatas(no)`
-- **[Linhas 149-248 ~]** `// 🔄 [INÍCIO: MAPA - FORMULÁRIO DO PAINEL (montarPainel)]` -> `function montarPainel(no, contexto)` (`#mapaPainelForm`, `data-mapa-form="no-conteudo"`)
-- **[Linhas 250-255 ~]** `// 🔄 [INÍCIO: MAPA - API PÚBLICA]` -> `global.MapaMentalPainel = {...}`
+- **[Linhas 10-75 ~]** `// 🔄 [INÍCIO: MAPA - HELPERS DE DOM / RÓTULOS]` -> `EMOJIS[]` · `criar(...)` · `campo(...)` · `botao(...)` · `ROTULO_PRIORIDADE`/`ROTULO_STATUS` · `campoCorComHerda(...)` · `selectEstilo(...)`
+- **[Linhas 77-134 ~]** `// 🔄 [INÍCIO: MAPA - BLOCOS DE CONTEÚDO (links/anexos/ponte)]` -> `blocoLinksDetectados(no)` · `blocoAnexos(no)` · `blocoPonte(no, contexto)`
+- **[Linhas 136-200 ~]** `// 🔄 [INÍCIO: MAPA - SEÇÃO ESTILO (FASE 9)]` -> `function blocoEstilo(no, contexto)` (cores com "usar", forma/fonte/tamanho/negrito/itálico/alinhamento/espessuras + copiar/aplicar/restaurar)
+- **[Linhas 202-245 ~]** `// 🔄 [INÍCIO: MAPA - LINHAS META (prioridade/status/datas)]` -> `linhaMeta(no)` · `linhaDatas(no)`
+- **[Linhas 247-348 ~]** `// 🔄 [INÍCIO: MAPA - FORMULÁRIO DO PAINEL (montarPainel)]` -> `function montarPainel(no, contexto)` (`#mapaPainelForm`, `data-mapa-form="no-conteudo"`, + `blocoEstilo`)
+- **[Linhas 350-355 ~]** `// 🔄 [INÍCIO: MAPA - API PÚBLICA]` -> `global.MapaMentalPainel = {...}`
 
 ---
 
 # Nome do Arquivo: mapa/mapa-render.js
-**Propósito:** Renderização da área do mapa (HTML puro): shell, topbar/formulários da gestão, mapa aberto (canvas/nós/minimapa), lista de gestão, recentes/templates e conexões.
+**Propósito:** Renderização da área do mapa (HTML puro): shell, topbar de gestão, mapa aberto (canvas/nós/minimapa), **barras padronizadas (F12: `#mapaToolbar` fixa + `#mapaFormatBar` contextual)**, menu contextual do card, painéis de atalhos/edição de barra, lista de gestão, recentes/templates e conexões.
 
 ## Implementação: Shell, topbar e gestão
-- **[Linhas 32-91 ~]** `// 🔄 [INÍCIO: MAPA - SHELL DA ÁREA]` -> estrutura base da `#mapaArea`
-- **[Linhas 93-229 ~]** `// 🔄 [INÍCIO: MAPA - TOPBAR/FORMULÁRIO]` -> busca/ordenação e formulários inline (`form[data-mapa-form]`)
-- **[Linhas 482-522 ~]** `// 🔄 [INÍCIO: MAPA - GESTÃO (LISTA)]` -> lista de mapas (abrir/renomear/duplicar/excluir/estrela/arquivar)
-- **[Linhas 524-581 ~]** `// 🔄 [INÍCIO: MAPA - RECENTES/TEMPLATES/LISTA]` -> recentes, templates prontos/salvos, pastas
+- **[Linhas 61-133 ~]** `// 🔄 [INÍCIO: MAPA - SHELL DA ÁREA]` -> estrutura base da `#mapaArea` + contêineres `#mapaToolbar`/`#mapaFormatBar` (helpers `campoNumero`/`campoCor` acima do bloco)
+- **[Linhas 135-273 ~]** `// 🔄 [INÍCIO: MAPA - TOPBAR/FORMULÁRIO]` -> busca/ordenação e formulários inline (`form[data-mapa-form]`); `atualizarShell` esconde as barras na lista e os controles de lista no mapa
+- **[Linhas 910-950 ~]** `// 🔄 [INÍCIO: MAPA - GESTÃO (LISTA)]` -> lista de mapas (abrir/renomear/duplicar/excluir/estrela/arquivar)
+- **[Linhas 952-1009 ~]** `// 🔄 [INÍCIO: MAPA - RECENTES/TEMPLATES/LISTA]` -> recentes, templates prontos/salvos, pastas
 
-## Implementação: Mapa aberto e conexões
-- **[Linhas 231-480 ~]** `// 🔄 [INÍCIO: MAPA - MAPA ABERTO]` -> `#mapaCanvasWrap`, nós, minimapa, backlinks
-- **[Linhas 612-873 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES (FASE 6)]` -> camada de conexões livres
+## Implementação: Mapa aberto, barras, menus e conexões
+- **[Linhas 275-908 ~]** `// 🔄 [INÍCIO: MAPA - MAPA ABERTO]` -> `#mapaCanvasWrap`, nós, minimapa, backlinks, confirmação de layout (F8), painel de atalhos (F10), `editorBarra` (F12)
+  - **[Linhas 361-714 ~]** `// 🔄 [INÍCIO: MAPA - BARRAS PADRONIZADAS (FASE 12)]` -> `btnBarra`/`grupoBarra`/`divisorBarra`/`aplicarOrdemBarra`, `renderBarras`, `grupoExibir`, `grupoMais`, `comEstado`, `renderFormatBar`, `menuContextual`, `editorBarra`
+- **[Linhas 1040-1305 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES (FASE 6)]` -> camada de conexões livres (F9: `stroke-width` do ramo pelo estilo efetivo) + `menuConexao`
 
 ---
 
 # Nome do Arquivo: mapa/mapa-interacao.js
-**Propósito:** Interação direta no canvas (Pointer Events): seleção, edição inline do nó, arrasto/redimensionar/laço, conexão por arrasto, pan/zoom e atalhos.
+**Propósito:** Interação direta no canvas (Pointer Events): seleção, edição inline do nó, arrasto/redimensionar/laço, conexão por arrasto, pan/zoom, atalhos (com keymap configurável — F10).
 
 ## Implementação: Seleção, edição inline, arrasto, conexão e atalhos
 - **[Linhas 54-72 ~]** `// 🔄 [INÍCIO: MAPA - SELEÇÃO]` -> `selecionar` / `idPrincipal` / `idsSelecionados`
-- **[Linhas 74-130 ~]** `// 🔄 [INÍCIO: MAPA - EDIÇÃO INLINE]` -> editar título no próprio nó (duplo clique/F2/toque longo)
-- **[Linhas 132-312 ~]** `// 🔄 [INÍCIO: MAPA - ARRASTO/REDIMENSIONAR/LAÇO]` -> mover nó(s), alça de resize, seleção por laço
-- **[Linhas 314-365 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÃO POR ARRASTO (FASE 6)]` -> criar conexão arrastando da porta do nó
-- **[Linhas 367-574 ~]** `// 🔄 [INÍCIO: MAPA - PONTEIRO/RODA]` -> pan (arrastar), `Ctrl+scroll`/pinça (zoom), clique no minimapa
-- **[Linhas 576-636 ~]** `// 🔄 [INÍCIO: MAPA - ATALHOS]` -> teclado do mapa (Enter/Tab/F2/Delete/setas/etc.)
+- **[Linhas 74-130 ~]** `// 🔄 [INÍCIO: MAPA - EDIÇÃO INLINE]` -> editar título no próprio nó (duplo clique/F2)
+- **[Linhas 132-314 ~]** `// 🔄 [INÍCIO: MAPA - ARRASTO/REDIMENSIONAR/LAÇO]` -> mover nó(s), alça de resize, laço, **toque longo → menu do card (F12)**
+- **[Linhas 316-367 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÃO POR ARRASTO (FASE 6)]` -> criar conexão arrastando da porta do nó
+- **[Linhas 369-576 ~]** `// 🔄 [INÍCIO: MAPA - PONTEIRO/RODA]` -> pan (arrastar), `Ctrl+scroll`/pinça (zoom), clique no minimapa
+- **[Linhas 578-655 ~]** `// 🔄 [INÍCIO: MAPA - MAPA DE ATALHOS (FASE 10)]` -> `ACOES_ATALHO`, `assinaturaTecla`, `normalizarPreferenciasAtalho`, `mapaDeAtalhos`, `conflitoDeAtalho`, `teclasDaAcao`
+- **[Linhas 657-792 ~]** `// 🔄 [INÍCIO: MAPA - ATALHOS]` -> `atalho(evento)` (keymap), `selecionarTodos` (Ctrl+A), `navegar(idNo, direção)`, `contextMenu(evento)` (botão direito → menu), `duploClique`
 
 ---
 
 # Nome do Arquivo: mapa/mapa.js
-**Propósito:** Orquestrador da área Mapa Mental. Instala `installMapaMental(NotesPWA)`, monta lazy e liga store/render/modelo/layout/interação: gestão de mapas, canvas/viewport, CRUD de nós, hierarquia, conteúdo, conexões e isolamento das áreas.
+**Propósito:** Orquestrador da área Mapa Mental. Instala `installMapaMental(NotesPWA)`, monta lazy e liga store/render/modelo/layout/interação: gestão de mapas, canvas/viewport, CRUD de nós, hierarquia, layout automático (F8), estilo visual (F9), atalhos (F10), undo/redo (F11), barras/menu contextual/cores (F12), conteúdo, conexões e isolamento das áreas.
 
 ## Implementação: Estado/helpers e render/controle
 - **[Linhas 9-78 ~]** `// 🔄 [INÍCIO: MAPA - ESTADO/HELPERS]` -> `store()`/`modelo()`/`render()`, `dadosGestao()`, `abrirMapa(id)`, `definirRaiz(id)`, `conectarMapa(origemId,destinoId)`, `aplicarTemplatePronto`/`aplicarTemplateSalvo`
-- **[Linhas 80-290 ~]** `// 🔄 [INÍCIO: MAPA - RENDER/CONTROLE]` -> `renderArea()`, `tratarCliqueMapa` / `tratarSubmitMapa` / `tratarMudancaMapa` / `tratarBuscaMapa`
+- **[Linhas 80-355 ~]** `// 🔄 [INÍCIO: MAPA - RENDER/CONTROLE]` -> `renderArea()` (renderiza `#mapaToolbar`/`#mapaFormatBar` ANTES do mapa e passa `menuNo`/`menuCanvas`/`barraAberta`), `tratarCliqueMapa` (fecha o menu contextual; ações de barra/formatação/cores), `tratarSubmitMapa` / `tratarMudancaMapa` / `tratarBuscaMapa`
 
 ## Implementação: Canvas, navegação e histórico
-- **[Linhas 292-365 ~]** `// 🔄 [INÍCIO: MAPA - CANVAS/VIEWPORT]` -> `caixaDoCanvas()`, viewport por mapa (persistência com debounce)
-- **[Linhas 367-451 ~]** `// 🔄 [INÍCIO: MAPA - NAVEGAÇÃO DO CANVAS]` -> zoom (25%–300%), centralizar, fit, ir para a raiz, minimapa
-- **[Linhas 453-537 ~]** `// 🔄 [INÍCIO: MAPA - HISTÓRICO/COMANDOS]` -> undo/redo do grafo, `iniciarEdicaoDepois(idNo)`
+- **[Linhas 357-430 ~]** `// 🔄 [INÍCIO: MAPA - CANVAS/VIEWPORT]` -> `caixaDoCanvas()`, viewport por mapa (persistência com debounce)
+- **[Linhas 432-516 ~]** `// 🔄 [INÍCIO: MAPA - NAVEGAÇÃO DO CANVAS]` -> zoom (25%–300%), centralizar, fit, ir para a raiz, minimapa
+- **[Linhas 518-724 ~]** `// 🔄 [INÍCIO: MAPA - HISTÓRICO/COMANDOS]` -> `LIMITE_HISTORICO`(100)/`JANELA_COALESCE`(900ms), `instantaneoGrafo` (inclui layout/posicionamento/espaçamento/tema/estilosNivel), `historicoReset`, `registrarHistorico(opcoes)` (coalescência), `aplicarInstantaneo`, `desfazer`/`refazer`, `atualizarBotoesHistorico`, `iniciarEdicaoDepois(idNo)`, `reposicionarAuto`
+  - **[Linhas 655-714 ~]** `// 🔄 [INÍCIO: MAPA - LAYOUT AUTOMÁTICO (FASE 8)]` -> `refinarLayoutPorMedicao()` · `reposicionarSuave()`
 
-## Implementação: Comandos de nó, conteúdo, conexões e isolamento
-- **[Linhas 539-686 ~]** `// 🔄 [INÍCIO: MAPA - COMANDOS DE NÓ]` -> criar filho/irmão/independente, excluir, duplicar, copiar/recortar/colar
-  - **[Linhas 541-590 ~]** `// 🔄 [INÍCIO: MAPA - POSICIONAMENTO DO NÓ NOVO]` -> `posicionarNovoNo(grafo,no,idReferencia)` (`garantirNoVisivel`)
-- **[Linhas 688-1047 ~]** `// 🔄 [INÍCIO: MAPA - MOVER/RECOLHER/ESTILO DO NÓ]`
-  - **[Linhas 807-935 ~]** `// 🔄 [INÍCIO: MAPA - CONTEÚDO DO NÓ (FASE 4)]` ... `[FIM ... PARTE 1]` / `[PARTE 2]` -> aplicar conteúdo do painel ao nó
-  - **[Linhas 937-962 ~]** `// 🔄 [INÍCIO: MAPA - HIERARQUIA/LAYOUT (FASE 5)]` -> re-layout após mudança de hierarquia
-  - **[Linhas 964-1037 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES LIVRES (FASE 6)]` -> criar/remover conexões manuais
-- **[Linhas 1049-1236 ~]** `// 🔄 [INÍCIO: MAPA - ÁREA/ISOLAMENTO]` -> troca de área (Notas | Mapa), montagem lazy, isolamento do motor de notas
+## Implementação: Comandos de nó, atalhos, estilo, barras e isolamento
+- **[Linhas 726-873 ~]** `// 🔄 [INÍCIO: MAPA - COMANDOS DE NÓ]` -> criar filho/irmão/independente, excluir, duplicar, copiar/recortar/colar
+  - **[Linhas 728-777 ~]** `// 🔄 [INÍCIO: MAPA - POSICIONAMENTO DO NÓ NOVO]` -> `posicionarNovoNo(grafo,no,idReferencia)` (`garantirNoVisivel`)
+- **[Linhas 875-1598 ~]** `// 🔄 [INÍCIO: MAPA - MOVER/RECOLHER/ESTILO DO NÓ]`
+  - **[Linhas 994-1061 ~]** `// 🔄 [INÍCIO: MAPA - CONTEÚDO DO NÓ (FASE 4)]` ... `[FIM ... PARTE 1]` / `[PARTE 2]` -> aplicar conteúdo do painel ao nó
+  - **[Linhas 1124-1203 ~]** `// 🔄 [INÍCIO: MAPA - ATALHOS (FASE 10)]` -> `dadosAtalhos`, `mapaAbrirAtalhos`/`mapaFecharAtalhos`, `mapaCapturarAtalho`, `mapaLigarAtalho` (conflito), `mapaRestaurarAtalhosPadrao`
+  - **[Linhas 1205-1267 ~]** `// 🔄 [INÍCIO: MAPA - BARRAS/MENU/CORES (FASE 12)]` -> `mapaAbrirMenuNo`/`mapaAbrirMenuCanvas`/`mapaFecharMenus`, `ordemBarraAtual`, `mapaMoverBotaoBarra`, `mapaRestaurarBarra`
+  - **[Linhas 1269-1355 ~]** `// 🔄 [INÍCIO: MAPA - FORMATAÇÃO RÁPIDA E CORES (FASE 12)]` -> `mapaAlternarEstiloRapido`, `mapaDefinirEstiloRapido`, `mapaPassoEstiloRapido`, `mapaAbrirCor`, `mapaGravarCorRecente`
+  - **[Linhas 1357-1445 ~]** `// 🔄 [INÍCIO: MAPA - ESTILO DO NÓ/MAPA (FASE 9)]` -> `mapaSalvarEstiloNo`, `mapaCopiarEstiloNo`, `mapaAplicarEstiloCopiadoNo`, `mapaRestaurarEstiloNo`, `mapaDefinirTema`, `mapaDefinirEstiloNivel`, `mapaLimparEstiloNivel`
+  - **[Linhas 1447-1510 ~]** `// 🔄 [INÍCIO: MAPA - HIERARQUIA/LAYOUT (FASE 5)]` -> `mapaDefinirLayout` (F8: pede confirmação se manual), `mapaConfirmarLayout`, `mapaDefinirEspacamento`
+  - **[Linhas 1512-1585 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES LIVRES (FASE 6)]` -> criar/remover conexões manuais + `mapaCommitarTituloNo` (F11: coalescência de digitação)
+- **[Linhas 1600-1824 ~]** `// 🔄 [INÍCIO: MAPA - ÁREA/ISOLAMENTO]` -> troca de área (Notas | Mapa), montagem lazy, listener único de teclado + `contextmenu` (F12), isolamento do motor de notas
+
+# Nome do Arquivo: mapa/mapa-cores.js
+**Propósito:** Paleta de cores do mapa (F12) — MESMO padrão de lógica/visual dos botões de cor/destaque de Notas (`setupNotesColors`): grade 8x10 (80 cores), cores personalizadas (recentes máx. 12 + "+" + conta-gotas), reset, "Aplicar", popover preso ao `visualViewport`, `Esc`/clique fora e foco preso.
+- **[Linhas 1-203 ~]** `// 🔄 [INÍCIO: MAPA - PALETA DE CORES (FASE 12)]` -> `GRADE` (80 cores), `LIMITE_RECENTES`, `abrir(botao, propriedade, contexto)` (toggle por propriedade), `montarExtras`, `posicionar`, `fechar` · `global.MapaMentalCores`
 
 ---
 
@@ -460,7 +475,11 @@
 - **[Arquivo inteiro ~]** `/* FASE 2 - Canvas infinito.` -> `tests/mapa_canvas.cjs` (pan/zoom limites/viewport por mapa)
 - **[Arquivo inteiro ~]** `/* FASE 3 - Nós / tópicos.` -> `tests/mapa_nos.cjs` (criar/editar/excluir/copiar/colar/mover)
 - **[Arquivo inteiro ~]** `/* FASE 4 - Conteúdo dentro dos nós.` -> `tests/mapa_conteudo.cjs` (painel/anexos/links/tags)
-- **[Arquivo inteiro ~]** `/* FASE 5 - Hierarquia e layout em árvore.` -> `tests/mapa_layout.cjs`
+- **[Arquivo inteiro ~]** `/* FASE 5 - Hierarquia e layout em árvore + FASE 8 - Layout automático (sem sobreposição, espaçamento).` -> `tests/mapa_layout.cjs`
+- **[Arquivo inteiro ~]** `/* FASE 9 - Editor visual (cores/forma/fonte, precedência nó>nível>tema, tema, ramo, pincel, claro/escuro).` -> `tests/mapa_estilo.cjs`
+- **[Arquivo inteiro ~]** `/* FASE 10 - Atalhos de teclado (setas pai/filho/irmão, Ctrl+A/D/Y, Backspace, keymap configurável).` -> `tests/mapa_atalhos.cjs`
+- **[Arquivo inteiro ~]** `/* FASE 11 - Undo/Redo (comandos, coalescência, cap 100, botões, autosave).` -> `tests/mapa_undo.cjs`
+- **[Arquivo inteiro ~]** `/* FASE 12 - Barras padronizadas, menu contextual do card, paleta de cores e ordem da barra.` -> `tests/mapa_toolbar.cjs`
 - **[Arquivo inteiro ~]** `/* FASE 6 - Conexões livres.` -> `tests/mapa_conexoes.cjs`
 - **[Arquivo inteiro ~]** `/* FASE 7 - Drag & Drop inteligente.` -> `tests/mapa_dragdrop.cjs`
 - **[Arquivo inteiro ~]** `/* Mapa vazio -> primeiro tópico.` -> `tests/mapa_vazio.cjs`

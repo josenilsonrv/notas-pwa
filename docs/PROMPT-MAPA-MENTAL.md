@@ -270,6 +270,8 @@ demo manual** antes de começar a próxima.
 - [ ] **Seleção múltipla** (`Ctrl`/`Shift` + clique, `Ctrl+A`)
 - [ ] Atalhos **configuráveis** (mapa de teclas persistido; conflito com o modal de notas
   evitado: só ativo quando o foco está na área do mapa)
+- [ ] Cada atalho tem o **botão correspondente** nas barras da F12 (`title`/`aria-keyshortcuts`
+  mostram a tecla); o keymap configurável **não** altera os `data-mapa-acao` (os testes dependem deles)
 
 ### FASE 11 — Undo/Redo
 > ⚠️ **Pontos de atenção**
@@ -280,17 +282,36 @@ demo manual** antes de começar a próxima.
 - [ ] Pilha de comandos cobrindo: criação, exclusão, movimentação, edição de texto,
   mudança de estilo, alteração de hierarquia, conexões, layout
 - [ ] Coalescência de digitação (debounce) e limites de memória (ex. 100 passos)
-- [ ] `Ctrl+Z`/`Ctrl+Shift+Z` + botões na toolbar; estado dos botões refletindo a pilha
+- [ ] `Ctrl+Z`/`Ctrl+Shift+Z` + botões **Desfazer/Refazer** (criados com `data-mapa-acao`, com estado
+  refletindo a pilha) — na F12 eles passam para o grupo **Histórico** da `#mapaToolbar`
 
-### FASE 12 — Menus de interação
+### FASE 12 — Menus de interação + barras padronizadas (Ferramentas + Formatação)
 > ⚠️ **Pontos de atenção**
 > - `contextmenu` + toque longo; fechar com `Esc`/clique fora (o motor já escuta `contextmenu` — só agir na área ativa).
 > - Acessibilidade: `role="menu"`, `aria-haspopup` e foco preso no menu enquanto aberto.
 > - No mobile o painel lateral vira **bottom sheet** (não cobrir o canvas inteiro).
-- [ ] **Barra de ferramentas** do mapa (zoom, layout, adicionar, undo/redo, exportar…)
+> - **Padrão de UI obrigatório**: seguir a barra de Notas (`.toolbar-btn`, grupos + divisores, uma linha com rolagem, **cores padrão do tema de Notas**) e **nunca** deixar botão solto.
+- [ ] **`#mapaToolbar` (barra de ferramentas, FIXA, uma linha com rolagem, `role="toolbar"`)** —
+  grupos + divisores: `Mapa` (‹ Mapas · Novo · Templates) · `Histórico` (Desfazer · Refazer) ·
+  `Inserir` (Novo tópico · Filho · Irmão · Duplicar · Excluir) · `Relações` (Conectar nós · Nó-ponte ·
+  Propriedades) · `Estrutura` (Recolher/Expandir tudo · Bloquear · Subir/Descer · Mover para…) ·
+  `Exibir` (Zoom −/%/+ · Centralizar · Ajustar à tela · Ir à raiz · Mapa · Layout · Espaçamento · Tema) ·
+  `“…”` (overflow: Copiar/Recortar/Colar · Concluir · Largura ± · slots de Pesquisa/Filtros)
+- [ ] Ordem dos botões **persistida** (`notas-pwa-mapa-toolbar-order`) + botão **“Editar barra”**
+  (diálogo de reordenação + restaurar padrão), igual ao PWA de Notas
+- [ ] **`#mapaFormatBar` (barra de formatação, CONTEXTUAL ao nó selecionado)** — espelha `#notesToolbar`:
+  `Texto` (B/I) · `Tamanho/Fonte` · `Cores` · `Forma` · `Alinhamento` · `Linhas` (borda/ramo) ·
+  `Extra` (Emoji/Ícone · pincel “copiar estilo” · “restaurar padrão”)
+- [ ] **Cores no MESMO padrão de Notas** (`setupNotesColors`): popover `role="dialog"` ancorado no botão,
+  grade **8×10 (80 cores)**, “Cores personalizadas” (recentes máx. 12 + `+` + conta-gotas),
+  reset (“Padrão”/“Sem cor”), “Aplicar”; posicionamento preso ao `visualViewport`, `Esc`/clique fora
+  e foco preso; recentes persistidos no grafo (`coresRecentes`)
+- [ ] **Migração SEM botão solto**: `controlesCanvas`, `acoesNo`, `#mapaLayout`, `#mapaTema`,
+  espaçamento, `details` “Estilo por nível” e os itens do topbar no mapa aberto passam a **grupos**
+  das duas barras (preservando ids, `data-mapa-acao`, `#mapaArea .mapa-shell`, `#mapaCanvas` e o estado vazio)
 - [ ] **Menu contextual** (botão direito / toque longo) no nó, na linha e no canvas
-- [ ] **Menu rápido** ao selecionar nó (flutuante com ações mais usadas)
-- [ ] **Painel lateral de propriedades** (conteúdo, estilo, tarefa, relações)
+- [ ] **Menu rápido** ao selecionar nó = overflow `“…”` + botões contextuais habilitados/desabilitados
+- [ ] **Painel lateral de propriedades** (conteúdo, estilo, tarefa, relações) — bottom sheet no mobile
 - [ ] **Comandos rápidos**: adicionar filho, adicionar irmão, criar conexão a partir do nó
 
 
@@ -487,12 +508,20 @@ falhando **pelos mesmos motivos** (ver `docs/COMO-RODAR-TESTES.md`).
 7. ❌ Não duplicar dados do sistema: nó **referencia** entidades existentes.
 8. ⚠️ Anexos em base64 estouram a cota (~5 MB): limitar tamanho e migrar para Blob/IndexedDB
    se preciso.
+9. ❌ **Botão solto na área do mapa.** Formatação → `#mapaFormatBar` (contextual); ferramentas/visão/
+   estrutura → `#mapaToolbar` (fixa); conteúdo/anexos → painel lateral. Sempre em **grupos** com
+   separadores, `.toolbar-btn` e as **cores padrão do tema de Notas** (nunca redefinir tokens globais).
+10. ⚠️ Os **modais de cores** (texto/fundo/borda) devem seguir o **mesmo padrão de lógica e visualização**
+   dos botões de cor/destaque de Notas (`setupNotesColors`): grade 8×10, recentes, `+`, conta-gotas,
+   reset, “Aplicar”, popover preso ao `visualViewport`, `Esc`/clique fora e foco preso.
 
 ---
 
 ## 6. Definition of Done
 
 - Área "Mapa Mental" abre/troca com "Notas" sem afetar o editor (paridade e `shortcuts` verdes).
+- **Nenhum botão solto** na área do mapa: formatação e ferramentas separadas nas barras padronizadas
+  (`#mapaFormatBar`/`#mapaToolbar`), com o **mesmo visual/cores de Notas** e modais de cores no mesmo padrão.
 - Todas as seções do checklist acima marcadas **ou** explicitamente registradas como backlog
   com justificativa.
 - Autosave + undo/redo + atalhos + busca/filtros funcionando e persistidos entre sessões.

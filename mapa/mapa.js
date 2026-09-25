@@ -147,13 +147,24 @@
             nosMoverPara: dados.nosMoverPara || [],
             pasta: acao && acao.id ? dados.pastas.find(p => p.id === acao.id) : null
         });
+        dados.acao = acao;
+        dados.estiloCopiado = this.mapaEstiloCopiado || null;
+        dados.atalhos = this.mapaAtalhosAberto ? dadosAtalhos.call(this) : null;
+        dados.menuNo = this.mapaMenuNo || null;
+        dados.menuCanvas = this.mapaMenuCanvas || null;
+        dados.barraAberta = Boolean(this.mapaBarraAberta);
+        // Barras padronizadas (F12) ANTES do mapa: o editor de barra lê o DOM da toolbar.
+        r.renderBarras(dados);
         const wrap = document.getElementById('mapaCanvasWrap');
         if (dados.mapaAberto) {
             r.renderMapaAberto(wrap, dados);
             aplicarViewportNoDom.call(this);
+            refinarLayoutPorMedicao.call(this);
         } else {
             r.renderGestao(wrap, dados);
         }
+        // F11: os botões Desfazer/Refazer refletem a pilha sempre que a área é redesenhada.
+        atualizarBotoesHistorico.call(this);
     }
 
     /** Cliques da área do mapa (delegação por `data-mapa-acao`). */
@@ -164,6 +175,13 @@
         const id = alvo.dataset.mapaId || null;
         const s = store();
         const interacao = global.MapaMentalInteracao;
+        // F12: qualquer ação fecha o menu contextual aberto (sem render extra).
+        if (this.mapaMenuNo || this.mapaMenuCanvas) {
+            this.mapaMenuNo = null;
+            this.mapaMenuCanvas = null;
+            const menuAberto = document.getElementById('mapaMenu');
+            if (menuAberto) menuAberto.remove();
+        }
         // Ações de nó usam o id do próprio botão (alternador) ou o nó selecionado.
         const idNo = alvo.dataset.mapaNoId || (interacao ? interacao.idPrincipal(this) : null);
         // Ações do canvas são resolvidas sem re-renderizar a área.
@@ -206,6 +224,42 @@
             case 'no-concluir': mapaAlternarConcluidoNo.call(this, idNo); break;
             case 'painel-fechar': mapaFecharPainel.call(this); return;
             case 'no-emoji': mapaDefinirEmojiNo.call(this, alvo.dataset.mapaEmoji); break;
+            // Estilo (Fase 9): visual do nó, pincel, estilos por nível e tema do mapa.
+            // Os botões vivem no painel, então o alvo é o nó do painel (fallback: seleção).
+            case 'no-estilo-salvar': mapaSalvarEstiloNo.call(this, this.mapaPainelNoId || idNo, document.getElementById('mapaPainelForm')); break;
+            case 'no-estilo-copiar': mapaCopiarEstiloNo.call(this, this.mapaPainelNoId || idNo); break;
+            case 'no-estilo-aplicar': mapaAplicarEstiloCopiadoNo.call(this, this.mapaPainelNoId || idNo); break;
+            case 'no-estilo-restaurar': mapaRestaurarEstiloNo.call(this, this.mapaPainelNoId || idNo); break;
+            case 'estilo-nivel-aplicar': {
+                const nivelEl = document.getElementById('mapaEstiloNivel');
+                const lerCor = nome => { const el = document.getElementById(nome); return el ? el.value : null; };
+                mapaDefinirEstiloNivel.call(this, nivelEl ? nivelEl.value : 1, {
+                    fundo: lerCor('mapaEstiloNivelFundo'), borda: lerCor('mapaEstiloNivelBorda')
+                });
+                return;
+            }
+            case 'estilo-nivel-limpar': {
+                const nivelEl = document.getElementById('mapaEstiloNivel');
+                mapaLimparEstiloNivel.call(this, nivelEl ? nivelEl.value : 1);
+                return;
+            }
+            // Atalhos (Fase 10): abrir/fechar o painel, capturar tecla e restaurar padrão.
+            case 'atalhos-abrir': mapaAbrirAtalhos.call(this); return;
+            case 'atalho-fechar': mapaFecharAtalhos.call(this); return;
+            case 'atalho-padrao': mapaRestaurarAtalhosPadrao.call(this); return;
+            case 'atalho-alterar': mapaCapturarAtalho.call(this, alvo.dataset.mapaAtalho); return;
+            // Barras padronizadas (Fase 12): menu contextual, formatação rápida, cores e barra.
+            case 'menu-fechar': this.mapaMenuNo = null; this.mapaMenuCanvas = null; break;
+            case 'barra-editar': this.mapaBarraAberta = true; break;
+            case 'barra-fechar': this.mapaBarraAberta = false; break;
+            case 'barra-restaurar': mapaRestaurarBarra.call(this); break;
+            case 'barra-mover':
+                mapaMoverBotaoBarra.call(this, alvo.dataset.mapaGrupo, alvo.dataset.mapaBotao, Number(alvo.dataset.mapaDir) || 1);
+                break;
+            case 'estilo-toggle': mapaAlternarEstiloRapido.call(this, alvo.dataset.mapaEstilo, idNo); break;
+            case 'estilo-definir': mapaDefinirEstiloRapido.call(this, alvo.dataset.mapaEstilo, alvo.dataset.mapaValor, idNo); break;
+            case 'estilo-passo': mapaPassoEstiloRapido.call(this, alvo.dataset.mapaEstilo, Number(alvo.dataset.mapaPasso) || 1, idNo); break;
+            case 'cor-abrir': mapaAbrirCor.call(this, alvo.dataset.mapaCor, alvo, idNo); return;
             case 'no-anexo-adicionar': mapaPedirAnexoNo.call(this); return;
             case 'no-anexo-remover': mapaRemoverAnexoNo.call(this, idNo, alvo.dataset.mapaAnexo); break;
             case 'ponte-abrir': abrirMapa.call(this, alvo.dataset.mapaRef); break;
@@ -234,11 +288,20 @@
             case 'no-largura-menos': mapaAjustarLargura.call(this, idNo, -24); break;
             case 'no-largura-mais': mapaAjustarLargura.call(this, idNo, 24); break;
             case 'no-desfazer': desfazer.call(this); return;
+            case 'no-refazer': refazer.call(this); return;
             case 'recolher-tudo': definirRecolhidoTodos.call(this, true); break;
             case 'expandir-tudo': definirRecolhidoTodos.call(this, false); break;
             case 'aplicar-pronto': aplicarTemplatePronto.call(this, alvo.dataset.mapaTemplate); break;
             case 'aplicar-salvo': aplicarTemplateSalvo.call(this, alvo.dataset.mapaTemplate); break;
             case 'template-excluir': s.excluirTemplate(alvo.dataset.mapaTemplate); break;
+            // Fase 8: layout automático (confirmação em duas etapas) e espaçamento.
+            case 'layout-confirmar': mapaConfirmarLayout.call(this); return;
+            case 'layout-cancelar': this.mapaAcao = null; renderArea.call(this); return;
+            case 'espacamento-aplicar': {
+                const lerNum = nome => { const el = document.getElementById(nome); return el ? Number(el.value) : null; };
+                mapaDefinirEspacamento.call(this, { nos: lerNum('mapaEspacoNos'), niveis: lerNum('mapaEspacoNiveis') });
+                return;
+            }
             default: return;
         }
         renderArea.call(this);
@@ -279,6 +342,8 @@
             renderArea.call(this);
         } else if (evento.target && evento.target.id === 'mapaLayout') {
             mapaDefinirLayout.call(this, evento.target.value);
+        } else if (evento.target && evento.target.id === 'mapaTema') {
+            mapaDefinirTema.call(this, evento.target.value);
         }
     }
 
@@ -451,35 +516,76 @@
     // 🔄 [FIM: MAPA - NAVEGAÇÃO DO CANVAS]
 
     // 🔄 [INÍCIO: MAPA - HISTÓRICO/COMANDOS]
+    const LIMITE_HISTORICO = 100;   // cap de passos (F11)
+    const JANELA_COALESCE = 900;    // ms — digitação contínua vira UM passo (F11)
+
+    /** Instantâneo serializável do estado do mapa (nunca referências vivas). */
     const instantaneoGrafo = grafo => ({
+        nome: (grafo && grafo.nome) || '',
         nos: JSON.parse(JSON.stringify((grafo && grafo.nos) || [])),
         conexoes: JSON.parse(JSON.stringify((grafo && grafo.conexoes) || [])),
         idSeq: (grafo && grafo.idSeq) || 0,
-        cxSeq: (grafo && grafo.cxSeq) || 0
+        cxSeq: (grafo && grafo.cxSeq) || 0,
+        // F8/F9: layout, espaçamento, tema e estilos por nível também são desfazíveis.
+        layout: (grafo && grafo.layout) || 'bilateral',
+        posicionamento: (grafo && grafo.posicionamento) || null,
+        espacamento: JSON.parse(JSON.stringify((grafo && grafo.espacamento) || {})),
+        temaId: (grafo && grafo.temaId) || 'padrao',
+        estilosNivel: JSON.parse(JSON.stringify((grafo && grafo.estilosNivel) || {}))
     });
 
     function historicoReset() {
         const grafo = this.mapaCanvasGrafo;
         this.mapaHistorico = grafo ? { pilha: [instantaneoGrafo(grafo)], indice: 0 } : { pilha: [], indice: -1 };
+        this.mapaHistoricoCoalesce = null;
     }
 
-    /** Registra um ponto de retorno (uma entrada por COMANDO, nunca por tecla). */
-    function registrarHistorico() {
+    /**
+     * Registra um ponto de retorno (uma entrada por COMANDO, nunca por tecla).
+     * `opcoes.coalescer` agrupa comandos contínuos (digitação) numa ÚNICA entrada:
+     * dentro da janela, substitui o topo em vez de empilhar.
+     */
+    function registrarHistorico(opcoes) {
         const grafo = this.mapaCanvasGrafo;
         if (!grafo || !this.mapaHistorico) return;
-        const pilha = this.mapaHistorico.pilha.slice(0, this.mapaHistorico.indice + 1);
+        const cfg = opcoes || {};
+        const chave = cfg.coalescer || null;
+        const agora = Date.now();
+        const hist = this.mapaHistorico;
+        const coalescendo = Boolean(chave && this.mapaHistoricoCoalesce
+            && this.mapaHistoricoCoalesce.chave === chave
+            && (agora - this.mapaHistoricoCoalesce.quando) < JANELA_COALESCE
+            && hist.indice === hist.pilha.length - 1);
+        if (coalescendo) {
+            hist.pilha[hist.indice] = instantaneoGrafo(grafo);
+            this.mapaHistoricoCoalesce = { chave, quando: agora };
+            atualizarBotoesHistorico.call(this);
+            return;
+        }
+        const pilha = hist.pilha.slice(0, hist.indice + 1);
         pilha.push(instantaneoGrafo(grafo));
-        while (pilha.length > 40) pilha.shift();
+        while (pilha.length > LIMITE_HISTORICO) pilha.shift();
         this.mapaHistorico = { pilha, indice: pilha.length - 1 };
+        this.mapaHistoricoCoalesce = chave ? { chave, quando: agora } : null;
+        // Comandos que NÃO re-renderizam (layout/estilo/tema) também precisam atualizar os botões.
+        atualizarBotoesHistorico.call(this);
     }
 
+    /** Aplica um instantâneo (undo/redo): restaura o estado, re-salva e redesenha. */
     function aplicarInstantaneo(snap) {
         const grafo = this.mapaCanvasGrafo;
         if (!grafo || !snap) return false;
+        grafo.nome = snap.nome || grafo.nome;
         grafo.nos = JSON.parse(JSON.stringify(snap.nos));
         grafo.conexoes = JSON.parse(JSON.stringify(snap.conexoes));
         grafo.idSeq = snap.idSeq;
         grafo.cxSeq = snap.cxSeq;
+        grafo.layout = snap.layout || grafo.layout;
+        grafo.posicionamento = snap.posicionamento;
+        grafo.espacamento = JSON.parse(JSON.stringify(snap.espacamento || grafo.espacamento));
+        grafo.temaId = snap.temaId || grafo.temaId;
+        grafo.estilosNivel = JSON.parse(JSON.stringify(snap.estilosNivel || {}));
+        // F11: undo/redo precisa re-agendar o autosave — aqui persiste na hora.
         store().salvarGrafo(grafo);
         if (this.mapaSelecao) this.mapaSelecao.clear();
         renderArea.call(this);
@@ -490,6 +596,7 @@
         const hist = this.mapaHistorico;
         if (!hist || hist.indice <= 0) return false;
         hist.indice -= 1;
+        this.mapaHistoricoCoalesce = null;
         return aplicarInstantaneo.call(this, hist.pilha[hist.indice]);
     }
 
@@ -497,7 +604,23 @@
         const hist = this.mapaHistorico;
         if (!hist || hist.indice >= hist.pilha.length - 1) return false;
         hist.indice += 1;
+        this.mapaHistoricoCoalesce = null;
         return aplicarInstantaneo.call(this, hist.pilha[hist.indice]);
+    }
+
+    /** Estado dos botões Desfazer/Refazer conforme a pilha (F11) — a F12 os põe na toolbar. */
+    function atualizarBotoesHistorico() {
+        const hist = this.mapaHistorico;
+        const podeDesfazer = Boolean(hist && hist.indice > 0);
+        const podeRefazer = Boolean(hist && hist.indice < hist.pilha.length - 1);
+        const marcar = (acao, ativo) => {
+            document.querySelectorAll('[data-mapa-acao="' + acao + '"]').forEach(el => {
+                el.disabled = !ativo;
+                el.setAttribute('aria-disabled', String(!ativo));
+            });
+        };
+        marcar('no-desfazer', podeDesfazer);
+        marcar('no-refazer', podeRefazer);
     }
 
     const persistirGrafoMapa = function () {
@@ -510,7 +633,8 @@
         const grafo = this.mapaCanvasGrafo;
         const layout = global.MapaMentalLayout;
         if (!grafo || !layout) return;
-        const posicoes = layout.calcularPosicoes(grafo);
+        const medidas = layout.medidasDoDom ? layout.medidasDoDom(grafo) : null;
+        const posicoes = layout.calcularPosicoes(grafo, medidas && medidas.size ? { medidas } : undefined);
         grafo.nos.forEach(no => {
             const posicao = posicoes.get(no.id);
             if (posicao) no.posicao = { x: posicao.x, y: posicao.y };
@@ -522,9 +646,72 @@
         const grafo = this.mapaCanvasGrafo;
         if (grafo && grafo.posicionamento !== 'manual') reposicionarAuto.call(this);
         persistirGrafoMapa.call(this);
-        if (registrar !== false) registrarHistorico.call(this);
+        if (registrar !== false) {
+            registrarHistorico.call(this, (registrar && typeof registrar === 'object') ? registrar : undefined);
+        }
         renderArea.call(this);
     }
+
+    // 🔄 [INÍCIO: MAPA - LAYOUT AUTOMÁTICO (FASE 8)]
+    /**
+     * Mede os nós JÁ renderizados e refina o layout automático (1 passada, com guarda
+     * anti-loop). Precisa rodar depois do render — a caixa real varia com conteúdo/fonte.
+     */
+    function refinarLayoutPorMedicao() {
+        const grafo = this.mapaCanvasGrafo;
+        const layout = global.MapaMentalLayout;
+        if (!grafo || !layout || !grafo.nos.length) return;
+        if (grafo.posicionamento === 'manual' || this.mapaRefinandoLayout) return;
+        const medidas = layout.medidasDoDom ? layout.medidasDoDom(grafo) : null;
+        if (!medidas || !medidas.size) return;
+        const posicoes = layout.calcularPosicoes(grafo, { medidas });
+        let mudou = false;
+        grafo.nos.forEach(no => {
+            const p = posicoes.get(no.id);
+            if (!p) return;
+            if (!no.posicao || no.posicao.x !== p.x || no.posicao.y !== p.y) {
+                no.posicao = { x: p.x, y: p.y };
+                mudou = true;
+            }
+        });
+        if (!mudou) return;
+        store().salvarGrafo(grafo);
+        this.mapaRefinandoLayout = true;
+        try { renderArea.call(this); } finally { this.mapaRefinandoLayout = false; }
+    }
+
+    /**
+     * Reaplica o layout automático no DOM SEM recriar a área (Fase 8): recalcula as posições
+     * com as medidas reais, anima os nós (classe `.mapa-transicao`) e redesenha ramos/minimapa.
+     * Mantém o estado do canvas (pan/zoom/seleção) — diferente de um `renderArea()`.
+     */
+    function reposicionarSuave() {
+        const grafo = this.mapaCanvasGrafo;
+        const layout = global.MapaMentalLayout;
+        if (!grafo || !layout) return false;
+        const medidas = layout.medidasDoDom ? layout.medidasDoDom(grafo) : null;
+        const posicoes = layout.calcularPosicoes(grafo, medidas && medidas.size ? { medidas } : undefined);
+        const nosEl = document.getElementById('mapaNos');
+        if (nosEl) nosEl.classList.add('mapa-transicao');
+        grafo.nos.forEach(no => {
+            const p = posicoes.get(no.id);
+            if (!p) return;
+            no.posicao = { x: p.x, y: p.y };
+            const el = nosEl ? nosEl.querySelector('.mapa-no[data-mapa-no-id="' + no.id + '"]') : null;
+            if (el) { el.style.left = p.x + 'px'; el.style.top = p.y + 'px'; }
+        });
+        store().salvarGrafo(grafo);
+        const svg = document.getElementById('mapaConexoesSvg');
+        if (svg) render().desenharConexoes(svg, grafo);
+        this.mapaCanvasLimites = layout.limites(grafo, modelo().listarVisiveis(grafo));
+        atualizarMinimapa.call(this);
+        clearTimeout(this.mapaTransicaoTimer);
+        this.mapaTransicaoTimer = setTimeout(() => {
+            if (nosEl) nosEl.classList.remove('mapa-transicao');
+        }, 320);
+        return true;
+    }
+    // 🔄 [FIM: MAPA - LAYOUT AUTOMÁTICO (FASE 8)]
 
     const idsSelecionados = function () { return [...(this.mapaSelecao || [])]; };
 
@@ -934,14 +1121,375 @@
     }
     // 🔄 [FIM: MAPA - CONTEÚDO DO NÓ (FASE 4) - PARTE 2]
 
+    // 🔄 [INÍCIO: MAPA - ATALHOS (FASE 10)]
+    /** Dados do painel de atalhos: itens (ação → teclas atuais) + estado da captura/aviso. */
+    function dadosAtalhos() {
+        const interacao = global.MapaMentalInteracao;
+        if (!interacao) return null;
+        const prefs = store().lerAtalhos();
+        return {
+            itens: interacao.ACOES_ATALHO.map(acao => ({
+                id: acao.id,
+                rotulo: acao.rotulo,
+                teclas: interacao.teclasDaAcao(prefs, acao.id)
+            })),
+            capturando: this.mapaAtalhoCapturando || null,
+            aviso: this.mapaAtalhoAviso || ''
+        };
+    }
+
+    function mapaAbrirAtalhos() {
+        this.mapaAtalhosAberto = true;
+        this.mapaAtalhoCapturando = null;
+        this.mapaAtalhoAviso = '';
+        renderArea.call(this);
+        return true;
+    }
+
+    function mapaFecharAtalhos() {
+        this.mapaAtalhosAberto = false;
+        this.mapaAtalhoCapturando = null;
+        this.mapaAtalhoAviso = '';
+        renderArea.call(this);
+        return false;
+    }
+
+    /** Apaga as preferências de atalho (volta a todos os padrões). */
+    function mapaRestaurarAtalhosPadrao() {
+        store().limparAtalhos();
+        this.mapaAtalhoCapturando = null;
+        this.mapaAtalhoAviso = '';
+        renderArea.call(this);
+        return true;
+    }
+
+    /** Entra no modo "capturar tecla" para a ação indicada. */
+    function mapaCapturarAtalho(acaoId) {
+        this.mapaAtalhoCapturando = acaoId || null;
+        this.mapaAtalhoAviso = '';
+        renderArea.call(this);
+        return true;
+    }
+
+    /** Salva a tecla capturada para a ação — com detecção de conflito (avisa e não grava). */
+    function mapaLigarAtalho(acaoId, evento) {
+        const interacao = global.MapaMentalInteracao;
+        if (!interacao || !acaoId || !evento) return false;
+        // `Esc` cancela a captura (não é um atalho).
+        if (evento.key === 'Escape' && !evento.ctrlKey && !evento.altKey) {
+            this.mapaAtalhoCapturando = null;
+            this.mapaAtalhoAviso = '';
+            renderArea.call(this);
+            return false;
+        }
+        const assinatura = interacao.assinaturaTecla(evento);
+        const prefs = store().lerAtalhos();
+        const conflito = interacao.conflitoDeAtalho(prefs, acaoId, assinatura);
+        if (conflito) {
+            const outra = interacao.ACOES_ATALHO.find(item => item.id === conflito);
+            this.mapaAtalhoAviso = 'A tecla "' + assinatura + '" já é usada por "' +
+                (outra ? outra.rotulo : conflito) + '".';
+            renderArea.call(this);
+            return false;
+        }
+        const novo = Object.assign({}, prefs);
+        novo[acaoId] = [assinatura];
+        store().salvarAtalhos(novo);
+        this.mapaAtalhoCapturando = null;
+        this.mapaAtalhoAviso = '';
+        renderArea.call(this);
+        return true;
+    }
+    // 🔄 [FIM: MAPA - ATALHOS (FASE 10)]
+
+    // 🔄 [INÍCIO: MAPA - BARRAS/MENU/CORES (FASE 12)]
+    /** Abre o menu contextual do CARD (botão direito no PC / toque longo no celular). */
+    function mapaAbrirMenuNo(idNo, posicao) {
+        if (!idNo) return false;
+        this.mapaMenuCanvas = null;
+        this.mapaMenuNo = { id: idNo, x: (posicao && posicao.x) || 0, y: (posicao && posicao.y) || 0 };
+        if (this.mapaSelecao) { this.mapaSelecao.clear(); this.mapaSelecao.add(idNo); }
+        renderArea.call(this);
+        return true;
+    }
+
+    /** Abre o menu contextual do CANVAS (ações de mapa/tela). */
+    function mapaAbrirMenuCanvas(posicao) {
+        this.mapaMenuNo = null;
+        this.mapaMenuCanvas = { x: (posicao && posicao.x) || 0, y: (posicao && posicao.y) || 0 };
+        renderArea.call(this);
+        return true;
+    }
+
+    function mapaFecharMenus() {
+        if (!this.mapaMenuNo && !this.mapaMenuCanvas) return false;
+        this.mapaMenuNo = null;
+        this.mapaMenuCanvas = null;
+        renderArea.call(this);
+        return true;
+    }
+
+    /** Ordem ATUAL dos grupos da barra (lida do DOM, na ordem visual). */
+    function ordemBarraAtual() {
+        const ordem = {};
+        document.querySelectorAll('#mapaToolbar .mapa-tb-grupo').forEach(grupo => {
+            const chaves = [...grupo.children]
+                .filter(el => el.dataset && el.dataset.mapaBotao)
+                .map(el => el.dataset.mapaBotao);
+            if (chaves.length) ordem[grupo.dataset.mapaGrupo] = chaves;
+        });
+        return ordem;
+    }
+
+    /** Move um botão dentro do grupo; persiste em `notas-pwa-mapa-toolbar-order` (F12). */
+    function mapaMoverBotaoBarra(grupoId, chave, dir) {
+        if (!grupoId || !chave) return false;
+        const ordem = Object.assign({}, store().lerOrdemBarra(), ordemBarraAtual());
+        const lista = (ordem[grupoId] || []).slice();
+        const i = lista.indexOf(chave);
+        if (i < 0) return false;
+        const j = i + (dir < 0 ? -1 : 1);
+        if (j < 0 || j >= lista.length) return false;
+        lista.splice(i, 1);
+        lista.splice(j, 0, chave);
+        ordem[grupoId] = lista;
+        store().salvarOrdemBarra(ordem);
+        return true;
+    }
+
+    /** Restaura a ordem padrão da barra (apaga as preferências). */
+    function mapaRestaurarBarra() {
+        store().limparOrdemBarra();
+        renderArea.call(this);
+        return true;
+    }
+
+    // 🔄 [FIM: MAPA - BARRAS/MENU/CORES (FASE 12)]
+
+    // 🔄 [INÍCIO: MAPA - FORMATAÇÃO RÁPIDA E CORES (FASE 12)]
+    /** Alterna um booleano de estilo (negrito/itálico) pelo botão da barra de formatação. */
+    function mapaAlternarEstiloRapido(estilo, idNo) {
+        const grafo = this.mapaCanvasGrafo;
+        const no = grafo ? modelo().obterNo(grafo, idNo) : null;
+        if (!no || !estilo) return false;
+        const mudancas = {};
+        mudancas[estilo] = !((no.estilo && no.estilo[estilo]) === true);
+        modelo().atualizarEstiloNo(grafo, no.id, mudancas);
+        aposComandoNo.call(this);
+        return true;
+    }
+
+    /** Define um valor de enum (forma/fonte/alinhamento); repetir o valor LIMPA (herdar). */
+    function mapaDefinirEstiloRapido(estilo, valor, idNo) {
+        const grafo = this.mapaCanvasGrafo;
+        const no = grafo ? modelo().obterNo(grafo, idNo) : null;
+        if (!no || !estilo || valor === undefined) return false;
+        const atual = no.estilo ? no.estilo[estilo] : null;
+        const mudancas = {};
+        mudancas[estilo] = String(atual) === String(valor) ? null : valor;
+        modelo().atualizarEstiloNo(grafo, no.id, mudancas);
+        aposComandoNo.call(this);
+        return true;
+    }
+
+    /** Passo (+/-) em tamanho/espessuras, dentro dos limites do modelo. */
+    function mapaPassoEstiloRapido(estilo, passo, idNo) {
+        const grafo = this.mapaCanvasGrafo;
+        const m = modelo();
+        const no = grafo ? m.obterNo(grafo, idNo) : null;
+        if (!no || !estilo) return false;
+        const delta = passo < 0 ? -1 : 1;
+        const passoEm = (lista, valor, padrao) => {
+            const i = lista.indexOf(Number(valor) || padrao);
+            const base = i < 0 ? Math.max(0, lista.indexOf(padrao)) : i;
+            return lista[Math.max(0, Math.min(lista.length - 1, base + delta))];
+        };
+        const proprio = no.estilo || {};
+        let mudancas = null;
+        if (estilo === 'tamanho') {
+            mudancas = { tamanho: passoEm(m.TAMANHOS_NO || [12, 13, 14, 16, 18, 20], proprio.tamanho, 14) };
+        } else if (estilo === 'espessuraBorda') {
+            mudancas = { espessuraBorda: passoEm(m.ESPESSURAS_BORDA || [1, 2, 3, 4], proprio.espessuraBorda, 1) };
+        } else if (estilo === 'espessuraRamo') {
+            mudancas = { espessuraRamo: Math.max(1, Math.min(8, (Number(proprio.espessuraRamo) || 2) + delta)) };
+        }
+        if (!mudancas) return false;
+        m.atualizarEstiloNo(grafo, no.id, mudancas);
+        aposComandoNo.call(this);
+        return true;
+    }
+
+    /** Abre a paleta de cores no MESMO padrão dos botões de cor/destaque de Notas. */
+    function mapaAbrirCor(propriedade, botao, idNo) {
+        const grafo = this.mapaCanvasGrafo;
+        const cores = global.MapaMentalCores;
+        const no = grafo ? modelo().obterNo(grafo, idNo) : null;
+        if (!cores || !no || !propriedade) return false;
+        const efetivo = modelo().estiloEfetivo ? modelo().estiloEfetivo(grafo, no) : (no.estilo || {});
+        const recentes = (grafo.coresRecentes && grafo.coresRecentes[propriedade]) || [];
+        cores.abrir(botao, propriedade, {
+            valorAtual: (no.estilo && no.estilo[propriedade]) || efetivo[propriedade] || '',
+            recentes,
+            aoGravarRecente: valor => mapaGravarCorRecente.call(this, propriedade, valor),
+            aoConfirmar: valor => {
+                const mudancas = {};
+                mudancas[propriedade] = valor;
+                modelo().atualizarEstiloNo(grafo, no.id, mudancas);
+                aposComandoNo.call(this);
+            }
+        });
+        return true;
+    }
+
+    /** Guarda a cor em "cores personalizadas" do mapa (máx. 12 por propriedade). */
+    function mapaGravarCorRecente(propriedade, valor) {
+        const grafo = this.mapaCanvasGrafo;
+        if (!grafo || !propriedade || !valor) return false;
+        grafo.coresRecentes = grafo.coresRecentes || {};
+        const lista = (grafo.coresRecentes[propriedade] || []).filter(cor => cor !== valor);
+        lista.push(valor);
+        grafo.coresRecentes[propriedade] = lista.slice(-12);
+        persistirGrafoMapa.call(this);
+        return true;
+    }
+    // 🔄 [FIM: MAPA - FORMATAÇÃO RÁPIDA E CORES (FASE 12)]
+
+    // 🔄 [INÍCIO: MAPA - ESTILO DO NÓ/MAPA (FASE 9)]
+    /** Lê a seção "Estilo" do painel e grava no nó. Campo vazio/desmarcado = herdar (limpa). */
+    function mapaSalvarEstiloNo(idNo, form) {
+        const grafo = this.mapaCanvasGrafo;
+        if (!grafo || !idNo) return false;
+        const el = nome => (form && form.querySelector('#' + nome)) || document.getElementById(nome);
+        const valor = nome => { const campo = el(nome); return campo ? campo.value : ''; };
+        const marcado = nome => { const campo = el(nome); return Boolean(campo && campo.checked); };
+        const corOuNull = id => (marcado(id + 'Ativa') ? valor(id) : null);
+        const numeroOuNull = id => { const v = valor(id); return v === '' ? null : Number(v); };
+        const booleanoOuNull = id => {
+            const v = valor(id);
+            if (v === 'sim') return true;
+            if (v === 'nao') return false;
+            return null;
+        };
+        modelo().atualizarEstiloNo(grafo, idNo, {
+            cor: corOuNull('mapaEstiloCor'),
+            fundo: corOuNull('mapaEstiloFundo'),
+            borda: corOuNull('mapaEstiloBorda'),
+            forma: valor('mapaEstiloForma') || null,
+            fonte: valor('mapaEstiloFonte') || null,
+            alinhamento: valor('mapaEstiloAlinhamento') || null,
+            tamanho: numeroOuNull('mapaEstiloTamanho'),
+            espessuraBorda: numeroOuNull('mapaEstiloEspessuraBorda'),
+            espessuraRamo: numeroOuNull('mapaEstiloEspessuraRamo'),
+            negrito: booleanoOuNull('mapaEstiloNegrito'),
+            italico: booleanoOuNull('mapaEstiloItalico')
+        });
+        aposComandoNo.call(this);
+        return true;
+    }
+
+    /** Pincel: guarda SÓ o visual do nó (clipboard interno, não usa o clipboard do sistema). */
+    function mapaCopiarEstiloNo(idNo) {
+        const grafo = this.mapaCanvasGrafo;
+        const no = grafo && modelo().obterNo(grafo, idNo);
+        if (!no) return false;
+        this.mapaEstiloCopiado = modelo().copiarEstiloNo(no);
+        renderArea.call(this);
+        return true;
+    }
+
+    /** Aplica o estilo copiado como estilo PRÓPRIO do nó (substitui o anterior). */
+    function mapaAplicarEstiloCopiadoNo(idNo) {
+        const grafo = this.mapaCanvasGrafo;
+        const copiado = this.mapaEstiloCopiado;
+        if (!grafo || !idNo || !copiado || !Object.keys(copiado).length) return false;
+        modelo().limparEstiloNo(grafo, idNo);
+        modelo().atualizarEstiloNo(grafo, idNo, copiado);
+        aposComandoNo.call(this);
+        return true;
+    }
+
+    /** Restaura o estilo padrão (limpa o estilo próprio; volta a herdar nível/tema). */
+    function mapaRestaurarEstiloNo(idNo) {
+        const grafo = this.mapaCanvasGrafo;
+        if (!grafo || !idNo) return false;
+        modelo().limparEstiloNo(grafo, idNo);
+        aposComandoNo.call(this);
+        return true;
+    }
+
+    /** Troca o tema (paleta) do mapa inteiro. */
+    function mapaDefinirTema(temaId) {
+        const grafo = this.mapaCanvasGrafo;
+        if (!grafo || !modelo().definirTemaMapa(grafo, temaId)) return false;
+        aposComandoNo.call(this);
+        return true;
+    }
+
+    /** Define o estilo de um nível (aplica a todos os nós daquele nível). */
+    function mapaDefinirEstiloNivel(nivel, valores) {
+        const grafo = this.mapaCanvasGrafo;
+        if (!grafo) return false;
+        modelo().definirEstiloNivel(grafo, nivel, valores || {});
+        aposComandoNo.call(this);
+        return true;
+    }
+
+    /** Limpa o estilo de um nível (volta a herdar o tema). */
+    function mapaLimparEstiloNivel(nivel) {
+        const grafo = this.mapaCanvasGrafo;
+        if (!grafo) return false;
+        modelo().removerEstiloNivel(grafo, nivel);
+        aposComandoNo.call(this);
+        return true;
+    }
+    // 🔄 [FIM: MAPA - ESTILO DO NÓ/MAPA (FASE 9)]
+
     // 🔄 [INÍCIO: MAPA - HIERARQUIA/LAYOUT (FASE 5)]
-    /** Troca o layout em árvore do mapa (volta ao modo automático). */
+    /**
+     * Troca o layout em árvore do mapa. Se o mapa está em layout MANUAL com posições gravadas,
+     * pede confirmação (descarta as posições) antes de virar automático (Fase 8).
+     */
     function mapaDefinirLayout(layout) {
         const grafo = this.mapaCanvasGrafo;
         if (!grafo || !modelo().LAYOUTS.includes(layout)) return false;
+        const temManual = grafo.posicionamento === 'manual'
+            && (grafo.nos || []).some(no => no.posicao && Number.isFinite(no.posicao.x));
+        if (temManual && layout !== 'livre') {
+            this.mapaAcao = { tipo: 'layout-confirmar', layout };
+            renderArea.call(this);
+            return true;
+        }
         grafo.layout = layout;
+        grafo.posicionamento = layout === 'livre' ? 'manual' : 'auto';
+        reposicionarSuave.call(this);
+        registrarHistorico.call(this);
+        return true;
+    }
+
+    /** Aplica o layout automático confirmado (descarta as posições manuais) — Fase 8. */
+    function mapaConfirmarLayout() {
+        const grafo = this.mapaCanvasGrafo;
+        const acao = this.mapaAcao;
+        if (!grafo || !acao || !acao.layout) return false;
+        grafo.layout = acao.layout;
         grafo.posicionamento = 'auto';
-        aposComandoNo.call(this);
+        this.mapaAcao = null;
+        const barra = document.querySelector('.mapa-confirmacao');
+        if (barra) barra.remove();
+        reposicionarSuave.call(this);
+        registrarHistorico.call(this);
+        return true;
+    }
+
+    /** Define o espaçamento do layout automático (por mapa) e reaplica sem sobreposição. */
+    function mapaDefinirEspacamento(valores) {
+        const grafo = this.mapaCanvasGrafo;
+        if (!grafo) return false;
+        grafo.espacamento = modelo().normalizarEspacamento(
+            Object.assign({}, grafo.espacamento, valores || {}));
+        if (grafo.posicionamento === 'manual') grafo.posicionamento = 'auto';
+        reposicionarSuave.call(this);
+        registrarHistorico.call(this);
         return true;
     }
 
@@ -1036,12 +1584,15 @@
     }
     // 🔄 [FIM: MAPA - CONEXÕES LIVRES (FASE 6)]
 
-    /** Conclui a edição inline (chamado pela interação). */
+    /**
+     * Conclui a edição inline (chamado pela interação). A digitação é COALESCIDA (F11):
+     * sequência de commits em `titulo:<id>` dentro da janela vira UM único passo de undo.
+     */
     function mapaCommitarTituloNo(idNo, titulo) {
         const grafo = this.mapaCanvasGrafo;
         if (!grafo || !idNo) return false;
         modelo().atualizarTitulo(grafo, idNo, titulo);
-        aposComandoNo.call(this);
+        aposComandoNo.call(this, { coalescer: 'titulo:' + idNo });
         return true;
     }
     // 🔄 [FIM: MAPA - MOVER/RECOLHER/ESTILO DO NÓ]
@@ -1070,6 +1621,11 @@
         secao.addEventListener('dblclick', evento => {
             const interacao = global.MapaMentalInteracao;
             if (interacao) interacao.duploClique.call(this, evento);
+        });
+        // Fase 12: botão direito (PC) abre o MENU CONTEXTUAL do card/canvas.
+        secao.addEventListener('contextmenu', evento => {
+            const interacaoCtx = global.MapaMentalInteracao;
+            if (interacaoCtx && interacaoCtx.contextMenu) interacaoCtx.contextMenu.call(this, evento);
         });
         // Navegação do canvas (pan/zoom/pinça) — delegação única na seção.
         this.mapaCanvasPonteiros = new Map();
@@ -1158,6 +1714,20 @@
         if (this.mapaAreaAtiva !== 'mapa') return;
         const secao = document.getElementById('mapaArea');
         if (!secao || secao.hidden) return;
+        // Captura de atalho (F10): a PRÓXIMA tecla vira o atalho da ação escolhida.
+        if (this.mapaAtalhoCapturando) {
+            evento.preventDefault();
+            if (evento.stopImmediatePropagation) evento.stopImmediatePropagation();
+            else evento.stopPropagation();
+            mapaLigarAtalho.call(this, this.mapaAtalhoCapturando, evento);
+            return;
+        }
+        // Painel de atalhos aberto: `Esc` fecha (antes do atalho de limpar seleção).
+        if (this.mapaAtalhosAberto && evento.key === 'Escape') {
+            evento.preventDefault();
+            mapaFecharAtalhos.call(this);
+            return;
+        }
         const alvo = evento.target;
         if (!alvo || !alvo.closest) return;
         const campo = alvo.closest('input, textarea, select, [contenteditable]:not(.mapa-no-editor)');
@@ -1218,6 +1788,15 @@
             mapaConexaoOrigem: null,
             mapaConexaoMenuId: null,
             mapaConexaoArrasto: null,
+            mapaRefinandoLayout: null,
+            mapaTransicaoTimer: null,
+            mapaEstiloCopiado: null,
+            mapaAtalhosAberto: false,
+            mapaAtalhoCapturando: null,
+            mapaAtalhoAviso: '',
+            mapaMenuNo: null,
+            mapaMenuCanvas: null,
+            mapaBarraAberta: false,
             aplicarArea, inicializarAreasMapa, montarAreaMapa, aplicarTemaMapa, renderArea,
             definirViewport, salvarViewportAgora,
             mapaCriarFilhoDeNo, mapaCriarIrmaoDeNo, mapaCriarNoIndependente, mapaExcluirNo,
@@ -1228,6 +1807,15 @@
             mapaCommitarTituloNo, mapaDesfazer: desfazer, mapaRefazer: refazer,
             mapaAbrirPainel, mapaFecharPainel, mapaAlternarConcluidoNo, mapaDefinirEmojiNo,
             mapaSalvarConteudoNo, mapaPedirAnexoNo, mapaRemoverAnexoNo, mapaDefinirLayout,
+            mapaConfirmarLayout, mapaDefinirEspacamento, reposicionarSuave, garantirNoVisivel,
+            mapaSalvarEstiloNo, mapaCopiarEstiloNo, mapaAplicarEstiloCopiadoNo, mapaRestaurarEstiloNo,
+            mapaDefinirTema, mapaDefinirEstiloNivel, mapaLimparEstiloNivel,
+            mapaAbrirAtalhos, mapaFecharAtalhos, mapaCapturarAtalho, mapaLigarAtalho, mapaRestaurarAtalhosPadrao,
+            atualizarBotoesHistorico,
+            mapaAbrirMenuNo, mapaAbrirMenuCanvas, mapaFecharMenus,
+            mapaMoverBotaoBarra, mapaRestaurarBarra,
+            mapaAlternarEstiloRapido, mapaDefinirEstiloRapido, mapaPassoEstiloRapido,
+            mapaAbrirCor, mapaGravarCorRecente,
             mapaAlternarModoConexao, mapaCriarConexaoEntre, mapaCliqueConexaoNo,
             mapaAbrirMenuConexao, mapaFecharMenuConexao, mapaSalvarConexao, mapaRemoverConexao
         });

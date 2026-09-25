@@ -40,6 +40,38 @@
 
     const ROTULO_PRIORIDADE = { '': 'Sem prioridade', baixa: 'Baixa', media: 'Média', alta: 'Alta' };
     const ROTULO_STATUS = { '': 'Sem status', 'a-fazer': 'A fazer', fazendo: 'Fazendo', feito: 'Feito', bloqueado: 'Bloqueado' };
+
+    /** Cor com checkbox "usar": sem marcar, o nó HERDA (nível/tema) — Fase 9. */
+    const campoCorComHerda = (id, rotulo, valor, ativo) => {
+        const wrap = criar('label', 'mapa-painel-cor');
+        const ck = document.createElement('input');
+        ck.type = 'checkbox';
+        ck.id = id + 'Ativa';
+        ck.checked = Boolean(ativo);
+        const cor = document.createElement('input');
+        cor.type = 'color';
+        cor.id = id;
+        cor.value = /^#[0-9a-f]{6}$/i.test(valor || '') ? valor : '#4cc9f0';
+        wrap.append(ck, criar('span', 'mapa-painel-rotulo', rotulo), cor);
+        return wrap;
+    };
+
+    /** Select de estilo: a opção '' significa "(herdar)" — Fase 9. */
+    const selectEstilo = (id, rotulo, opcoes, valor) => {
+        const wrap = criar('label', 'mapa-painel-campo');
+        wrap.append(criar('span', 'mapa-painel-rotulo', rotulo));
+        const sel = document.createElement('select');
+        sel.id = id;
+        opcoes.forEach(([v, t]) => {
+            const op = document.createElement('option');
+            op.value = v;
+            op.textContent = t;
+            sel.append(op);
+        });
+        sel.value = (valor === undefined || valor === null) ? '' : String(valor);
+        wrap.append(sel);
+        return wrap;
+    };
     // 🔄 [FIM: MAPA - HELPERS DE DOM / RÓTULOS]
 
     // 🔄 [INÍCIO: MAPA - BLOCOS DE CONTEÚDO (links/anexos/ponte)]
@@ -100,6 +132,72 @@
     }
 
     // 🔄 [FIM: MAPA - BLOCOS DE CONTEÚDO (links/anexos/ponte)]
+
+    // 🔄 [INÍCIO: MAPA - SEÇÃO ESTILO (FASE 9)]
+    /**
+     * Seção "Estilo" do painel: visual do nó (cores/forma/fonte/tamanho/alinhamento),
+     * espessura da borda/ramo e as ações de pincel. Vive DENTRO do `#mapaPainelForm`
+     * (nunca cria um form aninhado) e envia os campos vazios como "herdar" (limpa).
+     */
+    function blocoEstilo(no, contexto) {
+        const m = modelo();
+        const secao = criar('section', 'mapa-painel-estilo');
+        secao.append(criar('h4', 'mapa-painel-subtitulo', 'Estilo'));
+        const dados = contexto || {};
+        const efetivo = (m && m.estiloEfetivo) ? m.estiloEfetivo(dados.grafo, no) : {};
+        const proprio = no.estilo || {};
+        const temCopiado = Boolean(dados.estiloCopiado && Object.keys(dados.estiloCopiado).length);
+
+        const cores = criar('div', 'mapa-painel-meta');
+        [['Cor', 'mapaEstiloCor', 'cor'], ['Fundo', 'mapaEstiloFundo', 'fundo'], ['Borda', 'mapaEstiloBorda', 'borda']]
+            .forEach(([rotulo, id, chave]) => cores.append(
+                campoCorComHerda(id, rotulo, proprio[chave] || efetivo[chave] || '#4cc9f0', Boolean(proprio[chave]))
+            ));
+        secao.append(cores);
+
+        const linha = criar('div', 'mapa-painel-meta');
+        linha.append(selectEstilo('mapaEstiloForma', 'Forma',
+            [['', '(herdar)'], ['retangulo', 'Retângulo'], ['pilula', 'Pílula'], ['elipse', 'Elipse'], ['nota', 'Nota']], proprio.forma));
+        linha.append(selectEstilo('mapaEstiloFonte', 'Fonte',
+            [['', '(herdar)'], ['sistema', 'Sistema'], ['serif', 'Serifada'], ['mono', 'Monoespaçada'], ['cursiva', 'Cursiva']], proprio.fonte));
+        linha.append(selectEstilo('mapaEstiloAlinhamento', 'Alinhamento',
+            [['', '(herdar)'], ['esquerda', 'Esquerda'], ['centro', 'Centro'], ['direita', 'Direita']], proprio.alinhamento));
+        secao.append(linha);
+
+        const linha2 = criar('div', 'mapa-painel-meta');
+        linha2.append(selectEstilo('mapaEstiloTamanho', 'Tamanho',
+            [['', '(herdar)'], ['12', '12'], ['13', '13'], ['14', '14'], ['16', '16'], ['18', '18'], ['20', '20']],
+            proprio.tamanho ? String(proprio.tamanho) : ''));
+        linha2.append(selectEstilo('mapaEstiloEspessuraBorda', 'Esp. borda',
+            [['', '(herdar)'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4']],
+            proprio.espessuraBorda ? String(proprio.espessuraBorda) : ''));
+        linha2.append(selectEstilo('mapaEstiloNegrito', 'Negrito',
+            [['', '(herdar)'], ['sim', 'Sim'], ['nao', 'Não']],
+            typeof proprio.negrito === 'boolean' ? (proprio.negrito ? 'sim' : 'nao') : ''));
+        linha2.append(selectEstilo('mapaEstiloItalico', 'Itálico',
+            [['', '(herdar)'], ['sim', 'Sim'], ['nao', 'Não']],
+            typeof proprio.italico === 'boolean' ? (proprio.italico ? 'sim' : 'nao') : ''));
+        secao.append(linha2);
+
+        const cRamo = campo('input', 'mapaEstiloEspessuraRamo', 'Esp. do ramo (1-8)');
+        cRamo.input.type = 'number';
+        cRamo.input.min = '1';
+        cRamo.input.max = '8';
+        cRamo.input.value = proprio.espessuraRamo ? String(proprio.espessuraRamo) : '';
+        secao.append(cRamo.wrap);
+
+        const acoes = criar('div', 'mapa-painel-acoes');
+        acoes.append(botao('mapa-btn mapa-btn-primario', 'Salvar estilo', 'no-estilo-salvar'));
+        acoes.append(botao('mapa-btn', 'Copiar estilo', 'no-estilo-copiar'));
+        const aplicar = botao('mapa-btn', 'Aplicar copiado', 'no-estilo-aplicar');
+        aplicar.disabled = !temCopiado;
+        aplicar.title = temCopiado ? 'Aplica o estilo copiado neste nó' : 'Copie um estilo primeiro';
+        acoes.append(aplicar);
+        acoes.append(botao('mapa-btn', 'Restaurar padrão', 'no-estilo-restaurar'));
+        secao.append(acoes);
+        return secao;
+    }
+    // 🔄 [FIM: MAPA - SEÇÃO ESTILO (FASE 9)]
 
     // 🔄 [INÍCIO: MAPA - LINHAS META (prioridade/status/datas)]
     /** Linha prioridade/status/responsável. */
@@ -234,6 +332,8 @@
         form.append(blocoAnexos(no));
         const ponte = blocoPonte(no, contexto);
         if (ponte) form.append(ponte);
+        // Estilo do nó (Fase 9) — dentro do mesmo form (nunca um form aninhado).
+        form.append(blocoEstilo(no, contexto));
 
         const acoes = criar('div', 'mapa-painel-acoes');
         const salvar = criar('button', 'mapa-btn mapa-btn-primario', 'Salvar conteúdo');
@@ -250,7 +350,7 @@
     // 🔄 [INÍCIO: MAPA - API PÚBLICA]
     global.MapaMentalPainel = {
         EMOJIS, ROTULO_PRIORIDADE, ROTULO_STATUS, montarPainel,
-        blocoLinksDetectados, blocoAnexos, blocoPonte
+        blocoLinksDetectados, blocoAnexos, blocoPonte, blocoEstilo
     };
     // 🔄 [FIM: MAPA - API PÚBLICA]
 })(typeof window !== 'undefined' ? window : globalThis);

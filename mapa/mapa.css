@@ -6,6 +6,43 @@
  * ============================================ */
 
 /* ------------------------------------------------------------
+ * Tokens da área do mapa — ESPELHAM as cores do tema de Notas.
+ * Claro: os mesmos tokens globais (styles.css).
+ * Escuro: os MESMOS valores que o compilado usa no modal de Notas
+ * (`theme-origem.css`): superfície de barra #151B23 (header/nav/toolbar/footer),
+ * container #11161D (modal), área de trabalho #0D1218 (notesEditorContainer),
+ * bordas #2A3543 / #263241, divisor #334155, textos #CBD5E1 / #E2E8F0 / #F8FAFC / #94A3B8
+ * e hover #202A36.
+ * ------------------------------------------------------------ */
+:root {
+    --mapa-superficie: var(--color-bg-container);
+    --mapa-container: var(--color-bg-container);
+    --mapa-espaco: var(--color-bg-global);
+    --mapa-borda: var(--color-border);
+    --mapa-borda-suave: var(--color-border);
+    --mapa-divisor: var(--color-border);
+    --mapa-texto: var(--color-text-main);
+    --mapa-texto-forte: var(--color-text-main);
+    --mapa-texto-titulo: var(--color-text-main);
+    --mapa-texto-suave: var(--color-text-muted);
+    --mapa-hover: color-mix(in srgb, var(--color-text-main) 8%, var(--color-bg-container));
+}
+
+html[data-theme="dark"] {
+    --mapa-superficie: #151B23;
+    --mapa-container: #11161D;
+    --mapa-espaco: #0D1218;
+    --mapa-borda: #2A3543;
+    --mapa-borda-suave: #263241;
+    --mapa-divisor: #334155;
+    --mapa-texto: #CBD5E1;
+    --mapa-texto-forte: #E2E8F0;
+    --mapa-texto-titulo: #F8FAFC;
+    --mapa-texto-suave: #94A3B8;
+    --mapa-hover: #202A36;
+}
+
+/* ------------------------------------------------------------
  * Seletor de áreas (Notas | Mapa Mental).
  * Flutuante: NÃO participa do fluxo do modal de notas (parity visual intacta).
  * ------------------------------------------------------------ */
@@ -51,11 +88,11 @@
 .app-areas [data-app-area]:focus-visible { outline: 2px solid var(--color-neon-blue); outline-offset: 2px; }
 
 html[data-theme="dark"] .app-areas {
-    background: rgba(17, 22, 29, 0.92);
-    border-color: #2A3543;
+    background: color-mix(in srgb, var(--mapa-container) 92%, transparent);
+    border-color: var(--mapa-borda);
 }
-html[data-theme="dark"] .app-areas [data-app-area] { color: #94A3B8; }
-html[data-theme="dark"] .app-areas [data-app-area]:hover { color: #E2E8F0; }
+html[data-theme="dark"] .app-areas [data-app-area] { color: var(--mapa-texto-suave); }
+html[data-theme="dark"] .app-areas [data-app-area]:hover { color: var(--mapa-texto-forte); }
 
 /* ------------------------------------------------------------
  * Área do Mapa Mental (segunda área trocável).
@@ -67,8 +104,8 @@ html[data-theme="dark"] .app-areas [data-app-area]:hover { color: #E2E8F0; }
     z-index: 900;
     display: flex;
     flex-direction: column;
-    background: var(--color-bg-global);
-    color: var(--color-text-main);
+    background: var(--mapa-espaco);
+    color: var(--mapa-texto);
 }
 
 .mapa-area[hidden] { display: none !important; }
@@ -81,11 +118,11 @@ html[data-theme="dark"] .app-areas [data-app-area]:hover { color: #E2E8F0; }
     gap: 12px;
     flex: none;
     padding: 14px 18px;
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-bg-container);
+    border-bottom: 1px solid var(--mapa-borda);
+    background: var(--mapa-superficie);
 }
 
-.mapa-topbar-titulo { font-size: 16px; font-weight: 600; }
+.mapa-topbar-titulo { font-size: 16px; font-weight: 600; color: var(--mapa-texto-titulo); }
 .mapa-topbar-espaco { flex: 1; }
 
 .mapa-canvas-wrap {
@@ -93,7 +130,7 @@ html[data-theme="dark"] .app-areas [data-app-area]:hover { color: #E2E8F0; }
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    background: var(--color-bg-global);
+    background: var(--mapa-espaco);
     touch-action: none;
 }
 
@@ -110,15 +147,11 @@ html[data-theme="dark"] .app-areas [data-app-area]:hover { color: #E2E8F0; }
     color: var(--color-text-muted);
 }
 
-.mapa-vazio-titulo { font-size: 16px; font-weight: 600; color: var(--color-text-main); }
+.mapa-vazio-titulo { font-size: 16px; font-weight: 600; color: var(--mapa-texto-forte); }
 .mapa-vazio-dica { font-size: 13px; }
 
-/* Tema escuro: acompanha as superfícies do app (mesmos tons do modal de notas). */
-html[data-theme="dark"] .mapa-area { background: #0B0F14; color: #CBD5E1; }
-html[data-theme="dark"] .mapa-topbar { background: #11161D; border-bottom-color: #2A3543; }
-html[data-theme="dark"] .mapa-topbar-titulo { color: #E2E8F0; }
-html[data-theme="dark"] .mapa-canvas-wrap { background: #0B0F14; }
-html[data-theme="dark"] .mapa-vazio-titulo { color: #E2E8F0; }
+/* Tema escuro: as superfícies/textos vêm dos tokens `--mapa-*` acima
+ * (espelho exato do tema de Notas — ver bloco de tokens no topo). */
 
 @media (max-width: 480px) {
     .app-areas { bottom: 12px; }
@@ -274,16 +307,19 @@ html[data-theme="dark"] .mapa-vazio-titulo { color: #E2E8F0; }
 .mapa-aberto-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
 .mapa-conexoes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 
-html[data-theme="dark"] .mapa-btn { background: #11161D; border-color: #2A3543; color: #CBD5E1; }
+html[data-theme="dark"] .mapa-btn { background: var(--mapa-container); border-color: var(--mapa-borda); color: var(--mapa-texto); }
+html[data-theme="dark"] .mapa-btn:hover,
+html[data-theme="dark"] .mapa-btn:focus-visible { background: var(--mapa-hover); border-color: var(--mapa-divisor); color: var(--mapa-texto-forte); }
 html[data-theme="dark"] .mapa-busca,
 html[data-theme="dark"] .mapa-ordem,
-html[data-theme="dark"] .mapa-form-campo { background: #11161D; border-color: #2A3543; color: #CBD5E1; }
+html[data-theme="dark"] .mapa-form-campo { background: var(--mapa-container); border-color: var(--mapa-borda); color: var(--mapa-texto); }
 html[data-theme="dark"] .mapa-titulo-atual,
 html[data-theme="dark"] .mapa-item-nome,
-html[data-theme="dark"] .mapa-aberto-nome { color: #E2E8F0; }
-html[data-theme="dark"] .mapa-item { background: #11161D; border-color: #2A3543; }
-html[data-theme="dark"] .mapa-chip { background: #11161D; border-color: #2A3543; color: #CBD5E1; }
-html[data-theme="dark"] .mapa-item-acao { border-color: #2A3543; color: #94A3B8; }
+html[data-theme="dark"] .mapa-aberto-nome { color: var(--mapa-texto-forte); }
+html[data-theme="dark"] .mapa-item { background: var(--mapa-container); border-color: var(--mapa-borda); }
+html[data-theme="dark"] .mapa-chip { background: var(--mapa-container); border-color: var(--mapa-divisor); color: var(--mapa-texto-suave); }
+html[data-theme="dark"] .mapa-chip:hover { background: var(--mapa-hover); color: var(--mapa-texto-forte); }
+html[data-theme="dark"] .mapa-item-acao { border-color: var(--mapa-borda); color: var(--mapa-texto-suave); }
 
 /* ------------------------------------------------------------
  * Canvas infinito (Fase 2): mundo com transform, nós e minimapa.
@@ -326,12 +362,12 @@ html[data-theme="dark"] .mapa-item-acao { border-color: #2A3543; color: #94A3B8;
     min-height: 44px;
     width: 180px;
     padding: 8px 12px;
-    border: 1px solid var(--color-border);
+    border: var(--mapa-no-borda-espessura, 1px) solid var(--mapa-no-borda, var(--color-border));
     border-radius: 10px;
-    background: var(--color-bg-container);
-    color: var(--color-text-main);
+    background: var(--mapa-no-fundo, var(--color-bg-container));
+    color: var(--mapa-no-cor, var(--color-text-main));
     box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
-    font-size: 13px;
+    font-size: var(--mapa-no-tamanho, 13px);
     line-height: 1.3;
     user-select: none;
 }
@@ -363,11 +399,11 @@ html[data-theme="dark"] .mapa-item-acao { border-color: #2A3543; color: #94A3B8;
 
 html[data-theme="dark"] .mapa-canvas {
     background:
-        radial-gradient(circle at 1px 1px, #2A3543 1px, transparent 0) 0 0 / 24px 24px,
-        #0B0F14;
+        radial-gradient(circle at 1px 1px, var(--mapa-divisor) 1px, transparent 0) 0 0 / 24px 24px,
+        var(--mapa-espaco);
 }
-html[data-theme="dark"] .mapa-no { background: #11161D; border-color: #2A3543; color: #CBD5E1; }
-html[data-theme="dark"] .mapa-minimapa { background: rgba(17, 22, 29, .92); border-color: #2A3543; }
+html[data-theme="dark"] .mapa-no { background: var(--mapa-no-fundo, var(--mapa-container)); border-color: var(--mapa-no-borda, var(--mapa-borda)); color: var(--mapa-no-cor, var(--mapa-texto)); }
+html[data-theme="dark"] .mapa-minimapa { background: color-mix(in srgb, var(--mapa-superficie) 92%, transparent); border-color: var(--mapa-borda); }
 
 /* ------------------------------------------------------------
  * Nós (Fase 3): seleção, edição, alternador, cadeado, alça e laço.
@@ -431,7 +467,7 @@ html[data-theme="dark"] .mapa-minimapa { background: rgba(17, 22, 29, .92); bord
     z-index: 4;
 }
 
-html[data-theme="dark"] .mapa-no-editor { background: #0B0F14; }
+html[data-theme="dark"] .mapa-no-editor { background: var(--mapa-espaco); }
 
 /* ------------------------------------------------------------
  * Fase 4: conteúdo do nó (ícone/check, tags, prioridade, painel).
@@ -491,9 +527,9 @@ html[data-theme="dark"] .mapa-no-editor { background: #0B0F14; }
 .mapa-painel-ponte { margin-top: 4px; }
 .mapa-painel-acoes { display: flex; gap: 8px; justify-content: flex-end; }
 
-html[data-theme="dark"] .mapa-painel { background: #11161D; border-color: #2A3543; }
-html[data-theme="dark"] .mapa-painel-entrada { background: #0B0F14; border-color: #2A3543; color: #CBD5E1; }
-html[data-theme="dark"] .mapa-emoji { border-color: #2A3543; }
+html[data-theme="dark"] .mapa-painel { background: var(--mapa-superficie); border-color: var(--mapa-borda); }
+html[data-theme="dark"] .mapa-painel-entrada { background: var(--mapa-espaco); border-color: var(--mapa-borda-suave); color: var(--mapa-texto); }
+html[data-theme="dark"] .mapa-emoji { border-color: var(--mapa-borda); }
 
 
 /* ------------------------------------------------------------
@@ -514,7 +550,7 @@ html[data-theme="dark"] .mapa-emoji { border-color: #2A3543; }
     color: var(--color-text-main); background: var(--color-bg-container);
     border: 1px solid var(--color-border); border-radius: 8px;
 }
-html[data-theme="dark"] .mapa-canvas-controles .mapa-ordem { background: #11161D; border-color: #2A3543; color: #CBD5E1; }
+html[data-theme="dark"] .mapa-canvas-controles .mapa-ordem { background: var(--mapa-container); border-color: var(--mapa-borda); color: var(--mapa-texto); }
 
 
 /* ------------------------------------------------------------
@@ -555,8 +591,8 @@ html[data-theme="dark"] .mapa-canvas-controles .mapa-ordem { background: #11161D
     background: var(--color-bg-container);
 }
 
-html[data-theme="dark"] .mapa-conexao-texto { stroke: #0B0F14; fill: #CBD5E1; }
-html[data-theme="dark"] .mapa-cx-menu { background: #11161D; border-color: #2A3543; }
+html[data-theme="dark"] .mapa-conexao-texto { stroke: var(--mapa-espaco); fill: var(--mapa-texto); }
+html[data-theme="dark"] .mapa-cx-menu { background: var(--mapa-superficie); border-color: var(--mapa-borda); }
 
 
 /* ------------------------------------------------------------
@@ -613,6 +649,285 @@ html[data-theme="dark"] .mapa-cx-menu { background: #11161D; border-color: #2A35
     stroke-linecap: round;
     pointer-events: none;
 }
-html[data-theme="dark"] .mapa-ramo { stroke: #3A4657; }
+html[data-theme="dark"] .mapa-ramo { stroke: var(--mapa-divisor); }
+
+/* ------------------------------------------------------------
+ * Layout automático (Fase 8): transição suave ao relayout e controles de espaçamento.
+ * A transição é OPT-IN (classe `.mapa-transicao` só durante o relayout) para não
+ * atrapalhar o arrasto/redimensionamento (que escrevem `left/top` a cada frame).
+ * ------------------------------------------------------------ */
+#mapaNos.mapa-transicao .mapa-no { transition: left .24s ease, top .24s ease; }
+
+.mapa-espacamento { display: inline-flex; align-items: center; gap: 6px; }
+.mapa-campo-numero {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+.mapa-campo-numero input {
+    width: 64px;
+    padding: 4px 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-bg-container);
+    color: var(--color-text-main);
+    font: inherit;
+    font-size: 12px;
+}
+
+.mapa-confirmacao {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-neon-orange);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--color-neon-orange) 12%, transparent);
+}
+.mapa-confirmacao-texto { font-size: 13px; color: var(--color-text-main); }
+
+html[data-theme="dark"] .mapa-campo-numero input { background: var(--mapa-container); border-color: var(--mapa-borda); color: var(--mapa-texto); }
+
+/* ------------------------------------------------------------
+ * Editor visual (Fase 9): formas, fontes, alinhamento e controles de estilo.
+ * As cores/fundo/borda/tamanho vêm das CSS vars aplicadas por nó (dataset do estilo
+ * efetivo: nó > nível > tema) — aqui ficam só as formas e as opções discretas.
+ * ------------------------------------------------------------ */
+.mapa-no-forma-pilula { border-radius: 999px; }
+.mapa-no-forma-elipse { border-radius: 50%; }
+.mapa-no-forma-nota { border-radius: 2px 12px 12px 12px; }
+.mapa-no-forma-retangulo { border-radius: 2px; }
+
+.mapa-no-fonte-serif { font-family: Georgia, 'Times New Roman', serif; }
+.mapa-no-fonte-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.mapa-no-fonte-cursiva { font-family: 'Segoe Script', 'Comic Sans MS', cursive; }
+
+.mapa-no-alinha-centro { justify-content: center; text-align: center; }
+.mapa-no-alinha-direita { justify-content: flex-end; text-align: right; }
+
+.mapa-no-negrito { font-weight: 700; }
+.mapa-no-italico { font-style: italic; }
+
+.mapa-estilo-nivel { position: relative; }
+.mapa-estilo-nivel-titulo {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    padding: 6px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-bg-container);
+}
+.mapa-estilo-nivel[open] .mapa-estilo-nivel-titulo { margin-bottom: 6px; }
+.mapa-estilo-nivel-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 2px; }
+.mapa-campo-cor { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--color-text-muted); }
+.mapa-campo-cor input[type="color"] {
+    width: 32px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: none;
+    cursor: pointer;
+}
+
+.mapa-painel-estilo { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.mapa-painel-subtitulo { margin: 0; font-size: 13px; font-weight: 600; color: var(--color-text-main); }
+.mapa-painel-cor { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--color-text-muted); }
+.mapa-painel-cor input[type="color"] {
+    width: 32px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: none;
+    cursor: pointer;
+}
+
+html[data-theme="dark"] .mapa-estilo-nivel-titulo { background: var(--mapa-container); border-color: var(--mapa-borda); }
+html[data-theme="dark"] .mapa-campo-cor input[type="color"],
+html[data-theme="dark"] .mapa-painel-cor input[type="color"] { border-color: var(--mapa-borda); }
+
+/* ------------------------------------------------------------
+ * Atalhos configuráveis (Fase 10): painel de configuração.
+ * ------------------------------------------------------------ */
+.mapa-atalhos {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 320px;
+    overflow: auto;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-bg-container);
+}
+.mapa-atalhos-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mapa-atalhos-titulo { margin: 0; font-size: 14px; font-weight: 600; color: var(--color-text-main); }
+.mapa-atalhos-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.mapa-atalhos-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 8px; }
+.mapa-atalhos-rotulo { flex: 1; font-size: 13px; color: var(--color-text-main); }
+.mapa-atalhos-teclas {
+    font: inherit;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    background: color-mix(in srgb, var(--color-border) 35%, transparent);
+    border-radius: 6px;
+    padding: 2px 8px;
+}
+.mapa-atalhos-aviso { margin: 0; font-size: 12px; color: var(--color-neon-red); }
+html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); border-color: var(--mapa-borda); }
+
+/* ------------------------------------------------------------
+ * Undo/Redo (Fase 11): estado dos botões conforme a pilha.
+ * ------------------------------------------------------------ */
+.mapa-btn:disabled,
+.mapa-btn[aria-disabled="true"] {
+    opacity: .45;
+    cursor: not-allowed;
+}
+.mapa-btn:disabled:hover,
+.mapa-btn[aria-disabled="true"]:hover {
+    border-color: var(--color-border);
+    color: inherit;
+}
+
+/* ------------------------------------------------------------
+ * Barras padronizadas (Fase 12): FERRAMENTAS (fixa) + FORMATAÇÃO (contextual).
+ * MESMO padrão/cores da barra de Notas (.notes-toolbar + .toolbar-btn):
+ * uma linha com rolagem horizontal, grupos separados por divisores.
+ * ------------------------------------------------------------ */
+.mapa-toolbar,
+.mapa-format-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: none;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--mapa-borda);
+    background: var(--mapa-superficie);
+    scrollbar-width: thin;
+}
+.mapa-format-bar { background: var(--mapa-container); }
+.mapa-toolbar[hidden],
+.mapa-format-bar[hidden] { display: none !important; }
+.mapa-tb-grupo { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+.mapa-tb-divisor { width: 1px; height: 24px; margin: 0 6px; background: var(--mapa-divisor); flex: 0 0 auto; }
+.mapa-tb-btn { font-size: 13px; }
+.mapa-tb-campos { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.mapa-tb-mais { position: relative; flex: 0 0 auto; }
+.mapa-tb-mais-resumo { cursor: pointer; list-style: none; padding: 6px 10px; border-radius: 6px; color: var(--color-text-label); }
+.mapa-tb-mais-resumo::-webkit-details-marker { display: none; }
+.mapa-tb-mais-resumo:hover { color: var(--color-neon-blue); background: var(--color-tb-hover); }
+.mapa-tb-mais-lista {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 2400;
+    display: flex;
+    flex-direction: column;
+    min-width: 176px;
+    padding: 6px;
+    border: 1px solid var(--mapa-borda);
+    border-radius: 10px;
+    background: var(--mapa-container);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .18);
+}
+.mapa-tb-mais-lista .mapa-tb-btn { justify-content: flex-start; width: 100%; min-height: 34px; font-size: 13px; }
+
+/* Menu contextual (F12): comandos ESPECÍFICOS DE CARD (botão direito / toque longo). */
+.mapa-menu {
+    position: fixed;
+    z-index: 2400;
+    display: flex;
+    flex-direction: column;
+    min-width: 216px;
+    max-height: 340px;
+    overflow: auto;
+    padding: 6px;
+    border: 1px solid var(--mapa-borda);
+    border-radius: 10px;
+    background: var(--mapa-container);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .2);
+}
+.mapa-menu-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 34px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--mapa-texto);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+.mapa-menu-item:hover,
+.mapa-menu-item:focus-visible { background: var(--mapa-hover); color: var(--mapa-texto-forte); }
+.mapa-menu-item-perigo { color: var(--color-neon-red); }
+.mapa-menu-item-perigo:hover { background: color-mix(in srgb, var(--color-neon-red) 12%, transparent); color: var(--color-neon-red); }
+.mapa-menu-item-fechar { margin-top: 4px; border-top: 1px solid var(--mapa-divisor); border-radius: 0 0 6px 6px; color: var(--mapa-texto-suave); }
+
+/* Editor da barra (F12). */
+.mapa-barra-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 320px;
+    overflow: auto;
+    padding: 10px 12px;
+    border: 1px solid var(--mapa-borda);
+    border-radius: 12px;
+    background: var(--mapa-superficie);
+}
+.mapa-barra-editor-lista { display: flex; flex-wrap: wrap; gap: 10px; }
+.mapa-barra-editor-grupo { display: flex; flex-direction: column; gap: 4px; min-width: 172px; }
+.mapa-barra-editor-item { display: flex; align-items: center; gap: 4px; }
+.mapa-barra-editor-nome { flex: 1; font-size: 12px; color: var(--mapa-texto); }
+
+/* Paleta de cores do mapa (Fase 12) — MESMO padrão/visual da paleta de Notas. */
+.mapa-cor-paleta {
+    z-index: 2500;
+    display: grid;
+    gap: 8px;
+    width: 320px;
+    padding: 10px;
+    border: 1px solid var(--mapa-borda);
+    border-radius: 10px;
+    background: var(--mapa-container);
+    color: var(--mapa-texto);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .22);
+}
+.mapa-cor-grade { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
+.mapa-cor-grade button { width: 100%; aspect-ratio: 1; padding: 0; border: 1px solid var(--mapa-borda); border-radius: 3px; cursor: pointer; }
+.mapa-cor-grade button:hover { transform: scale(1.15); }
+.mapa-cor-grade button[aria-pressed="true"] { outline: 2px solid var(--color-neon-blue); outline-offset: 1px; }
+.mapa-cor-recentes { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.mapa-cor-recentes-rotulo { flex-basis: 100%; font-size: 11px; color: var(--mapa-texto-suave); }
+.mapa-cor-recentes button { width: 20px; height: 20px; padding: 0; border: 1px solid var(--mapa-borda); border-radius: 50%; cursor: pointer; }
+.mapa-cor-recentes input[type="color"] { width: 32px; height: 26px; padding: 0; border: 1px solid var(--mapa-borda); border-radius: 6px; background: none; cursor: pointer; }
+.mapa-cor-acoes { display: flex; justify-content: space-between; gap: 8px; }
+.mapa-cor-reset,
+.mapa-cor-aplicar {
+    min-height: 30px;
+    padding: 4px 12px;
+    border: 1px solid var(--mapa-borda);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--mapa-texto);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+.mapa-cor-aplicar { background: var(--color-neon-blue); border-color: var(--color-neon-blue); color: #fff; }
 
 /* 🎨 [FIM: MAPA/ESTILO - ÁREA, CANVAS, NÓS, PAINEL E CONEXÕES] */

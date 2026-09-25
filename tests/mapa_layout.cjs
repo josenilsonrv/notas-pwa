@@ -4,6 +4,9 @@
  * Cobre: níveis ilimitados + identificação visual por profundidade (data-mapa-nivel),
  * troca de layout (esquerda→direita, direita→esquerda, bilateral, vertical, livre) e
  * o cuidado de recolher um ramo sem esconder o nó selecionado.
+ * FASE 8 - Layout automático: sem sobreposição com dimensões REAIS, espaçamento
+ * configurável (por mapa, com limites), confirmação antes de descartar posições manuais
+ * e persistência do modo/espaçamento.
  */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -73,6 +76,21 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       return mapa;
     });
     const trocarLayout = layout => page.selectOption('#mapaLayout', layout);
+    const clicarAcao = acao => page.evaluate(a => {
+      let el = document.querySelector('[data-mapa-acao="' + a + '"]');
+      if (!el) {
+        // Ações de CARD (F12) vivem no MENU CONTEXTUAL: abre no nó selecionado e tenta de novo.
+        const sel = [...(window.app.mapaSelecao || [])];
+        const id = sel[sel.length - 1];
+        const noEl = id ? document.querySelector('#mapaNos .mapa-no[data-mapa-no-id="' + id + '"]') : null;
+        if (noEl) {
+          noEl.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 120, clientY: 120 }));
+          el = document.querySelector('[data-mapa-acao="' + a + '"]');
+        }
+      }
+      if (!el) throw new Error('ação não encontrada: ' + a);
+      el.click();
+    }, acao);
 
     // ---------------------------------------------------------------- profundidade + níveis visuais
     const niveis = await niveisDom();
@@ -170,8 +188,108 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     });
     assert.deepEqual(recolher.selecao, [recolher.idPai], 'ao recolher, a seleção vai para o nó recolhido');
 
+    // ---------------------------------------------------------------- FASE 8: layout sem sobreposição
+    // Um título longo deixa a caixa do nó mais alta — o layout precisa usar a dimensão REAL
+    // (medida no DOM) para não sobrepor os irmãos.
+    await trocarLayout('bilateral');
+    await page.evaluate(() => {
+      const g = window.app.mapaCanvasGrafo;
+      const alvo = g.nos.find(n => n.titulo === 'Objetivo');
+      window.MapaMentalModelo.atualizarTitulo(g, alvo.id, 'Objetivo com título bastante longo para quebrar em várias linhas '.repeat(4));
+      window.app.renderArea();
+    });
+    const retangulos = () => page.evaluate(() => window.app.mapaCanvasGrafo.nos.map(no => {
+      const el = document.querySelector('#mapaNos .mapa-no[data-mapa-no-id="' + no.id + '"]');
+      const pos = no.posicao || { x: 0, y: 0 };
+      return {
+        id: no.id, x: pos.x, y: pos.y,
+        largura: el ? el.offsetWidth : 180, altura: el ? el.offsetHeight : 44
+      };
+    }));
+    const sobreposicao = lista => {
+      let pior = 0;
+      for (let i = 0; i < lista.length; i += 1) {
+        for (let j = i + 1; j < lista.length; j += 1) {
+          const a = lista[i];
+          const b = lista[j];
+          const intX = Math.min(a.x + a.largura, b.x + b.largura) - Math.max(a.x, b.x);
+          const intY = Math.min(a.y + a.altura, b.y + b.altura) - Math.max(a.y, b.y);
+          if (intX > 0 && intY > 0) pior = Math.max(pior, Math.min(intX, intY));
+        }
+      }
+      return pior;
+    };
+    for (const layout of ['bilateral', 'esquerda-direita', 'arvore-vertical', 'organograma']) {
+      await trocarLayout(layout);
+      const lista = await retangulos();
+      assert.equal(sobreposicao(lista), 0, 'layout ' + layout + ' não sobrepõe nós (dimensões reais)');
+    }
+
+    // ---------------------------------------------------------------- FASE 8: espaçamento configurável
+    await trocarLayout('esquerda-direita');
+    const distanciaIrmaos = () => page.evaluate(() => {
+      const g = window.app.mapaCanvasGrafo;
+      const raiz = g.nos.find(n => !n.paiId);
+      const filhos = window.MapaMentalModelo.listarFilhos(g, raiz.id);
+      if (filhos.length < 2) return null;
+      return Math.abs(filhos[1].posicao.y - filhos[0].posicao.y);
+    });
+    const espacoAntes = await distanciaIrmaos();
+    await page.fill('#mapaEspacoNos', '120');
+    await clicarAcao('espacamento-aplicar');
+    const espacoDepois = await distanciaIrmaos();
+    assert.ok(espacoDepois > espacoAntes, 'aumentar "entre nós" afasta os irmãos (' + espacoAntes + ' -> ' + espacoDepois + ')');
+    const espacoPersistido = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem('notas-pwa-mapa-' + window.app.mapaAbertaId)).espacamento);
+    assert.equal(espacoPersistido.nos, 120, 'espaçamento persistido no grafo');
+    // Limites: valores absurdos são limitados (0..400).
+    await page.evaluate(() => window.app.mapaDefinirEspacamento({ nos: 9999, niveis: -5 }));
+    const espacoLimite = await page.evaluate(() => window.app.mapaCanvasGrafo.espacamento);
+    assert.equal(espacoLimite.nos, 400, 'espaçamento acima do teto é limitado');
+    assert.equal(espacoLimite.niveis, 0, 'espaçamento abaixo do piso é limitado');
+
+    // ---------------------------------------------------------------- FASE 8: manual → automático (confirmação)
+    await page.evaluate(() => {
+      const g = window.app.mapaCanvasGrafo;
+      g.posicionamento = 'manual';
+      const alvo = g.nos.find(n => n.titulo === 'Tarefas');
+      alvo.posicao = { x: 999, y: 999 };
+    });
+    await trocarLayout('bilateral');
+    assert.ok(await page.evaluate(() => Boolean(document.querySelector('.mapa-confirmacao'))),
+      'troca manual→automático pede confirmação');
+    await clicarAcao('layout-confirmar');
+    const aposConfirmar = await page.evaluate(() => ({
+      posicionamento: window.app.mapaCanvasGrafo.posicionamento,
+      layout: window.app.mapaCanvasGrafo.layout,
+      temManual: window.app.mapaCanvasGrafo.nos.some(n => n.posicao && n.posicao.x === 999),
+      confirmacao: Boolean(document.querySelector('.mapa-confirmacao'))
+    }));
+    assert.equal(aposConfirmar.posicionamento, 'auto', 'confirmou: volta ao modo automático');
+    assert.equal(aposConfirmar.layout, 'bilateral', 'layout confirmado aplicado');
+    assert.equal(aposConfirmar.temManual, false, 'posições manuais descartadas');
+    assert.equal(aposConfirmar.confirmacao, false, 'barra de confirmação removida');
+
+    // ---------------------------------------------------------------- FASE 8: layout livre respeita posições
+    const livre = await page.evaluate(() => {
+      const g = window.app.mapaCanvasGrafo;
+      const alvo = g.nos.find(n => n.titulo === 'Tarefas');
+      window.MapaMentalModelo.moverNoLivre(g, alvo.id, { x: 700, y: 40 });
+      window.app.mapaDefinirLayout('livre');
+      return {
+        layout: g.layout,
+        posicao: g.nos.find(n => n.titulo === 'Tarefas').posicao
+      };
+    });
+    assert.equal(livre.layout, 'livre', 'layout livre aplicado');
+    assert.deepEqual(livre.posicao, { x: 700, y: 40 }, 'layout livre mantém as posições gravadas');
+    const recarregado = await page.evaluate(() =>
+      window.MapaMentalStore.obterGrafo(window.app.mapaAbertaId));
+    assert.equal(recarregado.layout, 'livre', 'layout persistido no grafo');
+    assert.equal(recarregado.espacamento.nos, 400, 'espaçamento persistido no grafo');
+
     assert.deepEqual(erros, []);
-    console.log('OK: hierarquia (níveis + layouts + recolher seguro)');
+    console.log('OK: hierarquia (níveis + layouts + recolher seguro + F8 layout automático)');
   } finally {
     await browser.close();
   }
