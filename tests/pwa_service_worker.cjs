@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - PWA SERVICE WORKER]
 /*
  * Deploy/PWA: o Service Worker precisa ser servido como JavaScript NA RAIZ e nao
  * cair no fallback de SPA do host. Um sw.js respondido como text/html (status 200)
@@ -68,3 +69,4 @@ const servidor=http.createServer((req,res)=>{
   console.log('OK: sw.js na raiz servido como JavaScript (fora do fallback de SPA), registro com updateViaCache none e app inicia controlado');
  }finally{await browser.close();servidor.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - PWA SERVICE WORKER]

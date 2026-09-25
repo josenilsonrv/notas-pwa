@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// 🧪 [INÍCIO: SCRIPT - INVENTARIO-REGRAS]
 /**
  * Inventario de regras do motor de notas + matriz de rastreabilidade.
  *
@@ -74,3 +75,4 @@ module.exports = {
   metodos, funcoesInternas, comandos, comandosAtalho, teclas, teclasLista,
   eventos, atributos, classesCss, attrsCss, modelo, propsModelo
 };
+// 🧪 [FIM: SCRIPT - INVENTARIO-REGRAS]

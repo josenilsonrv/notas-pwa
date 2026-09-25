@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// 🧪 [INÍCIO: SCRIPT - GERAR-RASTREABILIDADE]
 /**
  * Gera docs/INVENTARIO-REGRAS.md (unidades de comportamento do motor) e
  * docs/RASTREABILIDADE.md (regra -> fonte -> testes que cobrem -> status).
@@ -190,3 +191,4 @@ if (require.main === module) {
   Object.entries(lacunas).forEach(([categoria, itens]) => console.log(categoria + ': ' + (json[categoria].length) + ' regras, ' + itens.length + ' lacunas'));
   console.log('testes na origem: ' + m.testes.length + ' | testes ja no PWA: ' + m.testesPWA.length);
 }
+// 🧪 [FIM: SCRIPT - GERAR-RASTREABILIDADE]

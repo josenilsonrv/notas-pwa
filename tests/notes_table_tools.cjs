@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES TABLE TOOLS]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_table_tools.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -56,3 +57,4 @@ const {chromium}=require('playwright');
  assert.deepEqual(errors,[]);console.log('OK: formulas, recalculation, point-and-click references, staged cell colors, dimensions, drag, undo and reopen');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES TABLE TOOLS]

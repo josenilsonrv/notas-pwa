@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES CHECKLIST ENTER]
 /*
  * Enter em lista com check + numerada: a quebra mantém a continuidade (novo item
  * com check/lista e numeração seguinte) e o FOCO vai para o item novo (o anterior
@@ -57,3 +58,4 @@ const {chromium}=require('playwright');
  console.log('OK: Enter em lista com check+numerada mantem continuidade e foca o item seguinte');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES CHECKLIST ENTER]

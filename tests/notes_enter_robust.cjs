@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES ENTER ROBUST]
 /*
  * Enter que "nao pega": quando o cursor fica FORA de uma linha (clique depois do
  * ultimo bloco, editor vazio, no solto), o keydown saia antes do preventDefault e
@@ -71,3 +72,4 @@ const {chromium}=require('playwright');
  console.log('OK: Enter sempre quebra (cursor fora de linha e falha do motor)');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES ENTER ROBUST]

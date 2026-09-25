@@ -2,6 +2,7 @@
 
 > **Como ler:** cada seção `# Nome do Arquivo` lista os blocos por **fluxo lógico** (não pela ordem física). Use `[Linhas XX-YY ~]` para localizar, a **âncora** (1º comentário real) para confirmar e a **assinatura** para pedir o trecho exato.
 > **Manutenção:** ao alterar código, atualize as linhas `~` e as assinaturas afetadas.
+> **⚠️ Regras obrigatórias:** antes de editar, leia **`.clinerules/marcacao-e-arquitetura.md`** (padrão de marcação + Regra de Ouro de atualizar esta bússola).
 
 **Partes:** `1) Boot/Shell` ✅ · `2) Motor Notas` ✅ · `3) Tabelas` ✅ · `4) Mapa Mental` ✅ · `5) Testes/Ferramentas` ✅
 **Ordem de carga (`index.html`):** `notes/editor.js` → `notes/table-math.js` → `notes/extras.js` → `notes/tables.js` → `app.js` → `mapa/*.js`.
@@ -13,27 +14,27 @@
 **Propósito:** Casca do PWA. Define o tema antes do 1º paint, os contêineres das duas áreas (Notas | Mapa Mental), a toolbar/modal de notas, e carrega todos os módulos JS + registra o Service Worker.
 
 ## Implementação: Boot sem flash e auto-recuperação (watchdog)
-- **[Linhas 22-34 ~]** `// Resolve o tema antes do CSS carregar para evitar flash visual no primeiro paint.` -> `(() => { ... document.documentElement.dataset.theme = ... })();`
-- **[Linhas 37-44 ~]** `<!-- Auto-recuperação: aparece só se o app não iniciar (cache/Service Worker antigo).` -> `<div id="bootGuard" class="app-boot-guard" hidden role="alert">`
-- **[Linhas 45-82 ~]** `/* Watchdog de inicialização: se o app não ficar pronto em 6 s (ou der erro),` -> `(function () { var guard = ...; window.setTimeout(mostrar, 6000); ... })();`
+- **[Linhas 22-39 ~]** `<!-- 🚀 [INÍCIO: PWA - BOOT SEM FLASH (TEMA ANTES DO CSS E WATCHDOG)] -->` -> `// Resolve o tema antes do CSS carregar para evitar flash visual no primeiro paint.` (script inline)
+- **[Linhas 40-47 ~]** `<!-- Auto-recuperação: aparece só se o app não iniciar (cache/Service Worker antigo).` -> `<div id="bootGuard" class="app-boot-guard" hidden role="alert">`
+- **[Linhas 48-85 ~]** `/* Watchdog de inicialização: se o app não ficar pronto em 6 s (ou der erro),` -> `(function () { var guard = ...; window.setTimeout(mostrar, 6000); ... })();`
 
 ## Implementação: Estrutura das áreas (Notas | Mapa Mental)
-- **[Linhas 83-91 ~]** `<!-- Header Mobile -->` -> `<header class="app-header border-b border-border pt-4 pb-4 px-4">`
-- **[Linhas 93-102 ~]** `<!-- Main Editor Container -->` -> `<main>` + `<nav id="appAreas" role="tablist">` + `<section id="mapaArea" hidden>`
+- **[Linhas 86-95 ~]** `<!-- 🎨 [INÍCIO: PWA - SHELL (HEADER, ÁREAS E MODAL DE NOTAS)] -->` -> `<header class="app-header border-b border-border pt-4 pb-4 px-4">`
+- **[Linhas 96-107 ~]** `<!-- Main Editor Container -->` -> `<main>` + `<nav id="appAreas" role="tablist">` + `<section id="mapaArea" hidden>`
 
 ## Implementação: Modal de Notas (cabeçalho → chips → toolbar → editor)
-- **[Linhas 103-194 ~]** `<!-- Notes Modal (Always visible in this PWA) -->` -> `<div class="notes-drawer active" id="notesModalBackdrop">`
-  - **[Linhas 106-131 ~]** (cabeçalho) -> `<div class="notes-modal-header">` · `#themeToggle`, `#notesHeaderCollapseBtn`, `#notesFullscreenBtn`, `#notesModalClose`
-  - **[Linhas 133 ~]** (sem comentário) -> `<nav class="notes-context-nav" id="notesContextNav">`
-  - **[Linhas 135-183 ~]** (toolbar) -> `<div class="notes-toolbar" id="notesToolbar">` (botões `data-command`, `data-notes-color`)
-  - **[Linhas 185-187 ~]** (editor) -> `<div class="notes-editor" id="notesEditor" contenteditable="true">`
-  - **[Linhas 189-191 ~]** (rodapé/status) -> `<button id="notesSaveStatus" role="status">`
-- **[Linhas 196 ~]** `(sem comentário de ancoragem)` -> `<div id="appToastRegion" class="app-toast-region">`
+- **[Linhas 108-199 ~]** `<!-- Notes Modal (Always visible in this PWA) -->` -> `<div class="notes-drawer active" id="notesModalBackdrop">`
+  - **[Linhas 111-136 ~]** (cabeçalho) -> `<div class="notes-modal-header">` · `#themeToggle`, `#notesHeaderCollapseBtn`, `#notesFullscreenBtn`, `#notesModalClose`
+  - **[Linhas 138 ~]** (sem comentário) -> `<nav class="notes-context-nav" id="notesContextNav">`
+  - **[Linhas 140-188 ~]** (toolbar) -> `<div class="notes-toolbar" id="notesToolbar">` (botões `data-command`, `data-notes-color`)
+  - **[Linhas 190-192 ~]** (editor) -> `<div class="notes-editor" id="notesEditor" contenteditable="true">`
+  - **[Linhas 194-196 ~]** (rodapé/status) -> `<button id="notesSaveStatus" role="status">`
+- **[Linhas 200 ~]** `(sem comentário de ancoragem)` -> `<div id="appToastRegion" class="app-toast-region">`
 
 ## Implementação: Carga de módulos e registro do Service Worker
-- **[Linhas 198-202 ~]** `(sem comentário de ancoragem)` -> `<script src="./notes/editor.js"> … <script src="./app.js">`
-- **[Linhas 203-209 ~]** `(sem comentário de ancoragem)` -> `<script src="./mapa/mapa-modelo.js"> … <script src="./mapa/mapa.js">`
-- **[Linhas 210-265 ~]** `/* Service Worker.` -> `(function () { var SW_URL = new URL('sw.js', ...); … })();`
+- **[Linhas 204-209 ~]** `<!-- 🚀 [INÍCIO: PWA - CARGA DE MÓDULOS E SERVICE WORKER] -->` -> `<script src="./notes/editor.js"> … <script src="./app.js">`
+- **[Linhas 210-216 ~]** `(sem comentário de ancoragem)` -> `<script src="./mapa/mapa-modelo.js"> … <script src="./mapa/mapa.js">`
+- **[Linhas 217-272 ~]** `/* Service Worker.` -> `(function () { var SW_URL = new URL('sw.js', ...); … })();`
 
 ---
 
@@ -103,25 +104,24 @@
 # Nome do Arquivo: sw.js
 **Propósito:** Service Worker offline-first. Serve o cache na hora e revalida na rede com timeout, garantindo que o app nunca fique preso carregando.
 
-## Implementação: Constantes e fallback offline
-- **[Linhas 1-12 ~]** `/** * Service Worker PWA - Cache e Offline` -> cabeçalho (estratégia offline-first)
-- **[Linhas 14-19 ~]** `// SERVICE WORKER PARA PWA` -> `const CACHE_NAME = 'notas-pwa-v36';` · `const TIMEOUT_MS = 3000;`
-- **[Linhas 21-25 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
-- **[Linhas 27-55 ~]** `/** * Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
-
-## Implementação: Instalação e ativação (cache completo ou falha)
-- **[Linhas 57-74 ~]** `/** fetch + timeout + cache.put (evita travar a instalação com rede lenta/instável). */` -> `const adicionarComRetry = async (cache, asset, tentativas = 3) => {...}`
-- **[Linhas 104-122 ~]** `// INSTALLATION` -> `self.addEventListener('install', (event) => {...})` (aborta se algum essencial faltar)
-- **[Linhas 124-136 ~]** `// ACTIVATION` -> `self.addEventListener('activate', (event) => {...})` (limpa caches antigos + `clients.claim()`)
+## Implementação: Constantes, helpers e ciclo de vida
+- **[Linhas 14-59 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v36';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]`
+- **[Linhas 19-20 ~]** `(sem comentário de ancoragem)` -> `const CACHE_NAME` · `const TIMEOUT_MS`
+- **[Linhas 22-32 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
+- **[Linhas 33-59 ~]** `/** Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
+- **[Linhas 60-109 ~]** `// 💾 [INÍCIO: PWA - HELPERS DE CACHE/FETCH (retry/timeout/revalidar)]` -> `adicionarComRetry` · `buscarComTimeout` · `guardarNoCache` · `revalidar`
+- **[Linhas 110-132 ~]** `// 🚀 [INÍCIO: PWA - INSTALL (CACHE INICIAL)]` -> `self.addEventListener('install', (event) => {...})` (aborta se algum essencial faltar)
+- **[Linhas 133-149 ~]** `// 🚀 [INÍCIO: PWA - ACTIVATE (LIMPEZA DE CACHES ANTIGOS)]` -> `self.addEventListener('activate', ...)` (limpa caches + `clients.claim()`)
 
 ## Implementação: Estratégia de rede/cache em runtime
-- **[Linhas 76-86 ~]** `/** Busca na rede com limite de tempo (nunca deixa o carregamento pendurado). */` -> `const buscarComTimeout = (request, ms) => new Promise(...)`
-- **[Linhas 88-95 ~]** `/** Guarda a resposta no cache sem bloquear quem está esperando. */` -> `const guardarNoCache = (request, response) => {...}`
-- **[Linhas 97-102 ~]** `/** Revalida em segundo plano (stale-while-revalidate) sem bloquear a resposta. */` -> `const revalidar = (request) => {...}`
-- **[Linhas 138-173 ~]** `// FETCH STRATEGY` -> `self.addEventListener('fetch', (event) => {...})` (cache → rede com timeout → fallback `index.html`/`OFFLINE_HTML`)
+- **[Linhas 62-80 ~]** `/** fetch + timeout + cache.put (evita travar a instalação com rede lenta/instável). */` -> `const adicionarComRetry = async (cache, asset, tentativas = 3) => {...}`
+- **[Linhas 81-92 ~]** `/** Busca na rede com limite de tempo (nunca deixa o carregamento pendurado). */` -> `const buscarComTimeout = (request, ms) => new Promise(...)`
+- **[Linhas 93-101 ~]** `/** Guarda a resposta no cache sem bloquear quem está esperando. */` -> `const guardarNoCache = (request, response) => {...}`
+- **[Linhas 102-108 ~]** `/** Revalida em segundo plano (stale-while-revalidate) sem bloquear a resposta. */` -> `const revalidar = (request) => {...}`
+- **[Linhas 150-189 ~]** `// 🚨 [INÍCIO: CRÍTICO - FETCH STRATEGY (CACHE-FIRST + TIMEOUT)]` -> `self.addEventListener('fetch', ...)` (cache → rede com timeout → fallback `index.html`/`OFFLINE_HTML`)
 
 ## Implementação: Mensagens do cliente
-- **[Linhas 175-190 ~]** `// MESSAGE HANDLING` -> `self.addEventListener('message', (event) => {...})` (`SKIP_WAITING`, `CACHE_UPDATED`)
+- **[Linhas 190-207 ~]** `// 🔄 [INÍCIO: ESTADO/API - MESSAGE HANDLING]` -> `self.addEventListener('message', ...)` (`SKIP_WAITING`, `CACHE_UPDATED`)
 
 ---
 
@@ -135,6 +135,34 @@
 **Propósito:** Regras de deploy (Cloudflare Pages/Netlify) — impedem que `/sw.js` e `/manifest.json` caiam no fallback de SPA (SW servido como HTML é rejeitado em silêncio) e definem os cabeçalhos de cache/content-type.
 - **[Linhas 1-8 ~]** `# Cloudflare Pages / Netlify: regras avaliadas de cima para baixo.` -> `_redirects`: `/sw.js → /sw.js 200` · `/manifest.json → /manifest.json 200`
 - **[Linhas 1-21 ~]** `# Cloudflare Pages - regras de resposta HTTP` -> `_headers`: `Cache-Control: must-revalidate` + `Content-Type: application/javascript` e `Service-Worker-Allowed: /` para `/sw.js`
+
+---
+
+# Nome do Arquivo: styles.css
+**Propósito:** CSS base do PWA (tokens de tema, cor da barra de status, base e componentes próprios). Distinto de `theme-origem.css` (tema portado do original).
+- **[Linhas 5-34 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - VARIÁVEIS DE TEMA] */` -> `:root { --color-* }` + tokens da barra de status (claro/escuro)
+- **[Linhas 35-794 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - BASE E COMPONENTES] */` -> `body`, `button` e componentes próprios do app
+
+# Nome do Arquivo: theme-origem.css
+**Propósito:** Tema portado do CSS COMPILADO do projeto original (tokens + classes do sistema antigo). Regenerado por `tools/extrair-tema.cjs`.
+- **[Linhas 1-1428 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - TEMA PORTADO DO ORIGINAL] */` -> tokens `--*` e classes do compilado
+
+# Nome do Arquivo: notes/editor.css
+**Propósito:** Estilos do editor de notas (linhas, cabeçalho, colapso, paleta de tons, código e nota grande).
+- **[Linhas 1-137 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - EDITOR (LINHAS, CABEÇALHO, COLAPSO)] */` -> regras `#notesEditor .notes-line*`, `#notesToolbar[hidden]`
+- **[Linhas 138-287 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - PALETA DE TONS, CÓDIGO E NOTA GRANDE] */` -> `.notes-tone-*`, `.notes-code*`, `content-visibility` em nota grande
+
+# Nome do Arquivo: notes/extras.css
+**Propósito:** Estilos dos diálogos extras (inserir/link/modelos) e do visualizador de arquivo.
+- **[Linhas 1-72 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - DIÁLOGOS EXTRAS E VISUALIZADOR DE ARQUIVO] */` -> `.notes-extra-dialog`, `.notes-file-viewer`, `.notes-insert-menu`, `.notes-context-menu`
+
+# Nome do Arquivo: notes/tables.css
+**Propósito:** Estilos da barra de ferramentas da tabela, do endereço/formula da célula e dos cursores de resize.
+- **[Linhas 1-30 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */` -> `.notes-table-*`, `#notesEditor[data-table-resize]`
+
+# Nome do Arquivo: mapa/mapa.css
+**Propósito:** Estilos da área do mapa (shell, topbar, chips de gestão, canvas/nós, conexões, minimapa e painel de propriedades).
+- **[Linhas 1-618 ~]** `/* 🎨 [INÍCIO: MAPA/ESTILO - ÁREA, CANVAS, NÓS, PAINEL E CONEXÕES] */` -> classes `mapa-*`
 
 ---
 
@@ -369,12 +397,6 @@
 
 ---
 
-# Nome do Arquivo: mapa/mapa.css
-**Propósito:** Estilos da área do mapa (shell, topbar, chips de gestão, canvas/nós, conexões, minimapa, painel de propriedades).
-- **[Linhas 1-562 ~]** `(CSS — sem marcadores de ancoragem)` -> classes `mapa-*` (`.mapa-area`, `.mapa-canvas`, `.mapa-no`, `.mapa-painel`, `.mapa-chip`, …)
-
----
-
 # Nome do Arquivo: tests/run-all.cjs
 **Propósito:** Runner sequencial da suíte. Executa cada `tests/*.cjs`, grava `docs/relatorio-testes.json` + `docs/RELATORIO-TESTES.md` e aceita `--filter=`, `--baseline`, `--retry=`, `--dir=`, `--prefixo=`, `--timeout=`. Testes inaplicáveis ficam em `NAO_APLICAVEIS` (viram `n/a`, nunca "sucesso silencioso").
 - **[Linhas 1-30 ~]** `/**` + `Uso:` -> cabeçalho/doc de uso e `NAO_APLICAVEIS`
@@ -386,83 +408,83 @@
 - **[Linhas 1-139 ~]** `(sem comentário de ancoragem)` -> `module.exports = { montar, estilos, SELETORES, NOTA_EXEMPLO }`
 
 ## Implementação: Notas — modelo e documentos grandes
-- **[Linhas 1-35 ~]** `/* Portado automaticamente de ... por tools/portar-testes.cjs.` -> `tests/notes_document_model.cjs` (`NotesDocument` no `vm`, sem navegador)
-- **[Linhas 1-52 ~]** `(portado)` -> `tests/notes_document_migration.cjs`
-- **[Linhas 1-42 ~]** `(portado)` -> `tests/notes_large_document.cjs`
-- **[Linhas 1-44 ~]** `(portado)` -> `tests/notes_million.cjs` (~1M de caracteres)
-- **[Linhas 1-48 ~]** `(portado)` -> `tests/notes_million_extras.cjs`
-- **[Linhas 1-42 ~]** `(portado)` -> `tests/notes_performance.cjs`
-- **[Linhas 1-41 ~]** `(portado)` -> `tests/notes_import_spacing.cjs`
+- **[Arquivo inteiro ~]** `/* Portado automaticamente de ... por tools/portar-testes.cjs.` -> `tests/notes_document_model.cjs` (`NotesDocument` no `vm`, sem navegador)
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_document_migration.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_large_document.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_million.cjs` (~1M de caracteres)
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_million_extras.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_performance.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_import_spacing.cjs`
 
 ## Implementação: Notas — hierarquia, checklist e Enter
-- **[Linhas 1-49 ~]** `(portado)` -> `tests/notes_cascade_defaults.cjs`
-- **[Linhas 1-59 ~]** `/* Enter em lista com check + numerada: a quebra mantém a continuidade` -> `tests/notes_checklist_enter.cjs`
-- **[Linhas 1-7 ~]** `(portado)` -> `tests/notes_checklist_numbers.cjs` · `notes_checklist_order.cjs` (pilha de concluídos)
-- **[Linhas 1-7 ~]** `(portado)` -> `tests/notes_indent_child.cjs` · `notes_enter_child.cjs`
-- **[Linhas 1-59 ~]** `/* Indentação do bloco de notas:` -> `tests/notes_indent_levels.cjs` (teto de 4 níveis)
-- **[Linhas 1-73 ~]** `/* Enter que "nao pega": quando o cursor fica FORA de uma linha` -> `tests/notes_enter_robust.cjs`
-- **[Linhas 1-44 ~]** `(portado)` -> `tests/notes_last_line_enter.cjs`
-- **[Linhas 1-72 ~]** `/* Título recolhido + cursor no fim + Enter` -> `tests/notes_collapsed_heading.cjs`
-- **[Linhas 1-39 ~]** `(portado)` -> `tests/notes_collapse_motion.cjs`
-- **[Linhas 1-41 ~]** `(portado)` -> `tests/notes_completion_spacing.cjs`
-- **[Linhas 1-44 ~]** `(portado)` -> `tests/notes_navigation_completion.cjs`
-- **[Linhas 1-46 ~]** `(portado)` -> `tests/notes_parent_undo.cjs`
-- **[Linhas 1-39 ~]** `(portado)` -> `tests/notes_renumber_structure.cjs`
-- **[Linhas 1-46 ~]** `/* "Apagar todo o conteúdo" (Ctrl+A + Delete)` -> `tests/notes_clear_all.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_cascade_defaults.cjs`
+- **[Arquivo inteiro ~]** `/* Enter em lista com check + numerada: a quebra mantém a continuidade` -> `tests/notes_checklist_enter.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_checklist_numbers.cjs` · `notes_checklist_order.cjs` (pilha de concluídos)
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_indent_child.cjs` · `notes_enter_child.cjs`
+- **[Arquivo inteiro ~]** `/* Indentação do bloco de notas:` -> `tests/notes_indent_levels.cjs` (teto de 4 níveis)
+- **[Arquivo inteiro ~]** `/* Enter que "nao pega": quando o cursor fica FORA de uma linha` -> `tests/notes_enter_robust.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_last_line_enter.cjs`
+- **[Arquivo inteiro ~]** `/* Título recolhido + cursor no fim + Enter` -> `tests/notes_collapsed_heading.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_collapse_motion.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_completion_spacing.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_navigation_completion.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_parent_undo.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_renumber_structure.cjs`
+- **[Arquivo inteiro ~]** `/* "Apagar todo o conteúdo" (Ctrl+A + Delete)` -> `tests/notes_clear_all.cjs`
 
 ---
 
 ## Implementação: Notas — formatação, cores, mídia e tabelas
-- **[Linhas 1-55 ~]** `(portado)` -> `tests/notes_markdown.cjs`
-- **[Linhas 1-50 ~]** `/* Sublinhado (revisão do bloco de notas): comando novo, atalho Ctrl+U e botão` -> `tests/notes_underline.cjs`
-- **[Linhas 1-7 ~]** `(portado)` -> `tests/notes_colors_persistence.cjs`
-- **[Linhas 1-7 ~]** `(portado)` -> `tests/notes_tone_picker.cjs` · `notes_tone_picker_mobile.cjs` (seletor de tonalidade)
-- **[Linhas 1-41 ~]** `(portado)` -> `tests/notes_cut_background.cjs`
-- **[Linhas 1-53 ~]** `(portado)` -> `tests/notes_outline_code.cjs` (títulos + bloco de código)
-- **[Linhas 1-72 ~]** `(portado)` -> `tests/notes_paste_blocks.cjs` · `notes_paste_selection.cjs`
-- **[Linhas 1-59 ~]** `(portado)` -> `tests/notes_extras.cjs` (divisor/link/inserir/modelos)
-- **[Linhas 1-17 ~]** `(portado)` -> `tests/notes_table_math.cjs` (motor de fórmulas, node-only)
-- **[Linhas 1-47 ~]** `(portado)` -> `tests/notes_table_media.cjs` · `notes_table_tools.cjs` (barra de tabela)
-- **[Linhas 1-45 ~]** `(portado)` -> `tests/notes_regression_audit.cjs`
-- **[Linhas 1-136 ~]** `(portado)` -> `tests/test_notes_editor_ui.cjs`
-- **[Linhas 1-54 ~]** `(portado — `n/a` no PWA: exigiria telas do dashboard de foco)` -> `tests/notes_requested_fixes.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_markdown.cjs`
+- **[Arquivo inteiro ~]** `/* Sublinhado (revisão do bloco de notas): comando novo, atalho Ctrl+U e botão` -> `tests/notes_underline.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_colors_persistence.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_tone_picker.cjs` · `notes_tone_picker_mobile.cjs` (seletor de tonalidade)
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_cut_background.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_outline_code.cjs` (títulos + bloco de código)
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_paste_blocks.cjs` · `notes_paste_selection.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_extras.cjs` (divisor/link/inserir/modelos)
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_table_math.cjs` (motor de fórmulas, node-only)
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_table_media.cjs` · `notes_table_tools.cjs` (barra de tabela)
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/notes_regression_audit.cjs`
+- **[Arquivo inteiro ~]** `(portado)` -> `tests/test_notes_editor_ui.cjs`
+- **[Arquivo inteiro ~]** `(portado — `n/a` no PWA: exigiria telas do dashboard de foco)` -> `tests/notes_requested_fixes.cjs`
 
 ## Implementação: Múltiplas notas e nota grande
-- **[Linhas 1-91 ~]** `/* Múltiplas notas locais (botão "+"), chips de nota e migração da nota única.` -> `tests/multi_notas.cjs`
-- **[Linhas 1-66 ~]** `/* Muitas notas (100): a área dos chips precisa rolar na vertical` -> `tests/multi_notas_100.cjs`
-- **[Linhas 1-63 ~]** `/* Nota gigante na PWA: uma nota com ~1 milhão de caracteres deve ABRIR` -> `tests/nota_grande_pwa.cjs`
+- **[Arquivo inteiro ~]** `/* Múltiplas notas locais (botão "+"), chips de nota e migração da nota única.` -> `tests/multi_notas.cjs`
+- **[Arquivo inteiro ~]** `/* Muitas notas (100): a área dos chips precisa rolar na vertical` -> `tests/multi_notas_100.cjs`
+- **[Arquivo inteiro ~]** `/* Nota gigante na PWA: uma nota com ~1 milhão de caracteres deve ABRIR` -> `tests/nota_grande_pwa.cjs`
 
 ## Implementação: Mapa Mental (por fase)
-- **[Linhas 1-116 ~]** `/* FASE 0 - Fundação e isolamento da área "Mapa Mental".` -> `tests/mapa_area.cjs`
-- **[Linhas 1-249 ~]** `/* FASE 1 - Gestão de mapas.` -> `tests/mapa_gestao.cjs` (criar/renomear/duplicar/excluir/pastas/raiz/templates)
-- **[Linhas 1-240 ~]** `/* FASE 2 - Canvas infinito.` -> `tests/mapa_canvas.cjs` (pan/zoom limites/viewport por mapa)
-- **[Linhas 1-304 ~]** `/* FASE 3 - Nós / tópicos.` -> `tests/mapa_nos.cjs` (criar/editar/excluir/copiar/colar/mover)
-- **[Linhas 1-225 ~]** `/* FASE 4 - Conteúdo dentro dos nós.` -> `tests/mapa_conteudo.cjs` (painel/anexos/links/tags)
-- **[Linhas 1-177 ~]** `/* FASE 5 - Hierarquia e layout em árvore.` -> `tests/mapa_layout.cjs`
-- **[Linhas 1-194 ~]** `/* FASE 6 - Conexões livres.` -> `tests/mapa_conexoes.cjs`
-- **[Linhas 1-207 ~]** `/* FASE 7 - Drag & Drop inteligente.` -> `tests/mapa_dragdrop.cjs`
-- **[Linhas 1-142 ~]** `/* Mapa vazio -> primeiro tópico.` -> `tests/mapa_vazio.cjs`
+- **[Arquivo inteiro ~]** `/* FASE 0 - Fundação e isolamento da área "Mapa Mental".` -> `tests/mapa_area.cjs`
+- **[Arquivo inteiro ~]** `/* FASE 1 - Gestão de mapas.` -> `tests/mapa_gestao.cjs` (criar/renomear/duplicar/excluir/pastas/raiz/templates)
+- **[Arquivo inteiro ~]** `/* FASE 2 - Canvas infinito.` -> `tests/mapa_canvas.cjs` (pan/zoom limites/viewport por mapa)
+- **[Arquivo inteiro ~]** `/* FASE 3 - Nós / tópicos.` -> `tests/mapa_nos.cjs` (criar/editar/excluir/copiar/colar/mover)
+- **[Arquivo inteiro ~]** `/* FASE 4 - Conteúdo dentro dos nós.` -> `tests/mapa_conteudo.cjs` (painel/anexos/links/tags)
+- **[Arquivo inteiro ~]** `/* FASE 5 - Hierarquia e layout em árvore.` -> `tests/mapa_layout.cjs`
+- **[Arquivo inteiro ~]** `/* FASE 6 - Conexões livres.` -> `tests/mapa_conexoes.cjs`
+- **[Arquivo inteiro ~]** `/* FASE 7 - Drag & Drop inteligente.` -> `tests/mapa_dragdrop.cjs`
+- **[Arquivo inteiro ~]** `/* Mapa vazio -> primeiro tópico.` -> `tests/mapa_vazio.cjs`
 
 ## Implementação: UI, tema, PWA e paridade
-- **[Linhas 1-184 ~]** `/* Cobre as LACUNAS de atalho apontadas por docs/RASTREABILIDADE.md:` -> `tests/shortcuts.cjs`
-- **[Linhas 1-229 ~]** `/* Barra de ferramentas do PWA: uma linha com rolagem horizontal` -> `tests/toolbar_pwa.cjs` (ordem persistida + dock no teclado)
-- **[Linhas 1-85 ~]** `/* Seletor sutil de tema (claro/escuro) no header do PWA:` -> `tests/tema_switch.cjs`
-- **[Linhas 1-72 ~]** `/* Modo claro com efeitos de vidro (réplica do compilado do original).` -> `tests/tema_vidro.cjs`
-- **[Linhas 1-70 ~]** `/* Deploy/PWA: o Service Worker precisa ser servido como JavaScript NA RAIZ` -> `tests/pwa_service_worker.cjs` (servidor real com fallback de SPA)
-- **[Linhas 1-90 ~]** `/* Paridade ESTRUTURAL: compara o bloco do modal de notas do PWA com o do` -> `tests/parity_structure.cjs` (ids/aria/comandos/cores/roles; sem navegador)
-- **[Linhas 1-206 ~]** `/* Paridade visual: carrega a MESMA nota no PWA e no projeto original e compara` -> `tests/parity_visual.cjs` (gera `docs/parity-visual.json`)
+- **[Arquivo inteiro ~]** `/* Cobre as LACUNAS de atalho apontadas por docs/RASTREABILIDADE.md:` -> `tests/shortcuts.cjs`
+- **[Arquivo inteiro ~]** `/* Barra de ferramentas do PWA: uma linha com rolagem horizontal` -> `tests/toolbar_pwa.cjs` (ordem persistida + dock no teclado)
+- **[Arquivo inteiro ~]** `/* Seletor sutil de tema (claro/escuro) no header do PWA:` -> `tests/tema_switch.cjs`
+- **[Arquivo inteiro ~]** `/* Modo claro com efeitos de vidro (réplica do compilado do original).` -> `tests/tema_vidro.cjs`
+- **[Arquivo inteiro ~]** `/* Deploy/PWA: o Service Worker precisa ser servido como JavaScript NA RAIZ` -> `tests/pwa_service_worker.cjs` (servidor real com fallback de SPA)
+- **[Arquivo inteiro ~]** `/* Paridade ESTRUTURAL: compara o bloco do modal de notas do PWA com o do` -> `tests/parity_structure.cjs` (ids/aria/comandos/cores/roles; sem navegador)
+- **[Arquivo inteiro ~]** `/* Paridade visual: carrega a MESMA nota no PWA e no projeto original e compara` -> `tests/parity_visual.cjs` (gera `docs/parity-visual.json`)
 
 ---
 
 # Nome do Arquivo: tools/*.cjs
 **Propósito:** Scripts de apoio (Node, sem dependências além do `playwright` de teste). Não entram no app.
 
-- **[Linhas 1-80 ~]** `/* Porta a suíte de testes do projeto original (produtividade-ferrramenta/tests)` -> `tools/portar-testes.cjs` (gera os `notes_*.cjs` com o cabeçalho `(portado)`)
-- **[Linhas 1-192 ~]** `/* Gera docs/INVENTARIO-REGRAS.md (unidades de comportamento do motor) e` -> `tools/gerar-rastreabilidade.cjs` (matriz de rastreabilidade)
-- **[Linhas 1-76 ~]** `/* Inventario de regras do motor de notas + matriz de rastreabilidade.` -> `tools/inventario-regras.cjs`
-- **[Linhas 1-121 ~]** `/* Extrai do CSS COMPILADO do projeto original (frontend/styles.css) tudo o que` -> `tools/extrair-tema.cjs` (origem de `theme-origem.css`)
-- **[Linhas 1-118 ~]** `/* Compara o resultado da suite rodada no PWA com o resultado da MESMA suite` -> `tools/comparar-suites.cjs` (`docs/comparativo.json` + `RELATORIO-COMPARATIVO.md`)
-- **[Linhas 1-137 ~]** `/* Gera os icones PNG do PWA (com dependencias zero, usando apenas o zlib do Node).` -> `tools/gerar-icones.cjs` (`icon-192.png` / `icon-512.png`)
+- **[Arquivo inteiro ~]** `/* Porta a suíte de testes do projeto original (produtividade-ferrramenta/tests)` -> `tools/portar-testes.cjs` (gera os `notes_*.cjs` com o cabeçalho `(portado)`)
+- **[Arquivo inteiro ~]** `/* Gera docs/INVENTARIO-REGRAS.md (unidades de comportamento do motor) e` -> `tools/gerar-rastreabilidade.cjs` (matriz de rastreabilidade)
+- **[Arquivo inteiro ~]** `/* Inventario de regras do motor de notas + matriz de rastreabilidade.` -> `tools/inventario-regras.cjs`
+- **[Arquivo inteiro ~]** `/* Extrai do CSS COMPILADO do projeto original (frontend/styles.css) tudo o que` -> `tools/extrair-tema.cjs` (origem de `theme-origem.css`)
+- **[Arquivo inteiro ~]** `/* Compara o resultado da suite rodada no PWA com o resultado da MESMA suite` -> `tools/comparar-suites.cjs` (`docs/comparativo.json` + `RELATORIO-COMPARATIVO.md`)
+- **[Arquivo inteiro ~]** `/* Gera os icones PNG do PWA (com dependencias zero, usando apenas o zlib do Node).` -> `tools/gerar-icones.cjs` (`icon-192.png` / `icon-512.png`)
 
 ---
 

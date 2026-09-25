@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES IMPORT SPACING]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_import_spacing.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -39,3 +40,4 @@ const {chromium}=require('playwright');
  assert.deepEqual(errors,[]);console.log('OK: BR + HTML newline produces one line break; legacy empty fragments removed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES IMPORT SPACING]

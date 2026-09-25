@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - TEMA VIDRO]
 /*
  * Modo claro com efeitos de vidro (réplica do compilado do original).
  * O `parity_visual` compara cor/forma/tipografia, mas NÃO compara
@@ -70,3 +71,4 @@ const vidroDe=dados=>({
   console.log('OK: modo claro com vidro (paineis blur16, card blur18/alpha .72, system stack) e escuro solido, iguais ao original');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - TEMA VIDRO]

@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - MAPA VAZIO]
 /*
  * Mapa vazio -> primeiro tópico.
  * Guarda contra o beco sem saída: um mapa recém-criado não tem nós e a barra de ações
@@ -140,3 +141,4 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await browser.close();
   }
 })().catch(e => { console.error(e); process.exit(1); });
+// 🧪 [FIM: TESTE - MAPA VAZIO]

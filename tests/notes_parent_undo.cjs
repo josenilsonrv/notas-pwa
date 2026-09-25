@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES PARENT UNDO]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_parent_undo.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -44,3 +45,4 @@ const {chromium}=require('playwright');
  console.log('OK: desfazer/refazer por botão e teclado com movimento contínuo');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES PARENT UNDO]

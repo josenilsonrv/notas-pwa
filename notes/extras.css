@@ -1,3 +1,4 @@
+/* 🎨 [INÍCIO: NOTAS/ESTILO - DIÁLOGOS EXTRAS E VISUALIZADOR DE ARQUIVO] */
 
 .notes-extra-dialog { width:min(460px,calc(100vw - 24px)); max-height:88vh; overflow:auto; border:1px solid #8090a040; border-radius:12px; padding:22px; background:var(--color-bg-container,#eeefef); color:var(--color-text-main,#172033); box-shadow:0 16px 60px #0004; }
 .notes-extra-dialog::backdrop { background:#0005; }
@@ -68,3 +69,4 @@ html .notes-file-viewer.expanded { left:10px !important; top:10px !important; }
 #notesEditor table[data-note-table] { table-layout:fixed; margin:8px 0; }
 #notesEditor table[data-note-table] td { border:1px solid var(--notes-accent,var(--color-neon-blue,#0071e3)); min-width:45px; height:38px; padding:8px; }
 #notesEditor table[data-note-table] td:focus-within { background:color-mix(in srgb,var(--notes-accent,var(--color-neon-blue,#0071e3)) 4%,transparent); }
+/* 🎨 [FIM: NOTAS/ESTILO - DIÁLOGOS EXTRAS E VISUALIZADOR DE ARQUIVO] */

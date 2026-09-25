@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES DOCUMENT MIGRATION]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_document_migration.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -50,3 +51,4 @@ const {chromium}=require('playwright');
  assert.deepEqual(errors,[]);console.log('OK: modelo/HTML sem perdas, IDs persistidos, histórico estruturado, cópia independente, nota extensa');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES DOCUMENT MIGRATION]

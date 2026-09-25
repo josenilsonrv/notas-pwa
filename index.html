@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="./notes/extras.css">
     <link rel="stylesheet" href="./notes/tables.css">
     <link rel="stylesheet" href="./mapa/mapa.css">
+<!-- 🚀 [INÍCIO: PWA - BOOT SEM FLASH (TEMA ANTES DO CSS E WATCHDOG)] -->
     <script>
         // Resolve o tema antes do CSS carregar para evitar flash visual no primeiro paint.
         (() => {
@@ -80,6 +81,9 @@
             });
         })();
     </script>
+<!-- 🚀 [FIM: PWA - BOOT SEM FLASH (TEMA ANTES DO CSS E WATCHDOG)] -->
+
+<!-- 🎨 [INÍCIO: PWA - SHELL (HEADER, ÁREAS E MODAL DE NOTAS)] -->
     <!-- Header Mobile -->
     <header class="app-header border-b border-border pt-4 pb-4 px-4">
         <div class="flex justify-between items-center">
@@ -195,6 +199,9 @@
 
     <div id="appToastRegion" class="app-toast-region" role="region" aria-label="Avisos" aria-live="polite"></div>
 
+<!-- 🎨 [FIM: PWA - SHELL (HEADER, ÁREAS E MODAL DE NOTAS)] -->
+
+<!-- 🚀 [INÍCIO: PWA - CARGA DE MÓDULOS E SERVICE WORKER] -->
     <script src="./notes/editor.js"></script>
     <script src="./notes/table-math.js"></script>
     <script src="./notes/extras.js"></script>
@@ -265,3 +272,4 @@
     </script>
 </body>
 </html>
+<!-- 🚀 [FIM: PWA - CARGA DE MÓDULOS E SERVICE WORKER] -->

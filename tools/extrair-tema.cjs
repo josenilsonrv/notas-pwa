@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// 🧪 [INÍCIO: SCRIPT - EXTRAIR-TEMA]
 /**
  * Extrai do CSS COMPILADO do projeto original (frontend/styles.css) tudo o que
  * diz respeito ao motor de notas:
@@ -119,3 +120,4 @@ fs.writeFileSync(SAIDA, partes.join('\n'));
 console.log('blocos :root    : ' + raizes.length);
 console.log('blocos de notas : ' + notas.length);
 console.log('gerado          : theme-origem.css (' + fs.statSync(SAIDA).size + ' bytes)');
+// 🧪 [FIM: SCRIPT - EXTRAIR-TEMA]

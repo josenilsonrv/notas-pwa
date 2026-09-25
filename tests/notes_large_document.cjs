@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES LARGE DOCUMENT]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_large_document.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -40,3 +41,4 @@ const {chromium}=require('playwright');
  assert.ok(typing<150);assert.ok(opened<5000);assert.deepEqual(errors,[]);console.log(JSON.stringify({pastedMs:Math.round(pasted),openedMs:Math.round(opened),maxTypingMs:Math.round(typing)}));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES LARGE DOCUMENT]

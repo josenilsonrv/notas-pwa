@@ -11,6 +11,7 @@
  * bloqueia a pintura) nunca chegava.
  */
 
+// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]
 // ============================================
 // SERVICE WORKER PARA PWA
 // ============================================
@@ -54,6 +55,9 @@ const ESSENCIAIS = [
     './icon.svg'
 ];
 
+// 🚀 [FIM: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]
+
+// 💾 [INÍCIO: PWA - HELPERS DE CACHE/FETCH (retry/timeout/revalidar)]
 /** `fetch` + timeout + `cache.put` (evita travar a instalação com rede lenta/instável). */
 const adicionarComRetry = async (cache, asset, tentativas = 3) => {
     for (let i = 0; i < tentativas; i++) {
@@ -101,6 +105,9 @@ const revalidar = (request) => {
         .catch(() => { /* offline: mantém o cache */ });
 };
 
+// 💾 [FIM: PWA - HELPERS DE CACHE/FETCH (retry/timeout/revalidar)]
+
+// 🚀 [INÍCIO: PWA - INSTALL (CACHE INICIAL)]
 // ============================================
 // INSTALLATION
 // ============================================
@@ -121,6 +128,9 @@ self.addEventListener('install', (event) => {
     })());
 });
 
+// 🚀 [FIM: PWA - INSTALL (CACHE INICIAL)]
+
+// 🚀 [INÍCIO: PWA - ACTIVATE (LIMPEZA DE CACHES ANTIGOS)]
 // ============================================
 // ACTIVATION
 // ============================================
@@ -135,6 +145,9 @@ self.addEventListener('activate', (event) => {
     })());
 });
 
+// 🚀 [FIM: PWA - ACTIVATE (LIMPEZA DE CACHES ANTIGOS)]
+
+// 🚨 [INÍCIO: CRÍTICO - FETCH STRATEGY (CACHE-FIRST + TIMEOUT)]
 // ============================================
 // FETCH STRATEGY
 // ============================================
@@ -172,6 +185,9 @@ self.addEventListener('fetch', (event) => {
     })());
 });
 
+// 🚨 [FIM: CRÍTICO - FETCH STRATEGY (CACHE-FIRST + TIMEOUT)]
+
+// 🔄 [INÍCIO: ESTADO/API - MESSAGE HANDLING]
 // ============================================
 // MESSAGE HANDLING
 // ============================================
@@ -188,3 +204,4 @@ self.addEventListener('message', (event) => {
         });
     }
 });
+// 🔄 [FIM: ESTADO/API - MESSAGE HANDLING]

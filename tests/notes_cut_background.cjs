@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES CUT BACKGROUND]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_cut_background.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -39,3 +40,4 @@ const {chromium}=require('playwright');
  console.log('OK: recortar/colar sem fundo acidental e com destaque intencional preservado');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES CUT BACKGROUND]

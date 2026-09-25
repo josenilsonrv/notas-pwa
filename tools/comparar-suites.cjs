@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// 🧪 [INÍCIO: SCRIPT - COMPARAR-SUITES]
 /**
  * Compara o resultado da suite rodada no PWA com o resultado da MESMA suite
  * rodada no projeto original, classificando cada teste:
@@ -116,3 +117,4 @@ if (divergencias.length) {
 }
 console.log('');
 console.log('relatorio: docs/RELATORIO-COMPARATIVO.md');
+// 🧪 [FIM: SCRIPT - COMPARAR-SUITES]

@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES UNDERLINE]
 /*
  * Sublinhado (revisão do bloco de notas): comando novo, atalho Ctrl+U e botão
  * na toolbar rotulado. O original não tem sublinhado — este é exclusivo do PWA.
@@ -48,3 +49,4 @@ const {chromium}=require('playwright');
  console.log('OK: sublinhado por botao/atalho Ctrl+U');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES UNDERLINE]

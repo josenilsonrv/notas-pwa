@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - TOOLBAR PWA]
 /*
  * Barra de ferramentas do PWA: uma linha com rolagem horizontal, botão de
  * edição de posições (diálogo com arrastar-e-soltar), ordem persistida no dispositivo e
@@ -227,3 +228,4 @@ const ordemDe=page=>page.evaluate(()=>[...app.chavesToolbar().values()]);
   console.log('OK: toolbar inline com rolagem, sem "..." , ordem editavel/persistida e dock acima do teclado');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - TOOLBAR PWA]

@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - MAPA DRAGDROP]
 /*
  * FASE 7 - Drag & Drop inteligente.
  * Cobre: mover livre (layout manual), reparent pela zona central, inserção entre irmãos
@@ -205,3 +206,4 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await browser.close();
   }
 })().catch(e => { console.error(e); process.exit(1); });
+// 🧪 [FIM: TESTE - MAPA DRAGDROP]

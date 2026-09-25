@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES DOCUMENT MODEL]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_document_model.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -33,3 +34,4 @@ for(const order of [['a','b','c'],['c','b','a'],['b','a','c']]){
  assert.equal(batch.blocks.map(row=>row.id).join(','),'a,b,c');
 }
 console.log('OK: all checked then unchecked in different orders restore original order');
+// 🧪 [FIM: TESTE - NOTES DOCUMENT MODEL]

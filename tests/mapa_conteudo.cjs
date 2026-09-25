@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - MAPA CONTEUDO]
 /*
  * FASE 4 - Conteúdo dentro dos nós.
  * Cobre: sanitização (texto/HTML/URL/datas), painel de propriedades (abrir/fechar/salvar),
@@ -223,3 +224,4 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await browser.close();
   }
 })().catch(e => { console.error(e); process.exit(1); });
+// 🧪 [FIM: TESTE - MAPA CONTEUDO]

@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES PERFORMANCE]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_performance.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -40,3 +41,4 @@ const {chromium}=require('playwright');
  assert.deepEqual(errors,[]);console.log('OK: 350 nested rows opened in '+Math.round(elapsed)+' ms; typing responsive');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES PERFORMANCE]

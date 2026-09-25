@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// 🧪 [INÍCIO: TESTE - RUN-ALL]
 /**
  * Runner sequencial da suite de testes do PWA.
  *
@@ -169,3 +170,4 @@ if (falharam) {
 
 // Com --baseline, o codigo de saida so reprova quando aparece falha NOVA.
 process.exit(usarBaseline ? (falhasNovas.length ? 1 : 0) : (falharam ? 1 : 0));
+// 🧪 [FIM: TESTE - RUN-ALL]

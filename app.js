@@ -1420,9 +1420,9 @@ function installAjustesNotaGrande(App) {
 
 // 🔄 [FIM: PWA - AJUSTES DE NOTA GRANDE (installAjustesNotaGrande)]
 
-// 🔄 [INÍCIO: PWA - BOOT (DOMContentLoaded)]
+// 🚀 [INÍCIO: PWA - BOOT (DOMContentLoaded)]
 // Inicializar a aplicação quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
     window.notesApp = new NotesPWA();
 });
-// 🔄 [FIM: PWA - BOOT (DOMContentLoaded)]
+// 🚀 [FIM: PWA - BOOT (DOMContentLoaded)]

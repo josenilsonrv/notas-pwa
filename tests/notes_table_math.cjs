@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES TABLE MATH]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_table_math.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -15,3 +16,4 @@ assert.equal(result('=globalThis.alert(1)'),'#FORMULA!');assert.equal(result('=S
 assert.equal(math.address(12,26),'AA13');assert.deepEqual(math.coordinates('$AA$13'),[12,26]);
 const start=performance.now();const grid=Array.from({length:50},(_,r)=>Array.from({length:20},(_,c)=>c===19?'=SOMA(A'+(r+1)+':S'+(r+1)+')':String(c)));const calculated=math.calculate(grid);assert.equal(calculated[49][19],171);assert.ok(performance.now()-start<1000);
 console.log('OK: arithmetic, localized functions, references, dependencies, error handling and 1,000 cells');
+// 🧪 [FIM: TESTE - NOTES TABLE MATH]

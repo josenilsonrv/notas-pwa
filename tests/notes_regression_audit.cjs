@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES REGRESSION AUDIT]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_regression_audit.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -43,3 +44,4 @@ const {chromium}=require('playwright');
  assert.deepEqual(errors,[]);console.log('OK: remoção parcial preserva formatação, cores sobrevivem em novas linhas, fechamento limpa paletas');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES REGRESSION AUDIT]

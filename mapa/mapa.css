@@ -1,3 +1,4 @@
+/* 🎨 [INÍCIO: MAPA/ESTILO - ÁREA, CANVAS, NÓS, PAINEL E CONEXÕES] */
 /* ============================================
  * MAPA MENTAL - Área independente de Notas
  * Usa os tokens de tema de styles.css e o atributo html[data-theme].
@@ -614,3 +615,4 @@ html[data-theme="dark"] .mapa-cx-menu { background: #11161D; border-color: #2A35
 }
 html[data-theme="dark"] .mapa-ramo { stroke: #3A4657; }
 
+/* 🎨 [FIM: MAPA/ESTILO - ÁREA, CANVAS, NÓS, PAINEL E CONEXÕES] */

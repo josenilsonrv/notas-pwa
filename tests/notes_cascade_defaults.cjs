@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES CASCADE DEFAULTS]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_cascade_defaults.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -47,3 +48,4 @@ const {chromium}=require('playwright');
  await page.evaluate(()=>app.closeNotesModal());assert.deepEqual(errors,[]);console.log('OK: cascata reversível persistida, data de conclusão, cor do corpo preservada, seletor padrão e fechamento independente');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES CASCADE DEFAULTS]

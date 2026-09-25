@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - PARITY STRUCTURE]
 /*
  * Paridade ESTRUTURAL: compara o bloco do modal de notas do PWA com o do
  * projeto original — ids, aria-labels, comandos, atributos de cor e classes.
@@ -88,3 +89,4 @@ assert.deepEqual(relatorio.cores.faltando, [], 'botoes de cor ausentes no PWA');
 assert.deepEqual(relatorio.ids.faltando, [], 'ids do modal ausentes no PWA');
 assert.deepEqual(relatorio.aria.faltando, [], 'aria-labels ausentes no PWA');
 console.log('OK: estrutura do modal equivalente ao original');
+// 🧪 [FIM: TESTE - PARITY STRUCTURE]

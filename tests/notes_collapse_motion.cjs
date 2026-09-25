@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES COLLAPSE MOTION]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_collapse_motion.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -37,3 +38,4 @@ const {chromium}=require('playwright');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
 
+// 🧪 [FIM: TESTE - NOTES COLLAPSE MOTION]

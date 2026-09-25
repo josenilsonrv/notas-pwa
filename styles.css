@@ -2,6 +2,7 @@
  * CSS BASE - Notas PWA
  * ============================================ */
 
+/* 🎨 [INÍCIO: PWA/ESTILO - VARIÁVEIS DE TEMA] */
 /* CSS Variables - Theme Colors */
 :root {
     --color-bg-global: #F5F5F7;
@@ -32,6 +33,9 @@ html[data-theme="dark"] {
  * Para manter a replica fiel ao compilado, as variaveis do tema claro tambem
  * valem no escuro. Ver docs/RELATORIO-PARIDADE.md. */
 
+/* 🎨 [FIM: PWA/ESTILO - VARIÁVEIS DE TEMA] */
+
+/* 🎨 [INÍCIO: PWA/ESTILO - BASE E COMPONENTES] */
 /* Base Styles */
 * {
     box-sizing: border-box;
@@ -787,3 +791,4 @@ html[data-theme="dark"] .app-toolbar-editor-restore { color: #cbd5e1; border-col
 .app-boot-guard-obs { margin: 8px 0 0; font-size: 12px; opacity: .75; }
 
 
+/* 🎨 [FIM: PWA/ESTILO - BASE E COMPONENTES] */

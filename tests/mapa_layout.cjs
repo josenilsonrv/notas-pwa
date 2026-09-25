@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - MAPA LAYOUT]
 /*
  * FASE 5 - Hierarquia e layout em árvore.
  * Cobre: níveis ilimitados + identificação visual por profundidade (data-mapa-nivel),
@@ -175,3 +176,4 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await browser.close();
   }
 })().catch(e => { console.error(e); process.exit(1); });
+// 🧪 [FIM: TESTE - MAPA LAYOUT]

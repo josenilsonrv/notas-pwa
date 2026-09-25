@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTA GRANDE PWA]
 /*
  * Nota gigante na PWA: uma nota com ~1 milhão de caracteres deve ABRIR
  * (renderizar no editor) e SALVAR sem estourar a cota do LocalStorage.
@@ -61,3 +62,4 @@ const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
   console.log('OK: nota com ~1 milhao de caracteres abre e salva (abrir '+r.abrir+'ms, salvar '+r.salvar+'ms, armazenamento '+r.charsArmazenados+' chars)');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTA GRANDE PWA]

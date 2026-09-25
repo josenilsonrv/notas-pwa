@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES INDENT LEVELS]
 /*
  * Indentação do bloco de notas:
  * - teto de 4 níveis (0..4), incluindo saneamento de documentos antigos;
@@ -57,3 +58,4 @@ const {chromium}=require('playwright');
  console.log('OK: teto de 4 niveis, recuo/desrecuo e rotulos de atalho');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES INDENT LEVELS]

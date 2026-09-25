@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES EXTRAS]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_extras.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -57,3 +58,4 @@ const {chromium}=require('playwright');
  assert.deepEqual(errors,[]);console.log('OK: divider shortcut/removal, automatic and titled links, cursor media, table and toolbar overflow');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES EXTRAS]

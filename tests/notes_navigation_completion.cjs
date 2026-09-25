@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES NAVIGATION COMPLETION]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_navigation_completion.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -42,3 +43,4 @@ const {chromium}=require('playwright');
  assert.deepEqual(errors,[]);console.log('OK: retorno original, cursor vazio, colapsos, conclusão coletiva, cores salvas e abas');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES NAVIGATION COMPLETION]

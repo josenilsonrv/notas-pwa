@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - TEST NOTES EDITOR UI]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/test_notes_editor_ui.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -134,3 +135,4 @@ const {chromium}=require('playwright');
  assert.deepEqual(errors,[]);console.log('OK: edição, checkbox, linhas vazias, autosave, expansão sequencial, resize e redução de movimento.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - TEST NOTES EDITOR UI]

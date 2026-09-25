@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: SCRIPT - GERAR-ICONES]
 /**
  * Gera os icones PNG do PWA (com dependencias zero, usando apenas o zlib do Node).
  * Reproduz a identidade do icon.svg: fundo #0B0E14, circulo #2B7FE6 e a letra "P" branca.
@@ -135,3 +136,4 @@ if (process.argv.includes('--inspecionar')) {
     console.log('depois:', JSON.stringify(inspecionar(destino)));
   }
 }
+// 🧪 [FIM: SCRIPT - GERAR-ICONES]

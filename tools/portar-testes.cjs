@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// 🧪 [INÍCIO: SCRIPT - PORTAR-TESTES]
 /**
  * Porta a suite de testes do projeto original (produtividade-ferrramenta/tests)
  * para o PWA, sem tocar nos asserts: apenas o bootstrap e os caminhos mudam.
@@ -78,3 +79,4 @@ console.log('');
 console.log('testes portados: ' + portados);
 console.log('origem : ' + ORIGEM);
 console.log('destino: ' + DESTINO);
+// 🧪 [FIM: SCRIPT - PORTAR-TESTES]

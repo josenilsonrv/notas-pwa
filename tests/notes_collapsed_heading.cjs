@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES COLLAPSED HEADING]
 /*
  * Título recolhido + cursor no fim + Enter: a linha criada ABAIXO herda a
  * formatação do título, seja ele de linha (`data-heading`) ou INLINE
@@ -70,3 +71,4 @@ const {chromium}=require('playwright');
  console.log('OK: recolhido cria IRMAO herdando a formatacao; aberto/sem botao cria FILHO sem a formatacao');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES COLLAPSED HEADING]

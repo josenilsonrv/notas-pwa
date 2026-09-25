@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - PARITY VISUAL]
 /*
  * Paridade visual: carrega a MESMA nota no PWA e no projeto original e compara
  * as propriedades computadas de cada elemento do editor, em tema claro e escuro.
@@ -204,3 +205,4 @@ const coletar = async (browser, variante, tema) => {
   console.log('OK: paridade visual entre PWA e original (somente excecoes documentadas)');
   console.log('relatorio: docs/RELATORIO-PARIDADE.md');
 })().catch(erro => { console.error(erro); process.exit(1); });
+// 🧪 [FIM: TESTE - PARITY VISUAL]

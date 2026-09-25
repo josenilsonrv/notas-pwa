@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - MULTI NOTAS]
 /*
  * Múltiplas notas locais (botão "+"), chips de nota e migração da nota única.
  * Cobre: migração de 'notas-pwa-content' -> 'notas-pwa-notes', criação ("+"),
@@ -89,3 +90,4 @@ const {chromium}=require('playwright');
   console.log('OK: multi-notas (migração, "+", chips, troca, renomear, excluir, accent por nota)');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - MULTI NOTAS]

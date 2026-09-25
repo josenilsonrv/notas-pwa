@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - MAPA CANVAS]
 /*
  * FASE 2 - Canvas infinito.
  * Cobre: mundo com transform, zoom (botões, Ctrl+scroll, pinça) com limites,
@@ -238,3 +239,4 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
   }
 })().catch(e => { console.error(e); process.exit(1); });
 
+// 🧪 [FIM: TESTE - MAPA CANVAS]

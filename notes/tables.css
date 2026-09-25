@@ -1,3 +1,4 @@
+/* 🎨 [INÍCIO: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */
 .notes-table-tools { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:7px 14px; background:color-mix(in srgb,var(--color-bg-container,#eff2f6) 85%,transparent); border-bottom:1px solid #8090a030; font:13px system-ui; }
 .notes-table-tools[hidden] { display:none !important; }
 .notes-table-address { min-width:30px; font-weight:600; color:var(--notes-accent,var(--color-neon-blue)); }
@@ -26,3 +27,4 @@
 /* Descendant editing cursors must not override the resize affordance. */
 #notesEditor[data-table-resize="x"], #notesEditor[data-table-resize="x"] * { cursor:col-resize !important; }
 #notesEditor[data-table-resize="y"], #notesEditor[data-table-resize="y"] * { cursor:row-resize !important; }
+/* 🎨 [FIM: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */

@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES TABLE MEDIA]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_table_media.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -45,3 +46,4 @@ const {chromium}=require('playwright');
  assert.deepEqual(errors,[]);console.log('OK: create/edit/reopen table; click media, Backspace removal, undo and explicit video playback');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES TABLE MEDIA]

@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - SHORTCUTS]
 /*
  * Cobre as LACUNAS de atalho apontadas por docs/RASTREABILIDADE.md:
  * Alt+ArrowUp/Down, Ctrl+Alt+1..7, Ctrl+Alt+0/T, Tab/Shift+Tab, Ctrl+B/S.
@@ -182,3 +183,4 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await browser.close();
   }
 })().catch(e => { console.error(e); process.exit(1); });
+// 🧪 [FIM: TESTE - SHORTCUTS]

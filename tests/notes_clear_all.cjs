@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES CLEAR ALL]
 /*
  * "Apagar todo o conteúdo" (Ctrl+A + Delete) numa nota com linhas escondidas por
  * colapso: o navegador ignora as linhas ocultas na hora de apagar, então sobrava
@@ -44,3 +45,4 @@ const {chromium}=require('playwright');
  console.log('OK: apagar tudo (Ctrl+A) zera a nota e remove o botao de colapso');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES CLEAR ALL]

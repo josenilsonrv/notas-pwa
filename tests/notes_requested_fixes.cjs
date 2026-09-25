@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES REQUESTED FIXES]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_requested_fixes.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -52,3 +53,4 @@ const {chromium}=require('playwright');
  assert.deepEqual(errors,[]);console.log('OK: code boundaries, Enter, manual code, collapse persistence, H3, staged colors and module payload');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES REQUESTED FIXES]

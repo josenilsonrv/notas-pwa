@@ -1,3 +1,4 @@
+/* 🎨 [INÍCIO: NOTAS/ESTILO - EDITOR (LINHAS, CABEÇALHO, COLAPSO)] */
 #notesEditor .notes-line { display:flex; align-items:flex-start; gap:6px; padding:0; margin:3px 0 3px calc(var(--notes-level,0) * 24px); position:relative; min-height:1.6em; line-height:1.6; }
 #notesEditor .notes-line[hidden], #notesToolbar[hidden] { display:none !important; }
 #notesEditor .notes-line-controls { display:flex; align-items:center; flex:none; gap:6px; position:relative; width:62px; min-height:1.6em; padding:0; user-select:none; }
@@ -133,6 +134,9 @@ html[data-theme="dark"] #notesEditor .notes-line:is([data-heading="1"],[data-hea
 #notesModal .notes-picker-actions button { padding:5px 9px; border:1px solid var(--color-border,#dce3ed); border-radius:4px; background:transparent; color:var(--color-neon-blue,#0071e3); font-size:12px; cursor:pointer; }
 #notesModal .notes-picker-actions button:last-child { background:#0757d5; border-color:#0757d5; color:white; }
 
+/* 🎨 [FIM: NOTAS/ESTILO - EDITOR (LINHAS, CABEÇALHO, COLAPSO)] */
+
+/* 🎨 [INÍCIO: NOTAS/ESTILO - PALETA DE TONS, CÓDIGO E NOTA GRANDE] */
 .notes-tone-picker { position:fixed; z-index:110; width:288px; max-width:calc(100vw - 16px); padding:10px; box-sizing:border-box; background:var(--color-bg-container,#fff); color:var(--color-text-main,#172033); border:1px solid var(--color-border,#ddd); border-radius:8px; box-shadow:0 8px 28px #0003; }
 .notes-tone-area { position:relative; height:134px; touch-action:none; border-radius:3px; cursor:crosshair; overflow:hidden; }
 .notes-tone-area span { position:absolute; width:14px; height:14px; border:1px solid white; box-shadow:0 0 1px 1px #5557; border-radius:50%; transform:translate(-50%,-50%); pointer-events:none; }
@@ -280,3 +284,4 @@ html[data-theme="dark"] #notesEditor ::highlight(notes-comment) { color:#a4afbe;
 /* Let the browser skip offscreen layout in large documents without removing editable text. */
 #notesEditor[data-large-note="true"] > .notes-line { content-visibility:auto; contain-intrinsic-size:auto 24px; }
 #notesEditor[data-large-note="true"] > .notes-line:focus-within { content-visibility:visible; }
+/* 🎨 [FIM: NOTAS/ESTILO - PALETA DE TONS, CÓDIGO E NOTA GRANDE] */

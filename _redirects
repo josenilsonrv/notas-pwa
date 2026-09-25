@@ -1,3 +1,4 @@
+# 🚀 [INÍCIO: DEPLOY - REDIRECTS (SW/MANIFEST FORA DO FALLBACK DE SPA)]
 # Cloudflare Pages / Netlify: regras avaliadas de cima para baixo.
 #
 # O sw.js e o manifest NAO podem cair no fallback de SPA. Um Service Worker servido
@@ -6,3 +7,4 @@
 # estaticos, mesmo que exista um catch-all apontando para o index.html.
 /sw.js          /sw.js          200
 /manifest.json  /manifest.json  200
+# 🚀 [FIM: DEPLOY - REDIRECTS (SW/MANIFEST FORA DO FALLBACK DE SPA)]

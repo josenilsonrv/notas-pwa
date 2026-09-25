@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - MAPA NOS]
 /*
  * FASE 3 - Nós / tópicos.
  * Cobre: criar raiz/filho/irmão/independente, edição inline (F2/duplo clique),
@@ -302,3 +303,4 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
   }
 })().catch(e => { console.error(e); process.exit(1); });
 
+// 🧪 [FIM: TESTE - MAPA NOS]

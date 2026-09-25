@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - MAPA AREA]
 /*
  * FASE 0 - Fundação e isolamento da área "Mapa Mental".
  * Cobre: seletor de áreas (Notas | Mapa Mental), troca de área, persistência em
@@ -114,3 +115,4 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await browser.close();
   }
 })().catch(e => { console.error(e); process.exit(1); });
+// 🧪 [FIM: TESTE - MAPA AREA]

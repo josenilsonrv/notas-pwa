@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - PARITY]
 /**
  * Helper de paridade: monta a mesma nota no PWA e no projeto original para
  * comparar estrutura e estilos computados.
@@ -148,3 +149,4 @@ module.exports = {
   RAIZ_PWA, ORIGINAL, lerOriginal, lerPWA, montar, estilos, SELETORES, NOTA_EXEMPLO,
   PWA_HTML, ORIG_HTML, PWA_CSS, ORIG_CSS, PWA_APP, ORIG_APP, PWA_SCRIPTS, ORIG_SCRIPTS
 };
+// 🧪 [FIM: TESTE - PARITY]

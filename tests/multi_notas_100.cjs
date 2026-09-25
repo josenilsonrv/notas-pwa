@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - MULTI NOTAS 100]
 /*
  * Muitas notas (100): a área dos chips precisa rolar na vertical (a partir de
  * ~2 linhas) sem empurrar o conteúdo, e o botão "+" fica preso no canto inferior
@@ -64,3 +65,4 @@ const {chromium}=require('playwright');
  console.log('OK: 100 notas nos chips com rolagem vertical, botao "+" fixo e troca sem travar (render '+dados.render+'ms, troca '+troca.ms+'ms)');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - MULTI NOTAS 100]

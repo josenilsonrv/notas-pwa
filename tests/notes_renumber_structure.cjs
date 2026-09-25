@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - NOTES RENUMBER STRUCTURE]
 /*
  * Portado automaticamente de produtividade-ferrramenta/tests/notes_renumber_structure.cjs por tools/portar-testes.cjs.
  * Os asserts sao identicos aos do projeto original; apenas o bootstrap e os caminhos foram adaptados.
@@ -37,3 +38,4 @@ const {chromium}=require('playwright');
  console.log('OK: numeração em seleção múltipla, itens marcados, movimento e recuo');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - NOTES RENUMBER STRUCTURE]

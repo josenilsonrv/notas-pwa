@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - TEMA SWITCH]
 /*
  * Seletor sutil de tema (claro/escuro) no header do PWA:
  * alterna manualmente, persiste no dispositivo e atualiza aria-checked,
@@ -83,3 +84,4 @@ const estado=page=>page.evaluate(()=>({
   console.log('OK: seletor sutil de tema (claro/escuro) alterna, persiste e reabre mantendo a escolha');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+// 🧪 [FIM: TESTE - TEMA SWITCH]

@@ -1,3 +1,4 @@
+// 🧪 [INÍCIO: TESTE - MAPA GESTAO]
 /*
  * FASE 1 - Gestão de mapas.
  * Cobre: criar/abrir/renomear/duplicar/excluir (com confirmação), favoritar,
@@ -247,3 +248,4 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await browser.close();
   }
 })().catch(e => { console.error(e); process.exit(1); });
+// 🧪 [FIM: TESTE - MAPA GESTAO]
