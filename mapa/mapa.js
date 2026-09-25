@@ -612,6 +612,66 @@
     }
 
 
+    /** Aplica a proporção do split (largura do painel da NOTA) via `--split-nota`. */
+    function aplicarSplitRatio() {
+        const limite = (store() && store().LIMITE_SPLIT) || [0.2, 0.8];
+        const ratio = Math.min(limite[1], Math.max(limite[0], Number(this.mapaSplitRatio) || 0.5));
+        this.mapaSplitRatio = ratio;
+        document.documentElement.style.setProperty('--split-nota', (ratio * 100).toFixed(3) + '%');
+        const divisor = document.getElementById('appSplitDivisor');
+        if (divisor) divisor.setAttribute('aria-valuenow', String(Math.round(ratio * 100)));
+    }
+
+    /** Cria/posiciona o DIVISOR arrastável entre os painéis (só aparece no split). */
+    function montarDivisorSplit() {
+        let divisor = document.getElementById('appSplitDivisor');
+        if (!divisor) {
+            divisor = document.createElement('div');
+            divisor.id = 'appSplitDivisor';
+            divisor.className = 'app-split-divisor';
+            divisor.setAttribute('role', 'separator');
+            divisor.setAttribute('aria-orientation', 'vertical');
+            divisor.setAttribute('aria-label', 'Ajustar a largura da nota e do mapa');
+            divisor.tabIndex = 0;
+            document.body.append(divisor);
+        }
+        divisor.hidden = !this.mapaSplit;
+        if (this.mapaSplit) aplicarSplitRatio.call(this);
+    }
+
+    /**
+     * Arrastar o divisor ajusta a proporção: estreitar/alargar a NOTA redimensiona o
+     * MAPA automaticamente (e vice-versa). A proporção é persistida em `notas-pwa-split`.
+     */
+    function instalarDivisorSplit() {
+        if (this.mapaSplitDivisorLigado) return;
+        this.mapaSplitDivisorLigado = true;
+        montarDivisorSplit.call(this);
+        const obter = () => document.getElementById('appSplitDivisor');
+        document.addEventListener('pointerdown', evento => {
+            if (!this.mapaSplit || !evento.target.closest('#appSplitDivisor')) return;
+            this.mapaSplitArrastoRatio = true;
+            obter()?.classList.add('mapa-split-arrastando');
+            evento.preventDefault();
+        });
+        document.addEventListener('pointermove', evento => {
+            if (!this.mapaSplitArrastoRatio) return;
+            const fracao = Math.min(0.8, Math.max(0.2, evento.clientX / window.innerWidth));
+            // Com a nota à direita, a largura da nota é o complemento da fração do ponteiro.
+            this.mapaSplitRatio = this.mapaSplitLado === 'direita' ? (1 - fracao) : fracao;
+            aplicarSplitRatio.call(this);
+            evento.preventDefault();
+        });
+        const soltar = () => {
+            if (!this.mapaSplitArrastoRatio) return;
+            this.mapaSplitArrastoRatio = false;
+            obter()?.classList.remove('mapa-split-arrastando');
+            if (store()) store().salvarSplit({ ligado: this.mapaSplit, lado: this.mapaSplitLado, ratio: this.mapaSplitRatio });
+        };
+        document.addEventListener('pointerup', soltar);
+        document.addEventListener('pointercancel', soltar);
+    }
+
     /**
      * Visão lado a lado (PC): a nota e o mapa aparecem juntos. Opt-in pelo botão da
      * topbar; arrastar a BARRA SUPERIOR de um painel para o lado inverso TROCA os
@@ -622,7 +682,8 @@
         this.mapaSplit = Boolean(ligado) && !(typeof this.ehMobile === 'function' && this.ehMobile());
         html.classList.toggle('app-split', this.mapaSplit);
         html.classList.toggle('app-split-nota-direita', this.mapaSplit && this.mapaSplitLado === 'direita');
-        if (store()) store().salvarSplit({ ligado: this.mapaSplit, lado: this.mapaSplitLado });
+        if (store()) store().salvarSplit({ ligado: this.mapaSplit, lado: this.mapaSplitLado, ratio: this.mapaSplitRatio });
+        montarDivisorSplit.call(this);
         const botao = document.getElementById('mapaSplitBtn');
         if (botao) {
             botao.setAttribute('aria-pressed', String(this.mapaSplit));
@@ -645,6 +706,7 @@
         if (pastas) pastas.hidden = true;
         if (backdrop) backdrop.classList.add('active');
         atualizarBarraAreas.call(this, 'mapa');
+        aplicarSplitRatio.call(this);
     }
 
     /** Troca o lado da nota no split (esquerda/direita). */
@@ -652,7 +714,7 @@
         const lado = novoLado === 'direita' ? 'direita' : 'esquerda';
         if (lado === this.mapaSplitLado) return;
         this.mapaSplitLado = lado;
-        if (store()) store().salvarSplit({ ligado: this.mapaSplit, lado });
+        if (store()) store().salvarSplit({ ligado: this.mapaSplit, lado, ratio: this.mapaSplitRatio });
         document.documentElement.classList.toggle('app-split-nota-direita', Boolean(this.mapaSplit) && lado === 'direita');
     }
 
@@ -2246,8 +2308,10 @@
         if (s && typeof s.lerSplit === 'function') {
             splitSalvo = s.lerSplit();
             this.mapaSplitLado = splitSalvo.lado;
+            this.mapaSplitRatio = splitSalvo.ratio;
         }
         instalarArrastoSplit.call(this);
+        instalarDivisorSplit.call(this);
         const resultado = this.aplicarArea(s ? s.lerAreaAtiva() : 'pastas');
         if (splitSalvo && splitSalvo.ligado) aplicarSplit.call(this, true);
         return resultado;
@@ -2307,8 +2371,11 @@
             pastasAreaOuvintesLigados: false,
             mapaSplit: false,
             mapaSplitLado: 'esquerda',
+            mapaSplitRatio: 0.5,
             mapaSplitArrasto: null,
             mapaSplitArrastoLigado: false,
+            mapaSplitDivisorLigado: false,
+            mapaSplitArrastoRatio: false,
             aplicarArea, inicializarAreasMapa, montarAreaMapa, aplicarTemaMapa, renderArea,
             definirViewport, salvarViewportAgora,
             mapaCriarFilhoDeNo, mapaCriarIrmaoDeNo, mapaCriarNoIndependente, mapaExcluirNo,
@@ -2330,7 +2397,7 @@
             mapaMoverBotaoBarra, mapaRestaurarBarra,
             mapaAlternarColapsoBarras, setMapaBarrasColapsadas,
             montarAreaPastas, renderPastas, abrirPasta,
-            aplicarSplit, trocarLadoSplit,
+            aplicarSplit, trocarLadoSplit, aplicarSplitRatio,
             mapaAlternarEstiloRapido, mapaDefinirEstiloRapido, mapaPassoEstiloRapido,
             mapaAbrirCor, mapaGravarCorRecente,
             mapaAlternarModoConexao, mapaCriarConexaoEntre, mapaCliqueConexaoNo,

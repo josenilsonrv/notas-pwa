@@ -29,7 +29,7 @@ Editor de notas avançado como Progressive Web App (PWA) para uso em celular, co
 - **Seletor de áreas (dentro da pasta)**: barra flutuante **Notas | Mapa Mental** (a escolha é lembrada em `notas-pwa-area-ativa`), com "‹ Pastas" (volta à tela principal) e "Abrir mapa" (ver o mapa ao lado da nota)
 - **Notas**: chips filtrados pela pasta ativa; clique-direito/toque longo no chip abre o menu (Renomear · Duplicar · Mover para pasta · Excluir)
 - **Mapa Mental**: área separada do editor, em camadas (pasta `mapa/`), montada só na primeira entrada (lazy) para não pesar o boot
-- **Lado a lado (PC)**: botão na topbar mostra a nota e o mapa juntos (o preferência fica em `notas-pwa-split`); **arrastar a barra superior** de um painel para o lado inverso troca os lados
+- **Lado a lado (PC)**: botão na topbar mostra a nota e o mapa juntos (o preferência fica em `notas-pwa-split`); **arrastar a barra superior** de um painel para o lado inverso troca os lados, e **arrastar o divisor** entre eles ajusta a largura (um painel acompanha o outro)
 - **Vínculo Notas↔Mapa**: um tópico pode apontar para uma nota (atalho 📄 que abre a nota)
 - **Gestão de mapas**: criar, abrir, renomear, duplicar e excluir (com confirmação); favoritar (estrela) e arquivar/desarquivar
 - **Pastas/workspaces**: criar, renomear, excluir e mover mapas entre pastas

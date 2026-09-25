@@ -883,3 +883,16 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
 - **Blindagem**: `tests/split_view.cjs` passou a medir as caixas e afirmar que o `right` do backdrop
   ≤ `left` do mapa e que cada painel ocupa metade da tela.
 - **Asset do Service Worker (bump)**: `CACHE_NAME` **v51 → v52** (mudou `mapa/mapa.css`).
+
+### P78 — Lado a lado: divisor arrastável (estreitar/alargar um painel ajusta o outro)
+- **Pedido**: ao estreitar/alargar as Notas (ou o Mapa), o outro painel deve se ajustar automaticamente.
+- **Implementação**: proporção em `--split-nota` (largura do painel da NOTA) aplicada em `mapa/mapa.css`
+  (`left`/`width` de `#notesModalBackdrop` e `.mapa-area`, espelhados por `.app-split-nota-direita`).
+  Em `mapa/mapa.js`: `aplicarSplitRatio` (grava `--split-nota`), `montarDivisorSplit`/`instalarDivisorSplit`
+  (elemento `#appSplitDivisor`, `role="separator"`, arrastável por Pointer Events; clamp 20%–80%;
+  com a nota à direita usa o complemento). Persistido em `notas-pwa-split.ratio`
+  (`mapa/mapa-store.js`: `LIMITE_SPLIT` + `normalizarRatio`). O `#notesResizeHandle` é oculto no split.
+- **Blindagem**: `tests/split_view.cjs` §4.1 arrasta o divisor e afirma que a nota diminui, o MAPA cresce,
+  a soma das larguras = largura da tela (sem sobra/sobreposição) e a proporção é persistida.
+- **Asset do Service Worker (bump)**: `CACHE_NAME` **v52 → v53** (mudaram `mapa/mapa.js`,
+  `mapa/mapa-store.js` e `mapa/mapa.css`).

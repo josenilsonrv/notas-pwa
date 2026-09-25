@@ -263,15 +263,26 @@
     };
     const salvarPastaAtiva = id => gravar(CHAVES.pastaAtiva, id || null);
 
-    /** Preferências da visão lado a lado (Nota + Mapa no PC). */
+    /** Preferências da visão lado a lado (Nota + Mapa no PC) + proporção dos painéis. */
+    const LIMITE_SPLIT = [0.2, 0.8];
+    const normalizarRatio = valor => {
+        const numero = Number(valor);
+        if (!Number.isFinite(numero)) return 0.5;
+        return Math.min(LIMITE_SPLIT[1], Math.max(LIMITE_SPLIT[0], numero));
+    };
     const lerSplit = () => {
         const valor = ler(CHAVES.split, {});
         return {
             ligado: Boolean(valor && valor.ligado),
-            lado: (valor && valor.lado === 'direita') ? 'direita' : 'esquerda'
+            lado: (valor && valor.lado === 'direita') ? 'direita' : 'esquerda',
+            ratio: normalizarRatio(valor && valor.ratio)
         };
     };
-    const salvarSplit = pref => gravar(CHAVES.split, { ligado: Boolean(pref && pref.ligado), lado: (pref && pref.lado === 'direita') ? 'direita' : 'esquerda' });
+    const salvarSplit = pref => gravar(CHAVES.split, {
+        ligado: Boolean(pref && pref.ligado),
+        lado: (pref && pref.lado === 'direita') ? 'direita' : 'esquerda',
+        ratio: normalizarRatio(pref && pref.ratio)
+    });
 
     /** Quantos mapas pertencem a uma pasta (a "Geral" também conta os sem pasta). */
     function contarMapasDaPasta(pastaId) {
@@ -332,7 +343,7 @@
         listarBacklinks, listarSaidas, listarReferenciasQuebradas,
         listarPastas, criarPasta, renomearPasta, excluirPasta,
         ID_PASTA_PADRAO, garantirPastaPadrao, lerPastaAtiva, salvarPastaAtiva, contarMapasDaPasta,
-        lerSplit, salvarSplit,
+        lerSplit, salvarSplit, LIMITE_SPLIT,
         listarRecentes, salvarRecentes, registrarRecente,
         listarTemplates, salvarTemplate, criarMapaDeTemplateSalvo, excluirTemplate,
         lerMapaAtivo, salvarMapaAtivo

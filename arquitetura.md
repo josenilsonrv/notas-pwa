@@ -106,7 +106,7 @@
 **Propósito:** Service Worker offline-first. Serve o cache na hora e revalida na rede com timeout, garantindo que o app nunca fique preso carregando.
 
 ## Implementação: Constantes, helpers e ciclo de vida
-- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v52';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./mapa/mapa-cores.js`)
+- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v53';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./mapa/mapa-cores.js`)
 - **[Linhas 19-20 ~]** `(sem comentário de ancoragem)` -> `const CACHE_NAME` · `const TIMEOUT_MS`
 - **[Linhas 22-32 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
 - **[Linhas 33-59 ~]** `/** Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
@@ -320,7 +320,7 @@
 - **[Linhas 60-211 ~]** `// 🔄 [INÍCIO: MAPA - ÍNDICE/CRUD]` -> `listarMapas` / `salvarListaMapas` / `obterResumo` / `obterGrafo` / `criarMapa` / renomear / duplicar / excluir / arquivar
 
 ## Implementação: Pastas, recentes, templates e ativo
-- **[Linhas 217-322 ~]** `// 🔄 [INÍCIO: MAPA - PASTAS/RECENTES/TEMPLATES/ATIVO]` -> pastas (CRUD) + `ID_PASTA_PADRAO`/`garantirPastaPadrao` (pasta "Geral"), `lerPastaAtiva`/`salvarPastaAtiva`, `contarMapasDaPasta`, `lerSplit`/`salvarSplit` (lado a lado), `listarRecentes`, `salvarTemplate`, `obterMapaRaiz`, histórico do grafo
+- **[Linhas 217-322 ~]** `// 🔄 [INÍCIO: MAPA - PASTAS/RECENTES/TEMPLATES/ATIVO]` -> pastas (CRUD) + `ID_PASTA_PADRAO`/`garantirPastaPadrao` (pasta "Geral"), `lerPastaAtiva`/`salvarPastaAtiva`, `contarMapasDaPasta`, `lerSplit`/`salvarSplit` (lado a lado + `ratio`/`LIMITE_SPLIT`), `listarRecentes`, `salvarTemplate`, `obterMapaRaiz`, histórico do grafo
 
 ---
 
@@ -389,7 +389,7 @@
 - **[Linhas 80-391 ~]** `// 🔄 [INÍCIO: MAPA - RENDER/CONTROLE]` -> `renderArea()` (guarda de BLINDAGEM; renderiza `#mapaToolbar`/`#mapaFormatBar` ANTES do mapa; reaplica `setMapaBarrasColapsadas`; nome da nota vinculada), `tratarCliqueMapa` (fecha menus; ações de barra/formatação/cores/colapso/split/`abrir-nota`), `tratarSubmitMapa` / `tratarMudancaMapa` / `tratarBuscaMapa`
 - **[Linhas 393-454 ~]** `// ⚡ [INÍCIO: MAPA - COLAPSO DAS BARRAS]` -> `setMapaBarrasColapsadas` · `mapaPanelMotion` · `mapaAlternarColapsoBarras` (botão `#mapaColapsoBarras`; espelha o cabeçalho de Notas)
 - **[Linhas 460-587 ~]** `// ⚡ [INÍCIO: MAPA - PASTAS (ÁREA RAIZ / WORKSPACES)]` -> `botaoPastas` (namespace `data-pastas-acao`), `montarAreaPastas`, `renderPastas` (cartões com contagem de notas+mapas), `abrirPasta` (define a pasta ativa e entra em Notas), `tratarCliquePastas`
-- **[Linhas 588-683 ~]** `// ⚡ [INÍCIO: MAPA - LADO A LADO (SPLIT NOTA + MAPA)]` -> `atualizarBarraAreas` (esconde a barra na tela raiz; "‹ Pastas" + abas + "Abrir mapa"), `aplicarSplit` (classe `app-split`; `abrir-nota` entra em lado a lado), `trocarLadoSplit`, `instalarArrastoSplit` (arrastar a barra superior troca de lado)
+- **[Linhas 588-683 ~]** `// ⚡ [INÍCIO: MAPA - LADO A LADO (SPLIT NOTA + MAPA)]` -> `atualizarBarraAreas` (esconde a barra na tela raiz; "‹ Pastas" + abas + "Abrir mapa"), `aplicarSplitRatio`/`montarDivisorSplit`/`instalarDivisorSplit` (divisor arrastável `#appSplitDivisor`: estreitar/alargar um painel ajusta o outro via `--split-nota`), `aplicarSplit` (classe `app-split`; `abrir-nota` entra em lado a lado), `trocarLadoSplit`, `instalarArrastoSplit` (arrastar a barra superior troca de lado)
 
 ## Implementação: Canvas, navegação e histórico
 - **[Linhas 374-447 ~]** `// 🔄 [INÍCIO: MAPA - CANVAS/VIEWPORT]` -> `caixaDoCanvas()`, viewport por mapa (persistência com debounce)

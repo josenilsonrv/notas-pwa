@@ -192,26 +192,50 @@ html[data-theme="dark"] .app-areas [data-app-area]:hover { color: var(--mapa-tex
  * SUPERIOR de um painel para o lado inverso troca os lados.
  * ------------------------------------------------------------ */
 html.notes-mobile #mapaSplitBtn { display: none !important; }
+/* Divisor arrastável entre os painéis (só aparece no modo lado a lado). */
+.app-split-divisor { display: none; }
+
 @media (min-width: 768px) {
-    /* Nota à ESQUERDA (padrão): nota na metade esquerda, mapa na direita.
-       O backdrop PRECISA de width 50% (o base fixa width:100%, e sem isso o
-       `right:50%` é ignorado e o overlay escuro/desfocado cobre o mapa). */
-    html.app-split .mapa-area { left: 50%; right: 0; }
+    /* Nota à ESQUERDA (padrão). `--split-nota` = largura do painel da NOTA.
+       O backdrop PRECISA de width definido (o base fixa width:100%; sem isso o
+       `right` é ignorado e o overlay escuro/desfocado cobre o mapa). */
+    html.app-split { --split-nota: 50%; }
+    html.app-split .mapa-area { left: var(--split-nota); right: 0; }
     html.app-split #notesModalBackdrop {
-        left: 0; right: 50%;
-        width: 50% !important;
+        left: 0; right: auto;
+        width: var(--split-nota) !important;
         background: transparent !important;
         -webkit-backdrop-filter: none !important;
         backdrop-filter: none !important;
     }
     /* Nota à DIREITA: espelha os dois painéis. */
-    html.app-split.app-split-nota-direita .mapa-area { left: 0; right: 50%; }
-    html.app-split.app-split-nota-direita #notesModalBackdrop { left: 50%; right: 0; }
+    html.app-split.app-split-nota-direita .mapa-area { right: var(--split-nota); left: 0; }
+    html.app-split.app-split-nota-direita #notesModalBackdrop { right: 0; left: auto; }
     html.app-split #notesModalBackdrop.active { z-index: 900; }
     html.app-split #notesModal { width: 100% !important; max-width: 100% !important; border-radius: 0 !important; }
+    html.app-split #notesResizeHandle { display: none !important; }
     html.app-split .notes-modal-header,
     html.app-split .mapa-topbar { cursor: grab; touch-action: none; }
     html.app-split .mapa-split-arrastando { cursor: grabbing; }
+
+    /* Divisor arrastável: estreitar/alargar um painel ajusta o outro automaticamente. */
+    html.app-split .app-split-divisor {
+        display: block;
+        position: fixed;
+        top: 0; bottom: 0;
+        width: 10px;
+        left: calc(var(--split-nota) - 5px);
+        z-index: 2300;
+        cursor: col-resize;
+        touch-action: none;
+        background: color-mix(in srgb, var(--color-neon-blue) 28%, transparent);
+    }
+    html.app-split.app-split-nota-direita .app-split-divisor {
+        left: auto;
+        right: calc(var(--split-nota) - 5px);
+    }
+    html.app-split .app-split-divisor:hover,
+    html.app-split .app-split-divisor:active { background: var(--color-neon-blue); }
 }
 
 .mapa-shell { display: flex; flex-direction: column; height: 100%; min-height: 0; }

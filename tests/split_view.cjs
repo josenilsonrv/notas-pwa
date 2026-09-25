@@ -119,6 +119,30 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.ok(geometria.bRight <= geometria.mLeft + 1, 'o overlay da nota fica só na metade da nota (não cobre o mapa)');
     assert.ok(Math.abs(geometria.bw - geometria.mw) <= 2, 'cada painel ocupa metade da tela');
 
+    // ------------------------------------------- 4.1) divisor ajusta os DOIS painéis
+    const antes = await page.evaluate(() => {
+      const b = document.getElementById('notesModalBackdrop').getBoundingClientRect();
+      const m = document.getElementById('mapaArea').getBoundingClientRect();
+      return { nota: Math.round(b.width), mapa: Math.round(m.width) };
+    });
+    await page.evaluate(() => {
+      const d = document.getElementById('appSplitDivisor');
+      d.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 640, clientY: 400 }));
+      document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, clientX: 400, clientY: 400 }));
+      document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, clientX: 400, clientY: 400 }));
+    });
+    await page.waitForTimeout(60);
+    const depois = await page.evaluate(() => {
+      const b = document.getElementById('notesModalBackdrop').getBoundingClientRect();
+      const m = document.getElementById('mapaArea').getBoundingClientRect();
+      return { nota: Math.round(b.width), mapa: Math.round(m.width), total: Math.round(b.width + m.width) };
+    });
+    assert.ok(depois.nota < antes.nota, 'estreitar a nota reduz o painel da nota');
+    assert.ok(depois.mapa > antes.mapa, 'o MAPA cresce automaticamente quando a nota estreita');
+    assert.equal(depois.total, 1280, 'os dois painéis somam a largura da tela (sem sobra/sobreposição)');
+    assert.ok(Math.abs(depois.nota - 400) <= 2, 'a nota passa a ter ~400px (posição do divisor)');
+    assert.equal(await page.evaluate(() => Math.round(JSON.parse(localStorage.getItem('notas-pwa-split')).ratio * 100)), Math.round(400 / 1280 * 100), 'proporção persistida em notas-pwa-split');
+
     // ---------------------------------------------------------------- 5) arrastar a barra troca os lados
     await page.evaluate(() => {
       const cabecalho = document.querySelector('.notes-modal-header');
