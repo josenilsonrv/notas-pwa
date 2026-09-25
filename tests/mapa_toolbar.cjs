@@ -326,9 +326,51 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await clicar('#mapaBarraEditor [data-mapa-acao="barra-fechar"]');
     assert.equal(await page.evaluate(() => Boolean(document.getElementById('mapaBarraEditor'))), false, 'painel fecha');
 
+    // ------------------------------------------- 7) ações rápidas FIXAS à direita
+    const fixos = await page.evaluate(() => {
+      const grupo = document.querySelector('#mapaFormatBar .mapa-tb-fixos');
+      if (!grupo) return null;
+      const estilo = getComputedStyle(grupo);
+      return {
+        dentroDaBarra: document.getElementById('mapaFormatBar').contains(grupo),
+        acoes: [...grupo.querySelectorAll('[data-mapa-acao]')].map(b => b.dataset.mapaAcao),
+        posicao: estilo.position,
+        direita: estilo.right,
+        icones: grupo.querySelectorAll('svg').length,
+        iconesVazios: [...grupo.querySelectorAll('svg')].filter(s => !s.children.length).length
+      };
+    });
+    assert.ok(fixos, 'barra de formatação tem o grupo de ações rápidas');
+    assert.equal(fixos.dentroDaBarra, true, 'ações rápidas ficam DENTRO da barra (nada solto)');
+    assert.equal(fixos.posicao, 'sticky', 'ações rápidas ficam fixas na barra (position sticky)');
+    assert.equal(fixos.direita, '0px', 'ações rápidas coladas à DIREITA');
+    assert.deepEqual(fixos.acoes.sort(), ['no-filho', 'no-irmao'], 'ações rápidas: irmão e filho');
+    assert.equal(fixos.icones, 2, 'ações rápidas com ícone padronizado');
+    assert.equal(fixos.iconesVazios, 0, 'ícones das ações rápidas têm desenho');
+
+    // Alinhamento: o grupo é o ÚLTIMO item e encosta na borda direita (mesmo rolando a barra).
+    const alinhamento = await page.evaluate(() => {
+      const grupo = document.querySelector('#mapaFormatBar .mapa-tb-fixos');
+      const barra = document.getElementById('mapaFormatBar');
+      return {
+        ehUltimo: barra.lastElementChild === grupo,
+        delta: Math.round(barra.getBoundingClientRect().right - grupo.getBoundingClientRect().right)
+      };
+    });
+    assert.equal(alinhamento.ehUltimo, true, 'ações rápidas são o ÚLTIMO item da barra');
+    assert.ok(alinhamento.delta >= 0 && alinhamento.delta <= 20,
+      'ações rápidas alinhadas à direita da barra (' + alinhamento.delta + 'px)');
+
+    // Os botões usam os MESMOS comandos do menu do card e já abrem o tópico em edição.
+    await selecionar(idObjetivo);
+    const antesIrmao = await page.evaluate(() => window.app.mapaCanvasGrafo.nos.length);
+    await clicar('#mapaFormatBar [data-mapa-acao="no-irmao"]');
+    assert.equal(await page.evaluate(() => window.app.mapaCanvasGrafo.nos.length), antesIrmao + 1, 'botão fixo cria irmão');
+    assert.ok(await page.evaluate(() => Boolean(window.app.mapaEditandoId)), 'tópico criado já fica em edição (celular)');
+    await page.keyboard.press('Escape');   // encerra a edição inline aberta pelo botão
+
     assert.deepEqual(erros, []);
     console.log('OK: barras padronizadas (ferramentas, formatação, menu do card, cores, ordem)');
-
   } finally {
     await browser.close();
   }

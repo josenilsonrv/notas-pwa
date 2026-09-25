@@ -762,3 +762,32 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
 
 ### P68 — Asset do Service Worker (bump)
 - **Regra**: mudou `mapa/mapa.js` ⇒ **`CACHE_NAME` v45 → v46**.
+
+### P69 — Notas: última linha atrás da barra do teclado (espaço de rolagem insuficiente)
+- **Sintoma**: perto do fim da nota, a linha sendo digitada ficava **atrás da barra de formatação**
+  acoplada ao teclado — não havia espaço de rolagem para trazê-la para cima.
+- **Causa**: a reserva de espaço era fixa (`altura da barra + 12`) e `rolarCaretParaAcima()` apenas
+  somava `scrollTop`; quando o container **não tinha** espaço sobrando, o valor era "clampado" e a
+  linha continuava sob a barra.
+- **Correção** (`app.js`): constantes `NotesPWA.FOLGA_BARRA_TECLADO`/`MARGEM_CURSOR_BARRA`;
+  `rolarCaretParaAcima()` agora **mede quanto faltou** e **aumenta o `padding-bottom` do editor**
+  exatamente o que falta (e rola de novo); a rolagem também roda a cada `input` (coalescida num
+  `requestAnimationFrame`), não só no poll de 250 ms.
+- **Propriedade garantida**: com a barra acoplada, `caret.bottom <= barra.top - 10`.
+- **Teste**: `tests/toolbar_pwa.cjs` §3c-bis (cenário SEM folga, `padding-bottom: 0`).
+
+### P70 — Mapa: ações rápidas FIXAS à direita na barra de formatação
+- **Pedido**: dois botões para criar tópico durante a edição no celular, **fixos** na barra.
+- **Implementação**: `div.mapa-tb-fixos` como **último item** de `#mapaFormatBar`, com
+  `position: sticky; right: 0; margin-left: auto; background: var(--mapa-container)` e os ícones
+  `ICONES.irmao`/`ICONES.filho`. Ações: `no-irmao` (**Adicionar irmão**) e `no-filho`
+  (**Adicionar filho**) — as MESMAS do menu do card; criam o tópico já **em edição**.
+- **Nota de requisito**: o modelo **não** tem "adicionar pai" (`criarPaiDe`); ver
+  `docs/ATUALIZACAO-PWA.md` §7.2.
+- **Teste**: `tests/mapa_toolbar.cjs` §7 (último item, `sticky`, colado à direita, cria em edição).
+
+### P71 — Atualização do app no host/PWA (agora DOCUMENTADA)
+- **Regra**: mudaram `app.js`, `mapa/mapa-render.js` e `mapa/mapa.css` ⇒ **`CACHE_NAME` v46 → v47**.
+- **Documentação completa**: `docs/ATUALIZACAO-PWA.md` — sintoma → diagnóstico (comparação de bytes
+  local × publicado) → causa (cache-first + `sw.js` cacheado) → correção → **cabeçalhos por host**
+  (Firebase Hosting, Cloudflare Pages, Netlify, Nginx) → checklist de release.

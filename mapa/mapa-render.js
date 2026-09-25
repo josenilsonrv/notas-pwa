@@ -434,6 +434,9 @@
         restaurar: { d: '<path d="M4 10a8 8 0 1 1 2.3 6.3"/><path d="M4 4v6h6"/>' },
         subir: { d: '<path d="M12 20V5"/><path d="m6 11 6-6 6 6"/>' },
         descer: { d: '<path d="M12 4v15"/><path d="m6 13 6 6 6-6"/>' },
+        // Ações rápidas de criação (barra de formatação, fixas à direita).
+        irmao: { d: '<rect x="2" y="8" width="8" height="8" rx="2"/><path d="M17 8v8M13 12h8"/>' },
+        filho: { d: '<rect x="8" y="2" width="8" height="7" rx="2"/><path d="M12 9v4"/><path d="M12 13v8M9 17h6"/>' },
         'conectar-nos': { d: '<path d="M9 12h6"/><path d="M7 8H6a4 4 0 0 0 0 8h1"/><path d="M17 8h1a4 4 0 0 1 0 8h-1"/>' },
         'conectar-mapa': { d: '<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>' },
         'template-salvar': { d: '<path d="M6 3h12v18l-6-4-6 4z"/>' },
@@ -758,6 +761,16 @@
         gLinhas.append(aplicar);
         gLinhas.append(btnIcone('estilo-restaurar', 'restaurar', 'Restaurar o estilo padrão', 'no-estilo-restaurar'));
         bar.append(gLinhas);
+
+        // ---- Ações RÁPIDAS fixadas à DIREITA (uso no celular): ficam SEMPRE visíveis,
+        // mesmo com a barra rolada na horizontal (`position: sticky; right: 0`), e já
+        // criam o tópico em edição (mesmas ações do menu do card).
+        const fixos = criar('div', 'mapa-tb-fixos');
+        fixos.setAttribute('role', 'group');
+        fixos.setAttribute('aria-label', 'Criar tópico');
+        fixos.append(btnIcone('rapido-irmao', 'irmao', 'Adicionar irmão', 'no-irmao'));
+        fixos.append(btnIcone('rapido-filho', 'filho', 'Adicionar filho', 'no-filho'));
+        bar.append(fixos);
 
         // Menu de OPÇÕES do botão aberto (fonte/forma/alinhamento) — sempre por último.
         const opcoes = menuOpcoesBarra(bar, info, efetivo);

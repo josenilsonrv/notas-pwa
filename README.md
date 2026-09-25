@@ -275,6 +275,10 @@ evitando que o celular fique preso em uma versão antiga do `sw.js`, `index.html
 
 > Ao publicar alterações nos assets, incremente `CACHE_NAME` em `sw.js` (ex.: `notas-pwa-v3`) para
 > forçar a atualização do cache do Service Worker nos dispositivos.
+>
+> **Atualização do app (cache do Service Worker, "não atualiza no link publicado", hospedagem):**
+> veja **`docs/ATUALIZACAO-PWA.md`** — inclui o diagnóstico, o `firebase.json` de exemplo, os
+> cabeçalhos por host (Firebase/Cloudflare/Netlify/Nginx) e o checklist de release.
 
 ### Service Worker e fallback de SPA (importante)
 

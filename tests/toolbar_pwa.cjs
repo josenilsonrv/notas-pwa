@@ -118,6 +118,37 @@ const ordemDe=page=>page.evaluate(()=>[...app.chavesToolbar().values()]);
     return caret.bottom<=barra.top+1;
   });
   assert.equal(cursorAcima,true,'cursor visivel acima da barra do teclado');
+
+  // 3c-bis) SEM espaço de rolagem (o problema reportado): a folga reservada cresce sozinha
+  // e a linha continua ACIMA da barra, nunca atrás dela.
+  const semFolga=await page.evaluate(()=>{
+    const editor=document.getElementById('notesEditor');
+    const container=document.getElementById('notesEditorContainer');
+    const barra=document.getElementById('notesToolbar');
+    editor.style.removeProperty('padding-bottom');
+    editor.innerHTML='';let i=0;
+    // Enche até o conteúdo passar o container por ~4px: sem folga, não há como rolar o fim.
+    while(editor.scrollHeight<container.clientHeight+4&&i<400){
+      const div=document.createElement('div');div.className='notes-line';div.dataset.level='0';
+      div.innerHTML='<div class="notes-line-text">linha '+(++i)+'</div>';editor.append(div);
+    }
+    const alvo=editor.lastElementChild.querySelector('.notes-line-text');
+    const r=document.createRange();r.selectNodeContents(alvo);r.collapse(false);
+    const s=getSelection();s.removeAllRanges();s.addRange(r);
+    const folgaAntes=parseFloat(editor.style.paddingBottom)||0;
+    app.rolarCaretParaAcima();
+    const caret=getSelection().getRangeAt(0).getBoundingClientRect();
+    return{
+      acima:caret.bottom<=barra.getBoundingClientRect().top+1,
+      folgaAntes,
+      folgaDepois:parseFloat(editor.style.paddingBottom)||0,
+      alturaBarra:barra.offsetHeight,
+      linhas:i
+    };
+  });
+  assert.ok(semFolga.linhas>1,'cenário montado com conteúdo cobrindo o container ('+semFolga.linhas+' linhas)');
+  assert.equal(semFolga.acima,true,'falta de rolagem: a reserva cresce e a linha fica acima da barra');
+  assert.ok(semFolga.folgaDepois>semFolga.folgaAntes,'a reserva de espaço aumenta quando falta rolagem ('+JSON.stringify(semFolga)+')');
   await page.evaluate(()=>app.aplicarToolbarTeclado(0));
   assert.equal(await page.evaluate(()=>document.getElementById('notesToolbar').classList.contains('notes-toolbar-docked')),false,'barra volta ao normal');
   assert.equal(await page.evaluate(()=>document.getElementById('notesEditor').style.paddingBottom),'','espaco extra removido');

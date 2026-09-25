@@ -89,6 +89,12 @@ class ThemeManager {
  * protótipo desta classe, exatamente como o sistema faz com NeuralCommandApp.
  */
 class NotesPWA {
+    // Folga EXTRA (px) reservada no fim do editor enquanto a barra está acoplada ao
+    // teclado: garante espaço de ROLAGEM para a linha digitada nunca ficar sob a barra.
+    static FOLGA_BARRA_TECLADO = 28;
+    // Distância mínima (px) entre a linha do cursor e o topo da barra acoplada.
+    static MARGEM_CURSOR_BARRA = 10;
+
     constructor() {
         this.userId = 'local';
         this.notesHistory = [];
@@ -594,10 +600,15 @@ class NotesPWA {
      * Com a barra acoplada ao teclado, garante que a linha onde o cursor está
      * continue visível ACIMA da barra (senão as quebras de linha empurram o texto
      * para trás da barra). Rola o container do editor só o necessário.
+     *
+     * GARANTIA: se o documento não tiver espaço de rolagem suficiente (nota curta/acabou
+     * de chegar ao fim), o `padding-bottom` do editor CRESCE só o que falta — assim a linha
+     * digitada SEMPRE fica acima da barra do teclado, nunca atrás dela.
      */
     rolarCaretParaAcima() {
         const toolbar = document.getElementById('notesToolbar');
         const container = document.getElementById('notesEditorContainer');
+        const editor = document.getElementById('notesEditor');
         if (!toolbar?.classList.contains('notes-toolbar-docked') || !container) return;
         const selection = window.getSelection();
         if (!selection?.rangeCount) return;
@@ -609,11 +620,22 @@ class NotesPWA {
             rect = elemento?.getBoundingClientRect?.();
         }
         if (!rect || (!rect.height && !rect.top)) return;
-        const limite = toolbar.getBoundingClientRect().top - 8;
+        const caixaContainer = container.getBoundingClientRect();
+        const limite = toolbar.getBoundingClientRect().top - NotesPWA.MARGEM_CURSOR_BARRA;
         if (rect.bottom > limite) {
-            container.scrollTop += rect.bottom - limite;
-        } else if (rect.top < container.getBoundingClientRect().top) {
-            container.scrollTop -= container.getBoundingClientRect().top - rect.top;
+            const desejado = rect.bottom - limite;
+            const antes = container.scrollTop;
+            container.scrollTop = antes + desejado;
+            const rolou = container.scrollTop - antes;
+            // Não rolou o suficiente? Aumenta a folga reservada no fim do editor e rola de novo.
+            if (editor && rolou < desejado - 0.5) {
+                const faltou = Math.ceil(desejado - rolou) + 8;
+                const atual = parseFloat(editor.style.paddingBottom) || 0;
+                editor.style.paddingBottom = (atual + faltou) + 'px';
+                container.scrollTop = antes + desejado;
+            }
+        } else if (rect.top < caixaContainer.top) {
+            container.scrollTop -= caixaContainer.top - rect.top;
         }
     }
 
@@ -1124,6 +1146,15 @@ class NotesPWA {
         });
         window.addEventListener('pagehide', pararAjustes);
         editorDeNotas()?.addEventListener('focusin', reagirAoFoco);
+        // Garantia na digitação: o poll de 250 ms pode ficar para trás em digitação rápida.
+        // Aqui a rolagem é reagendada num frame, então nunca atrasa a linha digitada.
+        let pedidoRolagem = 0;
+        editorDeNotas()?.addEventListener('input', () => {
+            const toolbar = document.getElementById('notesToolbar');
+            if (!toolbar?.classList.contains('notes-toolbar-docked')) return;
+            cancelAnimationFrame(pedidoRolagem);
+            pedidoRolagem = requestAnimationFrame(() => this.rolarCaretParaAcima());
+        });
         document.addEventListener('focusout', event => {
             const editor = editorDeNotas();
             if (!editor || !editor.contains(event.target)) return;
@@ -1194,7 +1225,7 @@ class NotesPWA {
         const zerado = toolbar.getBoundingClientRect();
         toolbar.style.setProperty('--notes-toolbar-dock-left', Math.round(Math.max(0, caixa.left) - zerado.left) + 'px');
         toolbar.style.setProperty('--notes-toolbar-dock-bottom', Math.round(zerado.bottom - (layout - inset)) + 'px');
-        if (editor) editor.style.paddingBottom = (toolbar.offsetHeight + 12) + 'px';
+        if (editor) editor.style.paddingBottom = (toolbar.offsetHeight + NotesPWA.FOLGA_BARRA_TECLADO) + 'px';
     }
     // ⚡ [FIM: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]
 }

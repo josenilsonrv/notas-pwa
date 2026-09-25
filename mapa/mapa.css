@@ -850,6 +850,22 @@ html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); bord
 .mapa-tb-mais-lista .mapa-tb-btn { justify-content: flex-start; gap: 8px; width: 100%; min-height: 34px; font-size: 13px; }
 .mapa-menu-item svg { width: 16px; height: 16px; flex: none; }
 
+/* Ações RÁPIDAS fixas à DIREITA da barra de formatação (celular): continuam visíveis
+   mesmo com a barra rolada na horizontal (`sticky` + `margin-left: auto`). O fundo é o
+   mesmo da barra (senão o conteúdo passaria por trás) e a sombra marca a separação. */
+.mapa-tb-fixos {
+    position: sticky;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 0 0 auto;
+    margin-left: auto;
+    padding-left: 8px;
+    background: var(--mapa-container);
+    box-shadow: -10px 0 12px -8px rgba(0, 0, 0, .25);
+}
+
 /* Menu contextual (F12): comandos ESPECÍFICOS DE CARD (botão direito / toque longo). */
 .mapa-menu {
     position: fixed;
