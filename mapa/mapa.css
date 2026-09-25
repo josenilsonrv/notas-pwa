@@ -930,4 +930,24 @@ html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); bord
 }
 .mapa-cor-aplicar { background: var(--color-neon-blue); border-color: var(--color-neon-blue); color: #fff; }
 
+/* Blindagem: aviso VISÍVEL quando a área do mapa não pôde montar (cache antigo do
+ * Service Worker, módulo ausente ou erro). Nunca deixar a área vazia em silêncio. */
+.mapa-falha {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    text-align: center;
+    background: var(--mapa-espaco);
+    color: var(--mapa-texto);
+}
+.mapa-falha-titulo { margin: 0; font-size: 16px; font-weight: 600; color: var(--mapa-texto-forte); }
+.mapa-falha-dica { margin: 0; max-width: 420px; font-size: 13px; color: var(--mapa-texto-suave); }
+.mapa-falha-acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.mapa-falha-acoes .mapa-btn { text-decoration: none; }
+
 /* 🎨 [FIM: MAPA/ESTILO - ÁREA, CANVAS, NÓS, PAINEL E CONEXÕES] */

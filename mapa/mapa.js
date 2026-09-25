@@ -81,7 +81,12 @@
     /** Redesenha a área conforme o estado (lista de gestão OU mapa aberto). */
     function renderArea() {
         const r = render();
-        if (!r) return;
+        // Blindagem: sem os módulos do mapa (ex.: cache antigo do Service Worker), a
+        // área ficaria vazia em silêncio — mostra um aviso visível em vez disso.
+        if (!r || typeof r.montarShell !== 'function' || diagnosticoModulosMapa().length) {
+            mostrarFalhaMapa(document.getElementById('mapaArea'));
+            return;
+        }
         const dados = dadosGestao.call(this);
         const grafo = this.mapaAbertaId ? store().obterGrafo(this.mapaAbertaId) : null;
         const resumo = this.mapaAbertaId ? store().obterResumo(this.mapaAbertaId) : null;
@@ -1604,61 +1609,122 @@
         if (r) r.aplicarTema(alvo);
     }
 
+    /** Módulos mínimos para a área montar (store + modelo + render do shell). */
+    const MODULOS_MAPA = ['MapaMentalModelo', 'MapaMentalStore', 'MapaMentalRender'];
+
+    /** Módulos do mapa que NÃO carregaram (ex.: cache antigo do Service Worker). */
+    function diagnosticoModulosMapa() {
+        return MODULOS_MAPA.filter(nome => typeof global[nome] === 'undefined');
+    }
+
+    /** Aviso VISÍVEL na área quando o mapa não pode ser montado (nunca falha em silêncio). */
+    function mostrarFalhaMapa(secao, motivo) {
+        const alvo = secao || document.getElementById('mapaArea');
+        if (!alvo) return;
+        const faltando = diagnosticoModulosMapa();
+        const caixa = document.createElement('div');
+        caixa.className = 'mapa-falha';
+        caixa.setAttribute('role', 'alert');
+        const titulo = document.createElement('p');
+        titulo.className = 'mapa-falha-titulo';
+        titulo.textContent = 'Não foi possível montar a área do Mapa Mental.';
+        const dica = document.createElement('p');
+        dica.className = 'mapa-falha-dica';
+        dica.textContent = motivo || (faltando.length
+            ? 'Módulos ausentes: ' + faltando.join(', ') + '. Provavelmente o cache do app está desatualizado.'
+            : 'Ocorreu um erro ao montar a área. Recarregue ou repare o app.');
+        const acoes = document.createElement('div');
+        acoes.className = 'mapa-falha-acoes';
+        const recarregar = document.createElement('button');
+        recarregar.type = 'button';
+        recarregar.className = 'mapa-btn mapa-btn-primario';
+        recarregar.textContent = 'Recarregar';
+        recarregar.addEventListener('click', () => global.location.reload());
+        const reparar = document.createElement('a');
+        reparar.className = 'mapa-btn';
+        reparar.href = './reparar.html';
+        reparar.textContent = 'Reparar (limpar cache)';
+        acoes.append(recarregar, reparar);
+        caixa.append(titulo, dica, acoes);
+        alvo.innerHTML = '';
+        alvo.append(caixa);
+    }
+
     /** Montagem lazy: só na primeira entrada (não pesa o boot). */
     function montarAreaMapa() {
         if (this.mapaAreaMontada) return;
         const secao = document.getElementById('mapaArea');
         if (!secao) return;
-        this.mapaAreaMontada = true;
+        // Blindagem: se um módulo do mapa não carregou (ex.: cache antigo do Service
+        // Worker), mostra um aviso VISÍVEL em vez de deixar a área vazia em silêncio.
+        // NÃO marca como montada, para permitir nova tentativa na próxima entrada.
+        const faltando = diagnosticoModulosMapa();
         const r = render();
-        if (r) r.montarShell(secao);
-        // Delegação única na seção (clique, select, busca e formulário).
-        secao.addEventListener('click', evento => tratarCliqueMapa.call(this, evento));
-        secao.addEventListener('change', evento => tratarMudancaMapa.call(this, evento));
-        secao.addEventListener('input', evento => tratarBuscaMapa.call(this, evento));
-        secao.addEventListener('submit', evento => tratarSubmitMapa.call(this, evento));
-        // Fase 3: edição por duplo clique e atalhos dos nós.
-        secao.addEventListener('dblclick', evento => {
-            const interacao = global.MapaMentalInteracao;
-            if (interacao) interacao.duploClique.call(this, evento);
-        });
-        // Fase 12: botão direito (PC) abre o MENU CONTEXTUAL do card/canvas.
-        secao.addEventListener('contextmenu', evento => {
-            const interacaoCtx = global.MapaMentalInteracao;
-            if (interacaoCtx && interacaoCtx.contextMenu) interacaoCtx.contextMenu.call(this, evento);
-        });
-        // Navegação do canvas (pan/zoom/pinça) — delegação única na seção.
-        this.mapaCanvasPonteiros = new Map();
-        this.mapaCanvasPan = null;
-        this.mapaCanvasPinca = null;
-        const interacao = global.MapaMentalInteracao;
-        if (interacao) {
-            secao.addEventListener('pointerdown', evento => interacao.pointerDown.call(this, evento));
-            secao.addEventListener('pointermove', evento => interacao.pointerMove.call(this, evento));
-            secao.addEventListener('pointerup', evento => interacao.pointerUp.call(this, evento));
-            secao.addEventListener('pointercancel', evento => interacao.pointerUp.call(this, evento));
-            secao.addEventListener('wheel', evento => interacao.wheel.call(this, evento), { passive: false });
+        if (faltando.length || !r || typeof r.montarShell !== 'function') {
+            mostrarFalhaMapa(secao, faltando.length
+                ? 'Módulos do mapa não carregaram: ' + faltando.join(', ') + '. Abra "Reparar (limpar cache)" e tente de novo.'
+                : 'O módulo de renderização do mapa não carregou. Abra "Reparar (limpar cache)" e tente de novo.');
+            return;
         }
-        // Estado da Fase 3 (seleção, edição, arrasto, área de transferência, histórico).
-        this.mapaSelecao = new Set();
-        this.mapaEditandoId = null;
-        this.mapaEdicaoOriginal = null;
-        this.mapaArrastoNo = null;
-        this.mapaRedimensionando = null;
-        this.mapaLaco = null;
-        this.mapaLongPressTimer = null;
-        this.mapaAreaTransferencia = null;
-        this.mapaHistorico = null;
-        this.mapaPainelNoId = null;
-        this.mapaConexaoModo = false;
-        this.mapaConexaoOrigem = null;
-        this.mapaConexaoMenuId = null;
-        this.mapaConexaoArrasto = null;
-        // Retoma o último mapa aberto (se ele ainda existir).
-        const ativo = store() ? store().lerMapaAtivo() : null;
-        if (ativo && store().obterGrafo(ativo)) this.mapaAbertaId = ativo;
-        aplicarTemaMapa(secao);
-        renderArea.call(this);
+        try {
+            r.montarShell(secao);
+            // Delegação única na seção (clique, select, busca e formulário). Os ouvintes
+            // são ligados UMA vez, para uma nova tentativa não duplicar handlers.
+            if (!this.mapaAreaOuvintesLigados) {
+                this.mapaAreaOuvintesLigados = true;
+                secao.addEventListener('click', evento => tratarCliqueMapa.call(this, evento));
+                secao.addEventListener('change', evento => tratarMudancaMapa.call(this, evento));
+                secao.addEventListener('input', evento => tratarBuscaMapa.call(this, evento));
+                secao.addEventListener('submit', evento => tratarSubmitMapa.call(this, evento));
+                // Fase 3: edição por duplo clique e atalhos dos nós.
+                secao.addEventListener('dblclick', evento => {
+                    const interacao = global.MapaMentalInteracao;
+                    if (interacao) interacao.duploClique.call(this, evento);
+                });
+                // Fase 12: botão direito (PC) abre o MENU CONTEXTUAL do card/canvas.
+                secao.addEventListener('contextmenu', evento => {
+                    const interacaoCtx = global.MapaMentalInteracao;
+                    if (interacaoCtx && interacaoCtx.contextMenu) interacaoCtx.contextMenu.call(this, evento);
+                });
+                // Navegação do canvas (pan/zoom/pinça) — delegação única na seção.
+                const interacao = global.MapaMentalInteracao;
+                if (interacao) {
+                    secao.addEventListener('pointerdown', evento => interacao.pointerDown.call(this, evento));
+                    secao.addEventListener('pointermove', evento => interacao.pointerMove.call(this, evento));
+                    secao.addEventListener('pointerup', evento => interacao.pointerUp.call(this, evento));
+                    secao.addEventListener('pointercancel', evento => interacao.pointerUp.call(this, evento));
+                    secao.addEventListener('wheel', evento => interacao.wheel.call(this, evento), { passive: false });
+                }
+            }
+            // Estado do canvas (sempre (re)inicializado ao montar).
+            this.mapaCanvasPonteiros = new Map();
+            this.mapaCanvasPan = null;
+            this.mapaCanvasPinca = null;
+            // Estado da Fase 3 (seleção, edição, arrasto, área de transferência, histórico).
+            this.mapaSelecao = new Set();
+            this.mapaEditandoId = null;
+            this.mapaEdicaoOriginal = null;
+            this.mapaArrastoNo = null;
+            this.mapaRedimensionando = null;
+            this.mapaLaco = null;
+            this.mapaLongPressTimer = null;
+            this.mapaAreaTransferencia = null;
+            this.mapaHistorico = null;
+            this.mapaPainelNoId = null;
+            this.mapaConexaoModo = false;
+            this.mapaConexaoOrigem = null;
+            this.mapaConexaoMenuId = null;
+            this.mapaConexaoArrasto = null;
+            // Retoma o último mapa aberto (se ele ainda existir).
+            const ativo = store() ? store().lerMapaAtivo() : null;
+            if (ativo && store().obterGrafo(ativo)) this.mapaAbertaId = ativo;
+            aplicarTemaMapa(secao);
+            this.mapaAreaMontada = true;
+            renderArea.call(this);
+        } catch (erro) {
+            this.mapaAreaMontada = false;
+            mostrarFalhaMapa(secao, 'Erro ao montar a área do mapa: ' + (erro && erro.message ? erro.message : erro));
+        }
     }
 
     /** Troca de área (Notas | Mapa Mental); persiste em `notas-pwa-area-ativa`. */
@@ -1757,6 +1823,7 @@
         if (!NotesPWA || !NotesPWA.prototype) return false;
         Object.assign(NotesPWA.prototype, {
             mapaAreaMontada: false,
+            mapaAreaOuvintesLigados: false,
             mapaAreasLigadas: false,
             mapaAreaAtiva: 'notas',
             mapaAbertaId: null,

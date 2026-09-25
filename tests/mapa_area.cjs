@@ -109,6 +109,42 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(deVolta.backdropAtivo, true, 'modal de notas volta a aparecer');
     assert.equal(deVolta.mapaOculto, true, 'área do mapa volta a ficar oculta');
 
+    // Blindagem: se um módulo do mapa não carregar, a área mostra um aviso VISÍVEL
+    // (nunca fica vazia em silêncio) com as ações "Recarregar" e "Reparar (limpar cache)".
+    const blindagem = await page.evaluate(() => {
+      const salvo = window.MapaMentalRender;
+      window.MapaMentalRender = undefined;
+      app.mapaAreaMontada = false;
+      app.mapaAreaOuvintesLigados = false;
+      app.aplicarArea('mapa');
+      const caixa = document.querySelector('#mapaArea .mapa-falha');
+      const resultado = {
+        visivel: !!caixa,
+        titulo: caixa ? caixa.querySelector('.mapa-falha-titulo').textContent : '',
+        texto: caixa ? caixa.querySelector('.mapa-falha-dica').textContent : '',
+        reparar: caixa ? caixa.querySelector('a[href$="reparar.html"]') !== null : false
+      };
+      window.MapaMentalRender = salvo;
+      return resultado;
+    });
+    assert.equal(blindagem.visivel, true, 'blindagem mostra aviso quando falta um módulo');
+    assert.equal(blindagem.reparar, true, 'aviso oferece "Reparar (limpar cache)"');
+    assert.ok(/Módulos|renderização/.test(blindagem.texto), 'aviso explica o motivo');
+
+    // Recuperação: com o módulo de volta, reentrar remonta a área normalmente.
+    const recuperado = await page.evaluate(() => {
+      app.aplicarArea('notas');
+      app.aplicarArea('mapa');
+      return {
+        falha: document.querySelector('#mapaArea .mapa-falha') !== null,
+        montado: document.querySelector('#mapaArea .mapa-shell') !== null,
+        ouvintes: app.mapaAreaOuvintesLigados
+      };
+    });
+    assert.equal(recuperado.falha, false, 'aviso some após o módulo voltar');
+    assert.equal(recuperado.montado, true, 'área remonta normalmente');
+    assert.equal(recuperado.ouvintes, true, 'ouvintes ligados uma única vez');
+
     assert.deepEqual(erros, []);
     console.log('OK: área Notas/Mapa Mental, montagem lazy, tema e persistência');
   } finally {
