@@ -92,6 +92,8 @@ Este documento fornece contexto completo para agentes AI que trabalharão neste 
 | Testes | `node tests/run-all.cjs` (ou um arquivo: `node tests/<nome>.cjs`) |
 | Ferramentas | `tools/*.cjs` (ex.: `tools/extrair-tema.cjs`, `tools/portar-testes.cjs`) |
 
+| Plano do backend Python + login opcional + sync Supabase/WebSocket | `docs/PROMPT-BACKEND-SYNC-SUPABASE.md` |
+
 ## 🎯 Visão Geral do Sistema
 
 PWA vanilla-JS (sem build, sem dependências de runtime) com duas áreas: **Notas** (editor hierárquico) e **Mapa Mental**. Service Worker offline-first.

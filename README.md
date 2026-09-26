@@ -207,6 +207,7 @@ notas-pwa/
 │   ├── PROMPT-MULTI-NOTAS-MODELOS-CORES.md  # Botão "+" (multi-notas), modelos e cores/accent
 │   ├── COMO-RODAR-TESTES.md     # Fluxo eficiente: filtros, baseline, retry
 │   ├── PROMPT-MAPA-MENTAL.md    # Plano da área "Mapa Mental" (fases e checklist)
+│   ├── PROMPT-BACKEND-SYNC-SUPABASE.md  # Plano (10 seções): backend Python + login opcional + sync Supabase/WebSocket
 │   ├── PROBLEMAS-E-MITIGACOES.md # Problemas da suíte por fase e como mitigar
 │   └── RELATORIO-CORRECAO-TRAVAMENTO-CELULAR.md  # Investigação e correção do travamento no celular
 └── README.md               # Este arquivo

@@ -24,3 +24,10 @@ desktop.ini
 # Dependências de desenvolvimento (a suite de testes usa Playwright/Edge)
 node_modules/
 .pytest_cache/
+
+# Backend Python (sync/Supabase) - credenciais e ambiente NUNCA versionados
+.env
+backend/.env
+.venv/
+__pycache__/
+*.pyc
