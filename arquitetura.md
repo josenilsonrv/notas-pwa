@@ -110,23 +110,23 @@
 **Propósito:** Service Worker offline-first. Serve o cache na hora e revalida na rede com timeout, garantindo que o app nunca fique preso carregando.
 
 ## Implementação: Constantes, helpers e ciclo de vida
-- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v72';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./fontes.js`, `./conta.js`, `./sync/chaves.js`, `./sync/sync-cliente.js` e `./mapa/mapa-cores.js`; **o script do GIS NÃO entra** — é cross-origin, opcional e o `fetch` já sai fora para outra origem)
-- **[Linhas 19-20 ~]** `(sem comentário de ancoragem)` -> `const CACHE_NAME` (**v72**) · `const TIMEOUT_MS`
-- **[Linhas 22-32 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
-- **[Linhas 33-59 ~]** `/** Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
-- **[Linhas 60-109 ~]** `// 💾 [INÍCIO: PWA - HELPERS DE CACHE/FETCH (retry/timeout/revalidar)]` -> `adicionarComRetry` · `buscarComTimeout` · `guardarNoCache` · `revalidar`
-- **[Linhas 110-132 ~]** `// 🚀 [INÍCIO: PWA - INSTALL (CACHE INICIAL)]` -> `self.addEventListener('install', (event) => {...})` (aborta se algum essencial faltar)
-- **[Linhas 134-153 ~]** `// 🚀 [INÍCIO: PWA - ACTIVATE (LIMPEZA DE CACHES ANTIGOS)]` -> `self.addEventListener('activate', ...)` (limpa caches + `clients.claim()` + avisa as abas com `postMessage({ type: 'SW_ATIVADO' })` — base do update notification)
+- **[Linhas 18-69 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v73';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./fontes.js`, `./conta.js`, `./sync/chaves.js`, `./sync/sync-cliente.js` e `./mapa/mapa-cores.js`; **o script do GIS NÃO entra** — é cross-origin, opcional e o `fetch` já sai fora para outra origem)
+- **[Linhas 25-26 ~]** `(sem comentário de ancoragem)` -> `const CACHE_NAME` (**v73** — subiu no fix do COOP: o HTML é cacheado COM os cabeçalhos, P108) · `const TIMEOUT_MS`
+- **[Linhas 28-32 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
+- **[Linhas 39-67 ~]** `/** Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
+- **[Linhas 71-119 ~]** `// 💾 [INÍCIO: PWA - HELPERS DE CACHE/FETCH (retry/timeout/revalidar)]` -> `adicionarComRetry` · `buscarComTimeout` · `guardarNoCache` · `revalidar`
+- **[Linhas 121-142 ~]** `// 🚀 [INÍCIO: PWA - INSTALL (CACHE INICIAL)]` -> `self.addEventListener('install', (event) => {...})` (aborta se algum essencial faltar)
+- **[Linhas 144-163 ~]** `// 🚀 [INÍCIO: PWA - ACTIVATE (LIMPEZA DE CACHES ANTIGOS)]` -> `self.addEventListener('activate', ...)` (limpa caches + `clients.claim()` + avisa as abas com `postMessage({ type: 'SW_ATIVADO' })` — base do update notification)
 
 ## Implementação: Estratégia de rede/cache em runtime
-- **[Linhas 62-80 ~]** `/** fetch + timeout + cache.put (evita travar a instalação com rede lenta/instável). */` -> `const adicionarComRetry = async (cache, asset, tentativas = 3) => {...}`
-- **[Linhas 81-92 ~]** `/** Busca na rede com limite de tempo (nunca deixa o carregamento pendurado). */` -> `const buscarComTimeout = (request, ms) => new Promise(...)`
-- **[Linhas 93-101 ~]** `/** Guarda a resposta no cache sem bloquear quem está esperando. */` -> `const guardarNoCache = (request, response) => {...}`
-- **[Linhas 102-108 ~]** `/** Revalida em segundo plano (stale-while-revalidate) sem bloquear a resposta. */` -> `const revalidar = (request) => {...}`
-- **[Linhas 155-193 ~]** `// 🚨 [INÍCIO: CRÍTICO - FETCH STRATEGY (CACHE-FIRST + TIMEOUT)]` -> `self.addEventListener('fetch', ...)` (cache → rede com timeout → fallback `index.html`/`OFFLINE_HTML`; **sai fora para `/api/*` e `/ws`** — o cache-first serviria snapshot/anexo velho, P99)
+- **[Linhas 72-89 ~]** `/** fetch + timeout + cache.put (evita travar a instalação com rede lenta/instável). */` -> `const adicionarComRetry = async (cache, asset, tentativas = 3) => {...}`
+- **[Linhas 91-101 ~]** `/** Busca na rede com limite de tempo (nunca deixa o carregamento pendurado). */` -> `const buscarComTimeout = (request, ms) => new Promise(...)`
+- **[Linhas 103-110 ~]** `/** Guarda a resposta no cache sem bloquear quem está esperando. */` -> `const guardarNoCache = (request, response) => {...}`
+- **[Linhas 112-117 ~]** `/** Revalida em segundo plano (stale-while-revalidate) sem bloquear a resposta. */` -> `const revalidar = (request) => {...}`
+- **[Linhas 165-208 ~]** `// 🚨 [INÍCIO: CRÍTICO - FETCH STRATEGY (CACHE-FIRST + TIMEOUT)]` -> `self.addEventListener('fetch', ...)` (cache → rede com timeout → fallback `index.html`/`OFFLINE_HTML`; **sai fora para `/api/*` e `/ws`** — o cache-first serviria snapshot/anexo velho, P99)
 
 ## Implementação: Mensagens do cliente
-- **[Linhas 195-212 ~]** `// 🔄 [INÍCIO: ESTADO/API - MESSAGE HANDLING]` -> `self.addEventListener('message', ...)` (`SKIP_WAITING`, `CACHE_UPDATED`)
+- **[Linhas 210-227 ~]** `// 🔄 [INÍCIO: ESTADO/API - MESSAGE HANDLING]` -> `self.addEventListener('message', ...)` (`SKIP_WAITING`, `CACHE_UPDATED`)
 
 ---
 

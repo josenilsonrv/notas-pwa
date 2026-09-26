@@ -1497,4 +1497,9 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
 - **Como auditar**: `pytest backend/tests -q` (com `same-origin` o teste falha na hora). No
   navegador, o botão do Google fecha o popup sozinho ao concluir e o cabeçalho passa a mostrar o
   e-mail. Vale para qualquer popup de OAuth — o mesmo cuidado se aplica ao `signInWithPopup`.
+- **Detalhe de deploy**: o `index.html` é cacheado **COM os cabeçalhos** (o `sw.js` é cache-first),
+  então o cabeçalho velho continuaria sendo servido do cache do PRÓPRIO dispositivo. O fix só chega
+  com `CACHE_NAME` novo (`notas-pwa-v73`): o SW reinstala, rebaixa o HTML da rede já com o COOP
+  correto e o `activate` apaga o cache antigo. O `app.js` recarrega a aba uma vez ao receber
+  `SW_ATIVADO`, portanto não há passo manual para o usuário.
 
