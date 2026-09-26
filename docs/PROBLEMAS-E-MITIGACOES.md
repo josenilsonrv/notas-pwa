@@ -1478,3 +1478,23 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
 - **Como auditar**: `pytest backend/tests -q` (a suíte inteira, não só o arquivo novo) — era o único
   jeito de ver a falha cruzada.
 
+
+### P108 — COOP `same-origin` quebrava o popup do Google (tela em branco em `gsi/transform`)
+- **Sintoma**: com o Google já configurado, o botão do GIS abria uma janela em
+  `accounts.google.com/gsi/transform` que **ficava em branco, indefinidamente** — o login nunca
+  concluía e nada aparecia no diálogo de Conta (o `credential` jamais chegava ao `conta.js`).
+- **Causa**: `cabecalhos_de_seguranca` (`main.py`) respondia
+  `Cross-Origin-Opener-Policy: same-origin`. Com COOP `same-origin` o nosso documento entra em um
+  grupo de contexto próprio e o POPUP do Google passa a **não ter `window.opener`** — o
+  `postMessage` que entrega o `credential` é cortado. E `gsi/transform` é apenas um **relé**: ele
+  recebe o `form_post` do Google e devolve o ID token ao opener por `postMessage`; sem par do outro
+  lado, não tem o que renderizar e a janela fica vazia. Não havia `origin_mismatch` nem
+  `invalid_client`: o erro era **nosso**, num cabeçalho de segurança.
+- **Correção**: `Cross-Origin-Opener-Policy: same-origin-allow-popups` (**nunca** `same-origin`).
+  É o valor recomendado quando existe fluxo de OAuth por popup: mantém o isolamento e preserva o
+  canal com o popup que NÓS abrimos. Fica comentado no código e travado por teste em
+  `test_health.py::test_cabecalhos_de_seguranca_no_app`.
+- **Como auditar**: `pytest backend/tests -q` (com `same-origin` o teste falha na hora). No
+  navegador, o botão do Google fecha o popup sozinho ao concluir e o cabeçalho passa a mostrar o
+  e-mail. Vale para qualquer popup de OAuth — o mesmo cuidado se aplica ao `signInWithPopup`.
+

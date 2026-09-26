@@ -111,7 +111,9 @@ essas regras e o comentário explicativo).
 ### Cabeçalhos de segurança (já ativos)
 O estático do backend responde com **CSP por hash** (dos `<script>` inline do `index.html`),
 `nosniff`, `Referrer-Policy`, anti-clickjacking (`frame-ancestors 'none'` + `X-Frame-Options`),
-`Cross-Origin-Opener-Policy` e **HSTS quando `SESSAO_SEGURA=true`**. Trocar o conteúdo de um
+`Cross-Origin-Opener-Policy: same-origin-allow-popups` (**nunca** `same-origin`: o popup do GIS
+devolve o `credential` por `postMessage` ao `window.opener`, e `same-origin` corta esse canal — P108)
+e **HSTS quando `SESSAO_SEGURA=true`**. Trocar o conteúdo de um
 `<script>` inline do `index.html` exige **reiniciar o backend** (o hash é calculado na subida) —
 a suíte de navegador falha se a CSP quebrar o app.
 

@@ -81,6 +81,9 @@ def test_cabecalhos_de_seguranca_no_app(cliente):
     assert resposta.headers["x-content-type-options"] == "nosniff"
     assert resposta.headers["x-frame-options"] == "DENY"
     assert resposta.headers["referrer-policy"] == "strict-origin-when-cross-origin"
+    # COOP: `same-origin-allow-popups` (NUNCA `same-origin`) — o popup do GIS devolve o
+    # `credential` por `postMessage` ao `window.opener`, e `same-origin` corta esse canal (P108).
+    assert resposta.headers["cross-origin-opener-policy"] == "same-origin-allow-popups"
     # HSTS só quando SESSAO_SEGURA=true (em http://localhost ele atrapalharia).
     assert "strict-transport-security" not in resposta.headers
     # O JS não recebe CSP (não é documento), mas recebe o nosniff.

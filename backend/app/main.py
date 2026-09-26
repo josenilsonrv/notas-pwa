@@ -71,7 +71,11 @@ def cabecalhos_de_seguranca(caminho) -> dict:
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "strict-origin-when-cross-origin",
         "X-Frame-Options": "DENY",
-        "Cross-Origin-Opener-Policy": "same-origin",
+        # `same-origin-allow-popups` e NÃO `same-origin`: o botão do Google (GIS) abre um POPUP e
+        # devolve o `credential` por `postMessage` para o `window.opener`. Com `same-origin` o
+        # navegador isola o contexto e CORTA esse canal — o popup ficava em branco para sempre em
+        # `accounts.google.com/gsi/transform`, que é só um relé (P108).
+        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
         "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
     }
     if str(caminho).lower().endswith((".html", ".htm")):
