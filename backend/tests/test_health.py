@@ -25,6 +25,21 @@ def test_health_sobe_em_memory(cliente):
     assert corpo["driver"] == "memory"
     assert corpo["modo"] == "local"
     assert corpo["supabase"] is False
+    # Diagnostico de deploy sem shell: onde o servidor esta ouvindo.
+    assert "host" in corpo and "porta" in corpo
+
+
+def test_porta_aceita_o_padrao_dos_paas(monkeypatch):
+    """`PORTA` (do .env) vence; `PORT` (Render/Heroku/Fly) e o fallback; senao 8000."""
+    from backend.app.config import montar
+
+    monkeypatch.delenv("PORTA", raising=False)
+    monkeypatch.delenv("PORT", raising=False)
+    assert montar().porta == 8000
+    monkeypatch.setenv("PORT", "10000")
+    assert montar().porta == 10000
+    monkeypatch.setenv("PORTA", "9000")
+    assert montar().porta == 9000, "a variavel do .env tem prioridade"
 
 
 def test_raiz_serve_o_index_html(cliente):

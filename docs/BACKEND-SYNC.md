@@ -56,6 +56,11 @@ de emitir a MESMA sessão em cookie `HttpOnly`. **Não existe `client_secret` ne
 5. **Vínculo de conta** (padrão de mercado): o e-mail do Google vem marcado como **verificado**;
    se ele JÁ existir como conta de senha, o acesso cai na **mesma conta** (mesmos dados/sync).
    Uma conta criada só pelo Google fica **sem senha utilizável** (a entrada é pelo Google).
+6. **Em nuvem (Render/Fly/Railway)**: o `backend/.env` **não** é publicado (está no `.gitignore`) —
+   a variável vai no **painel do serviço** (*Environment*). E a origem pública
+   (`https://seu-app.onrender.com`, sem barra no fim) precisa estar em **Origens JavaScript
+   autorizadas** no Google Cloud, senão o GIS recusa com `origin_mismatch`. Para conferir se o
+   backend está com o Google ligado do próprio celular, abra `GET /api/auth/config`.
 
 ## 3. Contrato HTTP (todos os erros são `{"detail": "mensagem"}`)
 
@@ -89,8 +94,14 @@ de emitir a MESMA sessão em cookie `HttpOnly`. **Não existe `client_secret` ne
 ## 5. Deploy
 
 **Modelo padrão (origem única):** publique **o backend** (Render/Fly/Railway/qualquer host Python)
-com `HOST=0.0.0.0`, `PORTA=$PORT` e `SESSAO_SEGURA=true`. Ele serve o PWA e a API no mesmo host —
-é o que torna cookie, CSRF e WebSocket triviais e evita CORS.
+com `HOST=0.0.0.0` e `SESSAO_SEGURA=true`. Ele serve o PWA e a API no mesmo host — é o que torna
+cookie, CSRF e WebSocket triviais e evita CORS.
+
+A **porta não precisa ser configurada**: o backend usa `PORTA` (do `.env`) e, se ela não existir, o
+**`PORT` que a plataforma injeta** na subida (padrão Render/Heroku/Fly). Para conferir o que o
+servidor adotou — sem shell — abra `GET /health`: ele devolve `host` e `porta`.
+`HOST` tem de ser `0.0.0.0` se o processo subir por `python -m backend.app.main` (com
+`uvicorn ... --host 0.0.0.0` o CLI já cuida disso).
 
 Se o host estático (Cloudflare Pages) continuar servindo o PWA, lembre-se de que
 `_redirects` **não** encaminha para outro domínio: use uma Pages Function como proxy de `/api/*`

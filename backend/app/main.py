@@ -114,13 +114,19 @@ async def erro_de_validacao(_request: Request, _erro: RequestValidationError) ->
 
 @app.get("/health")
 def health() -> dict:
-    """Liveness do deploy: diz se o backend subiu e em qual driver."""
+    """Liveness do deploy: diz se o backend subiu, em qual driver e em qual host:porta.
+
+    `host`/`porta` estao aqui para o deploy ser diagnosticavel sem shell: em PaaS (Render,
+    Heroku, Fly) a porta vem do `PORT` injetado e este endpoint mostra o que foi usado.
+    """
     repo = repositorio()
     return {
         "ok": True,
         "driver": getattr(repo, "driver", config.driver),
         "modo": config.modo,
         "supabase": bool(config.tem_supabase),
+        "host": config.host,
+        "porta": config.porta,
         "avisos": config.avisos,
     }
 

@@ -130,7 +130,9 @@ def montar() -> Configuracao:
     return Configuracao(
         raiz=RAIZ,
         driver_pedido=_texto("DRIVER", "auto") or "auto",
-        porta=_inteiro("PORTA", 8000),
+        # `PORTA` (do .env) tem prioridade; `PORT` e o padrao dos PaaS (Render/Heroku/Fly),
+        # que injetam a porta na subida - assim o deploy nao precisa descobrir o valor.
+        porta=_inteiro("PORTA", _inteiro("PORT", 8000)),
         host=_texto("HOST", "127.0.0.1"),
         supabase_url=_texto("SUPABASE_URL"),
         supabase_anon_key=_texto("SUPABASE_ANON_KEY"),

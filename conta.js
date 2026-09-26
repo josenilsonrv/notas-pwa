@@ -135,11 +135,18 @@ function installConta(App) {
      * Config PÚBLICA do login social: o backend diz se o Google está ativo e qual é o
      * Client ID (nunca há segredo aqui). SILENCIOSO de propósito — sem backend/celular
      * offline nada disto existe e o app segue exatamente como hoje.
+     *
+     * Só o resultado POSITIVO fica em cache: se a chamada falhou (backend fora do ar), a
+     * próxima abertura do diálogo tenta de novo — assim o botão aparece sem precisar
+     * recarregar a página depois de o backend subir.
      */
     p.contaGoogleConfig = async function () {
-        if (this.contaGoogleInfo !== undefined) return this.contaGoogleInfo;
+        if (this.contaGoogleInfo) return this.contaGoogleInfo;
         try {
-            this.contaGoogleInfo = await this.contaPedir('/config');
+            const info = await this.contaPedir('/config');
+            // Só vale a resposta com o formato ESPERADO: host estático costuma devolver o
+            // `index.html` com status 200 para `/api/*`, e isso não pode virar "config" em cache.
+            this.contaGoogleInfo = info && typeof info.google_ativo === 'boolean' ? info : null;
         } catch (_) {
             this.contaGoogleInfo = null; // offline/sem backend: nada de Google
         }
