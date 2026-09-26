@@ -20,6 +20,10 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
+// v80: a topbar do MAPA passou a ficar em UMA LINHA em QUALQUER largura do PC
+// (`flex-wrap: nowrap` + título com ellipsis — P116): encolher a janela quebrava a barra
+// em DUAS linhas (109px em 640px e 131px em 480px, contra 69px do cabeçalho de Notas).
+// `mapa/mapa.css` mudou, então o cache precisa virar.
 // v79: o ⛶ de Notas saiu do CELULAR e entrou o ⇄ (`#notesAlternarAreaBtn`), que leva
 // direto ao Mapa (e o ⇄ da topbar do Mapa, `#mapaAlternarAreaBtn`, volta às Notas) — o ⛶
 // do celular só restaurava o tamanho, sem dar acesso ao mapa (P114); a paleta de cores e
@@ -41,7 +45,7 @@
 // `conta.js` e `styles.css` mudaram, então o cache precisa virar de versão.
 // v73: o `index.html` é cacheado COM os cabeçalhos; o fix do COOP (`same-origin-allow-popups`,
 // P108) só chega ao dispositivo com um cache NOVO — o antigo serviria o cabeçalho velho.
-const CACHE_NAME = 'notas-pwa-v79';
+const CACHE_NAME = 'notas-pwa-v80';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +

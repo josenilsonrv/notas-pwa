@@ -357,8 +357,24 @@ html[data-theme="dark"] .mapa-area {
 /* ------------------------------------------------------------
  * Gestão de mapas (Fase 1): topbar, formulário, lista e chips.
  * ------------------------------------------------------------ */
-.mapa-topbar { flex-wrap: wrap; row-gap: 8px; }
+/* A topbar tem de ficar em UMA LINHA em QUALQUER largura — a MESMA organização do
+   cabeçalho de Notas. Aqui havia `flex-wrap: wrap; row-gap: 8px`: com a janela do PC
+   estreita (ou o Mapa na metade do lado a lado), os botões caíam para uma SEGUNDA
+   linha e a barra saltava de 65px para 109px (640px) e 131px (480px), enquanto o
+   cabeçalho de Notas continuava firme em 69px. Agora o título encolhe por ellipsis, o
+   espaço elástico empurra os botões para a direita e os botões nunca encolhem nem
+   quebram — no PC e no celular. */
+.mapa-topbar { flex-wrap: nowrap; }
 .mapa-titulo-atual { font-size: 15px; font-weight: 600; color: var(--color-text-main); }
+.mapa-topbar-titulo,
+.mapa-titulo-atual {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mapa-topbar .toolbar-btn { flex: 0 0 auto; }
 
 .mapa-btn {
     appearance: none;
@@ -1018,6 +1034,35 @@ html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); bord
    mapa CONTINUA no celular: ele é o caminho de volta ao tamanho normal. */
 #mapaArea .mapa-topbar #mapaAlternarAreaBtn { display: none; }
 html.notes-mobile #mapaArea .mapa-topbar #mapaAlternarAreaBtn { display: inline-flex; }
+
+/* ------------------------------------------------------------
+ * CELULAR: a topbar do MAPA é a MESMA ORGANIZAÇÃO do cabeçalho de NOTAS.
+ * No celular o cabeçalho de Notas tem TRÊS botões alinhados à DIREITA numa única
+ * linha — colapso, ⇄ e ✕ (o ⛶ sai de cena). A topbar do mapa espelha isso: a regra
+ * de UMA LINHA (título com ellipsis + botões que não encolhem) é da BASE — vale no PC
+ * e no celular —, então aqui só faltam duas diferenças do celular:
+ *   1) o gap dos botões é o mesmo `gap-1` (4px) do grupo de botões de Notas;
+ *   2) o ⛶ sai de cena, como o ⛶ de Notas (no celular a área já é a tela inteira).
+ * O COLAPSO recolhe os CHIPS (`#mapaChipsNav`), não as barras — ver
+ * `mapaAlternarColapsoBarras` (mapa/mapa.js).
+ * ------------------------------------------------------------ */
+html.notes-mobile #mapaArea .mapa-topbar {
+    column-gap: 4px;                 /* MESMO `gap-1` (4px) do grupo de botões de Notas */
+}
+html.notes-mobile #mapaArea .mapa-topbar #mapaFullscreenBtn { display: none !important; }
+
+/* Colapso dos CHIPS no celular — MESMO efeito do `notes-chips-collapsed` de Notas
+   (`#notesContextNav`, em `styles.css`): o nav recolhe e as BARRAS da área (que no
+   mapa não têm substituta acoplada ao teclado) continuam no lugar. */
+html.notes-mobile #mapaArea .mapa-shell.mapa-chips-colapsados #mapaChipsNav {
+    max-height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-color: transparent !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none;
+}
 
 /* Ícone de expandir/contrair: MESMO par do `#notesFullscreenBtn` — mostra o desenho
    de restaurar quando a área está em tela cheia (garante o ícone sempre visível). */

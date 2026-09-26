@@ -1666,4 +1666,30 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
   texto e divisor) e exige contraste AA em todos os quatro casos.
 - **Como auditar**: `node tests/paletas_tema.cjs` · `node tests/tema_vidro.cjs`.
 
+### P116 — No PC a topbar do MAPA QUEBRAVA em DUAS linhas quando a janela encolhia
+- **Pedido**: manter a MESMA organização nas DUAS barras do topo (cabeçalho de Notas × topbar do
+  Mapa) e garantir que o Mapa não quebre no PC quando a largura da janela diminui.
+- **Sintoma**: encolhendo a janela do PC, a topbar do **MAPA** saltava para **duas linhas** (o ✕ e os
+  outros botões caíam para baixo, o título ficava sozinho em cima) e a barra CRESCIA — enquanto o
+  **cabeçalho de Notas** continuava firme em **uma** linha. Medido (harness, PC sem toque):
+  Notas **69px** em todas as larguras × Mapa **65px** até 700px → **109px em 640px** → 99px em
+  560px → **131px em 480px**.
+- **Causa**: `mapa/mapa.css` tinha, na **base**, `.mapa-topbar { flex-wrap: wrap; row-gap: 8px; }`.
+  O cabeçalho de Notas não tem wrap (usa `text-overflow: ellipsis` e o espaço elástico), então só a
+  barra do mapa quebrava — e a regra de uma linha que existia estava presa ao `html.notes-mobile`.
+- **Correção (`mapa/mapa.css`)**: a regra de **UMA LINHA virou BASE**, valendo no PC e no celular —
+  `.mapa-topbar { flex-wrap: nowrap }`; `.mapa-topbar-titulo`/`.mapa-titulo-atual` com
+  `flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap`; e
+  os botões (`.mapa-topbar .toolbar-btn`) com `flex: 0 0 auto` (nunca encolhem nem quebram). O bloco
+  `html.notes-mobile` ficou só com o `column-gap: 4px` e o ⛶ oculto.
+- **Efeito visível**: **PC e celular** — as duas barras em **UMA linha em QUALQUER largura**
+  (65px/69px de 1280px a 480px), com o título encolhendo por ellipsis; no PC a ordem segue
+  colapso · ⛶ · ✕ nas DUAS (o ⇄ continua exclusivo do celular).
+- **Bump de cache**: `CACHE_NAME` **v79 → v80** (mudou `mapa/mapa.css`).
+- **Testes**: `tests/mapa_mobile_topbar.cjs` ganhou a **varredura de larguras** numa página de PC
+  SEM toque (1280 → 480px) exigindo **1 linha** e **altura constante** nas DUAS barras, além da
+  paridade de conjunto/ordem/altura entre as duas; `tests/barras_botoes.cjs` continua auditando as
+  8 barras.
+- **Como auditar**: `node tests/mapa_mobile_topbar.cjs` · `node tests/barras_botoes.cjs`.
+
 

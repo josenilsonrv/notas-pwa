@@ -1672,6 +1672,10 @@ function installModoMobileNotas(App) {
             // Tela cheia do ⛶ ficaria "presa" no celular: ali o botão de tela cheia de
             // Notas sai de cena e dá lugar ao ⇄ — sai do estado ao entrar no modo mobile.
             this.sairDaTelaCheiaNotasMobile();
+            // O MESMO vale para o MAPA: no celular o ⛶ da topbar sai de cena (ficam o
+            // colapso, o ⇄ e o ✕, como no cabeçalho de Notas), então a tela cheia da
+            // área também precisa ser liberada.
+            this.sairDaTelaCheiaMapaMobile();
             // No mobile o colapso do cabeçalho não deve esconder a barra do teclado:
             // a toolbar é escondida pelo CSS (só aparece quando acoplada).
             backdrop?.classList.remove('notes-header-collapsed');
@@ -1679,6 +1683,10 @@ function installModoMobileNotas(App) {
         } else {
             backdrop?.classList.remove('notes-chips-collapsed');
         }
+        // O colapso da ÁREA DO MAPA segue o MESMO critério do colapso de Notas: no celular
+        // recolhe os CHIPS (`#mapaChipsNav`); no PC recolhe as barras
+        // (`#mapaToolbar` + `#mapaFormatBar`). Ver `sincronizarColapsoArea` (mapa/mapa.js).
+        if (typeof this.sincronizarColapsoArea === 'function') this.sincronizarColapsoArea();
         this.sincronizarBotaoColapsoChips(Boolean(backdrop?.classList.contains('notes-chips-collapsed')));
     };
 
@@ -1690,6 +1698,18 @@ function installModoMobileNotas(App) {
     p.sairDaTelaCheiaNotasMobile = function () {
         const modal = document.getElementById('notesModal');
         if (modal && modal.classList.contains('fullscreen')) this.toggleNotesFullscreen(false);
+    };
+
+    /**
+     * Sai da tela cheia (⛶) do MAPA quando o modo mobile liga — espelho de
+     * `sairDaTelaCheiaNotasMobile`. No celular o ⛶ do mapa sai de cena (ficam o colapso,
+     * o ⇄ e o ✕, a MESMA organização do cabeçalho de Notas): sem esta saída a área
+     * ficaria em tela cheia, com as barras recolhidas, sem controle visível para
+     * trazê-las de volta. Sem a área do Mapa montada (harness só de Notas), não faz nada.
+     */
+    p.sairDaTelaCheiaMapaMobile = function () {
+        if (!this.mapaFullscreen) return;
+        if (typeof this.mapaSairTelaCheia === 'function') this.mapaSairTelaCheia();
     };
 
     /**

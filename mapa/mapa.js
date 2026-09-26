@@ -183,8 +183,9 @@
         dados.grade = (store() && typeof store().lerGrade === 'function') ? store().lerGrade() : false;
         // Barras padronizadas (F12) ANTES do mapa: o editor de barra lê o DOM da toolbar.
         r.renderBarras(dados);
-        // Reaplica o colapso das barras (um re-render não pode "descolapsar").
-        setMapaBarrasColapsadas.call(this, Boolean(this.mapaBarrasColapsadas));
+        // Reaplica o colapso (um re-render não pode "descolapsar"): barras no PC,
+        // chips no celular — quem decide é o modo atual (ver `sincronizarColapsoArea`).
+        sincronizarColapsoArea.call(this);
         // Reaplica a TELA CHEIA (um re-render não pode "desexpandir"). Fora dela,
         // apenas garante que o estado visual (classes/botão) está limpo.
         if (this.mapaFullscreen) aplicarBarrasFullscreen.call(this, true);
@@ -733,13 +734,55 @@
         }
     }
 
+    /**
+     * Recolhe/expande os CHIPS dos mapas — o que o colapso faz no CELULAR, espelhando
+     * o colapso do cabeçalho de Notas (`notes-chips-collapsed` → `#notesContextNav`).
+     * No celular as BARRAS ficam: no mapa não existe barra acoplada ao teclado, então
+     * recolher a toolbar tiraria as ferramentas do alcance.
+     */
+    function setMapaChipsColapsados(collapsed) {
+        const shell = document.querySelector('#mapaArea .mapa-shell');
+        const botao = document.getElementById('mapaColapsoBarras');
+        if (shell) shell.classList.toggle('mapa-chips-colapsados', Boolean(collapsed));
+        if (botao) {
+            botao.setAttribute('aria-expanded', String(!collapsed));
+            botao.title = collapsed ? 'Mostrar mapas' : 'Ocultar mapas';
+            botao.setAttribute('aria-label', botao.title);
+        }
+    }
+
+    /** Estado atual do colapso no celular (chips recolhidos?). */
+    function mapaChipsColapsados() {
+        const shell = document.querySelector('#mapaArea .mapa-shell');
+        return Boolean(shell && shell.classList.contains('mapa-chips-colapsados'));
+    }
+
+    /**
+     * Reaplica o colapso conforme o MODO: no celular vale o colapso dos CHIPS; no PC o
+     * das BARRAS (e a classe do celular é descartada, para a área voltar limpa ao girar
+     * o aparelho ou redimensionar a janela). Chamada no re-render e na troca de modo.
+     */
+    function sincronizarColapsoArea() {
+        const movel = typeof this.ehMobile === 'function' && this.ehMobile();
+        if (movel) { setMapaChipsColapsados.call(this, mapaChipsColapsados()); return; }
+        const shell = document.querySelector('#mapaArea .mapa-shell');
+        if (shell) shell.classList.remove('mapa-chips-colapsados');
+        setMapaBarrasColapsadas.call(this, Boolean(this.mapaBarrasColapsadas));
+    }
+
     /** Animação de painel — MESMA implementação da classe compartilhada `AppExpandir`. */
     function mapaPanelMotion(elemento, esconder, versao) {
         return AppExpandir.motion(elemento, esconder, versao, () => this.mapaMotionVersion);
     }
 
-    /** Alterna o colapso das barras da área (botão da topbar). */
+    /** Alterna o colapso da área (botão da topbar): chips no CELULAR, barras no PC. */
     async function mapaAlternarColapsoBarras() {
+        // CELULAR: MESMO funcionamento do colapso de Notas — recolhe os CHIPS
+        // (`#mapaChipsNav`), sem animação e sem tocar nas barras (ver `setMapaChipsColapsados`).
+        if (typeof this.ehMobile === 'function' && this.ehMobile()) {
+            setMapaChipsColapsados.call(this, !mapaChipsColapsados());
+            return;
+        }
         const toolbar = document.getElementById('mapaToolbar');
         const formatBar = document.getElementById('mapaFormatBar');
         const botao = document.getElementById('mapaColapsoBarras');
@@ -761,6 +804,18 @@
             this.mapaBarrasColapsadas = esconder;
             setMapaBarrasColapsadas.call(this, esconder);
         }
+    }
+
+    /**
+     * Sai da TELA CHEIA da área do mapa — o MESMO caminho do CONTRAIR (`alternar(false)`),
+     * que além de tirar a classe ainda DEVOLVE as barras recolhidas (o `aplicar(false)`
+     * sozinho só limpa a classe/estado; quem mostra as barras é o `aplicarBarras`).
+     * Usado quando o modo mobile liga: no celular o ⛶ sai de cena (igual ao ⛶ de Notas)
+     * e a tela cheia ficaria sem controle visível — espelho de
+     * `sairDaTelaCheiaNotasMobile` (app.js).
+     */
+    async function mapaSairTelaCheia() {
+        return expandidorMapa(this).alternar(false);
     }
     /** Barras da área que recolhem na TELA CHEIA (ordem de recolher/mostrar). */
     const BARRAS_FULLSCREEN = ['mapaToolbar', 'mapaFormatBar', 'mapaChipsNav', 'mapaRodape'];
@@ -2821,7 +2876,8 @@
             mapaAlternarMenuBarra,
             fecharMenusFora, fecharMenusAbertos,
             mapaMoverBotaoBarra, mapaRestaurarBarra,
-            mapaAlternarColapsoBarras, setMapaBarrasColapsadas,
+            mapaAlternarColapsoBarras, setMapaBarrasColapsadas, setMapaChipsColapsados,
+            sincronizarColapsoArea, mapaSairTelaCheia,
             montarAreaPastas, renderPastas, abrirPasta,
             renderMapasNav, mapasDaPasta, mapaTemplates,
             criarMapaNoChip, renomearMapaNoChip, duplicarMapaNoChip, excluirMapaDoChip,
