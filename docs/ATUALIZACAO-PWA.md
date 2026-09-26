@@ -220,15 +220,34 @@ container, `padding-bottom: 0`) e prova que a linha continua acima da barra e qu
 - `.mapa-tb-fixos { position: sticky; right: 0; margin-left: auto; background: var(--mapa-container); }`
   — `sticky` mantém o grupo na borda direita durante a rolagem, `margin-left: auto` o encosta na
   direita quando não há rolagem, e o fundo evita que o conteúdo apareça por trás.
+  **(P117)** desde a barra única, o grupo é filho DIRETO da casca `#mapaBarraUnica` — é nela que o
+  `sticky` ancora, porque a rolagem horizontal passou a ser UMA só (ferramentas + formatação juntas).
 
 > ⚠️ **Observação de requisito:** o modelo do mapa tem **criar irmão** e **criar filho**
 > (`criarIrmaoDe` / `criarFilhoDe`). **Não existe** "criar PAI" (envolver o nó num novo pai).
 > Os dois botões foram feitos com **irmão** e **filho**; se a intenção era "pai", é preciso
 > criar um comando novo no modelo (`criarPaiDe`).
 
-**Teste:** `tests/mapa_toolbar.cjs` §7 valida que o grupo é o **último item** da barra, está
-**dentro** dela, usa `position: sticky` + `right: 0`, encosta na borda direita, tem ícones
+**Teste:** `tests/mapa_toolbar.cjs` §7 valida que o grupo é o **último item** da barra única
+(`#mapaBarraUnica`), usa `position: sticky` + `right: 0`, encosta na borda direita, tem ícones
 padronizados e que o botão realmente cria o tópico já em edição.
+
+### 7.3 Mapa — barra ÚNICA (PC) e ACOPLADA ao teclado (celular) (P117)
+**Pedido:** as duas barras do Mapa (ferramentas + formatação) viram **UMA**, como a `#notesToolbar`
+de Notas; no **celular** ela sai do topo e aparece **acoplada acima do teclado**; e os ícones de
+IRMÃO/FILHO (que estavam **trocados**) são corrigidos.
+
+**Implementação:**
+| Arquivo | O que mudou |
+|---|---|
+| `mapa/mapa-render.js` | casca `#mapaBarraUnica` (`.mapa-barra-unica.app-barra.app-rolagem.app-vidro-barra`) com `#mapaToolbar`/`#mapaFormatBar` como **partes** (`.mapa-barra-parte`); `.mapa-tb-fixos` passa a ser filho DIRETO da casca; `ICONES.irmao`/`ICONES.filho` trocados; **Desfazer/Refazer** no menu do card/canvas |
+| `mapa/mapa.css` | uma superfície/uma rolagem na casca; colapso recolhe a casca; no celular `#mapaBarraUnica:not(.mapa-barra-docked) { display: none }` e `.mapa-barra-docked` = `position: fixed` + variáveis `--mapa-barra-dock-*`; grupos `exibir`/`fmt-linhas`/`modelos` na gaveta "Mais" |
+| `mapa/mapa.js` | `aplicarBarraMapaTeclado` · `desdockarBarraMapa` · `ativarBarraMapaTeclado` · `reavaliarBarraMapaTeclado` · `sincronizarBarraModo` (bloco `MAPA - BARRA ÚNICA ACOPLADA AO TECLADO`) |
+| `mapa/mapa-interacao.js` | abrir/fechar a edição do nó reavalia a doca (o teclado abre ⇒ barra acoplada; fecha ⇒ sai de cena) |
+| `app.js` | `sincronizarBarraModo()` na troca de modo |
+
+**Testes:** `tests/mapa_toolbar.cjs` (barra única) · `tests/mapa_mobile_topbar.cjs` (doca do celular
+e barra única no PC) · `tests/mapa_colapso.cjs` · `tests/expandir.cjs` · `tests/split_view.cjs`.
 
 ---
 

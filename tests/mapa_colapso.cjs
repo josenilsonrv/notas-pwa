@@ -2,8 +2,9 @@
 /*
  * COLAPSO DAS BARRAS DA ÁREA DO MAPA (mesma lógica do cabeçalho de Notas).
  * Cobre: botão na topbar (`#mapaColapsoBarras`, só visível com mapa aberto),
- * recolher/expandir esconde/mostra `#mapaToolbar` + `#mapaFormatBar`, classe
- * `.mapa-barras-colapsadas` no shell, `aria-expanded` sincronizado, a formatação
+ * recolher/expandir esconde/mostra a barra ÚNICA (`#mapaBarraUnica` — P117: ferramentas
+ * e formatação na MESMA barra; as partes `#mapaToolbar`/`#mapaFormatBar` são só layout),
+ * classe `.mapa-barras-colapsadas` no shell, `aria-expanded` sincronizado, a formatação
  * contextual não "vaza" depois de expandir e o re-render não descolapsa.
  */
 const assert = require('node:assert/strict');
@@ -76,7 +77,9 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await clicarColapso();
     assert.equal(await classe(), true, 'shell recebe a classe de colapso');
     assert.equal(await page.locator('#mapaToolbar').isVisible(), false, 'colapso esconde a barra de ferramentas');
-    assert.equal(await page.evaluate(() => document.getElementById('mapaToolbar').hidden), true, 'barra de ferramentas fica hidden');
+    // P117: quem RECOLHE é a barra única (a `#mapaToolbar` é uma parte dela, sem
+    // `hidden` próprio — quem fica `hidden` é a casca `#mapaBarraUnica`).
+    assert.equal(await page.evaluate(() => document.getElementById('mapaBarraUnica').hidden), true, 'a barra única fica hidden');
     assert.equal(await ariaBotao(), 'false', 'aria-expanded=false ao recolher');
 
     // ---------------------------------------------------------------- 3) re-render não descolapsa

@@ -1683,9 +1683,13 @@ function installModoMobileNotas(App) {
         } else {
             backdrop?.classList.remove('notes-chips-collapsed');
         }
+        // O modo (PC ⇄ celular) muda a PRÓPRIA barra: no celular ela fica enxuta (grupos
+        // na gaveta "Mais") e só aparece acoplada ao teclado. Quem reconstrói é
+        // `sincronizarBarraModo` (mapa/mapa.js) — só quando o modo troca de verdade.
+        if (typeof this.sincronizarBarraModo === 'function') this.sincronizarBarraModo();
         // O colapso da ÁREA DO MAPA segue o MESMO critério do colapso de Notas: no celular
-        // recolhe os CHIPS (`#mapaChipsNav`); no PC recolhe as barras
-        // (`#mapaToolbar` + `#mapaFormatBar`). Ver `sincronizarColapsoArea` (mapa/mapa.js).
+        // recolhe os CHIPS (`#mapaChipsNav`); no PC recolhe a barra única
+        // (`#mapaBarraUnica` — ferramentas + formatação). Ver `sincronizarColapsoArea`.
         if (typeof this.sincronizarColapsoArea === 'function') this.sincronizarColapsoArea();
         this.sincronizarBotaoColapsoChips(Boolean(backdrop?.classList.contains('notes-chips-collapsed')));
     };

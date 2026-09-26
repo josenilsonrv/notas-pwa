@@ -1692,4 +1692,55 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
   8 barras.
 - **Como auditar**: `node tests/mapa_mobile_topbar.cjs` · `node tests/barras_botoes.cjs`.
 
+### P117 — Barra do MAPA em UMA linha (PC) e ACOPLADA ao teclado (celular); IRMÃO/FILHO estavam TROCADOS
+- **Pedido**: (1) juntar as DUAS barras do Mapa (ferramentas + formatação) em **UMA** só, como a
+  `#notesToolbar` de Notas; (2) no **celular** essa barra sai do topo e aparece **acoplada acima do
+  teclado**, espelhando o `#notesToolbar.notes-toolbar-docked`; (3) corrigir os **ícones trocados**
+  de "Adicionar irmão"/"Adicionar filho".
+- **Sintoma**: o Mapa tinha DUAS superfícies de vidro empilhadas (`#mapaToolbar` + `#mapaFormatBar`),
+  cada uma com a SUA rolagem horizontal — no PC rolar uma não movia a outra e no celular as duas
+  ficavam no topo, longe dos dedos e **atrás do teclado** quando um nó estava em edição (no Mapa não
+  existia barra acoplada). Nos botões rápidos, o desenho era o inverso da ação: no layout padrão
+  (`bilateral`) o nó novo de **filho** nasce AO LADO do pai (o "+" fica à direita) e o de **irmão**
+  nasce ABAIXO (o "+" fica embaixo) — `criarFilhoDe`/`criarIrmaoDe` em `mapa/mapa-modelo.js`.
+- **Correção**:
+  - **`mapa/mapa-render.js`** — casca ÚNICA `#mapaBarraUnica`
+    (`div.mapa-barra-unica.app-barra.app-rolagem.app-vidro-barra`, `role="toolbar"`) com
+    `#mapaToolbar` e `#mapaFormatBar` como **filhas de layout** (`div.mapa-barra-parte`): a
+    superfície de vidro e a rolagem horizontal são UMA só, na casca. O grupo de ações rápidas
+    (`.mapa-tb-fixos`, `sticky; right: 0`) passou a ser filho DIRETO da casca — o `sticky` ancora na
+    ÚNICA rolagem — e o `renderFormatBar` limpa os filhos extras da casca antes de recolocar o grupo
+    (o re-render não empilha duplicatas). `ICONES.irmao`/`ICONES.filho` trocados e o menu do
+    card/canvas ganhou **Desfazer/Refazer** (`no-desfazer`/`no-refazer`) no topo da lista.
+  - **`mapa/mapa.css`** — `.mapa-barra-unica` é a barra (uma linha, `overflow-x: auto`); as partes só
+    alinham (`background: none; border: 0; overflow: visible`); o colapso do PC recolhe a casca
+    (`.mapa-barras-colapsadas #mapaBarraUnica`); no CELULAR
+    `html.notes-mobile #mapaArea #mapaBarraUnica:not(.mapa-barra-docked) { display: none !important }`
+    (a barra SAI do topo) e `.mapa-barra-docked` = `position: fixed` + `--mapa-barra-dock-left/
+    -bottom/-width` (z-index 1200, sombra para cima); no celular os grupos `exibir`/`fmt-linhas`/
+    `modelos` viram faixas da gaveta "Mais" (barra enxuta).
+  - **`mapa/mapa.js`** — bloco novo `⚡ [INÍCIO: MAPA - BARRA ÚNICA ACOPLADA AO TECLADO]`:
+    `aplicarBarraMapaTeclado(insetForcado)` (mede `visualViewport` — teclado > 120px — e o
+    `#mapaArea`, memorizando o cálculo em `mapaBarraTecladoAplicado`), `desdockarBarraMapa`,
+    `ativarBarraMapaTeclado` (ouvintes do `visualViewport` ligados UMA vez na montagem),
+    `reavaliarBarraMapaTeclado` (reavaliações em 0/120/300/600 ms ao abrir/fechar a edição) e
+    `sincronizarBarraModo` (reconstrói a barra quando o MODO troca). `BARRAS_FULLSCREEN` e o colapso
+    tratam a casca, e `sincronizarColapsoArea` descarta o colapso do OUTRO modo (senão a barra
+    chegaria ao celular com o `hidden` do PC).
+  - **`mapa/mapa-interacao.js`** — abrir/fechar a edição do nó chama `reavaliarBarraMapaTeclado`
+    (a barra entra em cena ao abrir o teclado e sai de cena ao fechar).
+  - **`app.js`** — `sincronizarBarraModo()` na troca de modo (junto de `sincronizarColapsoArea()`).
+- **Efeito visível**: **PC** = UMA barra de vidro com ferramentas + formatação na MESMA rolagem (as
+  ações rápidas seguem presas à direita); **celular** = a barra não ocupa mais o topo (ficam só a
+  topbar e os chips) e aparece **acoplada acima do teclado** enquanto o nó está em edição, enxuta;
+  **Desfazer/Refazer** alcançáveis pelo menu do card/canvas.
+- **Bump de cache**: `CACHE_NAME` **v80 → v81** (`app.js`, `mapa/mapa.js`, `mapa/mapa-render.js`,
+  `mapa/mapa-interacao.js` e `mapa/mapa.css`).
+- **Testes**: `tests/mapa_toolbar.cjs` §1/§7 (barra única: uma superfície, uma rolagem, fixos como
+  último item da casca) · `tests/mapa_mobile_topbar.cjs` (doca acima do teclado, saída de cena no
+  celular, grupos na gaveta, PC intacto) · `tests/mapa_colapso.cjs`, `tests/expandir.cjs` e
+  `tests/split_view.cjs` atualizados para a casca.
+- **Como auditar**: `node tests/mapa_toolbar.cjs` · `node tests/mapa_mobile_topbar.cjs` ·
+  `node tests/mapa_colapso.cjs`.
+
 

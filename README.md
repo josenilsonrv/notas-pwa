@@ -19,7 +19,7 @@ Editor de notas avançado como Progressive Web App (PWA) para uso em celular, co
 - **Modelos de nota**: Salvar a nota atual como modelo e reaplicá-la
 - **Undo/Redo**: Histórico de estados com atalhos
 - **Toolbar**: Uma única linha com rolagem horizontal; botão "Editar barra de ferramentas" reordena os botões (ordem guardada no dispositivo); a barra acompanha o teclado, ficando logo acima dele, e o cursor é mantido visível acima dela
-- **Modo mobile**: por padrão a toolbar **superior fica escondida** (aparece a barra acoplada ao teclado) e o botão de colapso alterna **apenas os chips** de notas
+- **Modo mobile**: por padrão a toolbar **superior fica escondida** (aparece a barra acoplada ao teclado) e o botão de colapso alterna **apenas os chips** de notas; **no Mapa vale o mesmo**: a barra (ferramentas + formatação numa linha só) sai do topo e só aparece **acoplada acima do teclado** enquanto um tópico está em edição
 - **Fullscreen**: Modo tela cheia
 - **Temas**: Claro e escuro, com um seletor sutil (sol/lua) no cabeçalho do modal para alternar manualmente
 - **Persistência**: Salvo automaticamente no LocalStorage do dispositivo (a camada de notas é preparada para persistência remota/Supabase)
@@ -29,6 +29,7 @@ Editor de notas avançado como Progressive Web App (PWA) para uso em celular, co
 - **Seletor de áreas (dentro da pasta)**: barra flutuante **Notas | Mapa Mental** (a escolha é lembrada em `notas-pwa-area-ativa`), com "‹ Pastas" (volta à tela principal) e os botões de **Fechar** de cada área (cada um fecha SÓ a sua)
 - **Notas**: chips filtrados pela pasta ativa; clique-direito/toque longo no chip abre o menu (Renomear · Duplicar · Mover para pasta · Excluir)
 - **Mapa Mental**: área separada do editor, em camadas (pasta `mapa/`), montada só na primeira entrada (lazy) para não pesar o boot
+- **Barra do Mapa**: ferramentas + formatação na **MESMA linha** (uma superfície de vidro e uma rolagem só); no celular ela **sai do topo** e aparece **acoplada acima do teclado** durante a edição do tópico, com os grupos menos usados na gaveta "Mais"
 - **Lado a lado (PC)**: o botão **⛶** de cada área é o ÚNICO controle — **expandir** deixa só a área clicada na tela e **retrair** (segundo clique) volta a **Notas + Mapa** juntos (a preferência fica em `notas-pwa-split`); **arrastar a barra superior** de um painel para o lado inverso troca os lados, e **arrastar o divisor** entre eles ajusta a largura (um painel acompanha o outro)
 - **Vínculo Notas↔Mapa**: um tópico pode apontar para uma nota (atalho 📄 que abre a nota)
 - **Gestão de mapas**: criar, abrir, renomear, duplicar e excluir (com confirmação); favoritar (estrela) e arquivar/desarquivar

@@ -985,15 +985,16 @@ html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); bord
 }
 
 /* ------------------------------------------------------------
- * Barras padronizadas (Fase 12): FERRAMENTAS (fixa) + FORMATAÇÃO (contextual).
- * MESMO padrão/cores da barra de Notas (.notes-toolbar + .toolbar-btn):
- * uma linha com rolagem horizontal, grupos separados por divisores.
+ * BARRA ÚNICA (P117): FERRAMENTAS + FORMATAÇÃO na MESMA linha, com UM vidro e UMA
+ * rolagem horizontal. MESMO padrão/cores da barra de Notas (.notes-toolbar +
+ * .toolbar-btn): uma linha com rolagem, grupos separados por divisores.
+ * As duas PARTES (`#mapaToolbar`/`#mapaFormatBar`) são só filhos de layout: quem tem
+ * a superfície de vidro e rola é a casca `#mapaBarraUnica`.
  * ------------------------------------------------------------ */
-.mapa-toolbar,
-.mapa-format-bar {
+.mapa-barra-unica {
     display: flex;
-    align-items: center;
-    gap: 2px;
+    align-items: stretch;
+    gap: 0;
     flex: none;
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -1010,6 +1011,21 @@ html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); bord
     scrollbar-width: thin;
     scrollbar-color: transparent transparent;
 }
+/* As PARTES não desenham nada (vidro/borda são da casca) e NÃO rolam por dentro: a
+   rolagem é UMA só, na casca — assim ferramentas e formatação andam juntas. */
+.mapa-toolbar,
+.mapa-format-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: none;
+    flex-wrap: nowrap;
+    overflow: visible;
+    min-height: var(--app-toolbar-altura, 2.25rem);
+    padding: 0;
+    background: none;
+    border: 0;
+}
 /* As classes compartilhadas `.app-rolagem` (rolagem) e `.app-barra` (barra em uma
    linha com rolagem) são definidas em `styles.css` (base comum). */
 
@@ -1017,13 +1033,33 @@ html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); bord
 /* (O padrão de rolagem de Notas é aplicado pela classe `.app-rolagem`, acima —
    com o reforço de especificidade para o modal. Nada a declarar aqui.) */
 
-.mapa-format-bar { background: var(--app-vidro-fundo, var(--mapa-container)); }
+.mapa-barra-unica[hidden],
 .mapa-toolbar[hidden],
 .mapa-format-bar[hidden] { display: none !important; }
 /* Colapso das barras da área (mesma lógica do cabeçalho de Notas): a topbar
-   permanece (com o botão) e as duas barras recolhem quando o shell é marcado. */
-.mapa-shell.mapa-barras-colapsadas #mapaToolbar,
-.mapa-shell.mapa-barras-colapsadas #mapaFormatBar { display: none !important; }
+   permanece (com o botão) e a barra única recolhe quando o shell é marcado. */
+.mapa-shell.mapa-barras-colapsadas #mapaBarraUnica { display: none !important; }
+/* CELULAR (P117): a barra única NÃO fica no topo — ela só aparece ACOPLADA acima do
+   teclado virtual (`.mapa-barra-docked`), o MESMO comportamento do `#notesToolbar`
+   de Notas (Styles.css: `html.notes-mobile #notesToolbar:not(.notes-toolbar-docked)`).
+   Quem liga/desliga a classe é `aplicarBarraMapaTeclado` (mapa/mapa.js). */
+html.notes-mobile #mapaArea #mapaBarraUnica:not(.mapa-barra-docked) { display: none !important; }
+#mapaArea #mapaBarraUnica.mapa-barra-docked {
+    position: fixed;
+    left: var(--mapa-barra-dock-left, 0px);
+    width: var(--mapa-barra-dock-width, 100%);
+    bottom: var(--mapa-barra-dock-bottom, 0px);
+    z-index: 1200;
+    margin: 0;
+    border-bottom: 0;
+    border-top: 1px solid var(--app-vidro-borda, var(--mapa-borda));
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, .16);
+    background: var(--color-bg-container);
+}
+html[data-theme="dark"] #mapaArea #mapaBarraUnica.mapa-barra-docked {
+    background: #151b23;
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, .5);
+}
 /* Tela cheia: a POSIÇÃO vem da classe compartilhada `.app-tela-cheia` (styles.css),
    aplicada ao shell pelo `mapaAlternarFullscreen` (a MESMA usada em Notas). Aqui
    `.mapa-fullscreen` serve só para trocar o ícone (expandir ⇄ restaurar). */
@@ -1052,8 +1088,9 @@ html.notes-mobile #mapaArea .mapa-topbar {
 html.notes-mobile #mapaArea .mapa-topbar #mapaFullscreenBtn { display: none !important; }
 
 /* Colapso dos CHIPS no celular — MESMO efeito do `notes-chips-collapsed` de Notas
-   (`#notesContextNav`, em `styles.css`): o nav recolhe e as BARRAS da área (que no
-   mapa não têm substituta acoplada ao teclado) continuam no lugar. */
+   (`#notesContextNav`, em `styles.css`): o nav recolhe e a barra única continua
+   disponível (ela é ACOPLADA ao teclado quando o usuário digita — ver
+   `html.notes-mobile #mapaArea #mapaBarraUnica:not(.mapa-barra-docked)`). */
 html.notes-mobile #mapaArea .mapa-shell.mapa-chips-colapsados #mapaChipsNav {
     max-height: 0 !important;
     padding-top: 0 !important;
@@ -1145,6 +1182,16 @@ html.notes-mobile #mapaArea .mapa-shell.mapa-chips-colapsados #mapaChipsNav {
     box-shadow: 0 10px 28px rgba(0, 0, 0, .18);
 }
 .mapa-tb-mais-lista .mapa-tb-btn { justify-content: flex-start; gap: 8px; width: 100%; min-height: 34px; font-size: 13px; }
+/* Grupos que o CELULAR manda para a gaveta "Mais" (barra enxuta acima do teclado):
+   cada grupo vira uma faixa de botões dentro da lista, separada por um traço. */
+.mapa-tb-mais-lista .mapa-tb-grupo {
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 6px 0 2px;
+    border-top: 1px solid var(--mapa-divisor);
+}
+.mapa-tb-mais-lista .mapa-tb-grupo .mapa-tb-btn { width: auto; }
+.mapa-tb-mais-lista .mapa-tb-divisor { display: none; }
 .mapa-menu-item svg { width: 1.125rem; height: 1.125rem; flex: none; }
 
 /* Ações RÁPIDAS fixas à DIREITA da barra de formatação (celular): continuam visíveis

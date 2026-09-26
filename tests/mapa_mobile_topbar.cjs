@@ -17,6 +17,10 @@
  * de botões, mesma ordem no DOM e mesma altura — no celular (colapso · ⇄ · ✕) e no PC
  * (colapso · ⛶ · ✕). E varre as LARGURAS do PC sem toque (1280px → 480px): nenhuma das
  * duas barras pode quebrar em duas linhas (a do MAPA quebrava).
+ *
+ * P117: no celular a barra do mapa (agora ÚNICA: ferramentas + formatação na mesma linha)
+ * sai do topo e só aparece ACOPLADA acima do teclado — aqui isso é auditado com o inset
+ * forçado (`aplicarBarraMapaTeclado`), junto com a barra enxuta (grupos na gaveta "Mais").
  */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -150,7 +154,12 @@ async function montarApp(pg) {
     await page.waitForTimeout(500);
     assert.equal(await classeChips(), true, 'shell marcado com o colapso dos CHIPS (mapa-chips-colapsados)');
     assert.equal((await chips()).visivel, false, 'colapso recolhe os CHIPS (igual ao #notesContextNav de Notas)');
-    assert.equal(await page.locator('#mapaToolbar').isVisible(), true, 'as BARRAS continuam visíveis (no mapa não há barra do teclado)');
+    // P117: no celular a barra única NÃO fica no topo (só aparece acoplada ao teclado —
+    // ver seção 6), e o colapso dos chips NEM A TOCA: o `hidden` dela continua falso.
+    assert.equal(await page.evaluate(() => document.getElementById('mapaBarraUnica').hidden), false,
+      'o colapso dos chips não toca na barra única (quem a esconde no celular é o CSS)');
+    assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('mapaBarraUnica')).display), 'none',
+      'no celular a barra única fica FORA do topo');
     assert.equal(await page.evaluate(() => document.getElementById('mapaColapsoBarras').getAttribute('aria-expanded')), 'false',
       'aria-expanded=false ao recolher os chips');
 
@@ -183,7 +192,8 @@ async function montarApp(pg) {
     // A saída da tela cheia é animada (400 ms de pausa + uma barra por vez, 220 ms cada).
     await page.waitForTimeout(2000);
     assert.equal(await page.evaluate(() => Boolean(app.mapaFullscreen)), false, 'tela cheia do mapa liberada ao entrar no celular');
-    assert.equal(await page.locator('#mapaToolbar').isVisible(), true, 'barras de volta depois da liberação');
+    assert.equal(await page.evaluate(() => document.getElementById('mapaBarraUnica').hidden), false,
+      'a barra única volta ao estado normal depois da liberação (no celular quem a mostra é a doca do teclado)');
     assert.equal(await page.locator('#mapaFullscreenBtn').isVisible(), false, '⛶ do Mapa fora do celular');
     assert.equal(await page.evaluate(() => document.querySelector('#mapaArea .mapa-shell').classList.contains('mapa-fullscreen')), false,
       'classe de tela cheia limpa no shell');
@@ -228,7 +238,84 @@ async function montarApp(pg) {
     assert.equal(notasPc.botoes[notasPc.botoes.length - 1].papel === 'fechar' && mapaPc.botoes[mapaPc.botoes.length - 1].papel === 'fechar', true,
       'no PC o ✕ é o ÚLTIMO botão à direita nas DUAS barras');
 
-    // ---------------------------------------------------------- 6) PC ESTREITO: NADA DE QUEBRA
+    // ---------------------------------------------------------- 6) BARRA ÚNICA (P117)
+    // A barra do mapa é UMA só: ferramentas + formatação na mesma linha (a casca
+    // `#mapaBarraUnica`). No CELULAR ela sai do topo e só aparece ACOPLADA acima do
+    // teclado — o MESMO comportamento do `#notesToolbar` de Notas. Para a barra caber,
+    // os grupos menos usados vão para a gaveta "Mais" e as ações rápidas (irmão/filho)
+    // ficam SEMPRE na linha.
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.waitForTimeout(800);
+    assert.equal(await page.evaluate(() => document.documentElement.classList.contains('notes-mobile')), true,
+      'de volta ao celular para auditar a barra única');
+
+    const barraCelular = await page.evaluate(() => {
+      const barra = document.getElementById('mapaBarraUnica');
+      const gaveta = document.querySelector('#mapaBarraUnica .mapa-tb-mais-lista');
+      const naGaveta = chave => Boolean(gaveta && gaveta.querySelector('.mapa-tb-grupo[data-mapa-grupo="' + chave + '"]'));
+      const naBarra = chave => Boolean(document.querySelector('#mapaToolbar > .mapa-tb-grupo[data-mapa-grupo="' + chave + '"]'));
+      return {
+        existe: Boolean(barra) && barra.contains(document.getElementById('mapaToolbar')) && barra.contains(document.getElementById('mapaFormatBar')),
+        topo: getComputedStyle(barra).display,
+        gaveta: ['exibir', 'fmt-linhas', 'modelos'].map(chave => naGaveta(chave)),
+        fora: ['exibir', 'fmt-linhas', 'modelos'].map(chave => naBarra(chave)),
+        fixos: Boolean(document.querySelector('#mapaBarraUnica > .mapa-tb-fixos'))
+      };
+    });
+    assert.equal(barraCelular.existe, true, 'a casca contém as duas partes (ferramentas + formatação)');
+    assert.equal(barraCelular.topo, 'none', 'no celular a barra única NÃO fica no topo');
+    assert.deepEqual(barraCelular.gaveta, [true, true, true],
+      'grupos Exibir/Linhas/Modelos vão para a gaveta "Mais" (barra enxuta no celular)');
+    assert.deepEqual(barraCelular.fora, [false, false, false], 'e saem da linha da barra');
+    assert.equal(barraCelular.fixos, true, 'as ações rápidas de criação ficam SEMPRE na linha');
+    assert.equal(await page.locator('#mapaBarraUnica').isVisible(), false,
+      'sem teclado a barra não aparece em lugar nenhum na área do mapa');
+
+    // "Teclado aberto" — o teste NÃO abre teclado real: força o inset (320px), a MESMA
+    // porta que o Notas usa (`aplicarToolbarTeclado(insetForcado)`).
+    const dock = await page.evaluate(() => {
+      const dockou = window.app.aplicarBarraMapaTeclado(320);
+      const barra = document.getElementById('mapaBarraUnica');
+      const r = barra.getBoundingClientRect();
+      const estilo = getComputedStyle(barra);
+      return {
+        dockou, classe: barra.classList.contains('mapa-barra-docked'),
+        posicao: estilo.position, bottom: Math.round(r.bottom), esquerda: Math.round(r.left),
+        largura: Math.round(r.width), altura: Math.round(r.height),
+        vista: window.innerWidth, alturaVista: window.innerHeight
+      };
+    });
+    assert.equal(dock.dockou, true, 'com o teclado aberto a barra é DOCADA');
+    assert.equal(dock.classe, true, 'classe `.mapa-barra-docked` aplicada');
+    assert.equal(dock.posicao, 'fixed', 'barra docada é fixa (acima do teclado)');
+    assert.equal(await page.locator('#mapaBarraUnica').isVisible(), true, 'barra docada fica visível');
+    assert.equal(dock.bottom, dock.alturaVista - 320, 'barra encosta ACIMA do teclado (bottom = altura da tela − teclado)');
+    assert.equal(dock.altura >= 36 && dock.altura <= 48, true, 'barra docada em UMA linha (' + dock.altura + 'px)');
+    assert.equal(dock.esquerda >= -1 && dock.largura > 200, true,
+      'barra docada ocupa a largura da tela (' + dock.largura + 'px)');
+
+    // Teclado fechado: a barra sai da doca, limpa as variáveis e desaparece outra vez.
+    const semTeclado = await page.evaluate(() => {
+      const dockou = window.app.aplicarBarraMapaTeclado(0);
+      const barra = document.getElementById('mapaBarraUnica');
+      return { dockou, classe: barra.classList.contains('mapa-barra-docked'), estilo: (barra.getAttribute('style') || '').trim() };
+    });
+    assert.equal(semTeclado.dockou, false, 'sem teclado a barra não é docada');
+    assert.equal(semTeclado.classe, false, 'classe da doca removida');
+    assert.equal(semTeclado.estilo, '', 'variáveis da doca limpas (sem estilo inline pendurado)');
+    assert.equal(await page.locator('#mapaBarraUnica').isVisible(), false, 'fechado o teclado a barra sai de cena');
+
+    // Fora do celular a doca NÃO entra em ação (é uma barra de CELULAR) e os grupos
+    // voltam para a linha da barra.
+    await page.setViewportSize({ width: 1280, height: 960 });
+    await page.waitForTimeout(800);
+    assert.equal(await page.evaluate(() => window.app.aplicarBarraMapaTeclado(320)), false,
+      'no PC a barra não é docada nem com inset forçado');
+    assert.equal(await page.locator('#mapaBarraUnica').isVisible(), true, 'no PC a barra única volta ao topo');
+    assert.equal(await page.evaluate(() => Boolean(document.querySelector('#mapaToolbar > .mapa-tb-grupo[data-mapa-grupo="exibir"]'))), true,
+      'no PC os grupos abandonam a gaveta e voltam para a linha');
+
+    // ---------------------------------------------------------- 7) PC ESTREITO: NADA DE QUEBRA
     // Encolher a janela do PC não pode quebrar NENHUMA das duas barras do topo. A de
     // Notas nunca quebrou; a do MAPA caía para uma SEGUNDA linha por causa do
     // `flex-wrap: wrap` (a barra saltava de 65px para 109px em 640px e 131px em 480px).

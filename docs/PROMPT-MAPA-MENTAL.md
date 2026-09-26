@@ -292,14 +292,21 @@ demo manual** antes de começar a próxima.
 > - No mobile o painel lateral vira **bottom sheet** (não cobrir o canvas inteiro).
 > - **Padrão de UI obrigatório**: seguir a barra de Notas (`.toolbar-btn`, grupos + divisores, uma linha com rolagem, **cores padrão do tema de Notas**) e **nunca** deixar botão solto.
 - [ ] **`#mapaToolbar` (barra de ferramentas, FIXA, uma linha com rolagem, `role="toolbar"`)** —
+  > **P117**: as duas barras abaixo viraram **UMA** na tela: a casca `#mapaBarraUnica` (uma
+  > superfície de vidro e UMA rolagem horizontal) tem `#mapaToolbar` e `#mapaFormatBar` como
+  > **partes**; no **celular** a casca sai do topo e aparece **acoplada acima do teclado**
+  > (`.mapa-barra-docked`), com `exibir`/`fmt-linhas`/`modelos` na gaveta "Mais".
   grupos + divisores: `Mapa` (‹ Mapas · Novo · Templates) · `Histórico` (Desfazer · Refazer) ·
-  `Inserir` (Novo tópico · Filho · Irmão · Duplicar · Excluir) · `Relações` (Conectar nós · Nó-ponte ·
+  `Inserir` (Novo tópico · Filho · Irmão · Duplicar · Excluir — **P117**: os ícones de Filho/Irmão
+  seguem o layout padrão: o **filho** nasce AO LADO (o "+" à direita) e o **irmão** ABAIXO) · `Relações` (Conectar nós · Nó-ponte ·
   Propriedades) · `Estrutura` (Recolher/Expandir tudo · Bloquear · Subir/Descer · Mover para…) ·
   `Exibir` (Zoom −/%/+ · Centralizar · Ajustar à tela · Ir à raiz · Mapa · Layout · Espaçamento · Tema) ·
   `“…”` (overflow: Copiar/Recortar/Colar · Concluir · Largura ± · slots de Pesquisa/Filtros)
 - [ ] Ordem dos botões **persistida** (`notas-pwa-mapa-toolbar-order`) + botão **“Editar barra”**
   (diálogo de reordenação + restaurar padrão), igual ao PWA de Notas
-- [ ] **`#mapaFormatBar` (barra de formatação, CONTEXTUAL ao nó selecionado)** — espelha `#notesToolbar`:
+- [ ] **`#mapaFormatBar` (barra de formatação, CONTEXTUAL ao nó selecionado)** — espelha `#notesToolbar`
+  (**P117**: é a **2ª parte** da barra única `#mapaBarraUnica` — mesma linha e mesma rolagem da
+  `#mapaToolbar`; no celular só aparece acoplada ao teclado):
   `Texto` (B/I) · `Tamanho/Fonte` · `Cores` · `Forma` · `Alinhamento` · `Linhas` (borda/ramo) ·
   `Extra` (Emoji/Ícone · pincel “copiar estilo” · “restaurar padrão”)
 - [ ] **Cores no MESMO padrão de Notas** (`setupNotesColors`): popover `role="dialog"` ancorado no botão,
@@ -309,7 +316,9 @@ demo manual** antes de começar a próxima.
 - [ ] **Migração SEM botão solto**: `controlesCanvas`, `acoesNo`, `#mapaLayout`, `#mapaTema`,
   espaçamento, `details` “Estilo por nível” e os itens do topbar no mapa aberto passam a **grupos**
   das duas barras (preservando ids, `data-mapa-acao`, `#mapaArea .mapa-shell`, `#mapaCanvas` e o estado vazio)
-- [ ] **Menu contextual** (botão direito / toque longo) no nó, na linha e no canvas
+- [ ] **Menu contextual** (botão direito / toque longo) no nó, na linha e no canvas — **P117**: o menu
+  do card e o do canvas abrem com **Desfazer/Refazer** (`no-desfazer`/`no-refazer`) no topo, para o
+  celular não perder o histórico quando a barra única está apenas acoplada ao teclado
 - [ ] **Menu rápido** ao selecionar nó = overflow `“…”` + botões contextuais habilitados/desabilitados
 - [ ] **Painel lateral de propriedades** (conteúdo, estilo, tarefa, relações) — bottom sheet no mobile
 - [ ] **Comandos rápidos**: adicionar filho, adicionar irmão, criar conexão a partir do nó

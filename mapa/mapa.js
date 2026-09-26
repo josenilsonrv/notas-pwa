@@ -182,6 +182,9 @@
         // Grade (pontinhos) da superfície: preferência persistida (padrão: desligada).
         dados.grade = (store() && typeof store().lerGrade === 'function') ? store().lerGrade() : false;
         // Barras padronizadas (F12) ANTES do mapa: o editor de barra lê o DOM da toolbar.
+        // O MODO vai no próprio `dados`: no celular a barra única fica enxuta (grupos na
+        // gaveta "Mais") — o render é um módulo, sem acesso ao app (P117).
+        dados.mobile = Boolean(typeof this.ehMobile === 'function' && this.ehMobile());
         r.renderBarras(dados);
         // Reaplica o colapso (um re-render não pode "descolapsar"): barras no PC,
         // chips no celular — quem decide é o modo atual (ver `sincronizarColapsoArea`).
@@ -721,7 +724,8 @@
     /**
      * Recolhe/expande as barras da área do mapa. Espelha o padrão de Notas
      * (`setNotesHeaderCollapsed` + `notesPanelMotion`): o botão vive na topbar
-     * (que permanece visível) e apenas `#mapaToolbar`/`#mapaFormatBar` recolhem.
+     * (que permanece visível) e a barra ÚNICA (`#mapaBarraUnica` — ferramentas +
+     * formatação, P117) recolhe inteira.
      */
     function setMapaBarrasColapsadas(collapsed) {
         const shell = document.querySelector('#mapaArea .mapa-shell');
@@ -737,8 +741,8 @@
     /**
      * Recolhe/expande os CHIPS dos mapas — o que o colapso faz no CELULAR, espelhando
      * o colapso do cabeçalho de Notas (`notes-chips-collapsed` → `#notesContextNav`).
-     * No celular as BARRAS ficam: no mapa não existe barra acoplada ao teclado, então
-     * recolher a toolbar tiraria as ferramentas do alcance.
+     * No celular a barra única CONTINUA disponível: ela aparece ACOPLADA ao teclado
+     * (`aplicarBarraMapaTeclado`), então recolher os chips não tira ferramenta do alcance.
      */
     function setMapaChipsColapsados(collapsed) {
         const shell = document.querySelector('#mapaArea .mapa-shell');
@@ -761,10 +765,20 @@
      * Reaplica o colapso conforme o MODO: no celular vale o colapso dos CHIPS; no PC o
      * das BARRAS (e a classe do celular é descartada, para a área voltar limpa ao girar
      * o aparelho ou redimensionar a janela). Chamada no re-render e na troca de modo.
+     * A troca de modo também DESCARTA o colapso das barras do outro modo: senão a barra
+     * única chegaria ao celular com `hidden`/classe do PC e não apareceria nem acoplada.
      */
     function sincronizarColapsoArea() {
         const movel = typeof this.ehMobile === 'function' && this.ehMobile();
-        if (movel) { setMapaChipsColapsados.call(this, mapaChipsColapsados()); return; }
+        if (movel) {
+            const shell = document.querySelector('#mapaArea .mapa-shell');
+            if (shell) shell.classList.remove('mapa-barras-colapsadas');
+            this.mapaBarrasColapsadas = false;
+            const barra = document.getElementById('mapaBarraUnica');
+            if (barra && this.mapaAbertaId) barra.hidden = false;
+            setMapaChipsColapsados.call(this, mapaChipsColapsados());
+            return;
+        }
         const shell = document.querySelector('#mapaArea .mapa-shell');
         if (shell) shell.classList.remove('mapa-chips-colapsados');
         setMapaBarrasColapsadas.call(this, Boolean(this.mapaBarrasColapsadas));
@@ -778,28 +792,25 @@
     /** Alterna o colapso da área (botão da topbar): chips no CELULAR, barras no PC. */
     async function mapaAlternarColapsoBarras() {
         // CELULAR: MESMO funcionamento do colapso de Notas — recolhe os CHIPS
-        // (`#mapaChipsNav`), sem animação e sem tocar nas barras (ver `setMapaChipsColapsados`).
+        // (`#mapaChipsNav`), sem animação e sem tocar na barra (ver `setMapaChipsColapsados`).
         if (typeof this.ehMobile === 'function' && this.ehMobile()) {
             setMapaChipsColapsados.call(this, !mapaChipsColapsados());
             return;
         }
-        const toolbar = document.getElementById('mapaToolbar');
-        const formatBar = document.getElementById('mapaFormatBar');
+        // P117: a barra do mapa é ÚNICA (ferramentas + formatação na mesma linha) — a
+        // animação recolhe a CASCA inteira, como UMA barra só.
+        const barra = document.getElementById('mapaBarraUnica');
         const botao = document.getElementById('mapaColapsoBarras');
-        if (!toolbar) return;
+        if (!barra) return;
         const esconder = !this.mapaBarrasColapsadas;
         const versao = this.mapaMotionVersion = (this.mapaMotionVersion || 0) + 1;
-        [toolbar, formatBar].filter(Boolean).forEach(e => e.getAnimations().forEach(a => a.cancel()));
+        barra.getAnimations().forEach(a => a.cancel());
         if (botao) botao.setAttribute('aria-expanded', String(!esconder));
-        if (esconder) {
-            // Só anima a formatação se ela estiver visível (nó selecionado).
-            this.mapaFormatBarVisivel = Boolean(formatBar && !formatBar.hidden);
-        } else {
+        if (!esconder) {
             const shell = document.querySelector('#mapaArea .mapa-shell');
             if (shell) shell.classList.remove('mapa-barras-colapsadas');
         }
-        await mapaPanelMotion.call(this, toolbar, esconder, versao);
-        if (this.mapaFormatBarVisivel) await mapaPanelMotion.call(this, formatBar, esconder, versao);
+        await mapaPanelMotion.call(this, barra, esconder, versao);
         if (versao === this.mapaMotionVersion) {
             this.mapaBarrasColapsadas = esconder;
             setMapaBarrasColapsadas.call(this, esconder);
@@ -818,7 +829,7 @@
         return expandidorMapa(this).alternar(false);
     }
     /** Barras da área que recolhem na TELA CHEIA (ordem de recolher/mostrar). */
-    const BARRAS_FULLSCREEN = ['mapaToolbar', 'mapaFormatBar', 'mapaChipsNav', 'mapaRodape'];
+    const BARRAS_FULLSCREEN = ['mapaBarraUnica', 'mapaChipsNav', 'mapaRodape'];
 
     /** Instância ÚNICA do expandir/contrair da área (classe compartilhada `AppExpandir`). */
     function expandidorMapa(app) {
@@ -863,6 +874,111 @@
         return expandidorMapa(this).alternar();
     }
     // ⚡ [FIM: MAPA - COLAPSO DAS BARRAS]
+
+    // ⚡ [INÍCIO: MAPA - BARRA ÚNICA ACOPLADA AO TECLADO]
+    /**
+     * Doca a barra única ACIMA do teclado virtual — espelho de `aplicarToolbarTeclado`
+     * (app.js), com o MESMO recorte: só entra em cena no celular, com o teclado aberto
+     * (mais de 120 px) e a barra visível na área do mapa. `insetForcado` (px) permite
+     * testar sem teclado real.
+     *
+     * A posição é calculada MEDINDO o referencial real (o `#mapaArea` pode ter
+     * `transform`/`backdrop-filter` como o `#notesModal`): zera as variáveis, mede e
+     * corrige pela diferença. O resultado é memorizado em `mapaBarraTecladoAplicado`
+     * para os eventos do `visualViewport` não forçarem reflow a cada quadro.
+     */
+    function aplicarBarraMapaTeclado(insetForcado) {
+        const barra = document.getElementById('mapaBarraUnica');
+        if (!barra) return false;
+        const movel = typeof this.ehMobile === 'function' && this.ehMobile();
+        const vv = global.visualViewport;
+        const layout = document.documentElement.clientHeight || global.innerHeight;
+        const alturaVisual = vv ? vv.height : layout;
+        const estaDockada = barra.classList.contains('mapa-barra-docked');
+        if (!estaDockada) this.mapaBarraViewportBase = Math.max(layout, global.innerHeight || 0, alturaVisual);
+        const teclado = typeof insetForcado === 'number'
+            ? Math.max(0, Math.round(insetForcado))
+            : Math.max(0, Math.round((this.mapaBarraViewportBase || layout) - alturaVisual));
+        // Fechado o teclado (ou fora do modo celular) a barra volta ao lugar normal — no
+        // celular isso significa SAIR de cena: o CSS só mostra a barra acoplada.
+        const deveDockar = movel && teclado > 120 && !barra.hidden && this.mapaAreaAtiva === 'mapa';
+        if (!deveDockar) {
+            desdockarBarraMapa.call(this, barra);
+            return false;
+        }
+
+        const area = document.getElementById('mapaArea');
+        const caixa = area ? area.getBoundingClientRect() : { left: 0, width: global.innerWidth };
+        const chave = [teclado, Math.round(layout), Math.round(caixa.left), Math.round(caixa.width)].join('|');
+        if (estaDockada && chave === this.mapaBarraTecladoAplicado) return true;
+        this.mapaBarraTecladoAplicado = chave;
+
+        barra.classList.add('mapa-barra-docked');
+        const largura = Math.round(Math.max(0, Math.min(caixa.width, global.innerWidth - Math.max(0, caixa.left))));
+        barra.style.setProperty('--mapa-barra-dock-width', largura + 'px');
+        // Mede o referencial (comporta-se igual com containing block = área ou viewport).
+        barra.style.setProperty('--mapa-barra-dock-left', '0px');
+        barra.style.setProperty('--mapa-barra-dock-bottom', '0px');
+        const zerado = barra.getBoundingClientRect();
+        barra.style.setProperty('--mapa-barra-dock-left', Math.round(Math.max(0, caixa.left) - zerado.left) + 'px');
+        barra.style.setProperty('--mapa-barra-dock-bottom', Math.round(zerado.bottom - (layout - teclado)) + 'px');
+        return true;
+    }
+
+    /** Tira a barra única da doca (teclado fechado ou modo PC) e limpa as variáveis. */
+    function desdockarBarraMapa(barra) {
+        const alvo = barra || document.getElementById('mapaBarraUnica');
+        this.mapaBarraTecladoAplicado = null;
+        if (!alvo || !alvo.classList.contains('mapa-barra-docked')) return;
+        alvo.classList.remove('mapa-barra-docked');
+        ['--mapa-barra-dock-left', '--mapa-barra-dock-bottom', '--mapa-barra-dock-width']
+            .forEach(nome => alvo.style.removeProperty(nome));
+    }
+
+    /**
+     * Liga os ouvintes do teclado virtual (UMA vez, na montagem da área): o
+     * `visualViewport` avisa quando o teclado abre/fecha e quando a tela rola por causa
+     * dele. Mesmo conjunto de eventos de `ativarToolbarTeclado` (app.js).
+     */
+    function ativarBarraMapaTeclado() {
+        if (this.mapaBarraTecladoAtivo) return;
+        this.mapaBarraTecladoAtivo = true;
+        const atualizar = () => aplicarBarraMapaTeclado.call(this);
+        const vv = global.visualViewport;
+        vv?.addEventListener('resize', atualizar);
+        vv?.addEventListener('scroll', atualizar);
+        global.addEventListener('resize', atualizar);
+        global.addEventListener('orientationchange', atualizar);
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'hidden') atualizar(); });
+        global.addEventListener('pagehide', () => desdockarBarraMapa.call(this));
+    }
+
+    /**
+     * Reavalia a doca algumas vezes depois de abrir/fechar a edição do nó: o teclado
+     * anima e o `visualViewport` nem sempre avisa no primeiro quadro (mesma bateria de
+     * reavaliações de `reagirAoFoco` em Notas).
+     */
+    function reavaliarBarraMapaTeclado() {
+        [0, 120, 300, 600].forEach(atraso => global.setTimeout(() => aplicarBarraMapaTeclado.call(this), atraso));
+    }
+
+    /**
+     * Reconstrói a barra quando o MODO troca (PC ⇄ celular): no celular os grupos
+     * `exibir`/`fmt-linhas`/`modelos` entram na gaveta "Mais" (barra enxuta acima do
+     * teclado). O modo aplicado fica em `__mapaBarraModo` para NÃO re-renderizar a cada
+     * re-render comum da área (só quando o modo muda de verdade).
+     */
+    function sincronizarBarraModo() {
+        const movel = typeof this.ehMobile === 'function' && this.ehMobile();
+        if (this.__mapaBarraModo === movel) return false;
+        this.__mapaBarraModo = movel;
+        // Sem a área montada (harness só de Notas) não há o que reconstruir.
+        if (!document.getElementById('mapaBarraUnica')) return false;
+        renderArea.call(this);
+        desdockarBarraMapa.call(this);
+        return true;
+    }
+    // ⚡ [FIM: MAPA - BARRA ÚNICA ACOPLADA AO TECLADO]
 
     // ⚡ [INÍCIO: MAPA - PASTAS (ÁREA RAIZ / WORKSPACES)]
     /** Botão da área de Pastas (mesma delegação `data-mapa-acao`). */
@@ -2577,6 +2693,9 @@
                     const interacaoCtx = global.MapaMentalInteracao;
                     if (interacaoCtx && interacaoCtx.contextMenu) interacaoCtx.contextMenu.call(this, evento);
                 });
+                // Barra única acoplada ao teclado virtual (P117): os ouvintes do
+                // `visualViewport` são ligados UMA vez, junto com os da seção.
+                ativarBarraMapaTeclado.call(this);
                 // Navegação do canvas (pan/zoom/pinça) — delegação única na seção.
                 const interacao = global.MapaMentalInteracao;
                 if (interacao) {
@@ -2844,8 +2963,12 @@
             mapaMenuBarra: null,
             mapaBarrasColapsadas: false,
             mapaFullscreen: false,
-            mapaFormatBarVisivel: false,
             mapaMotionVersion: 0,
+            // Barra única acoplada ao teclado virtual (P117): ouvintes ligados, último
+            // cálculo aplicado e altura de layout SEM teclado (baseline do iOS).
+            mapaBarraTecladoAtivo: false,
+            mapaBarraTecladoAplicado: null,
+            mapaBarraViewportBase: null,
             pastaAtiva: null,
             pastasAreaMontada: false,
             pastasAreaOuvintesLigados: false,
@@ -2878,6 +3001,8 @@
             mapaMoverBotaoBarra, mapaRestaurarBarra,
             mapaAlternarColapsoBarras, setMapaBarrasColapsadas, setMapaChipsColapsados,
             sincronizarColapsoArea, mapaSairTelaCheia,
+            aplicarBarraMapaTeclado, desdockarBarraMapa, ativarBarraMapaTeclado,
+            reavaliarBarraMapaTeclado, sincronizarBarraModo,
             montarAreaPastas, renderPastas, abrirPasta,
             renderMapasNav, mapasDaPasta, mapaTemplates,
             criarMapaNoChip, renomearMapaNoChip, duplicarMapaNoChip, excluirMapaDoChip,

@@ -77,7 +77,7 @@
         const espaco = criar('div', 'mapa-topbar-espaco');
 
         // Botão de COLAPSO das barras (mesma lógica do cabeçalho de Notas): vive na
-        // topbar (que permanece visível) e recolhe `#mapaToolbar` + `#mapaFormatBar`.
+        // topbar (que permanece visível) e recolhe a barra única `#mapaBarraUnica`.
         const colapso = btnIcone('colapso', 'colapso', 'Recolher barras', 'alternar-colapso', null, 'mapaColapsoBarras');
         colapso.hidden = true;
         colapso.setAttribute('aria-expanded', 'true');
@@ -117,17 +117,28 @@
         chipsNav.setAttribute('aria-label', 'Mapas desta pasta');
         chipsNav.hidden = false;
 
-        // Barras padronizadas (F12): ferramentas (fixa) + formatação (contextual).
-        const toolbar = criar('div', 'mapa-toolbar app-barra app-rolagem app-vidro-barra');
+        // BARRA ÚNICA (P117): ferramentas (fixas) + formatação (contextual) na MESMA
+        // linha, com UM vidro e UMA rolagem horizontal. As duas PARTES (com os MESMOS
+        // ids, usados pelo painel "Editar barra" e pelos testes) entram como filhas da
+        // casca `#mapaBarraUnica`, que é quem tem a superfície (`app-barra`/`app-vidro`)
+        // e rola. No CELULAR a casca sai do topo (CSS) e só aparece ACOPLADA acima do
+        // teclado (`.mapa-barra-docked`) — ver `aplicarBarraMapaTeclado` (mapa/mapa.js).
+        const barraUnica = criar('div', 'mapa-barra-unica app-barra app-rolagem app-vidro-barra');
+        barraUnica.id = 'mapaBarraUnica';
+        barraUnica.setAttribute('role', 'toolbar');
+        barraUnica.setAttribute('aria-label', 'Ferramentas e formatação do mapa');
+        barraUnica.hidden = true;
+        const toolbar = criar('div', 'mapa-toolbar mapa-barra-parte');
         toolbar.id = 'mapaToolbar';
         toolbar.setAttribute('role', 'toolbar');
         toolbar.setAttribute('aria-label', 'Ferramentas do mapa');
         toolbar.hidden = true;
-        const formatBar = criar('div', 'mapa-format-bar app-barra app-rolagem app-vidro-barra');
+        const formatBar = criar('div', 'mapa-format-bar mapa-barra-parte');
         formatBar.id = 'mapaFormatBar';
         formatBar.setAttribute('role', 'toolbar');
         formatBar.setAttribute('aria-label', 'Formatação do nó');
         formatBar.hidden = true;
+        barraUnica.append(toolbar, formatBar);
 
         const wrap = criar('div', 'mapa-canvas-wrap');
         wrap.id = 'mapaCanvasWrap';
@@ -149,9 +160,9 @@
         salvo.setAttribute('aria-live', 'polite');
         rodape.append(ultimaEdicao, contagem, salvo);
 
-        shell.append(topbar, chipsNav, toolbar, formatBar, form, wrap, rodape);
+        shell.append(topbar, chipsNav, barraUnica, form, wrap, rodape);
         secao.append(shell);
-        return { shell, topbar, toolbar, formatBar, form, wrap, rodape };
+        return { shell, topbar, barraUnica, toolbar, formatBar, form, wrap, rodape };
     }
     // 🔄 [FIM: MAPA - SHELL DA ÁREA]
 
@@ -164,6 +175,9 @@
         // A faixa de chips dos MAPAS da pasta fica SEMPRE visível: é por ela que se
         // escolhe/cria um mapa (mesma lógica da faixa de chips de Notas).
         visivel('mapaChipsNav', true);
+        // A barra de ferramentas é a PARTE de dentro da casca; quem aparece/some é a
+        // casca única (`#mapaBarraUnica`), com as duas partes juntas (P117).
+        visivel('mapaBarraUnica', !lista);
         visivel('mapaToolbar', !lista);
         visivel('mapaColapsoBarras', !lista);
         // ⇄ (celular): espelho do ⇄ de Notas; no PC o CSS esconde (lado a lado).
@@ -432,8 +446,11 @@
         subir: { d: '<path d="M12 20V5"/><path d="m6 11 6-6 6 6"/>' },
         descer: { d: '<path d="M12 4v15"/><path d="m6 13 6 6 6-6"/>' },
         // Ações rápidas de criação (barra de formatação, fixas à direita).
-        irmao: { d: '<rect x="2" y="8" width="8" height="8" rx="2"/><path d="M17 8v8M13 12h8"/>' },
-        filho: { d: '<rect x="8" y="2" width="8" height="7" rx="2"/><path d="M12 9v4"/><path d="M12 13v8M9 17h6"/>' },
+        // O desenho segue o layout PADRÃO (`bilateral`): o FILHO nasce AO LADO (o "+"
+        // fica à DIREITA da caixa) e o IRMÃO nasce ABAIXO (o "+" fica EMBAIXO) — ver
+        // `criarFilhoDe`/`criarIrmaoDe` (mapa-modelo.js) e P117.
+        irmao: { d: '<rect x="8" y="2" width="8" height="7" rx="2"/><path d="M12 9v4"/><path d="M12 13v8M9 17h6"/>' },
+        filho: { d: '<rect x="2" y="8" width="8" height="8" rx="2"/><path d="M17 8v8M13 12h8"/>' },
         'conectar-nos': { d: '<path d="M9 12h6"/><path d="M7 8H6a4 4 0 0 0 0 8h1"/><path d="M17 8h1a4 4 0 0 1 0 8h-1"/>' },
         'conectar-mapa': { d: '<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>' },
         'template-salvar': { d: '<path d="M6 3h12v18l-6-4-6 4z"/>' },
@@ -593,18 +610,36 @@
 
     /**
      * Preenche `#mapaToolbar` (ferramentas, FIXA) e `#mapaFormatBar` (formatação,
-     * CONTEXTUAL ao nó selecionado). Sem mapa aberto, ambas ficam vazias/ocultas.
+     * CONTEXTUAL ao nó selecionado) — as duas PARTES da barra única
+     * (`#mapaBarraUnica`), na MESMA linha. Sem mapa aberto, ambas ficam vazias/ocultas.
      * Regra de ouro (F12): NADA de botão solto — ferramentas aqui, formatação na
      * `#mapaFormatBar` e comandos específicos de card no MENU CONTEXTUAL do nó.
      */
     function renderBarras(dados) {
+        const casca = document.getElementById('mapaBarraUnica');
         const toolbar = document.getElementById('mapaToolbar');
         const formatBar = document.getElementById('mapaFormatBar');
         if (!toolbar || !formatBar) return;
         toolbar.innerHTML = '';
         formatBar.innerHTML = '';
+        // A casca recebe também itens diretos (ações rápidas fixas + menu de opções):
+        // eles saem junto — só as duas PARTES são preservadas.
+        if (casca) {
+            [...casca.children].forEach(filho => {
+                if (filho !== toolbar && filho !== formatBar) filho.remove();
+            });
+        }
         const info = dados || {};
-        if (!info.mapaAberto) { toolbar.hidden = true; formatBar.hidden = true; return; }
+        // `hidden` só é alternado quando o valor MUDA: reatribuir o mesmo valor é inócuo,
+        // mas `hidden = true` num elemento visível cria e apaga o atributo a cada render
+        // (o que aparecia como "show" espúrio nas auditorias de ordem/uma-por-vez).
+        if (!info.mapaAberto) {
+            toolbar.hidden = true;
+            formatBar.hidden = true;
+            if (casca) casca.hidden = true;
+            return;
+        }
+        if (casca && casca.hidden) casca.hidden = false;
         const grafo = info.grafo || null;
         const ordem = (global.MapaMentalStore && global.MapaMentalStore.lerOrdemBarra) ? global.MapaMentalStore.lerOrdemBarra() : {};
 
@@ -630,6 +665,31 @@
 
         [...toolbar.querySelectorAll('.mapa-tb-grupo')].forEach(g => aplicarOrdemBarra(g, ordem));
         renderFormatBar(formatBar, info);
+        // CELULAR: barra ENXUTA. Os grupos que menos se usam enquanto se digita entram na
+        // gaveta "Mais" (o MESMO `details.mapa-tb-mais`), para a barra caber acima do
+        // teclado e ainda mostrar a formatação do nó em edição (P117). Vai DEPOIS do
+        // `renderFormatBar` porque `fmt-linhas`/`modelos` nascem lá.
+        if (info.mobile) moverGruposParaGaveta(MOBILE_NA_GAVETA);
+    }
+
+    /** Grupos de FORA da barra no CELULAR: entram na gaveta "Mais" (barra enxuta). */
+    const MOBILE_NA_GAVETA = ['exibir', 'fmt-linhas', 'modelos'];
+
+    /**
+     * Move grupos da barra para DENTRO da gaveta "Mais" (`.mapa-tb-mais-lista`), no FIM
+     * da lista de comandos. O divisor que precedia cada grupo sai junto (senão a barra
+     * fica com um traço solto no meio).
+     */
+    function moverGruposParaGaveta(chaves) {
+        const alvo = document.querySelector('#mapaToolbar .mapa-tb-mais-lista');
+        if (!alvo) return;
+        (chaves || []).forEach(chave => {
+            const grupo = document.querySelector('.mapa-barra-parte .mapa-tb-grupo[data-mapa-grupo="' + chave + '"]');
+            if (!grupo) return;
+            const anterior = grupo.previousElementSibling;
+            if (anterior && anterior.classList.contains('mapa-tb-divisor')) anterior.remove();
+            alvo.append(grupo);
+        });
     }
     /** Grupo "Exibir": zoom, enquadramento, layout, espaçamento, tema e estilo por nível. */
     function grupoExibir(grafo, gradeLigado) {
@@ -804,14 +864,17 @@
         bar.append(gModelos);
 
         // ---- Ações RÁPIDAS fixadas à DIREITA (uso no celular): ficam SEMPRE visíveis,
-        // mesmo com a barra rolada na horizontal (`position: sticky; right: 0`), e já
-        // criam o tópico em edição (mesmas ações do menu do card).
+        // mesmo com a barra rolada na horizontal (`position: sticky; right: 0`) e já
+        // criam o tópico em edição (mesmas ações do menu do card). Elas são filhas
+        // DIRETAS da casca `#mapaBarraUnica` (não da barra de formatação): o `sticky`
+        // ancora na ÚNICA rolagem horizontal — a da própria barra única.
         const fixos = criar('div', 'mapa-tb-fixos');
         fixos.setAttribute('role', 'group');
         fixos.setAttribute('aria-label', 'Criar tópico');
         fixos.append(btnIcone('rapido-irmao', 'irmao', 'Adicionar irmão', 'no-irmao'));
         fixos.append(btnIcone('rapido-filho', 'filho', 'Adicionar filho', 'no-filho'));
-        bar.append(fixos);
+        const casca = document.getElementById('mapaBarraUnica');
+        (casca || bar).append(fixos);
 
         // Menu de OPÇÕES do botão aberto (fonte/forma/alinhamento) — sempre por último.
         const opcoes = menuOpcoesBarra(bar, info, efetivo);
@@ -835,6 +898,10 @@
         menu.style.left = Math.max(8, Math.min(pos.x || 0, (global.innerWidth || 1024) - 232)) + 'px';
         menu.style.top = Math.max(8, Math.min(pos.y || 0, (global.innerHeight || 768) - 340)) + 'px';
         const itens = noMenu ? [
+            // P117: Desfazer/Refazer TAMBÉM no menu do card — no celular eles ficariam
+            // fora de alcance quando a barra única está só acoplada ao teclado.
+            ['desfazer', 'Desfazer', 'no-desfazer'],
+            ['refazer', 'Refazer', 'no-refazer'],
             ['filho', 'Adicionar filho', 'no-filho'],
             ['irmao', 'Adicionar irmão', 'no-irmao'],
             ['editar', 'Editar texto', 'no-editar'],
@@ -855,6 +922,10 @@
             ['conectar', 'Conectar a…', 'no-conectar-para'],
             ['excluir', 'Excluir', 'no-excluir']
         ] : [
+            // P117: as ações de HISTÓRICO entram aqui para o celular não perder o
+            // desfazer/refazer enquanto a barra única está acoplada ao teclado.
+            ['desfazer', 'Desfazer', 'no-desfazer'],
+            ['refazer', 'Refazer', 'no-refazer'],
             ['novo-topico', 'Novo tópico (raiz)', 'no-independente'],
             ['colar', 'Colar', 'no-colar'],
             ['recolher-tudo', 'Recolher tudo', 'recolher-tudo'],

@@ -99,6 +99,9 @@
             selecao.removeAllRanges();
             selecao.addRange(faixa);
         }
+        // P117: o foco acabou de abrir o teclado — a barra única do mapa entra em cena
+        // ACOPLADA acima dele (`aplicarBarraMapaTeclado`, mapa/mapa.js).
+        if (typeof this.reavaliarBarraMapaTeclado === 'function') this.reavaliarBarraMapaTeclado();
         return true;
     }
 
@@ -122,6 +125,9 @@
         this.mapaEdicaoOriginal = null;
         // Devolve o foco ao canvas para os atalhos de criacao continuarem funcionando.
         focarCanvas.call(this);
+        // P117: fechado o teclado, a barra única SAI de cena no celular (ela só aparece
+        // acoplada) — reavalia para desfazer a doca (ver `aplicarBarraMapaTeclado`).
+        if (typeof this.reavaliarBarraMapaTeclado === 'function') this.reavaliarBarraMapaTeclado();
     }
 
     function cancelarEdicao() {

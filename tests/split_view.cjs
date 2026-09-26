@@ -107,7 +107,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal((await split()).appSplit, false, 'começa fora do modo lado a lado');
     await page.locator('#mapaFullscreenBtn').click();
     await page.waitForFunction(ids => window.app.mapaFullscreen && ids.every(id => document.getElementById(id).hidden),
-      ['mapaToolbar', 'mapaFormatBar', 'mapaChipsNav', 'mapaRodape']);
+      ['mapaBarraUnica', 'mapaChipsNav', 'mapaRodape']);
     assert.equal((await split()).appSplit, false, 'EXPANDIR (⛶) deixa uma tela só — não entra no lado a lado');
     await page.locator('#mapaFullscreenBtn').click();
     await page.waitForFunction(() => !window.app.mapaFullscreen && document.documentElement.classList.contains('app-split'));

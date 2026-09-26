@@ -140,12 +140,14 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.deepEqual(await page.evaluate(() => window.__ordem), ['notesContextNav:show'], 'só a barra que estava visível volta');
 
     // ------------------------------------------------- 3) MAPA: mesma ordem/inversa
-    const BARRAS = ['mapaToolbar', 'mapaFormatBar', 'mapaChipsNav', 'mapaRodape'];
+    // P117: a barra do mapa é ÚNICA (`#mapaBarraUnica`) — ferramentas e formatação
+    // recolhem juntas, como UMA barra.
+    const BARRAS = ['mapaBarraUnica', 'mapaChipsNav', 'mapaRodape'];
     await page.evaluate(ids => { window.app.renderArea(); window.__observar(ids); }, BARRAS);
     await page.locator('#mapaFullscreenBtn').click();
     await page.waitForFunction(ids => window.app.mapaFullscreen && ids.every(id => document.getElementById(id).hidden), BARRAS);
     assert.equal(await page.evaluate(() => Boolean(app.mapaFullscreen)), true, 'Mapa em tela cheia');
-    assert.deepEqual(await page.evaluate(ids => window.__oculto(ids), BARRAS), [true, true, true, true], 'Mapa recolhe as 4 barras');
+    assert.deepEqual(await page.evaluate(ids => window.__oculto(ids), BARRAS), [true, true, true], 'Mapa recolhe as 3 barras');
     assert.deepEqual(await page.evaluate(() => window.__ordem), BARRAS.map(id => id + ':hide'), 'Mapa recolhe UMA POR VEZ, na ordem');
     assert.equal(await page.evaluate(() => document.getElementById('mapaFullscreenBtn').getAttribute('aria-pressed')), 'true', 'botão do Mapa marcado como expandido');
     assert.equal(await page.evaluate(() => document.querySelector('#mapaArea .mapa-shell').classList.contains('app-tela-cheia')), true, 'MESMA classe compartilhada .app-tela-cheia');
@@ -153,7 +155,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await page.locator('#mapaFullscreenBtn').click();
     await page.waitForFunction(ids => !window.app.mapaFullscreen && ids.every(id => !document.getElementById(id).hidden), BARRAS);
     assert.equal(await page.evaluate(() => Boolean(app.mapaFullscreen)), false, 'Mapa restaurado');
-    assert.deepEqual(await page.evaluate(ids => window.__oculto(ids), BARRAS), [false, false, false, false], 'Mapa mostra as 4 barras');
+    assert.deepEqual(await page.evaluate(ids => window.__oculto(ids), BARRAS), [false, false, false], 'Mapa mostra as 3 barras');
     assert.deepEqual(await page.evaluate(() => window.__ordem), BARRAS.slice().reverse().map(id => id + ':show'), 'Mapa mostra em ORDEM INVERSA');
     assert.equal(await page.evaluate(() => document.querySelector('#mapaArea .mapa-shell').classList.contains('app-tela-cheia')), false, 'classe compartilhada removida ao restaurar');
     assert.equal(await page.evaluate(() => app.expandirMapa instanceof AppExpandir), true, 'Mapa usa a CLASSE ÚNICA AppExpandir');

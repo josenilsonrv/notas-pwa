@@ -1,10 +1,11 @@
 // 🧪 [INÍCIO: TESTE - MAPA TOOLBAR]
 /*
  * FASE 12 - Barras padronizadas + menus + cores.
- * Cobre: barra de FERRAMENTAS fixa (uma linha com rolagem, grupos + divisores),
- * barra de FORMATAÇÃO contextual, ausência de botão solto, menu contextual do card
- * (botão direito) com comandos específicos, paleta de cores no MESMO padrão de Notas
- * (80 cores + recentes no grafo), ordem da barra persistida + restaurar.
+ * Cobre: a barra ÚNICA (P117) de FERRAMENTAS + FORMATAÇÃO numa linha com rolagem
+ * (casca `#mapaBarraUnica` com as partes `#mapaToolbar`/`#mapaFormatBar`), ausência de
+ * botão solto, menu contextual do card (botão direito) com comandos específicos, paleta
+ * de cores no MESMO padrão de Notas (80 cores + recentes no grafo), ordem da barra
+ * persistida + restaurar.
  */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -84,11 +85,17 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 
     const idObjetivo = await idDe('Objetivo');
     // ---------------------------------------------------------------- 1) barra de ferramentas
+    // P117: a barra do mapa é ÚNICA — ferramentas + formatação na MESMA linha, com UMA
+    // superfície de vidro e UMA rolagem horizontal (`#mapaBarraUnica`). As antigas
+    // `#mapaToolbar`/`#mapaFormatBar` continuam existindo como PARTES dela (os ids e os
+    // grupos seguem os mesmos).
     const barra = await page.evaluate(() => {
-      const el = document.getElementById('mapaToolbar');
+      const el = document.getElementById('mapaBarraUnica');
+      const parte = document.getElementById('mapaToolbar');
+      const formato = document.getElementById('mapaFormatBar');
       const estilo = getComputedStyle(el);
       return {
-        existe: Boolean(el),
+        existe: Boolean(el) && Boolean(parte) && Boolean(formato) && el.contains(parte) && el.contains(formato),
         visivel: !el.hidden,
         role: el.getAttribute('role'),
         grupos: el.querySelectorAll('.mapa-tb-grupo').length,
@@ -98,7 +105,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
         acoes: [...el.querySelectorAll('[data-mapa-acao]')].map(b => b.dataset.mapaAcao)
       };
     });
-    assert.ok(barra.existe && barra.visivel, 'barra de ferramentas visível com o mapa aberto');
+    assert.ok(barra.existe && barra.visivel, 'barra ÚNICA (ferramentas + formatação) visível com o mapa aberto');
     assert.equal(barra.role, 'toolbar', 'barra com role="toolbar"');
     assert.ok(barra.grupos >= 4, 'barra tem grupos (' + barra.grupos + ')');
     assert.ok(barra.divisores >= 3, 'grupos separados por divisores');
@@ -109,11 +116,34 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       assert.ok(barra.acoes.includes(a), 'barra contém a ferramenta ' + a);
     });
 
+    // UMA superfície só: ferramentas e formatação estão na MESMA linha e quem desenha o
+    // vidro é a casca — as partes não têm fundo/borda nem rolagem própria.
+    const superficie = await page.evaluate(() => {
+      const casca = document.getElementById('mapaBarraUnica');
+      const parte = document.getElementById('mapaToolbar');
+      const formato = document.getElementById('mapaFormatBar');
+      const p = parte.getBoundingClientRect();
+      const f = formato.getBoundingClientRect();
+      return {
+        vidro: getComputedStyle(casca).backgroundImage !== 'none' || getComputedStyle(casca).backgroundColor !== 'rgba(0, 0, 0, 0)',
+        semFundo: [parte, formato].every(el => getComputedStyle(el).backgroundColor === 'rgba(0, 0, 0, 0)'),
+        semRolagem: [parte, formato].every(el => getComputedStyle(el).overflowX === 'visible'),
+        partes: casca.children.length,
+        mesmaLinha: Math.abs(p.top - f.top) <= 2,
+        juntos: Math.abs(p.right - f.left) <= 2 || p.bottom === f.bottom
+      };
+    });
+    assert.equal(superficie.vidro, true, 'a casca desenha o vidro da barra');
+    assert.equal(superficie.semFundo, true, 'as partes não têm fundo próprio (UM vidro só)');
+    assert.equal(superficie.semRolagem, true, 'as partes não rolam por dentro (UMA rolagem só)');
+    assert.equal(superficie.partes >= 2, true, 'a casca contém as partes (+ ações fixas)');
+    assert.equal(superficie.mesmaLinha, true, 'ferramentas e formatação na MESMA linha');
+
     // ---------------------------------------------------------------- 2) sem botão solto
     // A TOPBAR é uma barra própria (gestão); o resto exclui afinidades DO CARD
     // (alternador/checkbox/ponte), os chips de mapa conectado, o minimapa e o estado vazio.
     const soltos = await page.evaluate(() => [...document.querySelectorAll('#mapaArea [data-mapa-acao]')]
-      .filter(el => !el.closest('#mapaToolbar, #mapaFormatBar, .mapa-topbar, .mapa-menu, #mapaAtalhos, #mapaBarraEditor, .mapa-painel, #mapaForm, .mapa-canvas-vazio, .mapa-no, .mapa-conexoes, #mapaMinimapa'))
+      .filter(el => !el.closest('#mapaBarraUnica, .mapa-topbar, .mapa-menu, #mapaAtalhos, #mapaBarraEditor, .mapa-painel, #mapaForm, .mapa-canvas-vazio, .mapa-no, .mapa-conexoes, #mapaMinimapa'))
       .map(el => el.dataset.mapaAcao));
     assert.deepEqual(soltos, [], 'nenhum botão solto fora das barras/menus/painel');
     // No mapa aberto, a topbar mostra: colapso das barras, expandir/contrair e Fechar.
@@ -150,7 +180,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 
     // ------------------------------------------- 3.1) ícones padronizados nas DUAS barras
     const icones = await page.evaluate(() => {
-      const botoes = [...document.querySelectorAll('#mapaToolbar .mapa-tb-btn, #mapaFormatBar .mapa-tb-btn')];
+      const botoes = [...document.querySelectorAll('#mapaBarraUnica .mapa-tb-btn')];
       const svgs = botoes.map(b => b.querySelector(':scope > svg'));
       return {
         total: botoes.length,
@@ -263,6 +293,11 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     });
     assert.ok(menu, 'menu contextual abre no botão direito');
     assert.equal(menu.role, 'menu', 'menu com role="menu"');
+    // P117: o histórico entra também no menu do card — no celular a barra única só aparece
+    // acoplada ao teclado e o Desfazer não pode ficar fora de alcance.
+    ['no-desfazer', 'no-refazer'].forEach(a => {
+      assert.ok(menu.itens.includes(a), 'menu do card contém ' + a + ' (histórico acessível)');
+    });
     ['no-filho', 'no-irmao', 'no-duplicar', 'no-copiar', 'no-recortar', 'no-colar',
       'no-bloquear', 'no-largura-menos', 'no-largura-mais', 'no-excluir'].forEach(a => {
       assert.ok(menu.itens.includes(a), 'menu do card contém ' + a);
@@ -334,12 +369,14 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(await page.evaluate(() => Boolean(document.getElementById('mapaBarraEditor'))), false, 'painel fecha');
 
     // ------------------------------------------- 7) ações rápidas FIXAS à direita
+    // P117: elas são filhas DIRETAS da barra única (não da formatação) — é a barra
+    // única que rola, então é nela que o `sticky` ancora.
     const fixos = await page.evaluate(() => {
-      const grupo = document.querySelector('#mapaFormatBar .mapa-tb-fixos');
+      const grupo = document.querySelector('#mapaBarraUnica > .mapa-tb-fixos');
       if (!grupo) return null;
       const estilo = getComputedStyle(grupo);
       return {
-        dentroDaBarra: document.getElementById('mapaFormatBar').contains(grupo),
+        dentroDaBarra: document.getElementById('mapaBarraUnica').contains(grupo),
         acoes: [...grupo.querySelectorAll('[data-mapa-acao]')].map(b => b.dataset.mapaAcao),
         posicao: estilo.position,
         direita: estilo.right,
@@ -347,7 +384,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
         iconesVazios: [...grupo.querySelectorAll('svg')].filter(s => !s.children.length).length
       };
     });
-    assert.ok(fixos, 'barra de formatação tem o grupo de ações rápidas');
+    assert.ok(fixos, 'barra única tem o grupo de ações rápidas');
     assert.equal(fixos.dentroDaBarra, true, 'ações rápidas ficam DENTRO da barra (nada solto)');
     assert.equal(fixos.posicao, 'sticky', 'ações rápidas ficam fixas na barra (position sticky)');
     assert.equal(fixos.direita, '0px', 'ações rápidas coladas à DIREITA');
@@ -355,10 +392,27 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(fixos.icones, 2, 'ações rápidas com ícone padronizado');
     assert.equal(fixos.iconesVazios, 0, 'ícones das ações rápidas têm desenho');
 
+    // P117: o DESENHO casa com o LADO onde o tópico nasce no layout padrão (`bilateral`):
+    // o IRMÃO entra ABAIXO (mesmo pai → empilha na vertical) e o FILHO entra AO LADO
+    // (um nível à direita). Antes os dois estavam TROCADOS.
+    const desenhos = await page.evaluate(() => {
+      const svg = acao => {
+        const b = document.querySelector('#mapaBarraUnica > .mapa-tb-fixos [data-mapa-acao="' + acao + '"] svg');
+        return b ? b.innerHTML : '';
+      };
+      return { irmao: svg('no-irmao'), filho: svg('no-filho') };
+    });
+    assert.ok(/M12 13v8M9 17h6/.test(desenhos.irmao),
+      'ícone do IRMÃO mostra o "+" ABAIXO (é onde o irmão nasce no layout padrão)');
+    assert.ok(!/M17 8v8M13 12h8/.test(desenhos.irmao), 'o ícone do irmão NÃO é o desenho do lado');
+    assert.ok(/M17 8v8M13 12h8/.test(desenhos.filho),
+      'ícone do FILHO mostra o "+" à DIREITA (é onde o filho nasce no layout padrão)');
+    assert.ok(!/M12 13v8M9 17h6/.test(desenhos.filho), 'o ícone do filho NÃO é o desenho de baixo');
+
     // Alinhamento: o grupo é o ÚLTIMO item e encosta na borda direita (mesmo rolando a barra).
     const alinhamento = await page.evaluate(() => {
-      const grupo = document.querySelector('#mapaFormatBar .mapa-tb-fixos');
-      const barra = document.getElementById('mapaFormatBar');
+      const grupo = document.querySelector('#mapaBarraUnica > .mapa-tb-fixos');
+      const barra = document.getElementById('mapaBarraUnica');
       return {
         ehUltimo: barra.lastElementChild === grupo,
         delta: Math.round(barra.getBoundingClientRect().right - grupo.getBoundingClientRect().right)
@@ -371,10 +425,21 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     // Os botões usam os MESMOS comandos do menu do card e já abrem o tópico em edição.
     await selecionar(idObjetivo);
     const antesIrmao = await page.evaluate(() => window.app.mapaCanvasGrafo.nos.length);
-    await clicar('#mapaFormatBar [data-mapa-acao="no-irmao"]');
+    await clicar('#mapaBarraUnica [data-mapa-acao="no-irmao"]');
     assert.equal(await page.evaluate(() => window.app.mapaCanvasGrafo.nos.length), antesIrmao + 1, 'botão fixo cria irmão');
     assert.ok(await page.evaluate(() => Boolean(window.app.mapaEditandoId)), 'tópico criado já fica em edição (celular)');
     await page.keyboard.press('Escape');   // encerra a edição inline aberta pelo botão
+
+    // P117: o menu do CANVAS (toque longo/botão direito na área vazia) também tem o
+    // histórico, e o comando é o MESMO da barra.
+    const antesDesfazer = await page.evaluate(() => window.app.mapaCanvasGrafo.nos.length);
+    await page.evaluate(() => window.app.mapaAbrirMenuCanvas({ x: 30, y: 320 }));
+    const menuCanvas = await page.evaluate(() => [...document.querySelectorAll('#mapaMenu [data-mapa-acao]')].map(b => b.dataset.mapaAcao));
+    assert.ok(menuCanvas.includes('no-desfazer') && menuCanvas.includes('no-refazer'),
+      'menu do canvas tem Desfazer/Refazer (histórico no toque longo)');
+    await clicar('#mapaMenu [data-mapa-acao="no-desfazer"]');
+    assert.equal(await page.evaluate(() => window.app.mapaCanvasGrafo.nos.length), antesDesfazer - 1,
+      'Desfazer pelo menu do canvas desfaz a criação feita pelo botão fixo');
 
     assert.deepEqual(erros, []);
     console.log('OK: barras padronizadas (ferramentas, formatação, menu do card, cores, ordem)');
