@@ -28,8 +28,7 @@ const medir=page=>page.evaluate(()=>{
 
 const vidroDe=dados=>({
   header:{backdropFilter:dados.header.backdropFilter,backgroundColor:dados.header.backgroundColor},
-  card:{backdropFilter:dados.card.backdropFilter,backgroundColor:dados.card.backgroundColor},
-  nav:{backdropFilter:dados.nav.backdropFilter,backgroundColor:dados.nav.backgroundColor}
+  card:{backdropFilter:dados.card.backdropFilter,backgroundColor:dados.card.backgroundColor}
 });
 
 (async()=>{
@@ -55,7 +54,13 @@ const vidroDe=dados=>({
   assert.equal(claro.card.backgroundColor,'rgba(245, 245, 247, 0.72)','fundo translucido do card');
   assert.equal(claro.card.borderTopColor,'rgba(255, 255, 255, 0.78)','borda translucida do card');
   assert.ok(/Segoe UI|-apple-system/.test(claro.body)&&!/Inter/.test(claro.body),'fonte system stack (nao Inter)');
-  assert.deepEqual(vidroDe(claro),vidroDe(claroOriginal),'vidro do PWA identico ao original no claro');
+  assert.deepEqual(vidroDe(claro),vidroDe(claroOriginal),'vidro do PWA identico ao original no claro (header + card)');
+  // EXCEÇÃO DELIBERADA: a faixa dos chips (`#notesContextNav`) perdeu o CONTÊINER no PWA
+  // (transparente, sem borda e sem blur) — ver styles.css, seção "CHIPS DE NOTAS: SEM
+  // CONTÊINER + DARK INVERTIDO". No projeto original ela continua com o painel de vidro.
+  assert.equal(claro.nav.backgroundColor,'rgba(0, 0, 0, 0)','faixa dos chips transparente no PWA (sem conteiner)');
+  assert.equal(claro.nav.backdropFilter,'none','faixa dos chips sem vidro no PWA (sem conteiner)');
+  assert.notEqual(claroOriginal.nav.backgroundColor,'rgba(0, 0, 0, 0)','no original a faixa dos chips mantem o painel');
   assert.ok(/Segoe UI|-apple-system/.test(claroOriginal.body)&&!/Inter/.test(claroOriginal.body),'fonte system stack no original');
 
   // ---- Tema escuro: o compilado desliga o vidro (superficies solidas).

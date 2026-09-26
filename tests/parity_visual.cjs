@@ -128,6 +128,11 @@ const EXCECOES = [
   },
   {
     seletor: '.notes-modal-footer',
+    propriedade: 'display',
+    motivo: 'Rodape PADRONIZADO com o do Mapa pela classe compartilhada `.app-rodape` (grade 1fr auto 1fr = esquerda | CENTRO | direita). O original usa `flex`; a grade centraliza de verdade o item do meio (contagem de topicos). Efeito pedido.'
+  },
+  {
+    seletor: '.notes-modal-footer',
     propriedade: 'padding',
     motivo: 'Rodape mais baixo/discreto (item E/K): padding vertical reduzido de 16px para 8px para igualar a altura do rodape do Mapa. Efeito pedido.'
   },
@@ -135,6 +140,16 @@ const EXCECOES = [
     seletor: '#notesSaveStatus',
     propriedade: 'height',
     motivo: 'Consequencia do rodape mais baixo (min-height 2.25rem) e do texto padronizado em 12px: o status fica mais baixo que o original. Efeito pedido para igualar ao rodape do Mapa.'
+  },
+  {
+    seletor: '.notes-modal-footer',
+    propriedade: 'minHeight',
+    motivo: 'Padronizacao P81: a altura do rodape de Notas passa a ser a MESMA do rodape do Mapa (2.25rem) — o original usa 4rem. Efeito pedido.'
+  },
+  {
+    seletor: '.notes-modal-footer',
+    propriedade: 'height',
+    motivo: 'Consequencia direta do item anterior (min-height 2.25rem = altura do rodape do Mapa).'
   }
 ];
 

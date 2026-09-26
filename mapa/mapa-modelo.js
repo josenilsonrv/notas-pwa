@@ -738,7 +738,10 @@
         cor('fundo');
         cor('borda');
         if (FORMAS_NO.includes(item.forma)) saida.forma = item.forma;
+        // Fonte: as chaves conhecidas (FONTES_NO) OU uma família CSS válida — o catálogo
+        // do sistema (`NotasFontes`) aplica `style.fontFamily` com pares de fallback.
         if (FONTES_NO.includes(item.fonte)) saida.fonte = item.fonte;
+        else if (typeof item.fonte === 'string' && /^[\w\s,'-]{1,120}$/.test(item.fonte.trim())) saida.fonte = item.fonte.trim();
         if (ALINHAMENTOS_NO.includes(item.alinhamento)) saida.alinhamento = item.alinhamento;
         if (TAMANHOS_NO.includes(Number(item.tamanho))) saida.tamanho = Number(item.tamanho);
         if (ESPESSURAS_BORDA.includes(Number(item.espessuraBorda))) saida.espessuraBorda = Number(item.espessuraBorda);

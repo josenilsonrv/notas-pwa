@@ -82,6 +82,147 @@ class ThemeManager {
 
 // 🔄 [FIM: PWA - TEMA (ThemeManager)]
 
+// ⚡ [INÍCIO: PWA - EXPANDIR/CONTRAR (AppExpandir — CLASSE ÚNICA DAS DUAS ÁREAS)]
+/**
+ * CLASSE ÚNICA do expandir/contrair (tela cheia) — a MESMA usada pela área de
+ * Notas e pela área do Mapa, no espírito das classes compartilhadas de CSS
+ * (`.app-tela-cheia`): uma definição só, reutilizada pelas duas áreas.
+ *
+ *  - EXPANDIR: fecha o que está aberto ao lado (lado a lado) e recolhe as barras
+ *    UMA POR VEZ;
+ *  - CONTRAIR: mostra as barras UMA POR VEZ, em ORDEM INVERSA, e o que estava ao
+ *    lado REAPARECE.
+ *
+ * O estado `hidden` de cada barra é guardado ao entrar e RESPEITADO ao sair (uma
+ * barra que já estava recolhida antes não reaparece sozinha). Cada área informa os
+ * elementos e as ações por FUNÇÃO, porque o DOM da área é re-renderizado.
+ *
+ * Config: alvo / classeArea / barras / botao / rotulos / expandido / versao /
+ * ladoALadoAtivo / aplicarLadoALado / antesDaTroca / aoAplicar / aoFinalizar.
+ */
+class AppExpandir {
+    /** Pausa (ms) antes de recolher/mostrar as barras — deixa a tela cheia assentar. */
+    static ATRASO_TELA_CHEIA = 400;
+    /** Duração (ms) da animação de cada barra. */
+    static DURACAO_BARRA = 220;
+
+    constructor(config) {
+        this.config = config || {};
+        this.barrasOcultas = [];
+        this.ladoALadoAntes = false;
+        this.versaoInterna = 0;
+    }
+
+    /** Animação de painel (altura/opacidade) com versão — implementação ÚNICA do app. */
+    static async motion(elemento, esconder, versao, atual) {
+        const ler = () => (typeof atual === 'function' ? atual() : versao);
+        if (!elemento || ler() !== versao) return;
+        elemento.getAnimations().forEach(a => a.cancel());
+        const reduzido = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        elemento.hidden = false;
+        if (!reduzido) {
+            const altura = elemento.getBoundingClientRect().height;
+            const estilo = getComputedStyle(elemento);
+            const aberto = { height: altura + 'px', opacity: 1, paddingTop: estilo.paddingTop, paddingBottom: estilo.paddingBottom };
+            const fechado = { height: '0px', opacity: 0, paddingTop: '0px', paddingBottom: '0px' };
+            try { await elemento.animate(esconder ? [aberto, fechado] : [fechado, aberto], { duration: AppExpandir.DURACAO_BARRA, easing: 'ease-in-out' }).finished; } catch (_) { }
+        }
+        if (ler() === versao) elemento.hidden = Boolean(esconder);
+    }
+
+    /** Versão atual da animação (delega ao contador que a área já usa). */
+    versaoAtual() { const v = this.config.versao; return v && v.atual ? v.atual() : this.versaoInterna; }
+
+    /** Nova versão da animação (cancela a sequência em curso da área). */
+    novaVersao() { const v = this.config.versao; return v && v.nova ? v.nova() : (this.versaoInterna += 1); }
+
+    /** Estado da área (o mesmo que o botão alterna). */
+    estaExpandido() {
+        const c = this.config;
+        if (typeof c.expandido === 'function') return Boolean(c.expandido());
+        const alvo = typeof c.alvo === 'function' ? c.alvo() : null;
+        return Boolean(alvo && alvo.classList.contains('app-tela-cheia'));
+    }
+
+    /** Barras da área, na ORDEM de recolher (mostrar usa a ordem inversa). */
+    barras() {
+        const lista = typeof this.config.barras === 'function' ? this.config.barras() : [];
+        return (lista || []).filter(Boolean);
+    }
+
+    /** Aplica o estado visual (classe compartilhada + classe da área + botão) SEM animar. */
+    aplicar(expandido) {
+        const c = this.config, ativo = Boolean(expandido);
+        const alvo = typeof c.alvo === 'function' ? c.alvo() : null;
+        if (alvo) {
+            alvo.classList.toggle('app-tela-cheia', ativo);
+            if (c.classeArea) alvo.classList.toggle(c.classeArea, ativo);
+        }
+        const botao = typeof c.botao === 'function' ? c.botao() : null;
+        if (botao) {
+            const rotulo = ativo ? (c.rotulos && c.rotulos.aberto) : (c.rotulos && c.rotulos.fechado);
+            botao.setAttribute('aria-pressed', String(ativo));
+            if (rotulo) { botao.title = rotulo; botao.setAttribute('aria-label', rotulo); }
+        }
+        if (typeof c.aoAplicar === 'function') c.aoAplicar(ativo);
+        return ativo;
+    }
+
+    /** Recolhe (entrar) ou mostra (sair) as barras UMA POR VEZ, respeitando o estado guardado. */
+    async aplicarBarras(entrar, versao) {
+        const barras = this.barras();
+        if (entrar) {
+            // Colhe na ORDEM; barras que já estavam recolhidas antes não são tocadas.
+            for (let i = 0; i < barras.length; i++) {
+                if (this.versaoAtual() !== versao) return;
+                if (this.barrasOcultas[i]) continue;
+                await AppExpandir.motion(barras[i], true, versao, () => this.versaoAtual());
+            }
+            return;
+        }
+        // Ordem INVERSA da anterior; barras que já estavam recolhidas ficam como estavam.
+        for (let i = barras.length - 1; i >= 0; i--) {
+            if (this.versaoAtual() !== versao) return;
+            if (this.barrasOcultas[i]) continue;
+            await AppExpandir.motion(barras[i], false, versao, () => this.versaoAtual());
+        }
+    }
+
+    /** Alterna o expandir/contrair (tela cheia) da área. */
+    async alternar(force) {
+        const c = this.config;
+        const alvo = typeof c.alvo === 'function' ? c.alvo() : null;
+        if (!alvo) return;
+        const jaExpandido = this.estaExpandido();
+        const entrar = typeof force === 'boolean' ? force : !jaExpandido;
+        const versao = this.novaVersao();
+        this.barras().forEach(el => el.getAnimations().forEach(a => a.cancel()));
+        if (entrar) {
+            if (!jaExpandido) {
+                if (typeof c.antesDaTroca === 'function') c.antesDaTroca();
+                this.barrasOcultas = this.barras().map(el => Boolean(el.hidden));
+                this.ladoALadoAntes = typeof c.ladoALadoAtivo === 'function' ? Boolean(c.ladoALadoAtivo()) : false;
+            }
+            // 1) fecha o que está aberto ao lado.
+            if (this.ladoALadoAntes && typeof c.aplicarLadoALado === 'function') c.aplicarLadoALado(false);
+            // 2) aplica o estado visual e recolhe as barras uma por vez.
+            this.aplicar(true);
+        } else {
+            this.aplicar(false);
+        }
+        const reduzido = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!reduzido) await new Promise(r => setTimeout(r, AppExpandir.ATRASO_TELA_CHEIA));
+        if (this.versaoAtual() !== versao) return;
+        await this.aplicarBarras(entrar, versao);
+        if (this.versaoAtual() !== versao) return;
+        // 3) ao sair, o que estava aberto ao lado REAPARECE.
+        if (!entrar && this.ladoALadoAntes && typeof c.aplicarLadoALado === 'function') c.aplicarLadoALado(true);
+        if (!entrar) { this.ladoALadoAntes = false; this.barrasOcultas = []; }
+        if (typeof c.aoFinalizar === 'function') c.aoFinalizar(Boolean(entrar));
+    }
+}
+// ⚡ [FIM: PWA - EXPANDIR/CONTRAR (AppExpandir — CLASSE ÚNICA DAS DUAS ÁREAS)]
+
 // 🔄 [INÍCIO: PWA - APLICAÇÃO (NotesPWA boot/instalação)]
 /**
  * Aplicação Principal de Notas (standalone, tudo no dispositivo).
@@ -336,7 +477,10 @@ class NotesPWA {
         // da abertura (medido em ~270 ms para 2000 linhas) sem necessidade.
         this.refreshNotesCollapseControls();
         if (typeof this.updateNotesTopicCount === 'function') this.updateNotesTopicCount();
-        if (typeof this.updateNotesLastEdit === 'function') this.updateNotesLastEdit(this.notesUltimaEdicao || null);
+        // Rodapé: última edição PERSISTIDA da nota (relativa + absoluta no title) —
+        // espelha o rodapé do Mapa. Cai no `criadaEm` quando a nota nunca foi editada.
+        this.notesUltimaEdicao = project.atualizadaEm || project.criadaEm || null;
+        if (typeof this.updateNotesLastEdit === 'function') this.updateNotesLastEdit();
 
         // Largura do modal: o motor usa var(--notes-width, 50vw) e calcula a largura
         // a partir de notesSavedWidth (undefined na abertura, como no original).
@@ -403,12 +547,18 @@ class NotesPWA {
     }
 
     /**
-     * Renderiza os chips das notas no `#notesContextNav` + o botão "+".
-     * Cada chip recebe `--notes-accent` lido do conteúdo da sua nota, então
-     * cada nota (e cada chip) segue a sua própria cor padrão — como no original.
+     * Renderiza os chips das notas no `#notesContextNav` (área de Notas). A área de
+     * MAPAS tem a SUA própria faixa (`#mapaChipsNav`), com os mapas da pasta ativa —
+     * `renderMapasNav()`, em mapa/mapa.js — usando as MESMAS classes/estilo.
+     * Cada chip recebe `--notes-accent` lido do conteúdo da sua nota, então cada nota
+     * (e cada chip) segue a sua própria cor padrão — como no original.
      */
     renderNotesNav() {
-        const nav = document.getElementById('notesContextNav');
+        this.renderNotesNavEm(document.getElementById('notesContextNav'));
+    }
+
+    /** Monta os chips (notas da pasta ativa + botão "+") no contêiner informado. */
+    renderNotesNavEm(nav) {
         if (!nav) return;
         const ativa = this.currentNotesProjectId;
         nav.replaceChildren();
@@ -1059,6 +1209,7 @@ class NotesPWA {
         this.notesToolbarConfigurada = true;
         toolbar.classList.add('notes-toolbar-inline');
         this.criarBotaoEditarToolbar(toolbar);
+        this.ligarBotaoFonte();
         // Ordem de fábrica = ordem atual do motor, capturada ANTES da ordem salva.
         this.ordemToolbarOriginal = [...this.chavesToolbar().values()];
         this.aplicarOrdemToolbar();
@@ -1084,11 +1235,79 @@ class NotesPWA {
         toolbar.append(botao);
     }
 
+    /**
+     * Botão "Fonte" (já existe no HTML, `#notesFontBtn`): abre o catálogo do sistema
+     * (`NotasFontes`). Sem seleção de texto a fonte vale para TODAS as linhas da nota;
+     * com texto selecionado, só para o trecho selecionado.
+     */
+    ligarBotaoFonte() {
+        const botao = document.getElementById('notesFontBtn');
+        if (!botao || botao.dataset.ligado === 'true') return;
+        botao.dataset.ligado = 'true';
+        // Não deixa o botão roubar a seleção do editor.
+        botao.addEventListener('mousedown', event => event.preventDefault());
+        botao.addEventListener('pointerdown', () => this.rememberNotesSelection());
+        botao.addEventListener('click', () => this.abrirSeletorFonteNotas());
+    }
+
+    /** Linha do cursor (para marcar a fonte "atual" no seletor). */
+    notesLinhaDoCursor() {
+        const sel = window.getSelection();
+        if (!sel?.rangeCount) return null;
+        const node = sel.getRangeAt(0).startContainer;
+        const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+        return el?.closest?.('#notesEditor .notes-line') || null;
+    }
+
+    /** Fonte inline aplicada no texto de uma linha (ou '' quando não há). */
+    notesFonteDaLinha(linha) {
+        const texto = linha?.querySelector('.notes-line-text');
+        return texto && texto.style.fontFamily ? texto.style.fontFamily : '';
+    }
+
+    /** Abre o seletor de fontes e aplica na nota (todas as linhas OU o trecho). */
+    abrirSeletorFonteNotas() {
+        const fontes = window.NotasFontes;
+        if (!fontes) return;
+        this.restoreNotesSelection();
+        this.rememberNotesSelection();
+        const sel = window.getSelection();
+        const temSelecao = Boolean(sel?.rangeCount && !sel.isCollapsed);
+        const linha = this.notesLinhaDoCursor();
+        fontes.abrir({
+            atual: this.notesFonteDaLinha(linha),
+            trigger: document.querySelector('#notesToolbar [data-pwa="fonte"]'),
+            onEscolher: css => this.aplicarFonteNotas(css, temSelecao)
+        });
+    }
+
+    /**
+     * Aplica a fonte: com seleção de texto, só no trecho (span inline — o mesmo
+     * mecanismo das cores); sem seleção, em TODAS as linhas da nota (o `style` no
+     * `.notes-line-text` é preservado pelo modelo do motor).
+     */
+    aplicarFonteNotas(css, temSelecao) {
+        if (!css) return;
+        this.flushNotesTyping();
+        const editor = document.getElementById('notesEditor');
+        if (!editor) return;
+        if (temSelecao) {
+            this.restoreNotesSelection();
+            this.applyNotesTextStyle('fontFamily', css);
+            return;
+        }
+        editor.querySelectorAll('.notes-line').forEach(linha => {
+            const texto = linha.querySelector('.notes-line-text');
+            if (texto) texto.style.fontFamily = css;
+        });
+        this.syncNotesDocument();
+        this.recordNotesHistory();
+    }
+
     rotuloBotaoToolbar(el) {
         const bruto = el.getAttribute('aria-label') || el.title || el.textContent.trim() || 'Botão';
         return bruto.replace(/\s*\((?:(?:Ctrl|Cmd|Alt|Shift|Tab|Esc)[^)]*)\)\s*$/i, '').trim() || 'Botão';
     }
-
     /** Move um botão uma posição e persiste a nova ordem. */
     moverBotaoToolbar(el, delta) {
         const mapa = this.chavesToolbar();
@@ -1466,6 +1685,24 @@ function installLocalNotesStorage(App) {
         try { localStorage.setItem('notas-pwa-templates', JSON.stringify(list)); } catch { /* sem espaço: ignora */ }
     };
 
+    /**
+     * Fallback de REDE para os caminhos que a camada local não atende (ex.: o
+     * visualizador de arquivo, que precisa de um backend/rotas de teste).
+     * ANTES o PWA lançava erro na hora: o visualizador ficava preso em
+     * "Carregando…" (e o teste da suíte esperava 30 s por um seletor que nunca
+     * aparecia). Com o fallback, o comportamento é o esperado nos dois casos:
+     * com backend a visualização funciona; sem backend, a falha é reportada na
+     * própria janela — SEM travar a suíte.
+     */
+    const pedirNaRede = async (userId, alvo, options = {}) => {
+        const response = await fetch('/api/note-assets' + alvo + (alvo.includes('?') ? '&' : '?') + 'user_id=' + userId, options);
+        if (!response.ok) {
+            const erro = await response.json().catch(() => ({}));
+            throw Error(erro.detail || 'Não foi possível concluir a operação');
+        }
+        return response.json();
+    };
+
     p.notesExtraRequest = async function (path, options = {}) {
         const method = (options.method || 'GET').toUpperCase();
         if (path === '/templates' && method === 'POST') {
@@ -1487,7 +1724,7 @@ function installLocalNotesStorage(App) {
             if (!item) throw new Error('Modelo não encontrado.');
             return item;
         }
-        throw new Error('Recurso indisponível neste dispositivo.');
+        return pedirNaRede(this.userId, path, options);
     };
 
     p.readNotesFile = function (file) {
@@ -1531,11 +1768,18 @@ function installLocalNotesStorage(App) {
     };
 
     // Visualizador local: imagens e PDF usam o próprio navegador; demais tipos podem ser baixados.
+    // SEM anexo local (`a[data-note-asset]`) cai para a implementação de REDE do motor
+    // (útil quando existe backend/rotas — ex.: testes) — ANTES avisava e encerrava, o que
+    // deixava o visualizador sem página e travava a suíte por 30 s.
+    const viewerDeRede = p.notesFileViewer;
     p.notesFileViewer = function (id) {
         const link = document.querySelector('a[data-note-asset="' + id + '"]');
         const url = link?.getAttribute('href') || '';
         const name = (link?.textContent || 'Arquivo').replace(/^\s*📎\s*/, '');
         if (!url.startsWith('data:')) {
+            if (typeof viewerDeRede === 'function' && viewerDeRede !== p.notesFileViewer) {
+                return viewerDeRede.call(this, id);
+            }
             this.showToast('Arquivo indisponível neste dispositivo.', 'error');
             return;
         }

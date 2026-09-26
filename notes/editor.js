@@ -661,6 +661,13 @@ function installNotesEditor(App) {
         }
         else if(command==='checklist'){const remove=chosen.every(l=>l.dataset.check==='true');chosen.forEach(l=>{l.dataset.check=String(!remove);l.dataset.checked='false';});}
         else if(['insertOrderedList','insertUnorderedList'].includes(command)){const value=command==='insertOrderedList'?'ol':'ul',remove=chosen.every(l=>l.dataset.list===value);chosen.forEach(l=>l.dataset.list=remove?'':value);const model=this.syncNotesDocument();model.renumber(new Set(chosen.map(row=>model.byId.get(row.dataset.noteId)?.parentId)));this.renderNotesDocument();}
+        else if(command.startsWith('align')){
+            // Alinhamento por LINHA: grava `data-align` (persistido pelo modelo). Repetir
+            // o mesmo alinhamento limpa (volta ao padrão do CSS).
+            const valor=command==='alignLeft'?'left':command==='alignCenter'?'center':command==='alignRight'?'right':'justify';
+            const remover=chosen.every(l=>l.dataset.align===valor);
+            chosen.forEach(l=>{if(remover)delete l.dataset.align;else l.dataset.align=valor;});
+        }
         else if(command==='indent'||command==='outdent'){
             const delta=command==='indent'?1:-1,first=chosen[0],oldDepth=level(first),model=this.syncNotesDocument();
             model.indent(chosen.map(row=>row.dataset.noteId),delta);this.renderNotesDocument();
@@ -1079,28 +1086,37 @@ function installNotesEditor(App) {
         if(line._collapseVersion===version)this.recordNotesHistory();
         animations.forEach(animation=>animation.cancel());
     };
-    p.notesPanelMotion=async function(element,hide,version){
-        if(this.notesMotionVersion!==version)return;
-        element.getAnimations().forEach(a=>a.cancel());
-        const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-        element.hidden=false;
-        if(!reduced){const height=element.getBoundingClientRect().height,style=getComputedStyle(element),open={height:height+'px',opacity:1,paddingTop:style.paddingTop,paddingBottom:style.paddingBottom},closed={height:'0px',opacity:0,paddingTop:'0px',paddingBottom:'0px'};const animation=element.animate(hide?[open,closed]:[closed,open],{duration:220,easing:'ease-in-out'});try{await animation.finished;}catch{} }
-        if(this.notesMotionVersion===version)element.hidden=hide;
-    };
+    /** Animação de painel — MESMA implementação da classe compartilhada `AppExpandir`. */
+    p.notesPanelMotion=async function(element,hide,version){return AppExpandir.motion(element,hide,version,()=>this.notesMotionVersion);};
+    /**
+     * Expandir/contrair (tela cheia) — config da área de Notas para a CLASSE ÚNICA
+     * `AppExpandir` (a MESMA do Mapa): fecha/reabre o lado a lado e recolhe/mostra
+     * as barras UMA POR VEZ, na ordem inversa ao voltar.
+     */
     p.toggleNotesFullscreen=async function(force){
-        const modal=document.getElementById('notesModal'),backdrop=document.getElementById('notesModalBackdrop'),toolbar=document.getElementById('notesToolbar'),nav=document.getElementById('notesContextNav');
-        const entering=typeof force==='boolean'?force:!modal.classList.contains('fullscreen');
-        const version=this.notesMotionVersion=(this.notesMotionVersion||0)+1;
-        [toolbar,nav].forEach(e=>e.getAnimations().forEach(a=>a.cancel()));
-        if(entering&&!modal.classList.contains('fullscreen')){this.notesToolbarBeforeFullscreen=toolbar.hidden;this.notesNavBeforeFullscreen=nav.hidden;if(modal.getBoundingClientRect().width<innerWidth-16)this.notesSavedWidth=modal.getBoundingClientRect().width;}
-        modal.classList.toggle('fullscreen',entering);backdrop.classList.toggle('notes-fullscreen-active',entering);
-        modal.style.setProperty('--notes-width',entering?'100vw':Math.min(innerWidth,this.notesSavedWidth||innerWidth/2)+'px');
-        document.getElementById('notesFullscreenBtn').title=entering?'Restaurar tamanho':'Expandir para tela cheia';
-        if(!matchMedia('(prefers-reduced-motion: reduce)').matches)await new Promise(r=>setTimeout(r,400));
-        if(version!==this.notesMotionVersion)return;
-        if(entering){await this.notesPanelMotion(toolbar,true,version);await this.notesPanelMotion(nav,true,version);}
-        else{await this.notesPanelMotion(nav,Boolean(this.notesNavBeforeFullscreen),version);await this.notesPanelMotion(toolbar,Boolean(this.notesToolbarBeforeFullscreen),version);}
-        if(version===this.notesMotionVersion)this.setNotesHeaderCollapsed(toolbar.hidden);
+        if(!this.expandirNotas)this.expandirNotas=new AppExpandir({
+            alvo:()=>document.getElementById('notesModal'),
+            expandido:()=>document.getElementById('notesModal').classList.contains('fullscreen'),
+            classeArea:'fullscreen',
+            barras:()=>[document.getElementById('notesToolbar'),document.getElementById('notesContextNav')],
+            botao:()=>document.getElementById('notesFullscreenBtn'),
+            rotulos:{aberto:'Restaurar tamanho',fechado:'Expandir para tela cheia'},
+            versao:{nova:()=>(this.notesMotionVersion=(this.notesMotionVersion||0)+1),atual:()=>this.notesMotionVersion},
+            ladoALadoAtivo:()=>document.documentElement.classList.contains('app-split'),
+            // Fechar o lado a lado na TELA CHEIA não troca de área: sem `manter:'notas'`,
+            // `aplicarSplit(false)` chamaria `aplicarArea('mapa')`, que REMOVE o
+            // `active` do modal de Notas — o mapa assumiria a tela e a nota sairia
+            // fora do quadro (bug do "contrair não contrai nas Notas").
+            aplicarLadoALado:ligado=>{if(typeof this.aplicarSplit!=='function')return;if(ligado)this.aplicarSplit(true);else this.aplicarSplit(false,{manter:'notas'});},
+            antesDaTroca:()=>{const modal=document.getElementById('notesModal');if(modal.getBoundingClientRect().width<innerWidth-16)this.notesSavedWidth=modal.getBoundingClientRect().width;},
+            aoAplicar:aberto=>{
+                const modal=document.getElementById('notesModal'),backdrop=document.getElementById('notesModalBackdrop');
+                if(backdrop)backdrop.classList.toggle('notes-fullscreen-active',aberto);
+                if(modal)modal.style.setProperty('--notes-width',aberto?'100vw':Math.min(innerWidth,this.notesSavedWidth||innerWidth/2)+'px');
+            },
+            aoFinalizar:()=>{const toolbar=document.getElementById('notesToolbar');if(toolbar)this.setNotesHeaderCollapsed(toolbar.hidden);}
+        });
+        return this.expandirNotas.alternar(force);
     };
     // 🔄 [FIM: NOTAS - CABEÇALHO, COLAPSO, MOTION E FULLSCREEN]
 

@@ -42,7 +42,11 @@ const faltando = (origem, destino) => origem.filter(item => !destino.includes(it
 // Comandos que existem SO no PWA (revisao do bloco de notas) e por isso nao tem
 // equivalente no original. Cada um precisa de um motivo escrito.
 const COMANDOS_EXTRAS_PWA = {
-  underline: 'Sublinhado: comando adicionado na revisao do bloco de notas (o original nao tem sublinhado).'
+  underline: 'Sublinhado: comando adicionado na revisao do bloco de notas (o original nao tem sublinhado).',
+  alignLeft: 'Alinhamento por linha (esquerda): comando adicionado na revisao do bloco de notas (o original nao tem alinhamento).',
+  alignCenter: 'Alinhamento por linha (centro): comando adicionado na revisao do bloco de notas (o original nao tem alinhamento).',
+  alignRight: 'Alinhamento por linha (direita): comando adicionado na revisao do bloco de notas (o original nao tem alinhamento).',
+  alignJustify: 'Alinhamento por linha (justificado): comando adicionado na revisao do bloco de notas (o original nao tem alinhamento).'
 };
 
 const relatorio = {

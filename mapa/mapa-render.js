@@ -1,8 +1,8 @@
 // ============================================
 // MAPA MENTAL - Renderização da área
 // Tudo que desenha a área vive aqui; nada toca no motor de notas.
-// Fase 1: shell + gestão de mapas (lista, filtros, pastas, raiz, templates,
-// recentes e busca/ordenação). O canvas de nós chega nas fases 2 e 3.
+// A área de mapas mostra SÓ o mapa aberto + a faixa de chips dos mapas da pasta
+// ativa (mesmas classes dos chips de Notas). Não existe mais lista de gestão.
 // ============================================
 (function (global) {
     'use strict';
@@ -65,43 +65,16 @@
         secao.innerHTML = '';
         const shell = criar('div', 'mapa-shell');
 
-        const topbar = criar('div', 'mapa-topbar');
+        const topbar = criar('div', 'mapa-topbar app-vidro-barra');
         topbar.append(criar('h2', 'mapa-topbar-titulo', 'Mapa Mental'));
 
-        const voltar = botao('mapa-btn', '‹ Mapas', 'voltar-lista');
-        voltar.id = 'mapaVoltarLista';
-        voltar.hidden = true;
+        // O título fica AO LADO da seta ‹ (igual a Notas). A navegação da área usa a
+        // MESMA seta fixa (#appVoltar, topo-esquerdo), que volta à tela principal de
+        // Pastas (cada pasta é um workspace com as áreas de Notas e de Mapas).
         const tituloAtual = criar('span', 'mapa-titulo-atual', '');
         tituloAtual.id = 'mapaTituloAtual';
         tituloAtual.hidden = true;
         const espaco = criar('div', 'mapa-topbar-espaco');
-
-        const busca = document.createElement('input');
-        busca.type = 'search';
-        busca.id = 'mapaBusca';
-        busca.className = 'mapa-busca';
-        busca.placeholder = 'Buscar mapa';
-        busca.setAttribute('aria-label', 'Buscar mapa');
-
-        const ordem = document.createElement('select');
-        ordem.id = 'mapaOrdem';
-        ordem.className = 'mapa-ordem';
-        ordem.setAttribute('aria-label', 'Ordenar mapas');
-        [['nome', 'Nome'], ['recente', 'Recente'], ['favorito', 'Favorito']].forEach(([valor, rotulo]) => {
-            const opcao = document.createElement('option');
-            opcao.value = valor;
-            opcao.textContent = rotulo;
-            ordem.append(opcao);
-        });
-
-        const arquivados = botao('mapa-btn', 'Arquivados', 'alternar-arquivados');
-        arquivados.id = 'mapaMostrarArquivados';
-        const novaPasta = botao('mapa-btn', 'Nova pasta', 'pasta-nova');
-        novaPasta.id = 'mapaNovaPasta';
-        const novo = botao('mapa-btn mapa-btn-primario', 'Novo mapa', 'novo');
-        novo.id = 'mapaNovo';
-        const templates = botao('mapa-btn', 'Templates', 'templates');
-        templates.id = 'mapaTemplates';
 
         // Botão de COLAPSO das barras (mesma lógica do cabeçalho de Notas): vive na
         // topbar (que permanece visível) e recolhe `#mapaToolbar` + `#mapaFormatBar`.
@@ -119,13 +92,13 @@
         const fechar = btnIcone('fechar', 'fechar', 'Fechar mapa', 'fechar-mapa', null, 'mapaFechar');
         fechar.hidden = true;
 
-        // Expandir/contrair a área (espelha o #notesFullscreenBtn de Notas): recolhe
-        // barras + chips e mantém a topbar (com o próprio botão) visível.
-        const telaCheia = btnIcone('tela-cheia', 'tela-cheia', 'Expandir (tela cheia)', 'alternar-fullscreen', null, 'mapaFullscreenBtn');
+        // Expandir/contrair a área (espelha o #notesFullscreenBtn de Notas): MESMO par
+        // de ícones (expandir/restaurar) e a MESMA alternância por classe no shell.
+        const telaCheia = btnTelaCheia('mapaFullscreenBtn');
         telaCheia.hidden = true;
         telaCheia.setAttribute('aria-pressed', 'false');
 
-        topbar.append(voltar, tituloAtual, espaco, busca, ordem, arquivados, novaPasta, novo, templates, colapso, telaCheia, splitBtn, fechar);
+        topbar.append(tituloAtual, espaco, colapso, telaCheia, splitBtn, fechar);
 
         const form = document.createElement('form');
         form.id = 'mapaForm';
@@ -133,13 +106,21 @@
         form.noValidate = true;
         form.hidden = true;
 
+        // Faixa de chips dos MAPAS da pasta ativa: as MESMAS classes/posição dos chips
+        // de Notas (`#notesContextNav`), ACIMA da barra de ferramentas. O conteúdo é
+        // montado pelo orquestrador (`renderMapasNav`, em mapa.js).
+        const chipsNav = criar('nav', 'notes-context-nav mapa-chips-nav app-rolagem');
+        chipsNav.id = 'mapaChipsNav';
+        chipsNav.setAttribute('aria-label', 'Mapas desta pasta');
+        chipsNav.hidden = false;
+
         // Barras padronizadas (F12): ferramentas (fixa) + formatação (contextual).
-        const toolbar = criar('div', 'mapa-toolbar');
+        const toolbar = criar('div', 'mapa-toolbar app-barra app-rolagem app-vidro-barra');
         toolbar.id = 'mapaToolbar';
         toolbar.setAttribute('role', 'toolbar');
         toolbar.setAttribute('aria-label', 'Ferramentas do mapa');
         toolbar.hidden = true;
-        const formatBar = criar('div', 'mapa-format-bar');
+        const formatBar = criar('div', 'mapa-format-bar app-barra app-rolagem app-vidro-barra');
         formatBar.id = 'mapaFormatBar';
         formatBar.setAttribute('role', 'toolbar');
         formatBar.setAttribute('aria-label', 'Formatação do nó');
@@ -148,42 +129,38 @@
         const wrap = criar('div', 'mapa-canvas-wrap');
         wrap.id = 'mapaCanvasWrap';
 
-        // Rodapé informativo (espelha o `.notes-modal-footer` de Notas):
-        // esquerda = última edição, centro = tópicos, direita = "Salvo".
-        const rodape = criar('div', 'mapa-rodape');
+        // Rodapé informativo (MESMAS classes `.app-rodape`/`.app-rodape-meta` do rodapé
+        // de Notas): esquerda = última edição, centro = tópicos, direita = "Salvo".
+        const rodape = criar('div', 'mapa-rodape app-rodape');
         rodape.id = 'mapaRodape';
         rodape.hidden = true;
-        const ultimaEdicao = criar('span', 'mapa-rodape-meta', '');
+        const ultimaEdicao = criar('span', 'mapa-rodape-meta app-rodape-meta', '');
         ultimaEdicao.id = 'mapaLastEdit';
-        const contagem = criar('span', 'mapa-rodape-meta', '');
+        const contagem = criar('span', 'mapa-rodape-meta app-rodape-meta', '');
         contagem.id = 'mapaTopicCount';
         contagem.setAttribute('role', 'status');
         contagem.setAttribute('aria-live', 'polite');
-        const salvo = criar('span', 'mapa-rodape-meta', 'Salvo');
+        const salvo = criar('span', 'mapa-rodape-meta app-rodape-meta', 'Salvo');
         salvo.id = 'mapaStatus';
         salvo.setAttribute('role', 'status');
         salvo.setAttribute('aria-live', 'polite');
         rodape.append(ultimaEdicao, contagem, salvo);
 
-        shell.append(topbar, toolbar, formatBar, form, wrap, rodape);
+        shell.append(topbar, chipsNav, toolbar, formatBar, form, wrap, rodape);
         secao.append(shell);
         return { shell, topbar, toolbar, formatBar, form, wrap, rodape };
     }
     // 🔄 [FIM: MAPA - SHELL DA ÁREA]
 
     // 🔄 [INÍCIO: MAPA - TOPBAR/FORMULÁRIO]
-    /** Mostra/oculta os controles conforme a visão (lista x mapa aberto). */
+    /** Mostra/oculta os controles conforme o estado (mapa aberto × sem mapa). */
     function atualizarShell(estado) {
         const lista = !estado.mapaAberto;
         const visivel = (id, mostrar) => { const el = document.getElementById(id); if (el) el.hidden = !mostrar; };
-        visivel('mapaVoltarLista', !lista);
         visivel('mapaTituloAtual', !lista);
-        visivel('mapaBusca', lista);
-        visivel('mapaOrdem', lista);
-        visivel('mapaMostrarArquivados', lista);
-        visivel('mapaNovaPasta', lista);
-        visivel('mapaNovo', lista);
-        visivel('mapaTemplates', lista);
+        // A faixa de chips dos MAPAS da pasta fica SEMPRE visível: é por ela que se
+        // escolhe/cria um mapa (mesma lógica da faixa de chips de Notas).
+        visivel('mapaChipsNav', true);
         visivel('mapaToolbar', !lista);
         visivel('mapaColapsoBarras', !lista);
         visivel('mapaSplitBtn', !lista);
@@ -191,7 +168,7 @@
         visivel('mapaRodape', !lista);
         visivel('mapaFullscreenBtn', !lista);
         // Estado de "tela cheia" da área (espelha o fullscreen de Notas): aplica a
-        // classe no shell e troca o ícone/título do botão.
+        // classe no shell (que troca o ícone expandir/restaurar via CSS) e o título.
         const telaCheia = document.getElementById('mapaFullscreenBtn');
         if (telaCheia) {
             const ativo = Boolean(estado.telaCheia);
@@ -199,21 +176,11 @@
             const rotulo = ativo ? 'Restaurar tamanho' : 'Expandir (tela cheia)';
             telaCheia.title = rotulo;
             telaCheia.setAttribute('aria-label', rotulo);
-            const path = telaCheia.querySelector('svg path');
-            if (path) path.setAttribute('d', ativo ? ICONES['restaurar-tela'].d : ICONES['tela-cheia'].d);
         }
         const shellTela = document.querySelector('#mapaArea .mapa-shell');
         if (shellTela) shellTela.classList.toggle('mapa-fullscreen', Boolean(estado.telaCheia));
         const titulo = document.getElementById('mapaTituloAtual');
         if (titulo) titulo.textContent = estado.mapaAberto ? (estado.mapaAberto.nome || 'Mapa') : '';
-        const busca = document.getElementById('mapaBusca');
-        if (busca && busca.value !== (estado.busca || '')) busca.value = estado.busca || '';
-        const ordem = document.getElementById('mapaOrdem');
-        if (ordem && ordem.value !== (estado.ordenacao || 'nome')) ordem.value = estado.ordenacao || 'nome';
-        const arquivados = document.getElementById('mapaMostrarArquivados');
-        if (arquivados) arquivados.setAttribute('aria-pressed', String(Boolean(estado.incluirArquivados)));
-        const templates = document.getElementById('mapaTemplates');
-        if (templates) templates.setAttribute('aria-pressed', String(Boolean(estado.mostrarTemplates)));
     }
 
     // Layouts de árvore (Fase 5): rótulo amigável por chave do modelo.
@@ -223,31 +190,12 @@
         ['arvore-vertical', 'Árvore vertical'], ['organograma', 'Organograma'], ['livre', 'Livre']
     ];
 
+    // Rótulos dos formulários inline que AINDA existem (nós/conexões). Os formulários de
+    // mapa/pasta saíram: agora as ações de mapa vivem no menu do chip (igual a Notas).
     const ROTULOS_FORM = {
-        novo: 'Novo mapa', renomear: 'Renomear mapa', mover: 'Mover para pasta',
-        conectar: 'Conectar a outro mapa', template: 'Salvar como template',
-        'pasta-nova': 'Nova pasta', 'pasta-renomear': 'Renomear pasta', excluir: 'Excluir mapa',
+        conectar: 'Conectar a outro mapa',
         'no-mover-para': 'Mover nó para...', 'no-conectar-para': 'Conectar nó a...'
     };
-
-    function selectPastas(acao, dados) {
-        const select = document.createElement('select');
-        select.id = 'mapaFormPasta';
-        select.className = 'mapa-form-campo';
-        select.setAttribute('aria-label', 'Pasta');
-        const vazia = document.createElement('option');
-        vazia.value = '';
-        vazia.textContent = 'Sem pasta';
-        select.append(vazia);
-        ((dados && dados.pastas) || []).forEach(pasta => {
-            const opcao = document.createElement('option');
-            opcao.value = pasta.id;
-            opcao.textContent = pasta.nome;
-            select.append(opcao);
-        });
-        select.value = acao.tipo === 'mover' && dados.mapa ? (dados.mapa.pastaId || '') : '';
-        return select;
-    }
 
     function selectDestino(acao, dados) {
         const select = document.createElement('select');
@@ -290,36 +238,15 @@
         return select;
     }
 
-    /** Formulário inline (um por vez): novo, renomear, mover, conectar, template, pasta, excluir. */
+    /** Formulário inline (um por vez): conectar mapas e mover/conectar nós. */
     function renderForm(formEl, acao, dados) {
         if (!formEl) return;
         formEl.innerHTML = '';
         formEl.hidden = !acao;
         if (!acao) { formEl.removeAttribute('data-mapa-form'); return; }
-        const mapa = (dados && dados.mapa) || null;
         formEl.dataset.mapaForm = acao.tipo;
         formEl.dataset.mapaId = acao.id || '';
         formEl.append(criar('span', 'mapa-form-titulo', ROTULOS_FORM[acao.tipo] || ''));
-        if (acao.tipo === 'excluir') {
-            formEl.append(criar('span', 'mapa-form-aviso', 'Excluir "' + (mapa ? mapa.nome : '') + '"? Esta ação apaga o mapa e seus dados.'));
-            formEl.append(botao('mapa-btn mapa-btn-perigo', 'Sim, excluir', 'excluir-confirmar', { mapaId: acao.id }));
-            formEl.append(botao('mapa-btn', 'Cancelar', 'form-cancelar'));
-            return;
-        }
-        if (['novo', 'renomear', 'template', 'pasta-nova', 'pasta-renomear'].includes(acao.tipo)) {
-            const nome = document.createElement('input');
-            nome.type = 'text';
-            nome.id = 'mapaFormNome';
-            nome.className = 'mapa-form-campo';
-            nome.placeholder = 'Nome';
-            nome.setAttribute('aria-label', 'Nome');
-            const prefill = (acao.tipo === 'renomear' || acao.tipo === 'template') && mapa
-                ? mapa.nome
-                : ((dados && dados.pasta) ? dados.pasta.nome : '');
-            nome.value = prefill;
-            formEl.append(nome);
-        }
-        if (['novo', 'mover'].includes(acao.tipo)) formEl.append(selectPastas(acao, dados));
         if (acao.tipo === 'conectar') formEl.append(selectDestino(acao, dados));
         if (acao.tipo === 'no-mover-para') formEl.append(selectNos(acao, dados));
         if (acao.tipo === 'no-conectar-para') formEl.append(selectNos(acao, dados));
@@ -465,7 +392,8 @@
         refazer: { d: '<path d="m15 7 5 5-5 5"/><path d="M20 12h-9a7 7 0 0 0-7 7"/>' },
         // ---- Ícones próprios do mapa (mesmo traço/grade) ----
         novo: { d: '<path d="M12 5v14M5 12h14"/>' },
-        templates: { d: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M3 9h6"/>' },
+        // MESMO desenho do botão "Modelos" da barra de Notas (quatro quadrados).
+        templates: { vb: '0 0 24 24', d: '<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>' },
         topico: { d: '<rect x="3" y="3" width="12" height="12" rx="2"/><path d="M19 12v9M14.5 16.5h9"/>' },
         'zoom-menos': { d: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6"/>' },
         'zoom-mais': { d: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/>' },
@@ -481,7 +409,12 @@
         fonte: { d: '<path d="M5 5h14M12 5v14M9 19h6"/>' },
         borda: { d: '<rect x="4" y="4" width="16" height="16" rx="2"/>' },
         forma: { d: '<circle cx="8" cy="16" r="4"/><rect x="12" y="4" width="9" height="9" rx="2"/>' },
-        alinhamento: { d: '<path d="M4 6h16M4 12h10M4 18h16"/>' },
+        alinhamento: { d: '<path d="M4 6h16M4 10h10M4 14h16M4 18h10"/>' },
+        // Alinhamento do TEXTO do nó: um desenho DISTINTO por opção (antes as 3 opções
+        // usavam o mesmo ícone e pareciam todas "à direita").
+        'alinha-esquerda': { d: '<path d="M4 6h16M4 10h10M4 14h16M4 18h10"/>' },
+        'alinha-centro': { d: '<path d="M4 6h16M7 10h10M4 14h16M7 18h10"/>' },
+        'alinha-direita': { d: '<path d="M4 6h16M10 10h10M4 14h16M10 18h10"/>' },
         'linha-menos': { d: '<path d="M4 12h16" stroke-width="1.4"/>' },
         'linha-mais': { d: '<path d="M4 12h16" stroke-width="4"/>' },
         'ramo-menos': { d: '<path d="M3 16c4 0 5-8 9-8s5 8 9 8" stroke-width="1.4"/>' },
@@ -536,21 +469,46 @@
     }
 
     /**
+     * Botão de expandir/contrair (tela cheia) — ESPELHA o `#notesFullscreenBtn` de
+     * Notas: um único SVG com os DOIS desenhos (expandir + restaurar) e o CSS troca
+     * qual aparece conforme `.mapa-fullscreen` no shell. Garante que o ícone apareça
+     * sempre (antes o desenho era só 2 cantos e podia passar despercebido).
+     */
+    function btnTelaCheia(id) {
+        const el = btnBarra('tela-cheia', '', 'Expandir (tela cheia)', 'alternar-fullscreen', null, id);
+        el.dataset.mapaIcone = 'tela-cheia';
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('width', '16');
+        svg.setAttribute('height', '16');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('stroke-width', '2');
+        svg.setAttribute('stroke-linecap', 'round');
+        svg.setAttribute('stroke-linejoin', 'round');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.innerHTML = '<path class="mapa-expand-icon" d="M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3"/>'
+            + '<path class="mapa-restore-icon" d="M16 3v3a2 2 0 0 0 2 2h3M8 21v-3a2 2 0 0 0-2-2H3"/>';
+        el.append(svg);
+        return el;
+    }
+
+    /**
      * Opções que ficam em UM botão só (abre um menu) em vez de vários botões soltos:
      * Fonte, Forma e Alinhamento. O `data-mapa-acao` do botão é `barra-menu`.
      */
     const OPCOES_BARRA = {
-        fonte: {
-            rotulo: 'Fonte', icone: 'fonte',
-            itens: [['sistema', 'Sistema'], ['serif', 'Serifada'], ['mono', 'Monoespaçada'], ['cursiva', 'Cursiva']]
-        },
         forma: {
             rotulo: 'Forma', icone: 'forma',
             itens: [['retangulo', 'Retângulo'], ['pilula', 'Pílula'], ['elipse', 'Elipse'], ['nota', 'Nota']]
         },
         alinhamento: {
             rotulo: 'Alinhamento', icone: 'alinhamento',
-            itens: [['esquerda', 'Esquerda'], ['centro', 'Centro'], ['direita', 'Direita']]
+            itens: [
+                ['esquerda', 'Esquerda', 'alinha-esquerda'],
+                ['centro', 'Centro', 'alinha-centro'],
+                ['direita', 'Direita', 'alinha-direita']
+            ]
         }
     };
 
@@ -587,7 +545,7 @@
         const largura = 200;
         caixa.style.left = Math.max(8, Math.min(ret.left, (global.innerWidth || 1024) - largura - 8)) + 'px';
         caixa.style.top = Math.max(8, ret.bottom + 6) + 'px';
-        def.itens.forEach(([valor, rotulo]) => {
+        def.itens.forEach(([valor, rotulo, iconeItem]) => {
             const ativo = efetivo && efetivo[aberto.chave] === valor;
             const item = criar('button', 'mapa-menu-item', '');
             item.type = 'button';
@@ -597,7 +555,7 @@
             item.dataset.mapaEstilo = aberto.chave;
             item.dataset.mapaValor = valor;
             if (ativo) item.classList.add('mapa-menu-item-ativo');
-            item.append(icone(def.icone), criar('span', 'mapa-menu-item-texto', rotulo));
+            item.append(icone(iconeItem || def.icone), criar('span', 'mapa-menu-item-texto', rotulo));
             caixa.append(item);
         });
         const fechar = criar('button', 'mapa-menu-item mapa-menu-item-fechar', 'Fechar');
@@ -641,15 +599,7 @@
         const grafo = info.grafo || null;
         const ordem = (global.MapaMentalStore && global.MapaMentalStore.lerOrdemBarra) ? global.MapaMentalStore.lerOrdemBarra() : {};
 
-        // ---- Grupo: Mapa (arquivo) ----
-        // "‹ Mapas" fica na TOPBAR (cabeçalho da área); aqui ficam só os atalhos de mapa.
-        const gMapa = grupoBarra('mapa', 'Mapa');
-        gMapa.append(btnIcone('novo', 'novo', 'Novo mapa', 'novo'));
-        gMapa.append(btnIcone('templates', 'templates', 'Templates', 'templates'));
-        toolbar.append(gMapa);
-
         // ---- Grupo: Histórico (MESMOS ícones da barra de Notas) ----
-        toolbar.append(divisorBarra());
         const gHist = grupoBarra('historico', 'Histórico');
         gHist.append(btnIcone('desfazer', 'desfazer', 'Desfazer', 'no-desfazer'));
         gHist.append(btnIcone('refazer', 'refazer', 'Refazer', 'no-refazer'));
@@ -747,7 +697,6 @@
         [
             ['conectar-nos', 'conectar-nos', 'Conectar nós', 'conectar-nos'],
             ['conectar-mapa', 'conectar-mapa', 'Conectar a mapa…', 'conectar'],
-            ['template-salvar', 'template-salvar', 'Salvar como template', 'template-salvar'],
             ['atalhos', 'atalhos', 'Atalhos', 'atalhos-abrir'],
             ['barra-editar', 'barra-editar', 'Editar barra', 'barra-editar'],
             ['barra-restaurar', 'restaurar', 'Restaurar barra', 'barra-restaurar']
@@ -804,7 +753,10 @@
         const gTamanho = grupoBarra('fmt-tamanho', 'Tamanho e fonte');
         gTamanho.append(btnIcone('tamanho-menos', 'tamanho-menos', 'Diminuir tamanho', 'estilo-passo', { mapaEstilo: 'tamanho', mapaPasso: '-1' }));
         gTamanho.append(btnIcone('tamanho-mais', 'tamanho-mais', 'Aumentar tamanho', 'estilo-passo', { mapaEstilo: 'tamanho', mapaPasso: '1' }));
-        gTamanho.append(btnOpcoes('fonte', efetivo));
+        // Fonte: abre o MESMO catálogo do sistema usado em Notas (`NotasFontes`).
+        const btnFonte = btnIcone('fonte', 'fonte', 'Fonte', 'fonte-abrir');
+        btnFonte.setAttribute('aria-haspopup', 'dialog');
+        gTamanho.append(btnFonte);
         bar.append(gTamanho);
 
         // ---- FORMA (UM botão abre as opções) ----
@@ -832,6 +784,15 @@
         gLinhas.append(aplicar);
         gLinhas.append(btnIcone('estilo-restaurar', 'restaurar', 'Restaurar o estilo padrão', 'no-estilo-restaurar'));
         bar.append(gLinhas);
+
+        // ---- Modelos: MESMO botão/ícone (quatro quadrados) da barra de Notas. Abre o
+        // diálogo "Modelos do mapa" (mesmas classes do "Modelos de nota"). ----
+        bar.append(divisorBarra());
+        const gModelos = grupoBarra('modelos', 'Modelos');
+        const btnModelos = btnIcone('modelos', 'templates', 'Modelos', 'modelos', null, 'mapaModelosBtn');
+        btnModelos.setAttribute('aria-haspopup', 'dialog');
+        gModelos.append(btnModelos);
+        bar.append(gModelos);
 
         // ---- Ações RÁPIDAS fixadas à DIREITA (uso no celular): ficam SEMPRE visíveis,
         // mesmo com a barra rolada na horizontal (`position: sticky; right: 0`), e já
@@ -1026,7 +987,14 @@
         if (estilo.tamanho) elemento.style.setProperty('--mapa-no-tamanho', estilo.tamanho + 'px');
         if (estilo.espessuraBorda) elemento.style.setProperty('--mapa-no-borda-espessura', estilo.espessuraBorda + 'px');
         if (estilo.forma) elemento.classList.add('mapa-no-forma-' + estilo.forma);
-        if (estilo.fonte) elemento.classList.add('mapa-no-fonte-' + estilo.fonte);
+        if (estilo.fonte) {
+            // Fonte conhecida (FONTES_NO) usa a classe; família do catálogo do sistema
+            // (`NotasFontes`, com fallback) vai para o `style.fontFamily`.
+            const fontesConhecidas = (global.MapaMentalModelo && global.MapaMentalModelo.FONTES_NO) || [];
+            elemento.style.removeProperty('font-family');
+            if (fontesConhecidas.includes(estilo.fonte)) elemento.classList.add('mapa-no-fonte-' + estilo.fonte);
+            else elemento.style.fontFamily = estilo.fonte;
+        }
         if (estilo.alinhamento) elemento.classList.add('mapa-no-alinha-' + estilo.alinhamento);
         if (estilo.negrito) elemento.classList.add('mapa-no-negrito');
         if (estilo.italico) elemento.classList.add('mapa-no-italico');
@@ -1091,7 +1059,7 @@
     /** Canvas infinito: mundo com transform + nós visíveis + laço de seleção + minimapa. */
     function canvasInfinito(grafo, contexto) {
         const dados = contexto || {};
-        const canvas = criar('div', 'mapa-canvas');
+        const canvas = criar('div', 'mapa-canvas app-vidro-campo');
         canvas.id = 'mapaCanvas';
         canvas.tabIndex = 0;
         // Grade (pontinhos) OPCIONAL — desligada por padrão (espelha o editor de Notas).
@@ -1150,106 +1118,25 @@
     }
     // 🔄 [FIM: MAPA - MAPA ABERTO]
 
-    // 🔄 [INÍCIO: MAPA - GESTÃO (LISTA)]
-    function chipFiltro(rotulo, valor, ativo) {
-        const chip = botao('mapa-chip', rotulo, 'filtrar-pasta', { mapaPasta: valor });
-        if (ativo) chip.classList.add('mapa-chip-ativo');
-        chip.setAttribute('aria-pressed', String(Boolean(ativo)));
-        return chip;
-    }
-
-    function menuAcoes(mapa) {
-        const acoes = criar('div', 'mapa-item-acoes');
-        [['renomear', 'Renomear'], ['duplicar', 'Duplicar'], ['mover', 'Mover'], ['excluir', 'Excluir']]
-            .forEach(([acao, rotulo]) => acoes.append(botao('mapa-item-acao', rotulo, acao, { mapaId: mapa.id })));
-        return acoes;
-    }
-
-    function itemMapa(mapa, dados) {
-        const item = criar('li', 'mapa-item');
-        item.dataset.mapaId = mapa.id;
-        if (mapa.arquivado) item.classList.add('mapa-item-arquivado');
-        if (dados.raizId === mapa.id) item.classList.add('mapa-item-raiz');
-
-        const abrir = botao('mapa-item-abrir', '', 'abrir', { mapaId: mapa.id });
-        abrir.append(criar('span', 'mapa-item-nome', mapa.nome || '(sem nome)'));
-        const meta = [];
-        if (dados.raizId === mapa.id) meta.push('Raiz');
-        meta.push(mapa.pastaNome || 'Sem pasta');
-        meta.push('Atualizado ' + dataCurta(mapa.dtAlterado));
-        abrir.append(criar('span', 'mapa-item-meta', meta.join(' · ')));
-        item.append(abrir);
-
-        const estrela = botao('mapa-item-acao', mapa.favorito ? '★' : '☆', 'favoritar', { mapaId: mapa.id });
-        estrela.setAttribute('aria-pressed', String(Boolean(mapa.favorito)));
-        estrela.setAttribute('aria-label', mapa.favorito ? 'Remover dos favoritos' : 'Favoritar');
-        estrela.title = estrela.getAttribute('aria-label');
-
-        const arquivar = botao('mapa-item-acao', mapa.arquivado ? 'Desarquivar' : 'Arquivar', 'arquivar', { mapaId: mapa.id });
-        const raiz = botao('mapa-item-acao', dados.raizId === mapa.id ? 'Remover raiz' : 'Definir raiz', 'raiz', { mapaId: mapa.id });
-        item.append(estrela, arquivar, raiz, menuAcoes(mapa));
-        return item;
-    }
-    // 🔄 [FIM: MAPA - GESTÃO (LISTA)]
-
-    // 🔄 [INÍCIO: MAPA - RECENTES/TEMPLATES/LISTA]
-    function blocoRecentes(dados) {
-        const bloco = criar('div', 'mapa-recentes');
-        bloco.append(criar('span', 'mapa-recentes-rotulo', 'Recentes:'));
-        (dados.recentes || []).forEach(r => bloco.append(botao('mapa-chip', r.nome, 'abrir', { mapaId: r.idMapa })));
-        return bloco;
-    }
-
-    function painelTemplates(dados) {
-        const painel = criar('div', 'mapa-templates');
-        painel.append(criar('span', 'mapa-templates-rotulo', 'Templates prontos:'));
-        (dados.templatesProntos || []).forEach(tpl =>
-            painel.append(botao('mapa-chip', tpl.nome, 'aplicar-pronto', { mapaTemplate: tpl.id })));
-        painel.append(criar('span', 'mapa-templates-rotulo', 'Meus templates:'));
-        const salvos = dados.templatesSalvos || [];
-        if (!salvos.length) painel.append(criar('span', 'mapa-vazio-dica', 'nenhum'));
-        salvos.forEach(tpl => {
-            painel.append(botao('mapa-chip', tpl.nome, 'aplicar-salvo', { mapaTemplate: tpl.id }));
-            painel.append(botao('mapa-chip mapa-chip-acao', '✕', 'template-excluir', { mapaTemplate: tpl.id }));
-        });
-        return painel;
-    }
-
-    /** Lista de gestão: filtros, recentes, templates e os itens de mapa. */
-    function renderGestao(wrap, dados) {
+    // 🔄 [INÍCIO: MAPA - SEM MAPA ABERTO (ESTADO VAZIO)]
+    /**
+     * Sem mapa aberto, a área mostra a faixa de chips dos mapas da pasta (montada por
+     * `renderMapasNav`, em mapa.js) e uma dica — NÃO existe mais lista de gestão. A
+     * seta ‹ fixa (topo-esquerdo) volta à tela principal de Pastas.
+     */
+    function renderSemMapa(wrap, dados) {
         if (!wrap) return;
         wrap.innerHTML = '';
-        const pagina = criar('div', 'mapa-lista');
-
-        const chips = criar('div', 'mapa-chips');
-        chips.append(chipFiltro('Todas', 'todas', dados.filtroPasta === 'todas'));
-        chips.append(chipFiltro('Favoritos', 'favoritos', dados.filtroPasta === 'favoritos'));
-        chips.append(chipFiltro('Sem pasta', 'sem-pasta', dados.filtroPasta === 'sem-pasta'));
-        (dados.pastas || []).forEach(pasta => {
-            const chip = chipFiltro(pasta.nome, pasta.id, dados.filtroPasta === pasta.id);
-            chip.append(botao('mapa-chip-acao', '✎', 'pasta-renomear', { mapaPasta: pasta.id }));
-            chip.append(botao('mapa-chip-acao', '✕', 'pasta-excluir', { mapaPasta: pasta.id }));
-            chips.append(chip);
-        });
-        pagina.append(chips);
-
-        if (dados.mostrarTemplates) pagina.append(painelTemplates(dados));
-        if ((dados.recentes || []).length) pagina.append(blocoRecentes(dados));
-
-        const itens = dados.mapas || [];
-        if (!itens.length) {
-            const vazio = criar('div', 'mapa-vazio');
-            vazio.append(criar('p', 'mapa-vazio-titulo', 'Nenhum mapa encontrado.'));
-            vazio.append(criar('p', 'mapa-vazio-dica', 'Crie seu primeiro mapa para começar.'));
-            pagina.append(vazio);
-        } else {
-            const lista = criar('ul', 'mapa-itens');
-            itens.forEach(mapa => lista.append(itemMapa(mapa, dados)));
-            pagina.append(lista);
-        }
-        wrap.append(pagina);
+        const vazio = criar('div', 'mapa-vazio');
+        vazio.append(criar('p', 'mapa-vazio-titulo', 'Nenhum mapa aberto.'));
+        const pasta = dados && dados.pastaNome;
+        vazio.append(criar('p', 'mapa-vazio-dica', pasta
+            ? 'Escolha um mapa de "' + pasta + '" na faixa acima ou crie o primeiro com o "+".'
+            : 'Escolha um mapa na faixa acima ou crie o primeiro com o "+".'));
+        wrap.append(vazio);
     }
-    // 🔄 [FIM: MAPA - RECENTES/TEMPLATES/LISTA]
+    // 🔄 [FIM: MAPA - SEM MAPA ABERTO (ESTADO VAZIO)]
+
 
     /** Atualiza a marcação de seleção sem redesenhar o canvas. */
     function atualizarSelecao(selecionados) {
@@ -1548,7 +1435,7 @@
     // 🔄 [FIM: MAPA - CONEXÕES (FASE 6)]
 
     global.MapaMentalRender = {
-        montarShell, atualizarShell, renderForm, renderGestao, renderMapaAberto,
+        montarShell, atualizarShell, renderForm, renderSemMapa, renderMapaAberto,
         atualizarSelecao, atualizarNo, aplicarTema, dataCurta,
         desenharConexoes, atualizarConexoes, caminhoConexao, caminhoRamo, dimensoesNos, menuConexao,
         renderAtalhos, renderBarras, menuContextual, editorBarra

@@ -19,86 +19,89 @@
 - **[Linhas 48-85 ~]** `/* Watchdog de inicialização: se o app não ficar pronto em 6 s (ou der erro),` -> `(function () { var guard = ...; window.setTimeout(mostrar, 6000); ... })();`
 
 ## Implementação: Estrutura das áreas (Notas | Mapa Mental)
-- **[Linhas 86-95 ~]** `<!-- 🎨 [INÍCIO: PWA - SHELL (HEADER, ÁREAS E MODAL DE NOTAS)] -->` -> `<header class="app-header border-b border-border pt-4 pb-4 px-4">`
-- **[Linhas 96-110 ~]** `<!-- Main Editor Container -->` -> `<main>` + `<nav id="appAreas" aria-label="Navegação" hidden>` (**APENAS a seta ‹** `#appVoltar` com `data-app-voltar="pastas"`, sempre visível; sem abas — a troca Notas↔Mapa vive dentro das áreas) + `<section id="pastasArea" hidden>` + `<section id="mapaArea" hidden>`
+- **[Linhas 86-95 ~]** `<!-- 🎨 [INÍCIO: PWA - SHELL (HEADER, ÁREAS E MODAL DE NOTAS)] -->` -> `<header class="app-header border-b border-border pt-4 pb-4 px-4">` (recuo `padding-left` reduzido para `4.5rem` no `mapa.css`: só a seta ‹, o seletor de tema saiu do topo-esquerdo)
+- **[Linhas 96-124 ~]** `<!-- Main Editor Container -->` -> `<main>` + `<nav id="appAreas" aria-label="Navegação" hidden>` (**APENAS a seta ‹** `#appVoltar` com `data-app-voltar="pastas"`, sempre visível — no Mapa ela volta à LISTA quando há mapa aberto) + `.app-tema-fixo` (`#themeToggle`, canto INFERIOR DIREITO, só na tela de Pastas) + `<section id="pastasArea" hidden>` + `<section id="mapaArea" hidden>`
 
 ## Implementação: Modal de Notas (cabeçalho → chips → toolbar → editor)
-- **[Linhas 111-207 ~]** `<!-- Notes Modal (Always visible in this PWA) -->` -> `<div class="notes-drawer active" id="notesModalBackdrop">`
-  - **[Linhas 114-139 ~]** (cabeçalho) -> `<div class="notes-modal-header">` · `#themeToggle`, `#notesHeaderCollapseBtn`, `#notesFullscreenBtn`, `#notesAbrirMapa` (`data-app-split="1"`, "Ver mapa ao lado"), `#notesModalClose`
-  - **[Linhas 141 ~]** (sem comentário) -> `<nav class="notes-context-nav" id="notesContextNav">`
-  - **[Linhas 143-191 ~]** (toolbar) -> `<div class="notes-toolbar" id="notesToolbar">` (botões `data-command`, `data-notes-color`)
-  - **[Linhas 193-195 ~]** (editor) -> `<div class="notes-editor" id="notesEditor" contenteditable="true">`
-  - **[Linhas 201-204 ~]** (rodapé/status) -> `<div class="notes-modal-footer">` · `#notesTopicCount` (contagem de tópicos, alinhado à esquerda) + `<button id="notesSaveStatus" role="status">`
-- **[Linhas 208 ~]** `(sem comentário de ancoragem)` -> `<div id="appToastRegion" class="app-toast-region">`
+- **[Linhas 125-227 ~]** `<!-- Notes Modal (Always visible in this PWA) -->` -> `<div class="notes-drawer active" id="notesModalBackdrop">`
+  - **[Linhas 128-148 ~]** (cabeçalho) -> `<div class="notes-modal-header">` · `#notesHeaderCollapseBtn`, `#notesFullscreenBtn`, `#notesAbrirMapa` (`data-app-split="1"`, "Ver mapa ao lado"), `#notesModalClose`
+  - **[Linhas 150 ~]** (chips) -> `<nav class="notes-context-nav app-rolagem" id="notesContextNav">`
+  - **[Linhas 152-200 ~]** (toolbar) -> `<div class="notes-toolbar app-barra app-rolagem" id="notesToolbar">` (botões `data-command`, `data-notes-color`) — inclui **alinhamento por linha** (`alignLeft/alignCenter/alignRight/alignJustify`) e o botão **Fonte** (`#notesFontBtn`, `data-pwa="fonte"`)
+  - **[Linhas 219 ~]** (editor) -> `<div class="notes-editor-container focus-shell app-rolagem" id="notesEditorContainer">` · `<div class="notes-editor" id="notesEditor" contenteditable="true">`
+  - **[Linhas 223-227 ~]** (rodapé/status) -> `<div class="notes-modal-footer app-rodape">` · `#notesLastEdit` (última edição) | `#notesTopicCount` (tópicos, CENTRO) | `<button id="notesSaveStatus" class="app-rodape-meta">` — MESMAS classes do rodapé do Mapa
+- **[Linhas 228 ~]** `(sem comentário de ancoragem)` -> `<div id="appToastRegion" class="app-toast-region">`
 
 ## Implementação: Carga de módulos e registro do Service Worker
-- **[Linhas 212-221 ~]** `<!-- 🚀 [INÍCIO: PWA - CARGA DE MÓDULOS E SERVICE WORKER] -->` -> `<script src="./notes/editor.js"> … <script src="./app.js">`
-- **[Linhas 222-229 ~]** `(sem comentário de ancoragem)` -> `<script src="./mapa/mapa-modelo.js"> … <script src="./mapa/mapa.js">` (inclui `mapa-cores.js`)
-- **[Linhas 229-286 ~]** `/* Service Worker.` -> `(function () { var SW_URL = new URL('sw.js', ...); … })();` (registro com `updateViaCache: 'none'`; `controllerchange` recarrega 1× — plano B do update notification do `app.js`)
+- **[Linhas 232-238 ~]** `<!-- 🚀 [INÍCIO: PWA - CARGA DE MÓDULOS E SERVICE WORKER] -->` -> `<script src="./notes/editor.js"> … <script src="./fontes.js">` (`NotasFontes`) `… <script src="./app.js">`
+- **[Linhas 239-246 ~]** `(sem comentário de ancoragem)` -> `<script src="./mapa/mapa-modelo.js"> … <script src="./mapa/mapa.js">` (inclui `mapa-cores.js`)
+- **[Linhas 247-304 ~]** `/* Service Worker.` -> `(function () { var SW_URL = new URL('sw.js', ...); … })();` (registro com `updateViaCache: 'none'`; `controllerchange` recarrega 1× — plano B do update notification do `app.js`)
 
 ---
 
 # Nome do Arquivo: app.js
 **Propósito:** Aplicação principal (`NotesPWA` + `ThemeManager`). Instala o motor de notas no protótipo, faz a persistência local (LocalStorage), a UI de múltiplas notas (chips), a toolbar PWA (ordem + teclado), os ajustes para notas grandes e a ATUALIZAÇÃO do app (update notification).
 
+## Implementação: Expandir/contrair (classe ÚNICA das duas áreas)
+- **[Linhas 85-224 ~]** `// ⚡ [INÍCIO: PWA - EXPANDIR/CONTRAR (AppExpandir — CLASSE ÚNICA DAS DUAS ÁREAS)]` -> `class AppExpandir` — config por área (`alvo`/`classeArea`/`barras`/`botao`/`rotulos`/`expandido`/`versao`/`ladoALadoAtivo`/`aplicarLadoALado`/`antesDaTroca`/`aoAplicar`/`aoFinalizar`); **`static motion` = animação ÚNICA de painel** (220 ms, respeita `prefers-reduced-motion`); `aplicar` (classe compartilhada `.app-tela-cheia` + classe da área + botão); `aplicarBarras` recolhe/mostra UMA POR VEZ (ordem inversa ao sair) e preserva o que já estava recolhido; `alternar` fecha o lado a lado ao expandir e o REABRE ao contrair. **A MESMA classe serve Notas (`#notesModal`) e Mapa (`.mapa-shell`)**, no espírito das classes compartilhadas de CSS
+
 ## Implementação: Boot, tema e limites de nota grande
 - **[Linhas 1-5 ~]** `// NOTAS PWA - Aplicação Principal (100% no dispositivo)` -> cabeçalho do módulo
 - **[Linhas 12-17 ~]** `// 🔄 [INÍCIO: PWA - CONSTANTES DE NOTA GRANDE]` -> `const LIMITE_NOTA_GRANDE = 120000;` · `const LIMITE_RASCUNHO = 800000;`
 - **[Linhas 19-83 ~]** `// 🔄 [INÍCIO: PWA - TEMA (ThemeManager)]` -> `class ThemeManager` (`getStoredTheme` / `getSystemTheme` / `bindEvents` / `applyTheme(theme, animate = true)`)
-- **[Linhas 85-97 ~]** `// 🔄 [INÍCIO: PWA - APLICAÇÃO (NotesPWA boot/instalação)]` -> `class NotesPWA {` + constantes `FOLGA_BARRA_TECLADO`/`MARGEM_CURSOR_BARRA`
-- **[Linhas 98-135 ~]** `(constructor)` -> `constructor()` (estado do editor, histórico, toolbar; `this.themeManager = new ThemeManager()` → `this.init()`)
-- **[Linhas 136-163 ~]** `// 🔄 [INÍCIO: ESTADO - MIGRAÇÃO/ABERTURA DA ÚLTIMA NOTA]` -> `init()` (migra nota única → lista; aplica área salva; `window.__notasPronto`; liga `verificarAtualizacaoSW()`)
-- **[Linhas 165-180 ~]** `/** Instala o mesmo motor de notas do sistema sobre este protótipo. */` -> `installNotesFeatures()` (+ `installAtualizacaoPWA`)
-- **[Linhas 1459-1542 ~]** `// 🚀 [INÍCIO: PWA - ATUALIZAÇÃO DO APP (UPDATE NOTIFICATION)]` -> `installAtualizacaoPWA(App)` (`recarregarParaNovaVersao` · `avisarNovaVersao` · `verificarAtualizacaoSW`: `updatefound`/`statechange` + `controllerchange` + mensagem `SW_ATIVADO` + `setInterval` 60 s)
-- **[Linhas 1544-1549 ~]** `// 🚀 [INÍCIO: PWA - BOOT (DOMContentLoaded)]` -> `document.addEventListener('DOMContentLoaded', () => { window.notesApp = new NotesPWA(); });`
+- **[Linhas 226-325 ~]** `// 🔄 [INÍCIO: PWA - APLICAÇÃO (NotesPWA boot/instalação)]` -> `class NotesPWA {` + constantes `FOLGA_BARRA_TECLADO`/`MARGEM_CURSOR_BARRA`
+- **[Linhas 239-278 ~]** `(constructor)` -> `constructor()` (estado do editor, histórico, toolbar; `this.themeManager = new ThemeManager()` → `this.init()`)
+- **[Linhas 279-305 ~]** `// 🔄 [INÍCIO: ESTADO - MIGRAÇÃO/ABERTURA DA ÚLTIMA NOTA]` -> `init()` (migra nota única → lista; aplica área salva; `window.__notasPronto`; liga `verificarAtualizacaoSW()`)
+- **[Linhas 309-319 ~]** `/** Instala o mesmo motor de notas do sistema sobre este protótipo. */` -> `installNotesFeatures()` (+ `installAtualizacaoPWA`)
+- **[Linhas 1842-1925 ~]** `// 🚀 [INÍCIO: PWA - ATUALIZAÇÃO DO APP (UPDATE NOTIFICATION)]` -> `installAtualizacaoPWA(App)` (`recarregarParaNovaVersao` · `avisarNovaVersao` · `verificarAtualizacaoSW`: `updatefound`/`statechange` + `controllerchange` + mensagem `SW_ATIVADO` + `setInterval` 60 s)
+- **[Linhas 1927-1932 ~]** `// 🚀 [INÍCIO: PWA - BOOT (DOMContentLoaded)]` -> `document.addEventListener('DOMContentLoaded', () => { window.notesApp = new NotesPWA(); });`
 
 ## Implementação: Persistência local (sem backend)
-- **[Linhas 184-306 ~]** `// 🔄 [INÍCIO: ESTADO - PERSISTÊNCIA LOCAL (SEM BACKEND)]` -> `loadContentFromStorage()` · `saveContentToStorage(html)`
-- **[Linhas 210-276 ~]** `// 🔄 [INÍCIO: ESTADO - MÚLTIPLAS NOTAS LOCAIS]` -> `lerNotasLocais()` (migra notas antigas com `pastaId: null`)
-- **[Linhas 239-247 ~]** `/** Seam de persistência das notas.` -> `notasBackend()` (`listar` / `obter` / `salvar`)
-- **[Linhas 248-271 ~]** `/** Grava a lista de notas e o id da nota ativa no dispositivo. */` -> `gravarNotasLocais(lista)` · `salvarNotasLocais()` · `marcarNotaAtiva(id)` · `lerNotaAtiva()`
-- **[Linhas 275-306 ~]** `/** Substitui o cliente HTTP do sistema: qualquer gravação fica no dispositivo. */` -> `async apiCall(endpoint, options = {})` · `persistNow()`
+- **[Linhas 327-453 ~]** `// 🔄 [INÍCIO: ESTADO - PERSISTÊNCIA LOCAL (SEM BACKEND)]` -> `loadContentFromStorage()` · `saveContentToStorage(html)`
+- **[Linhas 353-419 ~]** `// 🔄 [INÍCIO: ESTADO - MÚLTIPLAS NOTAS LOCAIS]` -> `lerNotasLocais()` (migra notas antigas com `pastaId: null`)
+- **[Linhas 386-394 ~]** `/** Seam de persistência das notas.` -> `notasBackend()` (`listar` / `obter` / `salvar`)
+- **[Linhas 395-444 ~]** `/** Grava a lista de notas e o id da nota ativa no dispositivo. */` -> `gravarNotasLocais(lista)` · `salvarNotasLocais()` · `marcarNotaAtiva(id)` · `lerNotaAtiva()`
+- **[Linhas 445-452 ~]** `/** Substitui o cliente HTTP do sistema: qualquer gravação fica no dispositivo. */` -> `async apiCall(endpoint, options = {})` · `persistNow()`
 
 ## Implementação: Abrir/editar nota no modal
-- **[Linhas 312-354 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - ABRIR NOTAS]` -> `openNotesModal(id)`
-- **[Linhas 355-358 ~]** `(sem comentário de ancoragem)` -> `openStageNotesModal(stageId)`
-- **[Linhas 609-623 ~]** `// Placeholders chamados pelo motor antes de serem substituídos pelo install.` -> `closeNotesModal()` · `setupModalListeners()` · `toggleNotesFullscreen()` · `toggleNotesHeaderCollapse()`
-- **[Linhas 626-648 ~]** `/**` (doc de `placeNotesCursorAtEnd`) -> `placeNotesCursorAtEnd(editor)`
-- **[Linhas 649-681 ~]** `/**` (doc de `focusNotesEditorFromEmptyArea`) -> `focusNotesEditorFromEmptyArea(event)`
-- **[Linhas 682-720 ~]** `/**` (doc de `rolarCaretParaAcima`) -> `rolarCaretParaAcima()` (**ADAPTATIVO**: cresce o `padding-bottom` do editor quando falta rolagem — a linha do cursor nunca fica sob a barra)
-- **[Linhas 721-744 ~]** `/**` (doc de `quebrarLinhaDeEmergencia`) -> `quebrarLinhaDeEmergencia()`
+- **[Linhas 455-824 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - ABRIR NOTAS]` -> `openNotesModal(id)` (também preenche o rodapé: `notesUltimaEdicao = atualizadaEm/criadaEm` → `updateNotesLastEdit()`)
+- **[Linhas 503-508 ~]** `(sem comentário de ancoragem)` -> `openStageNotesModal(stageId)`
+- **[Linhas 810-824 ~]** `// Placeholders chamados pelo motor antes de serem substituídos pelo install.` -> `closeNotesModal()` · `setupModalListeners()` · `toggleNotesFullscreen()` · `toggleNotesHeaderCollapse()` (**os dois últimos são substituídos pelo `install` de `notes/editor.js`**)
+- **[Linhas 826-848 ~]** `/**` (doc de `placeNotesCursorAtEnd`) -> `placeNotesCursorAtEnd(editor)`
+- **[Linhas 849-881 ~]** `/**` (doc de `focusNotesEditorFromEmptyArea`) -> `focusNotesEditorFromEmptyArea(event)`
+- **[Linhas 882-920 ~]** `/**` (doc de `rolarCaretParaAcima`) -> `rolarCaretParaAcima()` (**ADAPTATIVO**: cresce o `padding-bottom` do editor quando falta rolagem — a linha do cursor nunca fica sob a barra)
+- **[Linhas 921-944 ~]** `/**` (doc de `quebrarLinhaDeEmergencia`) -> `quebrarLinhaDeEmergencia()`
 ## Implementação: Múltiplas notas (chips + botão "+")
-- **[Linhas 359-451 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - MÚLTIPLAS NOTAS (CHIPS + BOTÃO "+")]` -> `pastaPadraoId` (getter) · `notaPertenceAPasta(nota, pastaId)` · `notasDaPasta(pastaId)` · `contarNotasDaPasta(pastaId)` · `definirPastaAtivaNotas(pastaId)` · `renderNotesNav()` (chips filtrados pela pasta ativa)
-- **[Linhas 452-471 ~]** `/**` (doc de `accentDaNota`) -> `accentDaNota(nota)` · `invalidarAccentDaNota(id)`
-- **[Linhas 472-505 ~]** `/** Cria uma nota nova em branco e abre em seguida (o motor salva a anterior). */` -> `criarNota()` (grava `pastaId` da pasta ativa) · `criarNotaLocal(nome = 'Nova nota')` (`pastaId: null`) · `renomearNota(id)`
-- **[Linhas 506-537 ~]** `/** Exclui a nota, sempre com confirmação; se for a última, cria uma vazia. */` -> `async excluirNota(id)`
-- **[Linhas 538-690 ~]** `/** Duplica a nota (novo id, mesmo conteúdo/pasta), logo depois do original. */` -> `duplicarNota(id)` · `pastasDeNotas()` · `moverNotaParaPasta(id, pastaId)` · `criarMenuNota(rotulo)` · `mostrarMenuNota(menu, chip)` · `abrirMenuNota(nota, chip)` (Renomear/Duplicar/Mover para pasta/Excluir) · `abrirMenuMoverNota(nota, chip)` · `fecharMenuNota()` · `setupChipLongPress(chip, nota)`
+- **[Linhas 507-807 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - MÚLTIPLAS NOTAS (CHIPS + BOTÃO "+")]` -> `pastaPadraoId` (getter, `[509]`) · `notaPertenceAPasta(nota, pastaId)` · `notasDaPasta(pastaId)` · `contarNotasDaPasta(pastaId)` · `definirPastaAtivaNotas(pastaId)` · `renderNotesNav()` (`[555]` — chips da pasta ativa SÓ no `#notesContextNav`; a área de mapas tem a SUA faixa `#mapaChipsNav`, com os MAPAS, via `renderMapasNav()` em `mapa/mapa.js`) · **`definirPastaAtivaNotas(pastaId)` é o equivalente, nas Notas, de `garantirMapaSelecionado` (mapa/mapa.js)** e é chamada ao ENTRAR na área (por `aplicarArea('notas')`): mantém a nota aberta se ela pertencer à pasta ativa; senão abre a 1ª da pasta (pasta vazia cria "Nova nota")
+- **[Linhas 604-623 ~]** `/**` (doc de `accentDaNota`) -> `accentDaNota(nota)` · `invalidarAccentDaNota(id)`
+- **[Linhas 624-658 ~]** `/** Cria uma nota nova em branco e abre em seguida (o motor salva a anterior). */` -> `criarNota()` (grava `pastaId` da pasta ativa) · `criarNotaLocal(nome = 'Nova nota')` (`pastaId: null`) · `renomearNota(id)`
+- **[Linhas 659-689 ~]** `/** Exclui a nota, sempre com confirmação; se for a última, cria uma vazia. */` -> `async excluirNota(id)`
+- **[Linhas 690-807 ~]** `/** Duplica a nota (novo id, mesmo conteúdo/pasta), logo depois do original. */` -> `duplicarNota(id)` · `pastasDeNotas()` · `moverNotaParaPasta(id, pastaId)` · `criarMenuNota(rotulo)` · `mostrarMenuNota(menu, chip)` · `abrirMenuNota(nota, chip)` (Renomear/Duplicar/Mover para pasta/Excluir) · `abrirMenuMoverNota(nota, chip)` · `fecharMenuNota()` · `setupChipLongPress(chip, nota)`
 
 ## Implementação: Seleção, avisos e listeners gerais
-- **[Linhas 745-765 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - SELEÇÃO DE NOTAS]` -> `rememberNotesSelection()`
-- **[Linhas 685-692 ~]** `(sem comentário de ancoragem)` -> `updateNotesHistoryButtons()`
-- **[Linhas 693-712 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - AVISOS]` -> `showToast(message, type = 'success')` · `updateSaveStatus(text, isError = false)`
-- **[Linhas 714-767 ~]** `// Comandos da toolbar (undo/redo, headings, listas, cores, etc.)` -> `setupEventListeners()` (keydown/atalhos + blindagem do Enter)
-- **[Linhas 768-774 ~]** `(sem comentário de ancoragem)` -> `setupResize()`
+- **[Linhas 945-965 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - SELEÇÃO DE NOTAS]` -> `rememberNotesSelection()` (`[947]`)
+- **[Linhas 959-966 ~]** `(sem comentário de ancoragem)` -> `updateNotesHistoryButtons()`
+- **[Linhas 967-1024 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - AVISOS]` -> `showToast(message, type = 'success')` (`[968]`) · `updateSaveStatus(text, isError = false)`
+- **[Linhas 1026-1081 ~]** `// Comandos da toolbar (undo/redo, headings, listas, cores, etc.)` -> `setupEventListeners()` (keydown/atalhos + blindagem do Enter)
+- **[Linhas 1082-1088 ~]** `(sem comentário de ancoragem)` -> `setupResize()`
 
 ## Implementação: Toolbar PWA (ordem persistida + edição por arraste)
-- **[Linhas 775-791 ~]** `// ⚡ [INÍCIO: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]` -> `filhosToolbar()` · `chavesToolbar()`
-- **[Linhas 801-816 ~]** `(sem comentário de ancoragem)` -> `lerOrdemToolbar()` · `salvarOrdemToolbar(ordem)`
-- **[Linhas 817-876 ~]** `/**` (doc de `aplicarOrdemToolbar`) -> `aplicarOrdemToolbar(ordem = null, opcoes = {})` (trava de reentrância)
-- **[Linhas 877-891 ~]** `/** (Re)liga o observer da barra (ele fica desligado enquanto aplicamos a ordem). */` -> `agendarOrdemToolbar()`
-- **[Linhas 892-928 ~]** `/** Ativa a barra em uma linha com rolagem + botão de edição + ordem salva. */` -> `configurarToolbarPWA()` · `criarBotaoEditarToolbar(toolbar)` · `rotuloBotaoToolbar(el)`
-- **[Linhas 929-944 ~]** `/** Move um botão uma posição e persiste a nova ordem. */` -> `moverBotaoToolbar(el, delta)`
-- **[Linhas 945-1094 ~]** `/** Diálogo "Editar barra de ferramentas": reordena arrastando (ou pelo teclado) e persiste. */` -> `abrirEditorToolbar()`
-- **[Linhas 1095-1101 ~]** `(sem comentário de ancoragem)` -> `restaurarOrdemToolbar()`
+- **[Linhas 1089-1613 ~]** `// ⚡ [INÍCIO: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]` -> `filhosToolbar()` (`[1091]`) · `chavesToolbar()`
+- **[Linhas 1115-1130 ~]** `(sem comentário de ancoragem)` -> `lerOrdemToolbar()` · `salvarOrdemToolbar(ordem)`
+- **[Linhas 1131-1190 ~]** `/**` (doc de `aplicarOrdemToolbar`) -> `aplicarOrdemToolbar(ordem = null, opcoes = {})` (trava de reentrância)
+- **[Linhas 1191-1205 ~]** `/** (Re)liga o observer da barra (ele fica desligado enquanto aplicamos a ordem). */` -> `agendarOrdemToolbar()`
+- **[Linhas 1206-1311 ~]** `/** Ativa a barra em uma linha com rolagem + botão de edição + ordem salva. */` -> `configurarToolbarPWA()` · `criarBotaoEditarToolbar(toolbar)` · **`ligarBotaoFonte()`** (`#notesFontBtn`) · **`notesLinhaDoCursor()`** · **`notesFonteDaLinha(linha)`** · **`abrirSeletorFonteNotas()`** / **`aplicarFonteNotas(css, temSelecao)`** (usa `NotasFontes`: sem seleção = TODAS as linhas; com seleção = o trecho) · `rotuloBotaoToolbar(el)`
+- **[Linhas 1312-1327 ~]** `/** Move um botão uma posição e persiste a nova ordem. */` -> `moverBotaoToolbar(el, delta)`
+- **[Linhas 1328-1477 ~]** `/** Diálogo "Editar barra de ferramentas": reordena arrastando (ou pelo teclado) e persiste. */` -> `abrirEditorToolbar()`
+- **[Linhas 1478-1484 ~]** `(sem comentário de ancoragem)` -> `restaurarOrdemToolbar()`
 
 ## Implementação: Toolbar acoplada ao teclado virtual
-- **[Linhas 1102-1177 ~]** `/** Mantém a barra logo acima do teclado virtual (visualViewport). */` -> `ativarToolbarTeclado()` (inclui a rolagem do caret a cada `input`, coalescida num `requestAnimationFrame`)
-- **[Linhas 1173-1224 ~]** `/**` (doc de `aplicarToolbarTeclado`) -> `aplicarToolbarTeclado(insetForcado)` (reserva `altura da barra + FOLGA_BARRA_TECLADO` no editor)
+- **[Linhas 1485-1561 ~]** `/** Mantém a barra logo acima do teclado virtual (visualViewport). */` -> `ativarToolbarTeclado()` (inclui a rolagem do caret a cada `input`, coalescida num `requestAnimationFrame`)
+- **[Linhas 1562-1613 ~]** `/**` (doc de `aplicarToolbarTeclado`) -> `aplicarToolbarTeclado(insetForcado)` (reserva `altura da barra + FOLGA_BARRA_TECLADO` no editor)
 
 ## Implementação: Modo mobile e módulos instaladores
-- **[Linhas 1239-1288 ~]** `// 🔄 [INÍCIO: PWA - MODO MOBILE (installModoMobileNotas)]` -> `function installModoMobileNotas(App)`
-- **[Linhas 1294-1406 ~]** `// 🔄 [INÍCIO: PWA - CAMADA LOCAL DE EXTRAS/TABELAS (installLocalNotesStorage)]` -> `function installLocalNotesStorage(App)`
-- **[Linhas 1416-1457 ~]** `// 🔄 [INÍCIO: PWA - AJUSTES DE NOTA GRANDE (installAjustesNotaGrande)]` -> `function installAjustesNotaGrande(App)`
+- **[Linhas 1622-1671 ~]** `// 🔄 [INÍCIO: PWA - MODO MOBILE (installModoMobileNotas)]` -> `function installModoMobileNotas(App)`
+- **[Linhas 1677-1810 ~]** `// 🔄 [INÍCIO: PWA - CAMADA LOCAL DE EXTRAS/TABELAS (installLocalNotesStorage)]` -> `function installLocalNotesStorage(App)` (`readTemplates`/`writeTemplates`, **`pedirNaRede(userId, alvo, options)`** = fallback de REDE, `notesExtraRequest` (templates LOCAIS + rede para o resto), `readNotesFile`, `notesUpload` (data URL) e `notesFileViewer` local que **cai para a implementação de rede** quando não há anexo `a[data-note-asset]` — P84)
+- **[Linhas 1819-1860 ~]** `// 🔄 [INÍCIO: PWA - AJUSTES DE NOTA GRANDE (installAjustesNotaGrande)]` -> `function installAjustesNotaGrande(App)`
 
 ---
 
@@ -106,7 +109,7 @@
 **Propósito:** Service Worker offline-first. Serve o cache na hora e revalida na rede com timeout, garantindo que o app nunca fique preso carregando.
 
 ## Implementação: Constantes, helpers e ciclo de vida
-- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v54';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./mapa/mapa-cores.js`)
+- **[Linhas 14-60 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v65';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./fontes.js` e `./mapa/mapa-cores.js`)
 - **[Linhas 19-20 ~]** `(sem comentário de ancoragem)` -> `const CACHE_NAME` · `const TIMEOUT_MS`
 - **[Linhas 22-32 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
 - **[Linhas 33-59 ~]** `/** Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
@@ -142,16 +145,24 @@
 # Nome do Arquivo: styles.css
 **Propósito:** CSS base do PWA (tokens de tema, cor da barra de status, base e componentes próprios). Distinto de `theme-origem.css` (tema portado do original).
 - **[Linhas 5-36 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - VARIÁVEIS DE TEMA] */` -> `:root { --color-* }` + tokens da barra de status (claro/escuro)
-- **[Linhas 38-818 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - BASE E COMPONENTES] */` -> `body`, `button` e componentes próprios do app (inclui `.app-toast*` e o aviso de nova versão `.app-toast.is-update`/`.app-toast-action`)
+- **[Linhas 38-817 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - BASE E COMPONENTES] */` -> `body`, `button` e componentes próprios do app (inclui `.app-toast*`, `.app-theme-switch*`, `.app-tema-fixo` e o seletor de fontes `.notas-seletor-fontes*`)
+- **[Linhas 818-990 ~]** `/* ============ PADRÕES COMPARTILHADOS (Notas + Mapa + Pastas) — classes ÚNICAS` -> **tokens de VIDRO** (`--app-vidro-fundo/-borda/-blur` = barras; `--app-vidro-campo-*` = campo; `--app-overlay-*` = base das áreas; `--app-vidro-barra-opaca` = cor composta para mascarar a rolagem) + **classes ÚNICAS replicadas nas duas áreas**: `.app-vidro-barra`, `.app-vidro-campo` e as regras de `.notes-context-nav`/`.notes-context-chip` (chips com as MESMAS cores no Mapa) + `.app-rodape`/`.app-rodape-meta` (rodapé em grade `1fr auto 1fr` = esquerda | CENTRO | direita), `.app-rolagem` (rolagem com o polegar só no hover; 2º seletor eleva a especificidade dentro do modal de Notas), `.app-barra` (barra em UMA linha com rolagem horizontal) e **`.app-tela-cheia`** (tela cheia — a MESMA classe aplicada ao `.mapa-shell` e ao `#notesModal`)
+
+---
+
+# Nome do Arquivo: fontes.js
+**Propósito:** Catálogo AMPLO de fontes do SISTEMA (offline) com busca + seletor visual. Expõe `window.NotasFontes` (`lista`, `buscar`, `abrir`, `fechar`) — usado pelo botão **Fonte** da barra de Notas e pelo Mapa.
+- **[Linhas 1-210 ~]** `// ⚙️ [INÍCIO: FONTES - CATÁLOGO DO SISTEMA (BUSCA + SELETOR)]` -> `FONTES[]` (sans/serif/mono/cursiva/fantasia + grupos genéricos), `chave(texto)` (busca sem acento), `buscar(termo)`, `abrir({ atual, onEscolher, trigger })` (diálogo `role="dialog"` com `.notas-seletor-fontes*`, fecha no Esc/clique fora/✕) · `fechar()` · `global.NotasFontes`
 
 # Nome do Arquivo: theme-origem.css
 **Propósito:** Tema portado do CSS COMPILADO do projeto original (tokens + classes do sistema antigo). Regenerado por `tools/extrair-tema.cjs`.
 - **[Linhas 1-1428 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - TEMA PORTADO DO ORIGINAL] */` -> tokens `--*` e classes do compilado
 
 # Nome do Arquivo: notes/editor.css
-**Propósito:** Estilos do editor de notas (linhas, cabeçalho, colapso, paleta de tons, código e nota grande).
-- **[Linhas 1-137 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - EDITOR (LINHAS, CABEÇALHO, COLAPSO)] */` -> regras `#notesEditor .notes-line*`, `#notesToolbar[hidden]`
-- **[Linhas 138-287 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - PALETA DE TONS, CÓDIGO E NOTA GRANDE] */` -> `.notes-tone-*`, `.notes-code*`, `content-visibility` em nota grande
+**Propósito:** Estilos do editor de notas (linhas, cabeçalho, colapso, alinhamento/fonte por linha, paleta de tons, código e nota grande).
+- **[Linhas 1-156 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - EDITOR (LINHAS, CABEÇALHO, COLAPSO)] */` -> regras `#notesEditor .notes-line*` (inclui **alinhamento por linha** `[data-align=...]` e `.app-toolbar-font-btn`), `#notesToolbar[hidden]` e o **override de tela cheia** (`.app-tela-cheia` vence o `inset: 0 20vw` do `theme-origem.css`)
+- **[Linhas 150-298 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - PALETA DE TONS, CÓDIGO E NOTA GRANDE] */` -> `.notes-tone-*`, `.notes-code*`, `content-visibility` em nota grande
+- **[Linhas 309-330 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - PADRONIZAÇÃO (ÍCONES, ALTURA DA TOOLBAR, ROLAGEM)] */` -> ícones/altura da barra e rolagem (a rolagem padrão vem de `.app-rolagem`, em `styles.css`) + **altura do RODAPÉ** (`.notes-modal-footer` com `min-height: var(--app-toolbar-altura)` = a MESMA do rodapé do Mapa, vencendo o `4rem` do `theme-origem.css`)
 
 # Nome do Arquivo: notes/extras.css
 **Propósito:** Estilos dos diálogos extras (inserir/link/modelos) e do visualizador de arquivo.
@@ -162,8 +173,8 @@
 - **[Linhas 1-30 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */` -> `.notes-table-*`, `#notesEditor[data-table-resize]`
 
 # Nome do Arquivo: mapa/mapa.css
-**Propósito:** Estilos da área do mapa (shell, topbar, chips de gestão, canvas/nós, conexões, minimapa, painel de propriedades e controles do layout automático).
-- **[Linhas 1-1067 ~]** `/* 🎨 [INÍCIO: MAPA/ESTILO - ÁREA, CANVAS, NÓS, PAINEL E CONEXÕES] */` -> tokens `--mapa-*` (espelho do tema de Notas: claro = tokens globais; escuro = `#151B23`/`#11161D`/`#0D1218`/`#2A3543`/`#263241`/`#334155`/`#CBD5E1`/`#E2E8F0`/`#F8FAFC`/`#94A3B8`/`#202A36`) + classes `mapa-*` (F8: `#mapaNos.mapa-transicao`, `.mapa-espacamento`, `.mapa-campo-numero`, `.mapa-confirmacao`; F9: `.mapa-no-forma-*`/`-fonte-*`/`-alinha-*`/`-negrito`/`-italico`, `.mapa-estilo-nivel*`, `.mapa-campo-cor`, `.mapa-painel-estilo`; F10: `.mapa-atalhos*`; F11: `.mapa-btn:disabled`; F12: `.mapa-toolbar`/`.mapa-format-bar`/`.mapa-tb-*` (uma linha com rolagem, cores de Notas), **ícones padronizados `.mapa-tb-btn svg` 16×16 / `.mapa-tb-mais-resumo svg` 18×18 / `.mapa-menu-item svg` 16×16**, **`.mapa-tb-fixos`** (ações rápidas irmão/filho `sticky` à DIREITA da barra de formatação), **menu de opções `.mapa-menu-opcoes`/`.mapa-menu-item-ativo`/`.mapa-menu-item-texto`**, `.mapa-menu*`, `.mapa-barra-editor*`, `.mapa-cor-paleta*`; blindagem: `.mapa-falha*` — aviso visível quando a área do mapa não monta; **`▸` campo de edição**: `.app-voltar` (seta ‹ no topo-esquerdo), `.app-areas` fixa no topo, `.mapa-canvas` SEM borda/raio e `.mapa-aberto` SEM tarja (corrige a "faixa em branco" abaixo da barra) + `body:has(#appAreas:not([hidden])) .mapa-topbar/.pastas-topbar` com `padding-left` para a seta; **ROLAGEM PADRONIZADA** (Notas `#notesToolbar`/`#notesEditorContainer` + Mapa `.mapa-toolbar`/`.mapa-format-bar`/`.mapa-lista` + `.pastas-shell`: trilha transparente e polegar só no hover, cores do tema); `.mapa-rodape` (rodapé informativo, `min-height:4rem` igual ao `.notes-modal-footer`) e `.mapa-grade` (grade/pontinhos OPCIONAL, padrão off); `.mapa-form[hidden]` — corrige a "faixa branca" (o `display:flex` vencia o `hidden`))
+**Propósito:** Estilos da área do mapa (shell, topbar, faixa de chips dos MAPAS, canvas/nós, conexões, minimapa, painel de propriedades e controles do layout automático).
+- **[Linhas 1-1311 ~]** `/* 🎨 [INÍCIO: MAPA/ESTILO - ÁREA, CANVAS, NÓS, PAINEL E CONEXÕES] */` -> tokens `--mapa-*` (espelho do tema de Notas) + classes `mapa-*` (F8: `#mapaNos.mapa-transicao`, `.mapa-espacamento`, `.mapa-campo-numero`, `.mapa-confirmacao`; F9: `.mapa-no-forma-*`/`-fonte-*`/`-alinha-*`/`-negrito`/`-italico`, `.mapa-estilo-nivel*`, `.mapa-campo-cor`, `.mapa-painel-estilo`; F10: `.mapa-atalhos*`; F11: `.mapa-btn:disabled`; F12: `.mapa-toolbar`/`.mapa-format-bar`/`.mapa-tb-*`, **ícones `.mapa-tb-btn svg` 18×18**, **`.mapa-tb-fixos`** (fundo = `--app-vidro-barra-opaca`, sem “branco” destoando), **menu de opções `.mapa-menu-opcoes`/`.mapa-menu-item-ativo`**; `.mapa-menu*`, `.mapa-barra-editor*`, `.mapa-cor-paleta*`; blindagem `.mapa-falha*`; **`▸` layout**: `.app-voltar` (seta ‹), `.app-areas` fixa no topo, `body:has(#appAreas:not([hidden])) .mapa-topbar/.pastas-topbar/.app-header` com `padding-left: 4.5rem` (só a seta)); **P81 (padronização com Notas)**: `.mapa-area` com a MESMA base/overlay do drawer (`--app-overlay-*`), `.mapa-shell`/`.mapa-topbar`/barras/canvas/rodapé usando as classes de vidro de `styles.css` (`.app-vidro-barra`/`.app-vidro-campo`), `.mapa-canvas-wrap` TRANSPARENTE (senão mata o vidro), controles dentro das barras com fundo transparente, `.mapa-minimapa` com o fundo do próprio campo (transparente) e `.mapa-no` com o MESMO branco do vidro; **tela cheia** pela classe compartilhada `.app-tela-cheia` (styles.css) aplicada ao shell; `.mapa-shell.mapa-fullscreen` serve só para trocar o ícone `#mapaFullscreenBtn .mapa-expand-icon`/`.mapa-restore-icon`; **`.mapa-chips-nav`** (faixa de chips dos MAPAS acima da barra: MESMAS classes/formatação de `#notesContextNav` — transparente, rolagem vertical a partir de ~2 linhas e o "+" preso/sticky no canto inferior direito); `.mapa-rodape app-rodape`; `.mapa-grade`; `.mapa-form[hidden]`. **As classes compartilhadas `.app-rolagem`/`.app-barra`/`.app-rodape`/`.app-vidro-*` ficam em `styles.css`** e são aplicadas aqui (`.mapa-toolbar`/`.mapa-format-bar app-barra app-rolagem app-vidro-barra`, `.mapa-topbar app-vidro-barra`, `.mapa-canvas app-vidro-campo`, `.mapa-lista app-rolagem`, `.mapa-notas-nav app-rolagem`, `.mapa-rodape app-rodape`).
 
 ---
 
@@ -201,7 +212,7 @@
 - **[Linhas 534-623 ~]** `// 🔄 [INÍCIO: NOTAS - PALETA DE CORES (setupNotesColors)]` -> `p.setupNotesColors=function()` (paleta, cor personalizada, recentes, `pendingColor`)
 
 ## Implementação: Comandos e atalhos
-- **[Linhas 626-677 ~]** `// 🔄 [INÍCIO: NOTAS - COMANDOS (executeNotesCommand)]` -> `p.executeNotesCommand=function(command)`
+- **[Linhas 626-684 ~]** `// 🔄 [INÍCIO: NOTAS - COMANDOS (executeNotesCommand)]` -> `p.executeNotesCommand=function(command)` (inclui **alinhamento por LINHA**: `command.startsWith('align')` → grava `line.dataset.align` = `left`/`center`/`right`/`justify`; repetir o mesmo limpa)
 - **[Linhas 679-831 ~]** `// 🔄 [INÍCIO: NOTAS - ATALHOS (handleNotesEditorShortcut)]` -> `p.handleNotesEditorShortcut=function(event)` (Ctrl+A, Alt+setas, Ctrl+Alt+1..7, Ctrl+B/I/U/S/Z/Y, Tab, Enter)
 
 ## Implementação: Estado da toolbar, checklist e setup
@@ -215,13 +226,13 @@
 - **[Linhas 1041-1043 ~]** `p.openNotesModal=async function(id)` · `p.openStageNotesModal=async function(id)` · `p.closeNotesModal=async function()`
 
 ## Implementação: Cabeçalho, colapso geral, motion e fullscreen
-- **[Linhas 1046-1105 ~]** `// 🔄 [INÍCIO: NOTAS - CABEÇALHO, COLAPSO, MOTION E FULLSCREEN]`
-- **[Linhas 1047-1048 ~]** `p.setNotesHeaderCollapsed=function(collapsed)` · `p.toggleNotesHeaderCollapse=async function()`
-- **[Linhas 1058-1089 ~]** `p.toggleAllNotesCollapse=function()` · `p.animateNotesLineCollapse=async function(line)` · `p.notesPanelMotion=async function(element,hide,version)`
-- **[Linhas 1090 ~]** `p.toggleNotesFullscreen=async function(force)`
+- **[Linhas 1053-1121 ~]** `// 🔄 [INÍCIO: NOTAS - CABEÇALHO, COLAPSO, MOTION E FULLSCREEN]`
+- **[Linhas 1054-1055 ~]** `p.setNotesHeaderCollapsed=function(collapsed)` · `p.toggleNotesHeaderCollapse=async function()`
+- **[Linhas 1065-1089 ~]** `p.toggleAllNotesCollapse=function()` · `p.animateNotesLineCollapse=async function(line)` · `p.notesPanelMotion=async function(element,hide,version)` (**delega à animação ÚNICA `AppExpandir.motion`, de `app.js`**)
+- **[Linhas 1096-1120 ~]** `p.toggleNotesFullscreen=async function(force)` (**config de Notas da classe ÚNICA `AppExpandir` — a MESMA do Mapa**: `alvo`=`#notesModal`, `classeArea`=`fullscreen`, `barras`=`[#notesToolbar, #notesContextNav]`, `botao`=`#notesFullscreenBtn`, `expandido`=classe `fullscreen`, `versao`=`notesMotionVersion`, `ladoALadoAtivo`=`html.app-split`, **`aplicarLadoALado` fecha com `aplicarSplit(false, { manter: 'notas' })`** (só abre com `aplicarSplit(true)`), `antesDaTroca` guarda `notesSavedWidth`, `aoAplicar` cuida do backdrop/`--notes-width`, `aoFinalizar` chama `setNotesHeaderCollapsed`; ao EXPANDIR fecha o lado a lado e recolhe as barras UMA POR VEZ; ao CONTRAIR mostra em ORDEM INVERSA e o lado a lado REAPARECE)
 
 ## Implementação: Resize do modal
-- **[Linhas 1107-1124 ~]** `// 🔄 [INÍCIO: NOTAS - RESIZE (setupNotesResize)]` -> `p.setupNotesResize=function()` (handle `#notesResizeHandle`, teclado e fullscreen)
+- **[Linhas 1123-1140 ~]** `// 🔄 [INÍCIO: NOTAS - RESIZE (setupNotesResize)]` -> `p.setupNotesResize=function()` (handle `#notesResizeHandle`, teclado e fullscreen)
 
 ---
 
@@ -303,7 +314,7 @@
 - **[Linhas 360-401 ~]** `// 🔄 [INÍCIO: MAPA - TEMPLATES/INTERLIGAÇÃO]` -> `TEMPLATES_PRONTOS`, criação a partir de template, nó-ponte/backlinks
 - **[Linhas 403-623 ~]** `// 🔄 [INÍCIO: MAPA - COMANDOS DE NÓ]` -> criar/editar/excluir/mover/recolher/largura do nó
 - **[Linhas 626-712 ~]** `// 🔄 [INÍCIO: MAPA - COMANDOS DE CONTEÚDO]` -> anexos, tags, links, refs, emoji/ícone, tarefa, **vínculo Notas↔Mapa** (`notaRef` em `criarNo`/`atualizarConteudo`/`definirNotaRef`)
-- **[Linhas 703-836 ~]** `// 🔄 [INÍCIO: MAPA - ESTILO (FASE 9)]` -> `FORMAS_NO`/`ALINHAMENTOS_NO`/`FONTES_NO`/`TAMANHOS_NO`/`ESPESSURAS_BORDA`/`TEMAS_MAPA`, `normalizarEstilo`, `normalizarEstilosNivel`, `temaDoMapa`, `nivelDoNo`, `estiloEfetivo` (nó > nível > tema), `copiarEstiloNo`, `atualizarEstiloNo`, `limparEstiloNo`, `definirEstiloNivel`, `removerEstiloNivel`, `definirTemaMapa`
+- **[Linhas 703-836 ~]** `// 🔄 [INÍCIO: MAPA - ESTILO (FASE 9)]` -> `FORMAS_NO`/`ALINHAMENTOS_NO`/`FONTES_NO`/`TAMANHOS_NO`/`ESPESSURAS_BORDA`/`TEMAS_MAPA`, `normalizarEstilo` (aceita `FONTES_NO` **ou** uma família CSS válida do catálogo `NotasFontes`), `normalizarEstilosNivel`, `temaDoMapa`, `nivelDoNo`, `estiloEfetivo` (nó > nível > tema), `copiarEstiloNo`, `atualizarEstiloNo`, `limparEstiloNo`, `definirEstiloNivel`, `removerEstiloNivel`, `definirTemaMapa`
 - **[Linhas 838-924 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES LIVRES (FASE 6)]` -> conexões manuais entre nós
 
 ---
@@ -321,7 +332,7 @@
 - **[Linhas 60-211 ~]** `// 🔄 [INÍCIO: MAPA - ÍNDICE/CRUD]` -> `listarMapas` / `salvarListaMapas` / `obterResumo` / `obterGrafo` / `criarMapa` / renomear / duplicar / excluir / arquivar
 
 ## Implementação: Pastas, recentes, templates e ativo
-- **[Linhas 217-322 ~]** `// 🔄 [INÍCIO: MAPA - PASTAS/RECENTES/TEMPLATES/ATIVO]` -> pastas (CRUD) + `ID_PASTA_PADRAO`/`garantirPastaPadrao` (pasta "Geral"), `lerPastaAtiva`/`salvarPastaAtiva`, `contarMapasDaPasta`, `lerSplit`/`salvarSplit` (lado a lado + `ratio`/`LIMITE_SPLIT`), `listarRecentes`, `salvarTemplate`, `obterMapaRaiz`, histórico do grafo
+- **[Linhas 225-352 ~]** `// 🔄 [INÍCIO: MAPA - PASTAS/RECENTES/TEMPLATES/ATIVO]` -> pastas (CRUD) + `ID_PASTA_PADRAO`/`garantirPastaPadrao` (pasta "Geral"), `lerPastaAtiva`/`salvarPastaAtiva`, `contarMapasDaPasta`, **`listarMapasDaPasta(pastaId)`** (mapas da pasta ativa, ordenados por nome — alimenta a faixa de chips do mapa), `lerSplit`/`salvarSplit` (lado a lado + `ratio`/`LIMITE_SPLIT`), `listarRecentes`, `salvarTemplate`, `obterMapaRaiz`, histórico do grafo
 
 ---
 
@@ -353,18 +364,17 @@
 ---
 
 # Nome do Arquivo: mapa/mapa-render.js
-**Propósito:** Renderização da área do mapa (HTML puro): shell, topbar de gestão (com **Fechar** `#mapaFechar` e **"Ver nota ao lado"** `#mapaSplitBtn`), mapa aberto (canvas/nós/minimapa — **SEM título/metadados acima do canvas**), **barras padronizadas (F12: `#mapaToolbar` fixa + `#mapaFormatBar` SEMPRE visível, com ÍCONES PADRONIZADOS de 16×16 e os mesmos desenhos da barra de Notas onde a função coincide)**, menu contextual do card, painéis de atalhos/edição de barra, lista de gestão, recentes/templates e conexões.
+**Propósito:** Renderização da área do mapa (HTML puro): shell, topbar (com **Fechar** `#mapaFechar` e **"Ver nota ao lado"** `#mapaSplitBtn`), a **FAIXA DE CHIPS dos MAPAS da pasta** (`#mapaChipsNav`), o **estado "sem mapa aberto"**, o mapa aberto (canvas/nós/minimapa — **SEM título/metadados acima do canvas**), as **barras padronizadas (F12: `#mapaToolbar` fixa + `#mapaFormatBar` SEMPRE visível, com ÍCONES PADRONIZADOS de 16×16, o MESMO desenho da barra de Notas onde a função coincide e o botão **Modelos**), o menu contextual do card, os painéis de atalhos/edição de barra e as conexões. **NÃO existe mais lista de gestão.**
 
-## Implementação: Shell, topbar e gestão
-- **[Linhas 61-165 ~]** `// 🔄 [INÍCIO: MAPA - SHELL DA ÁREA]` -> estrutura base da `#mapaArea` + contêineres `#mapaToolbar`/`#mapaFormatBar` + rodapé `#mapaRodape`/`#mapaStatus` + botões `#mapaSplitBtn` ("Ver nota ao lado"), `#mapaColapsoBarras`, `#mapaFechar` e `#mapaFullscreenBtn` (expandir/contrair, espelha o fullscreen de Notas) na topbar (helpers `campoNumero`/`campoCor`/`dataAbsoluta`/`tempoRelativo` acima do bloco)
-- **[Linhas 159-300 ~]** `// 🔄 [INÍCIO: MAPA - TOPBAR/FORMULÁRIO]` -> busca/ordenação e formulários inline (`form[data-mapa-form]`); `atualizarShell` esconde as barras/colapso/fechar na lista e os controles de lista no mapa
-- **[Linhas 1122-1162 ~]** `// 🔄 [INÍCIO: MAPA - GESTÃO (LISTA)]` -> lista de mapas (abrir/renomear/duplicar/excluir/estrela/arquivar)
-- **[Linhas 1164-1221 ~]** `// 🔄 [INÍCIO: MAPA - RECENTES/TEMPLATES/LISTA]` -> recentes, templates prontos/salvos, pastas
+## Implementação: Shell, topbar e estado vazio
+- **[Linhas 61-153 ~]** `// 🔄 [INÍCIO: MAPA - SHELL DA ÁREA]` -> estrutura base da `#mapaArea` + contêineres `#mapaToolbar`/`#mapaFormatBar` (classes `app-barra app-rolagem app-vidro-barra`) + **`#mapaChipsNav`** (`notes-context-nav mapa-chips-nav app-rolagem` — faixa de chips dos MAPAS, ACIMA da barra, mesmas classes/formatação do `#notesContextNav`) + topbar com `app-vidro-barra` (SÓ título/colapso/tela cheia/lado a lado/fechar) + rodapé **`#mapaRodape` (classe `app-rodape`)**/`#mapaStatus` + botões `#mapaSplitBtn` ("Ver nota ao lado"), `#mapaColapsoBarras`, `#mapaFechar` e `#mapaFullscreenBtn` (**`btnTelaCheia()`**: um SVG com os DOIS desenhos expandir/restaurar, trocados por `.mapa-fullscreen`) — **sem o antigo `‹ Mapas`** (o título fica ao lado da seta ‹ global) (helpers `campoNumero`/`campoCor`/`dataAbsoluta`/`tempoRelativo` acima do bloco); o canvas (`canvasInfinito`) recebe `app-vidro-campo` (MESMO vidro do campo de edição de Notas)
+- **[Linhas 155-258 ~]** `// 🔄 [INÍCIO: MAPA - TOPBAR/FORMULÁRIO]` -> `atualizarShell(estado)` (a faixa de chips fica SEMPRE visível; barras/rodapé/botões só com mapa aberto) + formulários inline que RESTARAM (`renderForm`: `conectar` mapas, `no-mover-para`, `no-conectar-para`; `selectDestino`/`selectNos`)
+- **[Linhas 1121-1138 ~]** `// 🔄 [INÍCIO: MAPA - SEM MAPA ABERTO (ESTADO VAZIO)]` -> `renderSemMapa(wrap, dados)` (dica "Nenhum mapa aberto." + instrução de escolher/criar pelos chips da faixa — **sem lista**)
 
 ## Implementação: Mapa aberto, barras, menus e conexões
-- **[Linhas 305-1120 ~]** `// 🔄 [INÍCIO: MAPA - MAPA ABERTO]` -> `#mapaCanvasWrap`, nós, minimapa, backlinks, confirmação de layout (F8), painel de atalhos (F10), `editorBarra` (F12); `renderMapaAberto` sem título/metadados acima do canvas e `canvasInfinito` com grade OPCIONAL (classe `.mapa-grade`, desligada por padrão)
-  - **[Linhas 389-916 ~]** `// 🔄 [INÍCIO: MAPA - BARRAS PADRONIZADAS (FASE 12)]` -> **ícones padronizados** (`ICONES`/`icone()`/`btnIcone()`/`btnMenu()` — 16×16, `stroke: currentColor`, e os MESMOS desenhos da barra de Notas em negrito/itálico/cor/destaque/desfazer/refazer/fechar/grade; `irmao`/`filho` para as ações rápidas), `btnBarra`/`grupoBarra`/`divisorBarra`/`aplicarOrdemBarra`, `renderBarras`, `grupoExibir` (inclui o toggle **`#mapaGradeBtn`** — grade opcional), `grupoMais`, `comEstado`, `renderFormatBar` (**SEMPRE visível com o mapa aberto** — espelha a barra de Notas; inclui o grupo **`.mapa-tb-fixos`** — ações rápidas **irmão/filho fixas à direita**), **`OPCOES_BARRA`/`rotuloOpcao`/`btnOpcoes`/`menuOpcoesBarra`** (fonte/forma/alinhamento em UM botão com menu), `menuContextual`, `editorBarra`; último: `noCanvas` ganha o atalho `.mapa-no-nota-icone` (`abrir-nota`) quando o nó tem `notaRef`
-- **[Linhas 1252-1517 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES (FASE 6)]` -> camada de conexões livres (F9: `stroke-width` do ramo pelo estilo efetivo) + `menuConexao`
+- **[Linhas 260-1119 ~]** `// 🔄 [INÍCIO: MAPA - MAPA ABERTO]` -> `#mapaCanvasWrap`, nós, minimapa, backlinks, confirmação de layout (F8), painel de atalhos (F10), `editorBarra` (F12); `renderMapaAberto` sem título/metadados acima do canvas e `canvasInfinito` com grade OPCIONAL (classe `.mapa-grade`, desligada por padrão)
+  - **[Linhas 344-908 ~]** `// 🔄 [INÍCIO: MAPA - BARRAS PADRONIZADAS (FASE 12)]` -> **ícones padronizados** (`ICONES`/`icone()`/`btnIcone()`/`btnMenu()`/`btnTelaCheia()` — 16×16, `stroke: currentColor`, com os MESMOS desenhos da barra de Notas onde a função coincide; **`templates` = o MESMO desenho do botão "Modelos" de Notas (4 quadrados)**; **ícones DISTINTOS por opção de Alinhamento**: `alinha-esquerda`/`alinha-centro`/`alinha-direita`), `btnBarra`/`grupoBarra`/`divisorBarra`/`aplicarOrdemBarra`, `renderBarras` (grupos: histórico, inserir, exibir, mais), `grupoExibir` (inclui o toggle `#mapaGradeBtn`), `grupoMais`, `comEstado`, `renderFormatBar` (SEMPRE visível com o mapa aberto; **grupo Modelos com `#mapaModelosBtn`** — botão `toolbar-btn` + `aria-haspopup="dialog"`, MESMO ícone de Notas; grupo `.mapa-tb-fixos` — ações rápidas irmão/filho à direita; botão **Fonte** `fonte-abrir` abre o catálogo `NotasFontes`), **`OPCOES_BARRA`/`rotuloOpcao`/`btnOpcoes`/`menuOpcoesBarra`** (forma/alinhamento em UM botão com menu; cada item usa o SEU ícone), `menuContextual`, `editorBarra`; `noCanvas` ganha `.mapa-no-nota-icone` (`abrir-nota`)
+- **[Linhas 1170-1435 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES (FASE 6)]` -> camada de conexões livres (F9: `stroke-width` do ramo pelo estilo efetivo) + `menuConexao`
 
 ---
 
@@ -383,33 +393,35 @@
 ---
 
 # Nome do Arquivo: mapa/mapa.js
-**Propósito:** Orquestrador da área Mapa Mental. Instala `installMapaMental(NotesPWA)`, monta lazy e liga store/render/modelo/layout/interação: gestão de mapas, canvas/viewport, CRUD de nós, hierarquia, layout automático (F8), estilo visual (F9), atalhos (F10), undo/redo (F11), barras/menu contextual/cores (F12), conteúdo, conexões e isolamento das áreas.
+**Propósito:** Orquestrador da área Mapa Mental. Instala `installMapaMental(NotesPWA)`, monta lazy e liga store/render/modelo/layout/interação: a **faixa de chips dos MAPAS da pasta ativa** (espelho dos chips de Notas) + o **menu do chip**, o diálogo **Modelos**, canvas/viewport, CRUD de nós, hierarquia, layout automático (F8), estilo visual (F9), atalhos (F10), undo/redo (F11), barras/menu contextual/cores (F12), conteúdo, conexões, as **Pastas (tela principal/workspaces)** e o isolamento das áreas. **NÃO existe mais a lista de gestão de mapas.**
 
 ## Implementação: Estado/helpers e render/controle
-- **[Linhas 9-78 ~]** `// 🔄 [INÍCIO: MAPA - ESTADO/HELPERS]` -> `store()`/`modelo()`/`render()`, `dadosGestao()`, `abrirMapa(id)`, `definirRaiz(id)`, `conectarMapa(origemId,destinoId)`, `aplicarTemplatePronto`/`aplicarTemplateSalvo`
-- **[Linhas 80-396 ~]** `// 🔄 [INÍCIO: MAPA - RENDER/CONTROLE]` -> `renderArea()` (guarda de BLINDAGEM; renderiza `#mapaToolbar`/`#mapaFormatBar` ANTES do mapa; reaplica `setMapaBarrasColapsadas`; nome da nota vinculada), `tratarCliqueMapa` (fecha menus; ações de barra/formatação/cores/colapso/split/`fechar-mapa`/`alternar-fullscreen`/grade/`abrir-nota`; define `dados.grade`, o estado de tela cheia e o texto do rodapé `#mapaStatus` (contagem + última edição relativa)), `tratarSubmitMapa` / `tratarMudancaMapa` / `tratarBuscaMapa`
-- **[Linhas 393-454 ~]** `// ⚡ [INÍCIO: MAPA - COLAPSO DAS BARRAS]` -> `setMapaBarrasColapsadas` · `mapaPanelMotion` · `mapaAlternarColapsoBarras` (botão `#mapaColapsoBarras`; espelha o cabeçalho de Notas)
-- **[Linhas 466-593 ~]** `// ⚡ [INÍCIO: MAPA - PASTAS (ÁREA RAIZ / WORKSPACES)]` -> `botaoPastas` (namespace `data-pastas-acao`), `montarAreaPastas`, `renderPastas` (cartões com contagem de notas+mapas), `abrirPasta` (define a pasta ativa; o modal de Notas abre POR CIMA dos cartões), `tratarCliquePastas`
-- **[Linhas 594-778 ~]** `// ⚡ [INÍCIO: MAPA - LADO A LADO (SPLIT NOTA + MAPA)]` -> `atualizarBarraAreas` (navegação = SÓ a seta ‹ `#appVoltar` sempre visível; botão "Ver mapa ao lado" `#notesAbrirMapa`), `aplicarSplitRatio` (grava `--split-nota` e `--notes-width:100%` no card; o `@layer components` de Notas vence importante fora de camada)/`montarDivisorSplit`/`instalarDivisorSplit` (divisor arrastável `#appSplitDivisor`, c/ pega por proximidade em fase de captura — o mapa não inicia pan), `aplicarSplit` (classe `app-split`; `abrir-nota` entra em lado a lado), `trocarLadoSplit`, `instalarArrastoSplit` (arrastar a barra superior troca de lado)
+- **[Linhas 9-71 ~]** `// 🔄 [INÍCIO: MAPA - ESTADO/HELPERS]` -> `store()`/`modelo()`/`render()`, `dadosGestao()` (contexto da PASTA ativa: `pastas` + `pastaNome`), `abrirMapa(id)`, `conectarMapa(origemId,destinoId)`, **`mapasDaPasta(pastaId)`** (mapas da pasta ativa — fonte da faixa de chips), `aplicarTemplatePronto`/`aplicarTemplateSalvo` (criam o mapa **na pasta ativa**)
+- **[Linhas 73-462 ~]** `// 🔄 [INÍCIO: MAPA - RENDER/CONTROLE]` -> **`garantirMapaSelecionado()`** (ABERTURA PADRÃO da área — espelho de `lerNotaAtiva() || projectsData[0]` das Notas: mantém o mapa JÁ aberto se ele pertencer à pasta ativa; senão usa o último mapa ativo persistido (`lerMapaAtivo`) se for da pasta; senão abre o PRIMEIRO mapa da pasta (1º chip, ordem por nome); pasta vazia → mantém "Nenhum mapa aberto"; retorna `true` se a seleção mudou), `renderArea()` (guarda de BLINDAGEM; renderiza `#mapaToolbar`/`#mapaFormatBar` ANTES do mapa; **`renderMapasNav()`** a cada render; reaplica `setMapaBarrasColapsadas` e, em TELA CHEIA, `aplicarBarrasFullscreen(true)`; fora dela, `expandidorMapa(this).aplicar(false)` limpa classes/botão; nome da nota vinculada), **`mapaVoltarParaPastas()`** (a seta ‹ fixa volta à TELA PRINCIPAL de Pastas — não há mais lista), `tratarCliqueMapa` (ações de barra/formatação/cores/colapso/split/`modelos`/`abrir`/`duplicar`/`fechar-mapa`/`alternar-fullscreen`(→`mapaAlternarFullscreen`)/grade/`abrir-nota`; define `dados.grade`, o estado de tela cheia e o texto do rodapé `#mapaStatus`), `tratarSubmitMapa` (só nós/conexões) / `tratarMudancaMapa` (layout/tema)
+- **[Linhas 464-658 ~]** `// ⚡ [INÍCIO: MAPA - FAIXA DE CHIPS E MENU DO MAPA (ESPELHO DOS CHIPS DE NOTA)]` -> `renderMapasNav()` (chips dos mapas da pasta + **"+"**, MESMAS classes de Notas: `.notes-context-nav`/`.notes-context-chip`/`-add`), `criarMapaNoChip()` ("+" cria na pasta ativa e abre), `renomearMapaNoChip(id)` (duplo clique), `duplicarMapaNoChip(id)`, `moverMapaDeChip(id,pastaId)`, `excluirMapaDoChip(id)` (confirmação; se for o ABERTO, seleciona o restante pela MESMA regra `garantirMapaSelecionado`; se for o último, volta às Pastas), `criarMenuMapa`/`mostrarMenuMapa`/`abrirMenuMapa` (Renomear · Duplicar · Mover para pasta… · Excluir) /`abrirMenuMoverMapa`/`fecharMenuMapa` (**menu em `.notes-chip-menu`**) e `setupChipLongPressMapa` (toque longo)
+- **[Linhas 635-687 ~]** `// 🔄 [INÍCIO: MAPA - MODELOS (DIÁLOGO — ESPELHO DO "MODELOS DE NOTA")]` -> **`mapaTemplates(trigger)`**: reusa `notesExtraDialog` (`.notes-extra-dialog`/`.notes-template-help`); salva o mapa atual como modelo (`salvarTemplate`), aplica modelo PRONTO/salvo (na pasta ativa) e lista os modelos
+- **[Linhas 689-773 ~]** `// ⚡ [INÍCIO: MAPA - COLAPSO DAS BARRAS]` -> `setMapaBarrasColapsadas` · `mapaPanelMotion` (**delega à animação ÚNICA `AppExpandir.motion`**) · `mapaAlternarColapsoBarras` (botão `#mapaColapsoBarras`); **`BARRAS_FULLSCREEN`** (`mapaToolbar`/`mapaFormatBar`/`mapaChipsNav`/`mapaRodape`) · **`expandidorMapa(app)`** = instância ÚNICA da classe compartilhada `AppExpandir` (a MESMA de Notas) · `aplicarBarrasFullscreen(esconder)` (sem animação, p/ o re-render) · **`mapaAlternarFullscreen`** = apenas `expandidorMapa(this).alternar()` (ao EXPANDIR fecha o lado a lado e recolhe as barras UMA POR VEZ; ao CONTRAIR mostra em ORDEM INVERSA e reabre o que estava ao lado, preservando o que já estava recolhido)
+- **[Linhas 775-902 ~]** `// ⚡ [INÍCIO: MAPA - PASTAS (ÁREA RAIZ / WORKSPACES)]` -> `botaoPastas` (namespace `data-pastas-acao`), `montarAreaPastas`, `renderPastas` (cartões com contagem de notas+mapas), `abrirPasta` (define a pasta ativa — `pastaAtiva`/`pastaId` das notas/`mapaFiltroPasta` — e entra em Notas; o modal abre POR CIMA dos cartões), `tratarCliquePastas`
+- **[Linhas 903-1104 ~]** `// ⚡ [INÍCIO: MAPA - LADO A LADO (SPLIT NOTA + MAPA)]` -> `atualizarBarraAreas` (navegação = SÓ a seta ‹ `#appVoltar` sempre visível; botão "Ver mapa ao lado" `#notesAbrirMapa`), `aplicarSplitRatio` (grava `--split-nota` e `--notes-width:100%` no card; o `@layer components` de Notas vence importante fora de camada)/`montarDivisorSplit`/`instalarDivisorSplit` (divisor arrastável `#appSplitDivisor`, c/ pega por proximidade em fase de captura — o mapa não inicia pan), **`aplicarSplit(ligado, opcoes)`** (classe `app-split`; `opcoes.manter = 'notas'` faz o mapa sair de cena ao DESLIGAR **sem trocar de área** — evita que o expandir das Notas entregue a tela ao mapa), `trocarLadoSplit`, `instalarArrastoSplit` (arrastar a barra superior troca de lado)
 
 ## Implementação: Canvas, navegação e histórico
-- **[Linhas 374-447 ~]** `// 🔄 [INÍCIO: MAPA - CANVAS/VIEWPORT]` -> `caixaDoCanvas()`, viewport por mapa (persistência com debounce)
-- **[Linhas 449-533 ~]** `// 🔄 [INÍCIO: MAPA - NAVEGAÇÃO DO CANVAS]` -> zoom (25%–300%), centralizar, fit, ir para a raiz, minimapa
-- **[Linhas 535-741 ~]** `// 🔄 [INÍCIO: MAPA - HISTÓRICO/COMANDOS]` -> `LIMITE_HISTORICO`(100)/`JANELA_COALESCE`(900ms), `instantaneoGrafo` (inclui layout/posicionamento/espaçamento/tema/estilosNivel), `historicoReset`, `registrarHistorico(opcoes)` (coalescência), `aplicarInstantaneo`, `desfazer`/`refazer`, `atualizarBotoesHistorico`, `iniciarEdicaoDepois(idNo)`, `reposicionarAuto`
-  - **[Linhas 672-731 ~]** `// 🔄 [INÍCIO: MAPA - LAYOUT AUTOMÁTICO (FASE 8)]` -> `refinarLayoutPorMedicao()` · `reposicionarSuave()`
+- **[Linhas 1109-1182 ~]** `// 🔄 [INÍCIO: MAPA - CANVAS/VIEWPORT]` -> `caixaDoCanvas()`, viewport por mapa (persistência com debounce)
+- **[Linhas 1184-1268 ~]** `// 🔄 [INÍCIO: MAPA - NAVEGAÇÃO DO CANVAS]` -> zoom (25%–300%), centralizar, fit, ir para a raiz, minimapa
+- **[Linhas 1270-1476 ~]** `// 🔄 [INÍCIO: MAPA - HISTÓRICO/COMANDOS]` -> `LIMITE_HISTORICO`(100)/`JANELA_COALESCE`(900ms), `instantaneoGrafo` (inclui layout/posicionamento/espaçamento/tema/estilosNivel), `historicoReset`, `registrarHistorico(opcoes)` (coalescência), `aplicarInstantaneo`, `desfazer`/`refazer`, `atualizarBotoesHistorico`, `iniciarEdicaoDepois(idNo)`, `reposicionarAuto`
+  - **[Linhas 1407-1466 ~]** `// 🔄 [INÍCIO: MAPA - LAYOUT AUTOMÁTICO (FASE 8)]` -> `refinarLayoutPorMedicao()` · `reposicionarSuave()`
 
 ## Implementação: Comandos de nó, atalhos, estilo, barras e isolamento
-- **[Linhas 743-890 ~]** `// 🔄 [INÍCIO: MAPA - COMANDOS DE NÓ]` -> criar filho/irmão/independente, excluir, duplicar, copiar/recortar/colar
-  - **[Linhas 745-794 ~]** `// 🔄 [INÍCIO: MAPA - POSICIONAMENTO DO NÓ NOVO]` -> `posicionarNovoNo(grafo,no,idReferencia)` (`garantirNoVisivel`)
-- **[Linhas 892-1682 ~]** `// 🔄 [INÍCIO: MAPA - MOVER/RECOLHER/ESTILO DO NÓ]`
-  - **[Linhas 1011-1139 ~]** `// 🔄 [INÍCIO: MAPA - CONTEÚDO DO NÓ (FASE 4)]` ... `[FIM ... PARTE 1]` / `[PARTE 2]` -> aplicar conteúdo do painel ao nó
-  - **[Linhas 1141-1220 ~]** `// 🔄 [INÍCIO: MAPA - ATALHOS (FASE 10)]` -> `dadosAtalhos`, `mapaAbrirAtalhos`/`mapaFecharAtalhos`, `mapaCapturarAtalho`, `mapaLigarAtalho` (conflito), `mapaRestaurarAtalhosPadrao`
-  - **[Linhas 1222-1351 ~]** `// 🔄 [INÍCIO: MAPA - BARRAS/MENU/CORES (FASE 12)]` -> `mapaAbrirMenuNo`/`mapaAbrirMenuCanvas`/`mapaFecharMenus` (fecha também o menu de opções da barra), `ordemBarraAtual`, `mapaMoverBotaoBarra`, `mapaRestaurarBarra`, `mapaAlternarMenuBarra` (fonte/forma/alinhamento em UM botão), **`MENUS_FLUTUANTES`** + **`fecharMenusAbertos()`** + **`fecharMenusFora(evento)`** (clicar FORA fecha qualquer menu — sem `renderArea`)
-  - **[Linhas 1353-1439 ~]** `// 🔄 [INÍCIO: MAPA - FORMATAÇÃO RÁPIDA E CORES (FASE 12)]` -> `mapaAlternarEstiloRapido`, `mapaDefinirEstiloRapido`, `mapaPassoEstiloRapido`, `mapaAbrirCor`, `mapaGravarCorRecente`
-  - **[Linhas 1441-1529 ~]** `// 🔄 [INÍCIO: MAPA - ESTILO DO NÓ/MAPA (FASE 9)]` -> `mapaSalvarEstiloNo`, `mapaCopiarEstiloNo`, `mapaAplicarEstiloCopiadoNo`, `mapaRestaurarEstiloNo`, `mapaDefinirTema`, `mapaDefinirEstiloNivel`, `mapaLimparEstiloNivel`
-  - **[Linhas 1531-1594 ~]** `// 🔄 [INÍCIO: MAPA - HIERARQUIA/LAYOUT (FASE 5)]` -> `mapaDefinirLayout` (F8: pede confirmação se manual), `mapaConfirmarLayout`, `mapaDefinirEspacamento`
-  - **[Linhas 1596-1669 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES LIVRES (FASE 6)]` -> criar/remover conexões manuais + `mapaCommitarTituloNo` (F11: coalescência de digitação)
-- **[Linhas 2095-2453 ~]** `// 🔄 [INÍCIO: MAPA - ÁREA/ISOLAMENTO]` -> `diagnosticoModulosMapa()`/`mostrarFalhaMapa()` (BLINDAGEM), `montarAreaMapa()` (montagem lazy em `try/catch`, ouvintes ligados UMA vez via `mapaAreaOuvintesLigados`, só marca `mapaAreaMontada` após sucesso), `aplicarArea`, listener único de teclado + `contextmenu` (F12) + **listener de `click` em captura (`fecharMenusFora`)** + `Esc` fecha menus, `installMapaMental` (estado `mapaMenuBarra` + exports `mapaAlternarMenuBarra`/`fecharMenusFora`), isolamento do motor de notas
+- **[Linhas 1478-1625 ~]** `// 🔄 [INÍCIO: MAPA - COMANDOS DE NÓ]` -> criar filho/irmão/independente, excluir, duplicar, copiar/recortar/colar
+  - **[Linhas 1480-1529 ~]** `// 🔄 [INÍCIO: MAPA - POSICIONAMENTO DO NÓ NOVO]` -> `posicionarNovoNo(grafo,no,idReferencia)` (`garantirNoVisivel`)
+- **[Linhas 1627-2419 ~]** `// 🔄 [INÍCIO: MAPA - MOVER/RECOLHER/ESTILO DO NÓ]`
+  - **[Linhas 1746-1876 ~]** `// 🔄 [INÍCIO: MAPA - CONTEÚDO DO NÓ (FASE 4)]` ... `[FIM ... PARTE 1]` / `[PARTE 2]` -> aplicar conteúdo do painel ao nó
+  - **[Linhas 1878-1957 ~]** `// 🔄 [INÍCIO: MAPA - ATALHOS (FASE 10)]` -> `dadosAtalhos`, `mapaAbrirAtalhos`/`mapaFecharAtalhos`, `mapaCapturarAtalho`, `mapaLigarAtalho` (conflito), `mapaRestaurarAtalhosPadrao`
+  - **[Linhas 1959-2088 ~]** `// 🔄 [INÍCIO: MAPA - BARRAS/MENU/CORES (FASE 12)]` -> `mapaAbrirMenuNo`/`mapaAbrirMenuCanvas`/`mapaFecharMenus` (fecha também o menu de opções da barra), `ordemBarraAtual`, `mapaMoverBotaoBarra`, `mapaRestaurarBarra`, `mapaAlternarMenuBarra` (fonte/forma/alinhamento em UM botão), **`MENUS_FLUTUANTES`** + **`fecharMenusAbertos()`** + **`fecharMenusFora(evento)`** (clicar FORA fecha qualquer menu — sem `renderArea`)
+  - **[Linhas 2090-2176 ~]** `// 🔄 [INÍCIO: MAPA - FORMATAÇÃO RÁPIDA E CORES (FASE 12)]` -> `mapaAlternarEstiloRapido`, `mapaDefinirEstiloRapido`, `mapaPassoEstiloRapido`, `mapaAbrirCor`, `mapaGravarCorRecente`
+  - **[Linhas 2178-2266 ~]** `// 🔄 [INÍCIO: MAPA - ESTILO DO NÓ/MAPA (FASE 9)]` -> `mapaSalvarEstiloNo`, `mapaCopiarEstiloNo`, `mapaAplicarEstiloCopiadoNo`, `mapaRestaurarEstiloNo`, `mapaDefinirTema`, `mapaDefinirEstiloNivel`, `mapaLimparEstiloNivel`
+  - **[Linhas 2268-2331 ~]** `// 🔄 [INÍCIO: MAPA - HIERARQUIA/LAYOUT (FASE 5)]` -> `mapaDefinirLayout` (F8: pede confirmação se manual), `mapaConfirmarLayout`, `mapaDefinirEspacamento`
+  - **[Linhas 2333-2406 ~]** `// 🔄 [INÍCIO: MAPA - CONEXÕES LIVRES (FASE 6)]` -> criar/remover conexões manuais + `mapaCommitarTituloNo` (F11: coalescência de digitação)
+- **[Linhas 2446-2821 ~]** `// 🔄 [INÍCIO: MAPA - ÁREA/ISOLAMENTO]` -> `diagnosticoModulosMapa()`/`mostrarFalhaMapa()` (BLINDAGEM), `montarAreaMapa()` (montagem lazy em `try/catch`, **ABERTURA PADRÃO via `garantirMapaSelecionado()`** — o 1º mapa da pasta já fica selecionado/renderizado —, retorna `true` se montou agora; ouvintes ligados UMA vez via `mapaAreaOuvintesLigados`), **`aplicarArea`** (aplica a área salva; ao ENTRAR na área do mapa, RE-RENDERIZA por `garantirMapaSelecionado() || !montouAgora` — cobre reentrada/troca de pasta/pasta vazia; ao ENTRAR nas NOTAS, usa **`definirPastaAtivaNotas(this.notaPastaAtiva)`** — abertura padrão espelhada dos Mapas: mantém a nota se pertencer à pasta, senão a 1ª, pasta vazia cria "Nova nota"; ao SAIR do mapa zera `mapaFullscreen` e limpa o estado da classe `AppExpandir`), listener único de teclado + `contextmenu` (F12) + **listener de `click` em captura (`fecharMenusFora`)** + `Esc` fecha menus + **a seta ‹ (`[data-app-voltar]`) SEMPRE volta às Pastas (`mapaVoltarParaPastas`)**, `installMapaMental` (estado `mapaChipMenu`/`mapaMenuBarra` + exports da faixa de chips/Modelos/`garantirMapaSelecionado`/`fecharMenusFora`), isolamento do motor de notas
 
 # Nome do Arquivo: mapa/mapa-cores.js
 **Propósito:** Paleta de cores do mapa (F12) — MESMO padrão de lógica/visual dos botões de cor/destaque de Notas (`setupNotesColors`): grade 8x10 (80 cores), cores personalizadas (recentes máx. 12 + "+" + conta-gotas), reset, "Aplicar", popover preso ao `visualViewport`, `Esc`/clique fora e foco preso.
@@ -418,10 +430,12 @@
 ---
 
 # Nome do Arquivo: tests/run-all.cjs
-**Propósito:** Runner sequencial da suíte. Executa cada `tests/*.cjs`, grava `docs/relatorio-testes.json` + `docs/RELATORIO-TESTES.md` e aceita `--filter=`, `--baseline`, `--retry=`, `--dir=`, `--prefixo=`, `--timeout=`. Testes inaplicáveis ficam em `NAO_APLICAVEIS` (viram `n/a`, nunca "sucesso silencioso").
-- **[Linhas 1-30 ~]** `/**` + `Uso:` -> cabeçalho/doc de uso e `NAO_APLICAVEIS`
-- **[Linhas 40-70 ~]** `(sem comentário de ancoragem)` -> `executar(arquivo, argumentos)` (spawn + timeout + captura de motivo)
-- **[Linhas 90-171 ~]** `(sem comentário de ancoragem)` -> laço de execução, resumo PASSou/FALHOU/N-A/flaky e escrita dos relatórios
+**Propósito:** Runner sequencial da suíte (com modo PARALELO). Executa cada `tests/*.cjs` (via `spawn` assíncrono), grava `docs/relatorio-testes.json` + `docs/RELATORIO-TESTES.md` e aceita `--filter=`, `--jobs=N`, `--estrito`, `--baseline`, `--retry=`, `--dir=`, `--prefixo=`, `--timeout=`. **A suíte completa termina SEM FALHAS**: as falhas **determinísticas** ficam isoladas em `FALHAS_CONHECIDAS` (viram `CONHEC`, não reprovam — P83); testes inaplicáveis ficam em `NAO_APLICAVEIS` (viram `n/a`). Com `--jobs=N>1` roda em paralelo e **reconfirma cada falha em série** (nunca gera falso positivo); qualquer falha fora da lista é `FALHA` e reprova (código 1); com `--estrito` as conhecidas também reprovam (auditoria).
+- **[Linhas 1-62 ~]** `/**` + `Uso:` -> cabeçalho/doc de uso (`--jobs=auto` = metade dos núcleos), `NAO_APLICAVEIS` e **`FALHAS_CONHECIDAS`** (arquivo → motivo; as 8 divergências do motor vs. original, registradas no P83)
+- **[Linhas 63-105 ~]** `(sem comentário de ancoragem)` -> argumentos (`--jobs`/`--jobs=auto`, `--estrito`, …), **`jobsArg`/`nucleos`/`jobs`** (P88: `auto` = `Math.floor(núcleos/2)`) e cabeçalho da rodada
+- **[Linhas 113-133 ~]** `(sem comentário de ancoragem)` -> `executar(arquivo, argumentos)` **assíncrono** (`spawn` + Promise + timeout por SIGKILL)
+- **[Linhas 135-199 ~]** `(sem comentário de ancoragem)` -> `argumentosDe`/`anunciar`, fila com N **trabalhadores** (`--jobs`) e `reconfirmarEmSerie` (falhas do paralelo)
+- **[Linhas 201-276 ~]** `/** Contadores, resumo de console, relatórios e código de saída. */` -> `relatar()`: contadores (`passaram`/`falharam`/`conhecidas`/`resolvidas`/`flaky`), `RESULTADO: SEM FALHAS`, relatórios JSON/MD (marca `🔶 conhecida`) e código de saída (reprova só em falha real ou regressão do baseline)
 
 # Nome do Arquivo: tests/helpers/parity.cjs
 **Propósito:** Bootstrap compartilhado da **paridade visual** (`montar`, `estilos`, `SELETORES`, `NOTA_EXEMPLO`): monta a mesma nota no PWA e no original.
@@ -473,10 +487,13 @@
 - **[Arquivo inteiro ~]** `/* Múltiplas notas locais (botão "+"), chips de nota e migração da nota única.` -> `tests/multi_notas.cjs`
 - **[Arquivo inteiro ~]** `/* Muitas notas (100): a área dos chips precisa rolar na vertical` -> `tests/multi_notas_100.cjs`
 - **[Arquivo inteiro ~]** `/* Nota gigante na PWA: uma nota com ~1 milhão de caracteres deve ABRIR` -> `tests/nota_grande_pwa.cjs`
+- **[Arquivo inteiro ~]** `/* Abertura padrão da área de NOTAS — espelho da área de MAPAS` -> `tests/nota_abertura_padrao.cjs` (1ª nota da pasta já ativa/renderizada ao entrar; nota já aberta preservada; troca de pasta abre a 1ª da nova; nota de outra pasta é trocada; pasta vazia cria "Nova nota"; espelho de `garantirMapaSelecionado`)
 
 ## Implementação: Mapa Mental (por fase)
 - **[Arquivo inteiro ~]** `/* FASE 0 - Fundação e isolamento da área "Mapa Mental".` -> `tests/mapa_area.cjs`
-- **[Arquivo inteiro ~]** `/* FASE 1 - Gestão de mapas.` -> `tests/mapa_gestao.cjs` (criar/renomear/duplicar/excluir/pastas/raiz/templates)
+- **[Arquivo inteiro ~]** `/* FASE 1 (revisada) — Mapas como ITENS DA PASTA (fim da tela de gestão).` -> `tests/mapa_gestao.cjs` (criar pelo "+", abrir/renomear/duplicar/mover/excluir pelo chip, conexões, Modelos, referência quebrada, ausência da lista e volta às Pastas)
+- **[Arquivo inteiro ~]** `/* Faixa de chips da área de MAPAS — espelho FIEL da faixa de chips de Notas.` -> `tests/mapa_chips.cjs` (mesmas classes/formatação, só os mapas da pasta ativa, menu do chip com as 4 ações, toque longo, "+" e botão Modelos com o ícone de Notas)
+- **[Arquivo inteiro ~]** `/* Abertura padrão da área de MAPAS — espelho fiel das Notas` -> `tests/mapa_abertura_padrao.cjs` (1º mapa da pasta já selecionado/renderizado ao entrar; mapa já aberto preservado; troca de pasta abre o 1º da nova pasta; mapa de outra pasta é trocado; pasta vazia → "Nenhum mapa aberto."; restaura o último mapa ativo persistido)
 - **[Arquivo inteiro ~]** `/* FASE 2 - Canvas infinito.` -> `tests/mapa_canvas.cjs` (pan/zoom limites/viewport por mapa)
 - **[Arquivo inteiro ~]** `/* FASE 3 - Nós / tópicos.` -> `tests/mapa_nos.cjs` (criar/editar/excluir/copiar/colar/mover)
 - **[Arquivo inteiro ~]** `/* FASE 4 - Conteúdo dentro dos nós.` -> `tests/mapa_conteudo.cjs` (painel/anexos/links/tags)
@@ -492,6 +509,7 @@
 ## Implementação: UI, tema, PWA e paridade
 - **[Arquivo inteiro ~]** `/* Cobre as LACUNAS de atalho apontadas por docs/RASTREABILIDADE.md:` -> `tests/shortcuts.cjs`
 - **[Arquivo inteiro ~]** `/* Barra de ferramentas do PWA: uma linha com rolagem horizontal` -> `tests/toolbar_pwa.cjs` (ordem persistida + dock no teclado)
+- **[Arquivo inteiro ~]** `/* CLASSE ÚNICA do expandir/contrair (AppExpandir, em app.js) usada pelas DUAS áreas.` -> `tests/expandir.cjs` (Notas + Mapa: fecha/reabre o lado a lado, recolhe/mostra as barras UMA POR VEZ na ordem e na ORDEM INVERSA, preserva a barra já recolhida, `aria-pressed` e movimento reduzido)
 - **[Arquivo inteiro ~]** `/* Seletor sutil de tema (claro/escuro) no header do PWA:` -> `tests/tema_switch.cjs`
 - **[Arquivo inteiro ~]** `/* Modo claro com efeitos de vidro (réplica do compilado do original).` -> `tests/tema_vidro.cjs`
 - **[Arquivo inteiro ~]** `/* Deploy/PWA: o Service Worker precisa ser servido como JavaScript NA RAIZ` -> `tests/pwa_service_worker.cjs` (servidor real com fallback de SPA)

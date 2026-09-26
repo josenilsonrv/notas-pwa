@@ -37,20 +37,6 @@
   {
     "tema": "light",
     "seletor": "#notesContextNav",
-    "propriedade": "padding",
-    "pwa": "11.4356px 19.11px 11.4356px 17.1534px",
-    "origem": "12px 18px"
-  },
-  {
-    "tema": "light",
-    "seletor": "#notesContextNav",
-    "propriedade": "height",
-    "pwa": "58.5156px",
-    "origem": "59.6719px"
-  },
-  {
-    "tema": "light",
-    "seletor": "#notesContextNav",
     "propriedade": "overflow",
     "pwa": "hidden auto",
     "origem": "hidden"
@@ -66,14 +52,14 @@
     "tema": "light",
     "seletor": "#notesEditorContainer",
     "propriedade": "height",
-    "pwa": "707.484px",
+    "pwa": "734.328px",
     "origem": "704.328px"
   },
   {
     "tema": "light",
     "seletor": "#notesEditor",
     "propriedade": "height",
-    "pwa": "665.484px",
+    "pwa": "692.328px",
     "origem": "662.328px"
   },
   {
@@ -107,9 +93,30 @@
   {
     "tema": "light",
     "seletor": ".notes-modal-footer",
+    "propriedade": "display",
+    "pwa": "grid",
+    "origem": "flex"
+  },
+  {
+    "tema": "light",
+    "seletor": ".notes-modal-footer",
     "propriedade": "padding",
-    "pwa": "8px 24px",
+    "pwa": "0px 16px",
     "origem": "16px 24px"
+  },
+  {
+    "tema": "light",
+    "seletor": ".notes-modal-footer",
+    "propriedade": "minHeight",
+    "pwa": "36px",
+    "origem": "64px"
+  },
+  {
+    "tema": "light",
+    "seletor": ".notes-modal-footer",
+    "propriedade": "height",
+    "pwa": "36px",
+    "origem": "64px"
   },
   {
     "tema": "light",
@@ -192,14 +199,14 @@
     "tema": "dark",
     "seletor": "#notesEditorContainer",
     "propriedade": "height",
-    "pwa": "704.328px",
+    "pwa": "732.328px",
     "origem": "702.328px"
   },
   {
     "tema": "dark",
     "seletor": "#notesEditor",
     "propriedade": "height",
-    "pwa": "662.328px",
+    "pwa": "690.328px",
     "origem": "660.328px"
   },
   {
@@ -247,9 +254,30 @@
   {
     "tema": "dark",
     "seletor": ".notes-modal-footer",
+    "propriedade": "display",
+    "pwa": "grid",
+    "origem": "flex"
+  },
+  {
+    "tema": "dark",
+    "seletor": ".notes-modal-footer",
     "propriedade": "padding",
-    "pwa": "8px 24px",
+    "pwa": "0px 16px",
     "origem": "16px 24px"
+  },
+  {
+    "tema": "dark",
+    "seletor": ".notes-modal-footer",
+    "propriedade": "minHeight",
+    "pwa": "36px",
+    "origem": "64px"
+  },
+  {
+    "tema": "dark",
+    "seletor": ".notes-modal-footer",
+    "propriedade": "height",
+    "pwa": "36px",
+    "origem": "64px"
   },
   {
     "tema": "dark",

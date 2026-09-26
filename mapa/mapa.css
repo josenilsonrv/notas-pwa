@@ -86,11 +86,12 @@ html[data-theme="dark"] {
 html[data-theme="dark"] .app-voltar { color: var(--mapa-texto-suave); }
 html[data-theme="dark"] .app-voltar:hover { color: var(--mapa-texto-forte); }
 
-/* A seta ‹ + seletor de tema são fixos no topo-esquerdo: reserva o espaço nas
-   topbars das áreas e no cabeçalho do app (Notas é um cartão centralizado). */
+/* A seta ‹ é fixa no topo-esquerdo: reserva SÓ o espaço dela (não o do seletor de
+   tema, que passou para o canto inferior direito da tela de Pastas). Assim o título
+   fica ao lado da seta — o mesmo alinhamento de "Notas". */
 body:has(#appAreas:not([hidden])) .mapa-topbar,
 body:has(#appAreas:not([hidden])) .pastas-topbar,
-body:has(#appAreas:not([hidden])) .app-header { padding-left: 8.5rem; }
+body:has(#appAreas:not([hidden])) .app-header { padding-left: 4.5rem; }
 
 /* Ícones das barras do MAPA com a MESMA cor/hover da barra de Notas
    (`.toolbar-btn` escuro: #94A3B8 → hover #E2E8F0 sobre #202A36). */
@@ -166,11 +167,22 @@ html[data-theme="dark"] .app-areas [data-app-area]:hover { color: var(--mapa-tex
     z-index: 900;
     display: flex;
     flex-direction: column;
-    background: var(--mapa-espaco);
+    /* MESMA superfície do drawer de Notas (`#notesModalBackdrop`): no CLARO o fundo é o
+       overlay do app (escurecido + desfocado), então as barras/campo com vidro rendem
+       IGUAIS aos de Notas. No escuro mantém a superfície do tema (já coincidia). */
+    background: var(--app-overlay-fundo, var(--mapa-espaco));
+    -webkit-backdrop-filter: var(--app-overlay-blur, none);
+    backdrop-filter: var(--app-overlay-blur, none);
     color: var(--mapa-texto);
 }
 
 .mapa-area[hidden] { display: none !important; }
+
+html[data-theme="dark"] .mapa-area {
+    background: var(--mapa-espaco);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
 
 /* ------------------------------------------------------------
  * Área raiz "Pastas" (workspaces que abrangem Notas + Mapa).
@@ -242,9 +254,14 @@ html.notes-mobile #mapaSplitBtn { display: none !important; }
     html.app-split #notesModalBackdrop {
         left: 0; right: auto;
         width: var(--split-nota) !important;
-        background: transparent !important;
-        -webkit-backdrop-filter: none !important;
-        backdrop-filter: none !important;
+        /* O fundo escurecido + blur do drawer são MANTIDOS, porém CONFINADOS a
+           esta coluna (o `width` acima impede que cubram o Mapa). É isso que
+           preserva o efeito de vidro do editor e o embaçado dos chips: os painéis
+           usam `backdrop-filter` e amostram ESTE backdrop — sem ele, ficavam
+           azulados no modo lado a lado (P81). */
+        background: rgba(0, 0, 0, .3) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        backdrop-filter: blur(8px) !important;
     }
     /* Nota à DIREITA: espelha os dois painéis. */
     html.app-split.app-split-nota-direita .mapa-area { right: var(--split-nota); left: 0; }
@@ -296,8 +313,11 @@ html.notes-mobile #mapaSplitBtn { display: none !important; }
     gap: 12px;
     flex: none;
     padding: 14px 18px;
-    border-bottom: 1px solid var(--mapa-borda);
-    background: var(--mapa-superficie);
+    /* MESMA superfície de vidro das barras de Notas (claro: vidro; escuro: #151B23). */
+    border-bottom: 1px solid var(--app-vidro-borda, var(--mapa-borda));
+    background: var(--app-vidro-fundo, var(--mapa-superficie));
+    -webkit-backdrop-filter: var(--app-vidro-blur, none);
+    backdrop-filter: var(--app-vidro-blur, none);
 }
 
 .mapa-topbar-titulo { font-size: 16px; font-weight: 600; color: var(--mapa-texto-titulo); }
@@ -308,42 +328,16 @@ html.notes-mobile #mapaSplitBtn { display: none !important; }
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    background: var(--mapa-espaco);
+    /* TRANSPARENTE de propósito: o fundo do campo (canvas) vem do vidro
+       `.app-vidro-campo`, que precisa amostrar a base/overlay da área (igual ao
+       campo de edição de Notas sobre o drawer). Um fundo opaco aqui mataria o vidro. */
+    background: transparent;
     touch-action: none;
 }
 
-/* Rodapé da área do mapa (espelha o `.notes-modal-footer` de Notas): status
-   informativo (tópicos, seleção, estado). Fecha a área como em Notas. */
-.mapa-rodape {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 2.25rem;           /* discreto — MESMA altura do rodapé de Notas */
-    padding: 0 1rem;
-    border-top: 1px solid var(--mapa-borda);
-    background: var(--mapa-superficie);
-    color: var(--mapa-texto-suave);
-    font-size: 12px;
-    flex: none;
-}
-.mapa-rodape[hidden] { display: none !important; }
-html[data-theme="dark"] .mapa-rodape { background: var(--mapa-superficie); color: var(--mapa-texto-suave); }
+/* O rodapé PADRÃO das duas áreas usa as classes compartilhadas `.app-rodape` /
+   `.app-rodape-meta`, definidas em `styles.css` (base comum). */
 
-/* Rodapé de Notas + status "Salvo": MESMA altura/cor/tamanho do rodapé do Mapa,
-   também alinhado à ESQUERDA (contagem de tópicos + status). */
-#notesModal .notes-modal-footer { min-height: 2.25rem; }
-#notesModal #notesSaveStatus,
-#notesModal #notesTopicCount {
-    font-size: 12px;
-    color: var(--mapa-texto-suave);
-    opacity: 1;
-    background: none;
-    border: 0;
-    padding: 0;
-}
-html[data-theme="dark"] #notesModal #notesSaveStatus,
-html[data-theme="dark"] #notesModal #notesTopicCount { color: var(--mapa-texto-suave); }
 
 .mapa-vazio {
     position: absolute;
@@ -399,7 +393,7 @@ html[data-theme="dark"] #notesModal #notesTopicCount { color: var(--mapa-texto-s
 .mapa-btn-perigo { background: var(--color-neon-red); border-color: var(--color-neon-red); color: #fff; }
 .mapa-btn-perigo:hover { background: #d92d24; color: #fff; }
 
-.mapa-busca, .mapa-ordem, .mapa-form-campo {
+.mapa-ordem, .mapa-form-campo {
     font: inherit;
     font-size: 13px;
     padding: 8px 10px;
@@ -409,7 +403,6 @@ html[data-theme="dark"] #notesModal #notesTopicCount { color: var(--mapa-texto-s
     background: var(--color-bg-container);
     color: var(--color-text-main);
 }
-.mapa-busca { min-width: 150px; }
 
 .mapa-form {
     display: flex;
@@ -424,19 +417,13 @@ html[data-theme="dark"] #notesModal #notesTopicCount { color: var(--mapa-texto-s
    deixando uma barra VAZIA visível (era a "faixa branca" abaixo da formatação). */
 .mapa-form[hidden] { display: none !important; }
 .mapa-form-titulo { font-size: 13px; font-weight: 700; color: var(--color-text-main); }
-.mapa-form-aviso { font-size: 13px; color: var(--color-text-main); }
 
-.mapa-lista {
-    height: 100%;
-    overflow-y: auto;
-    padding: 16px 18px 96px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.mapa-chips, .mapa-recentes, .mapa-templates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.mapa-recentes-rotulo, .mapa-templates-rotulo, .mapa-conexoes-rotulo {
+/* ------------------------------------------------------------
+ * Chip de mapa conectado / referência quebrada (renderMapaAberto).
+ * A antiga LISTA de gestão (`.mapa-lista`/`.mapa-chips`/`.mapa-recentes`/
+ * `.mapa-templates`/`.mapa-itens`/`.mapa-item*`) saiu do app — ver P82/P83.
+ * ------------------------------------------------------------ */
+.mapa-conexoes-rotulo {
     font-size: 12px;
     font-weight: 700;
     color: var(--color-text-muted);
@@ -471,50 +458,6 @@ html[data-theme="dark"] #notesModal #notesTopicCount { color: var(--mapa-texto-s
 }
 .mapa-chip-quebrado { border-style: dashed; color: var(--color-neon-red); border-color: var(--color-neon-red); cursor: default; }
 
-.mapa-itens { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-.mapa-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    padding: 10px 12px;
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    background: var(--color-bg-container);
-}
-.mapa-item-raiz { border-color: var(--color-neon-blue); box-shadow: inset 3px 0 0 var(--color-neon-blue); }
-.mapa-item-arquivado { opacity: .6; }
-.mapa-item-abrir {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    flex: 1;
-    min-width: 140px;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    padding: 4px 0;
-}
-.mapa-item-nome { font-size: 14px; font-weight: 600; color: var(--color-text-main); }
-.mapa-item-meta { font-size: 12px; color: var(--color-text-muted); }
-.mapa-item-acao {
-    border: 1px solid var(--color-border);
-    background: transparent;
-    color: var(--color-text-muted);
-    font: inherit;
-    font-size: 12px;
-    padding: 6px 8px;
-    min-height: 34px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-.mapa-item-acao:hover { color: var(--color-neon-blue); border-color: var(--color-neon-blue); }
-.mapa-item-acoes { display: flex; gap: 4px; flex-wrap: wrap; }
-
 /* Campo de edição do mapa: espelha o container do editor de Notas —
    sem tarja/padding em volta (corrige a "faixa em branco" abaixo da barra)
    e com o canvas ocupando toda a altura útil. */
@@ -528,16 +471,12 @@ html[data-theme="dark"] #notesModal #notesTopicCount { color: var(--mapa-texto-s
 html[data-theme="dark"] .mapa-btn { background: var(--mapa-container); border-color: var(--mapa-borda); color: var(--mapa-texto); }
 html[data-theme="dark"] .mapa-btn:hover,
 html[data-theme="dark"] .mapa-btn:focus-visible { background: var(--mapa-hover); border-color: var(--mapa-divisor); color: var(--mapa-texto-forte); }
-html[data-theme="dark"] .mapa-busca,
 html[data-theme="dark"] .mapa-ordem,
 html[data-theme="dark"] .mapa-form-campo { background: var(--mapa-container); border-color: var(--mapa-borda); color: var(--mapa-texto); }
 html[data-theme="dark"] .mapa-titulo-atual,
-html[data-theme="dark"] .mapa-item-nome,
 html[data-theme="dark"] .mapa-aberto-nome { color: var(--mapa-texto-forte); }
-html[data-theme="dark"] .mapa-item { background: var(--mapa-container); border-color: var(--mapa-borda); }
 html[data-theme="dark"] .mapa-chip { background: var(--mapa-container); border-color: var(--mapa-divisor); color: var(--mapa-texto-suave); }
 html[data-theme="dark"] .mapa-chip:hover { background: var(--mapa-hover); color: var(--mapa-texto-forte); }
-html[data-theme="dark"] .mapa-item-acao { border-color: var(--mapa-borda); color: var(--mapa-texto-suave); }
 
 /* ------------------------------------------------------------
  * Canvas infinito (Fase 2): mundo com transform, nós e minimapa.
@@ -557,19 +496,23 @@ html[data-theme="dark"] .mapa-item-acao { border-color: var(--mapa-borda); color
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    /* Sem borda/raio (espelha o editor de Notas): a superfície de edição ocupa
-       toda a área, sem a "borda branda" que quebrava o layout. Sem os pontinhos
-       (grade) por padrão — a grade é OPCIONAL (classe `.mapa-grade`). */
-    border: 0;
+    /* ESPELHA o campo de edição de Notas (`#notesEditorContainer.focus-shell`):
+       sem raio (a superfície ocupa toda a área), com o MESMO vidro/borda/sombra do
+       claro e o MESMO fundo/borda do escuro. Sem os pontinhos (grade) por padrão —
+       a grade é OPCIONAL (classe `.mapa-grade`). */
+    border: 1px solid rgba(255, 255, 255, .78);
     border-radius: 0;
-    background: var(--color-bg-global);
+    background: rgba(245, 245, 247, .72);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    backdrop-filter: blur(18px) saturate(145%);
+    box-shadow: 0 12px 34px rgba(29, 29, 31, .07), inset 0 1px 0 rgba(255, 255, 255, .72);
     touch-action: none;
     cursor: grab;
 }
 .mapa-canvas.mapa-grade {
     background:
         radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--color-border) 80%, transparent) 1px, transparent 0) 0 0 / 24px 24px,
-        var(--color-bg-global);
+        rgba(245, 245, 247, .72);
 }
 .mapa-canvas-arrastando { cursor: grabbing; }
 
@@ -587,7 +530,7 @@ html[data-theme="dark"] .mapa-item-acao { border-color: var(--mapa-borda); color
     padding: 8px 12px;
     border: var(--mapa-no-borda-espessura, 1px) solid var(--mapa-no-borda, var(--color-border));
     border-radius: 10px;
-    background: var(--mapa-no-fundo, var(--color-bg-container));
+    background: var(--mapa-no-fundo, var(--app-vidro-fundo, var(--color-bg-container)));
     color: var(--mapa-no-cor, var(--color-text-main));
     box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
     font-size: var(--mapa-no-tamanho, 13px);
@@ -621,14 +564,19 @@ html[data-theme="dark"] .mapa-item-acao { border-color: var(--mapa-borda); color
 }
 
 html[data-theme="dark"] .mapa-canvas {
-    background: var(--mapa-espaco);
+    /* MESMO fundo/borda do campo de edição de Notas no escuro (`#0D1218`/`#263241`),
+       sem o blur do tema claro. */
+    background: #0D1218;
+    border-color: #263241;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 html[data-theme="dark"] .mapa-canvas.mapa-grade {
     background:
         radial-gradient(circle at 1px 1px, var(--mapa-divisor) 1px, transparent 0) 0 0 / 24px 24px,
-        var(--mapa-espaco);
+        #0D1218;
 }
-html[data-theme="dark"] .mapa-no { background: var(--mapa-no-fundo, var(--mapa-container)); border-color: var(--mapa-no-borda, var(--mapa-borda)); color: var(--mapa-no-cor, var(--mapa-texto)); }
+html[data-theme="dark"] .mapa-no { background: var(--mapa-no-fundo, var(--app-vidro-fundo, var(--mapa-container))); border-color: var(--mapa-no-borda, var(--mapa-borda)); color: var(--mapa-no-cor, var(--mapa-texto)); }
 html[data-theme="dark"] .mapa-minimapa { background: color-mix(in srgb, var(--mapa-superficie) 92%, transparent); border-color: var(--mapa-borda); }
 
 /* ------------------------------------------------------------
@@ -1045,80 +993,80 @@ html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); bord
     overflow-y: hidden;
     min-height: var(--app-toolbar-altura, 2.25rem);
     padding: 0 .625rem;
-    border-bottom: 1px solid var(--mapa-borda);
-    background: var(--mapa-superficie);
+    /* MESMA superfície de vidro das barras de Notas. */
+    border-bottom: 1px solid var(--app-vidro-borda, var(--mapa-borda));
+    background: var(--app-vidro-fundo, var(--mapa-superficie));
+    -webkit-backdrop-filter: var(--app-vidro-blur, none);
+    backdrop-filter: var(--app-vidro-blur, none);
     /* Rolagem horizontal SEM trilha visível (a trilha nativa clara era a "faixa
        branca" no tema escuro): o polegar só aparece no hover, com as cores do tema. */
     scrollbar-width: thin;
     scrollbar-color: transparent transparent;
 }
-/* ============================================================
- * ROLAGEM PADRONIZADA (Notas + Mapa + Pastas): MESMA formatação.
- * Trilha transparente (sem a "faixa branca" no tema escuro); polegar
- * só no hover, nas cores do tema; azul ao passar o mouse no polegar.
- * (Este bloco vem depois de styles.css, então sobrescreve o
- *  `scrollbar-width: none` do modo inline de Notas.)
- * ============================================================ */
-html #notesModal #notesToolbar.notes-toolbar-inline,
-.mapa-toolbar,
-.mapa-format-bar,
-html #notesModal #notesEditorContainer,
-.mapa-lista,
-.pastas-shell {
-    scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
-}
-html #notesModal #notesToolbar.notes-toolbar-inline:hover,
-.mapa-toolbar:hover,
-.mapa-format-bar:hover,
-html #notesModal #notesEditorContainer:hover,
-.mapa-lista:hover,
-.pastas-shell:hover { scrollbar-color: var(--mapa-divisor) transparent; }
-html #notesModal #notesToolbar.notes-toolbar-inline::-webkit-scrollbar,
-.mapa-toolbar::-webkit-scrollbar,
-.mapa-format-bar::-webkit-scrollbar,
-html #notesModal #notesEditorContainer::-webkit-scrollbar,
-.mapa-lista::-webkit-scrollbar,
-.pastas-shell::-webkit-scrollbar { width: 6px; height: 6px; }
-html #notesModal #notesToolbar.notes-toolbar-inline::-webkit-scrollbar-track,
-.mapa-toolbar::-webkit-scrollbar-track,
-.mapa-format-bar::-webkit-scrollbar-track,
-html #notesModal #notesEditorContainer::-webkit-scrollbar-track,
-.mapa-lista::-webkit-scrollbar-track,
-.pastas-shell::-webkit-scrollbar-track { background: transparent; }
-html #notesModal #notesToolbar.notes-toolbar-inline::-webkit-scrollbar-thumb,
-.mapa-toolbar::-webkit-scrollbar-thumb,
-.mapa-format-bar::-webkit-scrollbar-thumb,
-html #notesModal #notesEditorContainer::-webkit-scrollbar-thumb,
-.mapa-lista::-webkit-scrollbar-thumb,
-.pastas-shell::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
-html #notesModal #notesToolbar.notes-toolbar-inline:hover::-webkit-scrollbar-thumb,
-.mapa-toolbar:hover::-webkit-scrollbar-thumb,
-.mapa-format-bar:hover::-webkit-scrollbar-thumb,
-html #notesModal #notesEditorContainer:hover::-webkit-scrollbar-thumb,
-.mapa-lista:hover::-webkit-scrollbar-thumb,
-.pastas-shell:hover::-webkit-scrollbar-thumb { background: var(--mapa-divisor); }
-html #notesModal #notesToolbar.notes-toolbar-inline::-webkit-scrollbar-thumb:hover,
-.mapa-toolbar::-webkit-scrollbar-thumb:hover,
-.mapa-format-bar::-webkit-scrollbar-thumb:hover,
-html #notesModal #notesEditorContainer::-webkit-scrollbar-thumb:hover,
-.mapa-lista::-webkit-scrollbar-thumb:hover,
-.pastas-shell::-webkit-scrollbar-thumb:hover { background: var(--color-neon-blue); }
-.mapa-format-bar { background: var(--mapa-container); }
+/* As classes compartilhadas `.app-rolagem` (rolagem) e `.app-barra` (barra em uma
+   linha com rolagem) são definidas em `styles.css` (base comum). */
+
+
+/* (O padrão de rolagem de Notas é aplicado pela classe `.app-rolagem`, acima —
+   com o reforço de especificidade para o modal. Nada a declarar aqui.) */
+
+.mapa-format-bar { background: var(--app-vidro-fundo, var(--mapa-container)); }
 .mapa-toolbar[hidden],
 .mapa-format-bar[hidden] { display: none !important; }
 /* Colapso das barras da área (mesma lógica do cabeçalho de Notas): a topbar
    permanece (com o botão) e as duas barras recolhem quando o shell é marcado. */
 .mapa-shell.mapa-barras-colapsadas #mapaToolbar,
 .mapa-shell.mapa-barras-colapsadas #mapaFormatBar { display: none !important; }
-/* Tela cheia da área (espelha o fullscreen de Notas): recolhe barras, chips e
-   rodapé; a topbar permanece (com o botão de restaurar). */
-.mapa-shell.mapa-fullscreen #mapaToolbar,
-.mapa-shell.mapa-fullscreen #mapaFormatBar,
-.mapa-shell.mapa-fullscreen #mapaContextNav,
-.mapa-shell.mapa-fullscreen .mapa-rodape { display: none !important; }
+/* Tela cheia: a POSIÇÃO vem da classe compartilhada `.app-tela-cheia` (styles.css),
+   aplicada ao shell pelo `mapaAlternarFullscreen` (a MESMA usada em Notas). Aqui
+   `.mapa-fullscreen` serve só para trocar o ícone (expandir ⇄ restaurar). */
 #mapaColapsoBarras[hidden] { display: none !important; }
 #mapaSplitBtn[hidden], #mapaFechar[hidden], #mapaFullscreenBtn[hidden] { display: none !important; }
+
+/* Ícone de expandir/contrair: MESMO par do `#notesFullscreenBtn` — mostra o desenho
+   de restaurar quando a área está em tela cheia (garante o ícone sempre visível). */
+#mapaFullscreenBtn .mapa-restore-icon { display: none; }
+.mapa-shell.mapa-fullscreen #mapaFullscreenBtn .mapa-expand-icon { display: none; }
+.mapa-shell.mapa-fullscreen #mapaFullscreenBtn .mapa-restore-icon { display: inline; }
+
+/* Faixa de chips dos MAPAS (área de mapas): MESMAS classes, MESMA casca e MESMA
+   formatação da faixa de chips de Notas (`#notesContextNav`): transparente, sem borda
+   e sem painel interno; rola na VERTICAL a partir de ~2 linhas e o botão "+" fica
+   PRESO (sticky) no canto inferior direito — exatamente como em Notas. */
+.mapa-chips-nav {
+    flex: none;
+    max-height: calc(2 * 1.85rem + .45rem + .8rem);
+    flex-wrap: wrap;
+    align-content: flex-start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    gap: 4px;                       /* MESMO gap do #notesContextNav */
+    padding: 12px 18px;             /* MESMO padding do #notesContextNav */
+    padding-right: 2.6rem;          /* espaço do botão "+" (sticky) */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128, 144, 160, .5) transparent;
+}
+.mapa-chips-nav::-webkit-scrollbar { width: 6px; }
+.mapa-chips-nav::-webkit-scrollbar-thumb { background: rgba(128, 144, 160, .5); border-radius: 3px; }
+/* O "+" do mapa é o MESMO "+" de Notas: preso (sticky), pequeno e translúcido —
+   as cores vêm das regras compartilhadas (`.notes-context-chip-add`). */
+.mapa-chips-nav .notes-context-chip.notes-context-chip-add {
+    position: sticky;
+    bottom: .25rem;
+    margin-left: auto;
+    align-self: flex-end;
+    width: 1.6rem;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    font-size: .95rem;
+    opacity: .6;
+    transition: opacity .2s ease;
+}
+.mapa-chips-nav .notes-context-chip.notes-context-chip-add:hover,
+.mapa-chips-nav .notes-context-chip.notes-context-chip-add:focus-visible { opacity: .92; }
+.mapa-chips-nav[hidden] { display: none !important; }
 #mapaColapsoBarras svg { transition: transform 220ms ease-in-out; }
 #mapaColapsoBarras[aria-expanded="true"] svg { transform: rotate(180deg); }
 #mapaColapsoBarras[aria-expanded="false"] svg { transform: rotate(0deg); }
@@ -1159,8 +1107,9 @@ html #notesModal #notesEditorContainer::-webkit-scrollbar-thumb:hover,
 .mapa-menu-item svg { width: 1.125rem; height: 1.125rem; flex: none; }
 
 /* Ações RÁPIDAS fixas à DIREITA da barra de formatação (celular): continuam visíveis
-   mesmo com a barra rolada na horizontal (`sticky` + `margin-left: auto`). O fundo é o
-   mesmo da barra (senão o conteúdo passaria por trás) e a sombra marca a separação. */
+   mesmo com a barra rolada na horizontal (`sticky` + `margin-left: auto`). O fundo é a
+   COR COMPOSTA da barra de vidro (opaca), para mascarar a rolagem sem criar um "branco"
+   destoando; a sombra marca a separação. */
 .mapa-tb-fixos {
     position: sticky;
     right: 0;
@@ -1170,8 +1119,35 @@ html #notesModal #notesEditorContainer::-webkit-scrollbar-thumb:hover,
     flex: 0 0 auto;
     margin-left: auto;
     padding-left: 8px;
-    background: var(--mapa-container);
+    background: var(--app-vidro-barra-opaca, var(--mapa-container));
     box-shadow: -10px 0 12px -8px rgba(0, 0, 0, .25);
+}
+
+/* Controles DENTRO das barras do Mapa: fundo TRANSPARENTE — o MESMO padrão de Notas,
+   onde os controles ficam SOBRE o vidro da barra (sem "manchas" brancas destoando).
+   A borda permanece para dar a área clicável. */
+.mapa-topbar .mapa-ordem,
+.mapa-topbar .mapa-btn,
+.mapa-toolbar .mapa-ordem,
+.mapa-toolbar .mapa-btn,
+.mapa-toolbar .mapa-campo-numero input,
+.mapa-toolbar .mapa-estilo-nivel-titulo,
+.mapa-format-bar .mapa-ordem,
+.mapa-format-bar .mapa-btn {
+    background: transparent;
+}
+
+/* Mini-mapa: fundo do PRÓPRIO campo (transparente) — sem "branco" destoando; a borda e a
+   sombra delimitam a área. */
+.mapa-minimapa {
+    background: transparent;
+    border-color: var(--app-vidro-campo-borda, var(--color-border));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+html[data-theme="dark"] .mapa-minimapa {
+    background: transparent;
+    border-color: var(--app-vidro-campo-borda, var(--mapa-borda));
 }
 
 /* Menu contextual (F12): comandos ESPECÍFICOS DE CARD (botão direito / toque longo). */

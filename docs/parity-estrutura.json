@@ -25,6 +25,7 @@
       "notesContextNav",
       "notesEditor",
       "notesEditorContainer",
+      "notesFontBtn",
       "notesFullscreenBtn",
       "notesHeaderCollapseBtn",
       "notesLastEdit",
@@ -57,8 +58,11 @@
       "Título H3"
     ],
     "pwa": [
+      "Alinhar à direita",
+      "Alinhar à esquerda",
       "Alternar tema claro/escuro",
       "Avisos",
+      "Centralizar",
       "Checklist",
       "Cor da fonte",
       "Descer linha",
@@ -66,8 +70,10 @@
       "Desindentar",
       "Destaque de texto",
       "Fechar notas",
+      "Fonte",
       "Indentar",
       "Itálico",
+      "Justificar",
       "Lista com marcadores",
       "Lista numerada",
       "Mapa Mental",
@@ -107,6 +113,10 @@
       "undo"
     ],
     "pwa": [
+      "alignCenter",
+      "alignJustify",
+      "alignLeft",
+      "alignRight",
       "bold",
       "checklist",
       "heading1",
@@ -127,6 +137,22 @@
     "faltando": [],
     "sobrando": [],
     "extrasPWA": [
+      {
+        "comando": "alignCenter",
+        "motivo": "Alinhamento por linha (centro): comando adicionado na revisao do bloco de notas (o original nao tem alinhamento)."
+      },
+      {
+        "comando": "alignJustify",
+        "motivo": "Alinhamento por linha (justificado): comando adicionado na revisao do bloco de notas (o original nao tem alinhamento)."
+      },
+      {
+        "comando": "alignLeft",
+        "motivo": "Alinhamento por linha (esquerda): comando adicionado na revisao do bloco de notas (o original nao tem alinhamento)."
+      },
+      {
+        "comando": "alignRight",
+        "motivo": "Alinhamento por linha (direita): comando adicionado na revisao do bloco de notas (o original nao tem alinhamento)."
+      },
       {
         "comando": "underline",
         "motivo": "Sublinhado: comando adicionado na revisao do bloco de notas (o original nao tem sublinhado)."

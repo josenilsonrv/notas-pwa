@@ -1,13 +1,13 @@
 # Relatório de paridade visual (PWA x projeto original)
 
-> Gerado por `node tests/parity_visual.cjs` em 2026-09-25 19:35:41.
+> Gerado por `node tests/parity_visual.cjs` em 2026-09-26 01:37:57.
 > Compara as propriedades computadas de 18 seletores do modal de notas, em tema claro e escuro.
 > O original é usado **somente como referência** (nenhuma alteração é feita nele).
 
 | Resultado | Quantidade |
 | --- | --- |
 | Divergências reais | 0 |
-| Exceções documentadas | 37 |
+| Exceções documentadas | 41 |
 
 ## Exceções aceitas (com justificativa)
 
@@ -95,6 +95,10 @@ Padronizacao dos icones em 1.125rem (18px): no harness de paridade a barra de No
 
 Rodape mais baixo/discreto (item E/K): conteudo centralizado verticalmente (items-center) para caber na altura reduzida (2.25rem), igual ao rodape do Mapa.
 
+### `.notes-modal-footer` → `display`
+
+Rodape PADRONIZADO com o do Mapa pela classe compartilhada `.app-rodape` (grade 1fr auto 1fr = esquerda | CENTRO | direita). O original usa `flex`; a grade centraliza de verdade o item do meio (contagem de topicos). Efeito pedido.
+
 ### `.notes-modal-footer` → `padding`
 
 Rodape mais baixo/discreto (item E/K): padding vertical reduzido de 16px para 8px para igualar a altura do rodape do Mapa. Efeito pedido.
@@ -102,4 +106,12 @@ Rodape mais baixo/discreto (item E/K): padding vertical reduzido de 16px para 8p
 ### `#notesSaveStatus` → `height`
 
 Consequencia do rodape mais baixo (min-height 2.25rem) e do texto padronizado em 12px: o status fica mais baixo que o original. Efeito pedido para igualar ao rodape do Mapa.
+
+### `.notes-modal-footer` → `minHeight`
+
+Padronizacao P81: a altura do rodape de Notas passa a ser a MESMA do rodape do Mapa (2.25rem) — o original usa 4rem. Efeito pedido.
+
+### `.notes-modal-footer` → `height`
+
+Consequencia direta do item anterior (min-height 2.25rem = altura do rodape do Mapa).
 

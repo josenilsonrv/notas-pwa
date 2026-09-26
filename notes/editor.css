@@ -134,6 +134,26 @@ html[data-theme="dark"] #notesEditor .notes-line:is([data-heading="1"],[data-hea
 #notesModal .notes-picker-actions button { padding:5px 9px; border:1px solid var(--color-border,#dce3ed); border-radius:4px; background:transparent; color:var(--color-neon-blue,#0071e3); font-size:12px; cursor:pointer; }
 #notesModal .notes-picker-actions button:last-child { background:#0757d5; border-color:#0757d5; color:white; }
 
+/* Alinhamento por LINHA (botões alignLeft/Center/Right/Justify da toolbar).
+   `data-align` vive na linha e é preservado pelo modelo do motor. */
+#notesEditor .notes-line[data-align="center"] .notes-line-text,
+#notesEditor .notes-line[data-align="center"] > .notes-line-text { text-align:center; }
+#notesEditor .notes-line[data-align="right"] .notes-line-text { text-align:right; }
+#notesEditor .notes-line[data-align="justify"] .notes-line-text { text-align:justify; }
+#notesEditor .notes-line[data-align="left"] .notes-line-text { text-align:left; }
+#notesEditor .notes-line[data-align] .notes-line-text { width:100%; }
+/* Fonte por linha/trecho (seletor "Fonte" do catálogo do sistema). */
+#notesModal #notesToolbar .app-toolbar-font-btn { color:var(--notes-accent,var(--color-neon-blue)); }
+
+/* Tela cheia PADRÃO (classe compartilhada `.app-tela-cheia`, definida em styles.css):
+   aqui só vencemos o `inset: 0 20vw` que o `theme-origem.css` fixa para o modal
+   "fullscreen" (mesma especificidade; este arquivo é carregado DEPOIS). */
+#notesModalBackdrop.notes-fullscreen-active #notesModal.notes-modal.app-tela-cheia {
+    inset: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+}
+
 /* 🎨 [FIM: NOTAS/ESTILO - EDITOR (LINHAS, CABEÇALHO, COLAPSO)] */
 
 /* 🎨 [INÍCIO: NOTAS/ESTILO - PALETA DE TONS, CÓDIGO E NOTA GRANDE] */
@@ -300,4 +320,11 @@ html #notesModal #notesToolbar.notes-toolbar-inline {
     padding: 0 .75rem;
     align-items: center;
 }
+/* Rodapé: MESMA altura do rodapé do Mapa (`--app-toolbar-altura` = 2.25rem). Vence o
+   `min-height: 4rem` do `theme-origem.css` (mesma especificidade; este arquivo carrega
+   depois). O restante do visual do rodapé vem da classe compartilhada `.app-rodape`. */
+.notes-modal-footer {
+    min-height: var(--app-toolbar-altura, 2.25rem);
+}
+
 /* 🎨 [FIM: NOTAS/ESTILO - PADRONIZAÇÃO (ÍCONES, ALTURA DA TOOLBAR, ROLAGEM)] */

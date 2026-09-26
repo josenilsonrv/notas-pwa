@@ -131,7 +131,9 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     const claroBg = await computado('Escopo', 'backgroundColor');
     await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; window.app.renderArea(); });
     const escuroBg = await computado('Escopo', 'backgroundColor');
-    assert.equal(escuroBg, 'rgb(17, 22, 29)', 'nó sem estilo usa o fallback escuro (#11161D)');
+    // P81: o nó sem estilo usa a MESMA superfície de vidro das barras (--app-vidro-fundo =
+    // #151B23 no escuro), e não mais o container #11161D do tema original.
+    assert.equal(escuroBg, 'rgb(21, 27, 35)', 'nó sem estilo usa a superfície de vidro no escuro (#151B23)');
     assert.notEqual(claroBg, escuroBg, 'o tema claro/escuro muda o nó sem estilo');
     await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; window.app.renderArea(); });
 

@@ -11,28 +11,12 @@
     const modelo = () => global.MapaMentalModelo;
     const render = () => global.MapaMentalRender;
 
-    /** Reúne o que a tela de gestão precisa (índice leve + resumos resolvidos). */
+    /** Contexto da PASTA ativa (nome do workspace) para o render da área. */
     function dadosGestao() {
         const s = store();
-        const pastas = s.listarPastas();
-        const pastaPorId = new Map(pastas.map(p => [p.id, p.nome]));
-        const mapas = s.listarMapasFiltrados({
-            busca: this.mapaBusca, ordenacao: this.mapaOrdenacao,
-            pastaId: this.mapaFiltroPasta, incluirArquivados: this.mapaIncluirArquivados
-        });
-        mapas.forEach(m => { m.pastaNome = m.pastaId ? (pastaPorId.get(m.pastaId) || null) : null; });
-        const nomePorId = new Map(s.listarMapas().map(m => [m.id, m.nome]));
-        const recentes = s.listarRecentes()
-            .map(r => ({ idMapa: r.idMapa, nome: nomePorId.get(r.idMapa) }))
-            .filter(r => r.nome);
-        const raiz = s.obterMapaRaiz();
-        return {
-            mapas, pastas, recentes, raizId: raiz ? raiz.id : null,
-            busca: this.mapaBusca, ordenacao: this.mapaOrdenacao, filtroPasta: this.mapaFiltroPasta,
-            incluirArquivados: this.mapaIncluirArquivados, mostrarTemplates: this.mapaMostrarTemplates,
-            templatesProntos: modelo().TEMPLATES_PRONTOS, templatesSalvos: s.listarTemplates(),
-            mapaAberto: null
-        };
+        const pastas = (s && s.listarPastas) ? s.listarPastas() : [];
+        const pasta = pastas.find(p => p.id === this.pastaAtiva) || null;
+        return { pastas, pastaNome: pasta ? (pasta.nome || 'Pasta') : '', mapaAberto: null };
     }
 
     /** Abre um mapa (persiste o ativo e registra nos recentes). */
@@ -45,12 +29,6 @@
         return true;
     }
 
-    /** Alterna o mapa raiz (Home) — só um por vez. */
-    function definirRaiz(id) {
-        const atual = store().obterMapaRaiz();
-        store().definirMapaRaiz(atual && atual.id === id ? null : id);
-    }
-
     /** Cria um nó-ponte na origem apontando para o destino (link bidirecional). */
     function conectarMapa(origemId, destinoId) {
         if (!origemId || !destinoId || origemId === destinoId) return false;
@@ -61,24 +39,64 @@
         return store().salvarGrafo(grafo);
     }
 
-    /** Aplica um template PRONTO criando e abrindo um mapa novo. */
+    /**
+     * Mapas da PASTA ativa (cada mapa pertence a uma pasta; a "Geral" adota os sem
+     * pasta). É a fonte da faixa de chips da área de mapas — espelho dos chips de nota.
+     */
+    function mapasDaPasta(pastaId) {
+        const s = store();
+        if (!s) return [];
+        const alvo = pastaId || this.pastaAtiva || s.ID_PASTA_PADRAO;
+        if (typeof s.listarMapasDaPasta === 'function') return s.listarMapasDaPasta(alvo);
+        return s.listarMapas().filter(m => (m.pastaId || s.ID_PASTA_PADRAO) === alvo);
+    }
+
+    /** Aplica um template PRONTO criando e abrindo um mapa novo NA PASTA ativa. */
     function aplicarTemplatePronto(templateId) {
         const tpl = modelo().TEMPLATES_PRONTOS.find(t => t.id === templateId);
-        const grafo = store().criarMapa(tpl ? tpl.nome : 'Novo mapa', null);
+        const grafo = store().criarMapa(tpl ? tpl.nome : 'Novo mapa', this.pastaAtiva || null);
         modelo().aplicarTemplatePronto(grafo, templateId);
         store().salvarGrafo(grafo);
         abrirMapa.call(this, grafo.id);
     }
 
-    /** Aplica um template SALVO criando e abrindo um mapa novo (IDs novos). */
+    /** Aplica um template SALVO criando e abrindo um mapa novo NA PASTA ativa (IDs novos). */
     function aplicarTemplateSalvo(templateId) {
         const copia = store().criarMapaDeTemplateSalvo(templateId);
-        if (copia) abrirMapa.call(this, copia.id);
+        if (!copia) return null;
+        if (this.pastaAtiva) store().moverMapaParaPasta(copia.id, this.pastaAtiva);
+        abrirMapa.call(this, copia.id);
+        return copia;
     }
     // 🔄 [FIM: MAPA - ESTADO/HELPERS]
 
     // 🔄 [INÍCIO: MAPA - RENDER/CONTROLE]
-    /** Redesenha a área conforme o estado (lista de gestão OU mapa aberto). */
+    /**
+     * Garante um mapa selecionado na área — espelho fiel das Notas
+     * (`lerNotaAtiva() || projectsData[0]` + `definirPastaAtivaNotas`):
+     *  - mantém o mapa JÁ aberto se ele pertencer à pasta ativa;
+     *  - senão, tenta o último mapa ativo persistido (`lerMapaAtivo`) se for da pasta;
+     *  - senão, abre o PRIMEIRO mapa da pasta (o 1º chip exibido, ordem por nome);
+     *  - pasta vazia → mantém o estado "Nenhum mapa aberto" (não cria mapa).
+     * Retorna `true` quando a seleção mudou (para disparar um re-render).
+     */
+    function garantirMapaSelecionado() {
+        const s = store();
+        if (!s) return false;
+        const daPasta = mapasDaPasta.call(this);
+        const pertence = id => Boolean(id) && daPasta.some(m => m.id === id);
+        let alvo = this.mapaAbertaId;
+        if (!pertence(alvo)) {
+            const persistido = (typeof s.lerMapaAtivo === 'function') ? s.lerMapaAtivo() : null;
+            alvo = pertence(persistido) ? persistido : (daPasta[0] ? daPasta[0].id : null);
+        }
+        if (alvo === this.mapaAbertaId) return false;
+        if (alvo) abrirMapa.call(this, alvo); // grava o ativo + recente e abre
+        else this.mapaAbertaId = null;
+        return true;
+    }
+
+    /** Redesenha a área (mapa aberto OU estado "nenhum mapa aberto"). */
     function renderArea() {
         const r = render();
         // Blindagem: sem os módulos do mapa (ex.: cache antigo do Service Worker), a
@@ -144,18 +162,14 @@
             this.mapaCanvasLimites = null;
         }
         r.atualizarShell({
-            mapaAberto: dados.mapaAberto, busca: this.mapaBusca,
-            ordenacao: this.mapaOrdenacao, incluirArquivados: this.mapaIncluirArquivados,
-            mostrarTemplates: this.mapaMostrarTemplates, telaCheia: Boolean(this.mapaFullscreen)
+            mapaAberto: dados.mapaAberto, telaCheia: Boolean(this.mapaFullscreen)
         });
+        // Faixa de chips dos MAPAS da pasta ativa (mesmas classes dos chips de nota).
+        renderMapasNav.call(this);
         const acao = this.mapaAcao;
-        // O formulário pode agir sobre um mapa que NÃO está aberto (a lista é a
-        // visão padrão) — por isso resolve o alvo por `acao.id`.
         const mapaAlvo = acao && acao.id ? (store().obterResumo(acao.id) || dados.mapaAberto) : dados.mapaAberto;
         r.renderForm(document.getElementById('mapaForm'), acao, {
-            mapa: mapaAlvo, pastas: dados.pastas, mapas: store().listarMapas(),
-            nosMoverPara: dados.nosMoverPara || [],
-            pasta: acao && acao.id ? dados.pastas.find(p => p.id === acao.id) : null
+            mapa: mapaAlvo, mapas: store().listarMapas(), nosMoverPara: dados.nosMoverPara || []
         });
         dados.acao = acao;
         dados.estiloCopiado = this.mapaEstiloCopiado || null;
@@ -171,13 +185,17 @@
         r.renderBarras(dados);
         // Reaplica o colapso das barras (um re-render não pode "descolapsar").
         setMapaBarrasColapsadas.call(this, Boolean(this.mapaBarrasColapsadas));
+        // Reaplica a TELA CHEIA (um re-render não pode "desexpandir"). Fora dela,
+        // apenas garante que o estado visual (classes/botão) está limpo.
+        if (this.mapaFullscreen) aplicarBarrasFullscreen.call(this, true);
+        else expandidorMapa(this).aplicar(false);
         const wrap = document.getElementById('mapaCanvasWrap');
         if (dados.mapaAberto) {
             r.renderMapaAberto(wrap, dados);
             aplicarViewportNoDom.call(this);
             refinarLayoutPorMedicao.call(this);
         } else {
-            r.renderGestao(wrap, dados);
+            r.renderSemMapa(wrap, dados);
         }
         // F11: os botões Desfazer/Refazer refletem a pilha sempre que a área é redesenhada.
         atualizarBotoesHistorico.call(this);
@@ -225,6 +243,27 @@
         return 'editado em ' + data.toLocaleDateString('pt-BR');
     }
 
+    /**
+     * Volta à TELA PRINCIPAL de Pastas (fim da "lista de mapas": cada pasta é um
+     * workspace com as áreas de Notas e de Mapas). É o destino da seta ‹ fixa
+     * (topo-esquerdo) — a MESMA navegação de Notas.
+     */
+    function mapaVoltarParaPastas() {
+        salvarViewportAgora.call(this);
+        if (this.mapaSelecao) this.mapaSelecao.clear();
+        this.mapaAbertaId = null;
+        this.mapaAcao = null;
+        this.mapaBarrasColapsadas = false;
+        this.mapaFullscreen = false;
+        fecharMenuMapa.call(this);
+        // Fecha o modal de Notas (se aberto), revelando os cartões de pasta.
+        const backdrop = document.getElementById('notesModalBackdrop');
+        if (backdrop && backdrop.classList.contains('active') && typeof this.closeNotesModal === 'function') {
+            this.closeNotesModal();
+        }
+        aplicarArea.call(this, 'pastas');
+    }
+
     /** Cliques da área do mapa (delegação por `data-mapa-acao`). */
     function tratarCliqueMapa(evento) {
         const alvo = evento.target.closest('[data-mapa-acao]');
@@ -253,36 +292,12 @@
         // Ações do canvas são resolvidas sem re-renderizar a área.
         if (ACOES_CANVAS.includes(acao)) { tratarAcaoCanvas.call(this, acao, evento); return; }
         switch (acao) {
-            case 'voltar-lista':
-                salvarViewportAgora.call(this);
-                if (this.mapaSelecao) this.mapaSelecao.clear();
-                this.mapaAbertaId = null;
-                this.mapaAcao = null;
-                this.mapaBarrasColapsadas = false;
-                break;
-            case 'novo': this.mapaAcao = { tipo: 'novo' }; break;
-            case 'templates': this.mapaMostrarTemplates = !this.mapaMostrarTemplates; break;
-            case 'alternar-arquivados': this.mapaIncluirArquivados = !this.mapaIncluirArquivados; break;
-            case 'filtrar-pasta': this.mapaFiltroPasta = alvo.dataset.mapaPasta || 'todas'; break;
-            case 'pasta-nova': this.mapaAcao = { tipo: 'pasta-nova' }; break;
-            case 'pasta-renomear': this.mapaAcao = { tipo: 'pasta-renomear', id: alvo.dataset.mapaPasta }; break;
-            case 'pasta-excluir': s.excluirPasta(alvo.dataset.mapaPasta); break;
+            case 'voltar-lista': mapaVoltarParaPastas.call(this); return;
             case 'form-cancelar': this.mapaAcao = null; break;
             case 'abrir': abrirMapa.call(this, id); break;
-            case 'favoritar': s.favoritarMapa(id); break;
-            case 'arquivar': s.arquivarMapa(id); break;
-            case 'raiz': definirRaiz(id); break;
-            case 'duplicar': { const copia = s.duplicarMapa(id); if (copia) abrirMapa.call(this, copia.id); break; }
-            case 'renomear': this.mapaAcao = { tipo: 'renomear', id }; break;
-            case 'mover': this.mapaAcao = { tipo: 'mover', id }; break;
+            case 'duplicar': duplicarMapaNoChip.call(this, id); break;
+            case 'modelos': mapaTemplates.call(this, alvo); return;
             case 'conectar': this.mapaAcao = { tipo: 'conectar', id: this.mapaAbertaId }; break;
-            case 'excluir': this.mapaAcao = { tipo: 'excluir', id }; break;
-            case 'excluir-confirmar':
-                s.excluirMapa(id);
-                if (this.mapaAbertaId === id) this.mapaAbertaId = null;
-                this.mapaAcao = null;
-                break;
-            case 'template-salvar': this.mapaAcao = { tipo: 'template', id: this.mapaAbertaId }; break;
             case 'no-filho': mapaCriarFilhoDeNo.call(this, idNo, true); break;
             case 'no-irmao': mapaCriarIrmaoDeNo.call(this, idNo, true); break;
             case 'no-independente': mapaCriarNoIndependente.call(this); break;
@@ -329,6 +344,21 @@
             case 'estilo-definir': mapaDefinirEstiloRapido.call(this, alvo.dataset.mapaEstilo, alvo.dataset.mapaValor, idNo); break;
             case 'estilo-passo': mapaPassoEstiloRapido.call(this, alvo.dataset.mapaEstilo, Number(alvo.dataset.mapaPasso) || 1, idNo); break;
             case 'cor-abrir': mapaAbrirCor.call(this, alvo.dataset.mapaCor, alvo, idNo); return;
+            // Fonte: abre o MESMO catálogo do sistema usado em Notas (`NotasFontes`) e
+            // aplica a família escolhida ao nó selecionado.
+            case 'fonte-abrir': {
+                const fontes = global.NotasFontes;
+                if (!fontes || !idNo) return;
+                const grafoFonte = this.mapaCanvasGrafo;
+                const noFonte = grafoFonte ? (grafoFonte.nos || []).find(no => no.id === idNo) : null;
+                const atual = noFonte && noFonte.estilo ? noFonte.estilo.fonte : '';
+                fontes.abrir({
+                    atual: typeof atual === 'string' ? atual : '',
+                    trigger: alvo,
+                    onEscolher: css => mapaDefinirEstiloRapido.call(this, 'fonte', css, idNo)
+                });
+                return;
+            }
             case 'no-anexo-adicionar': mapaPedirAnexoNo.call(this); return;
             case 'no-anexo-remover': mapaRemoverAnexoNo.call(this, idNo, alvo.dataset.mapaAnexo); break;
             case 'ponte-abrir': abrirMapa.call(this, alvo.dataset.mapaRef); break;
@@ -373,9 +403,6 @@
             case 'no-refazer': refazer.call(this); return;
             case 'recolher-tudo': definirRecolhidoTodos.call(this, true); break;
             case 'expandir-tudo': definirRecolhidoTodos.call(this, false); break;
-            case 'aplicar-pronto': aplicarTemplatePronto.call(this, alvo.dataset.mapaTemplate); break;
-            case 'aplicar-salvo': aplicarTemplateSalvo.call(this, alvo.dataset.mapaTemplate); break;
-            case 'template-excluir': s.excluirTemplate(alvo.dataset.mapaTemplate); break;
             // Fase 8: layout automático (confirmação em duas etapas) e espaçamento.
             case 'layout-confirmar': mapaConfirmarLayout.call(this); return;
             case 'layout-cancelar': this.mapaAcao = null; renderArea.call(this); return;
@@ -385,9 +412,9 @@
                 return;
             }
             case 'alternar-colapso': mapaAlternarColapsoBarras.call(this); return;
-            // Expandir/contrair a área (espelha o fullscreen de Notas): alterna o
-            // estado; o re-render abaixo aplica a classe no shell e troca o ícone.
-            case 'alternar-fullscreen': this.mapaFullscreen = !this.mapaFullscreen; break;
+            // Expandir/contrair a área (espelha o fullscreen de Notas): fecha/reabre o
+            // lado a lado e recolhe/mostra as barras UMA POR VEZ (animação sequencial).
+            case 'alternar-fullscreen': mapaAlternarFullscreen.call(this); return;
             // Grade (pontinhos) da superfície: alterna e persiste (padrão: desligada).
             case 'alternar-grade': {
                 const sGrade = store();
@@ -407,7 +434,7 @@
         renderArea.call(this);
     }
 
-    /** Envio do formulário inline (um handler cobre todos os tipos). */
+    /** Envio do formulário inline (nós e conexões). */
     function tratarSubmitMapa(evento) {
         const form = evento.target && evento.target.closest ? evento.target.closest('form[data-mapa-form]') : null;
         if (!form) return;
@@ -415,18 +442,7 @@
         const tipo = form.dataset.mapaForm;
         const id = form.dataset.mapaId || null;
         const valor = nome => { const el = document.getElementById(nome); return el ? String(el.value).trim() : ''; };
-        const s = store();
-        if (tipo === 'novo') {
-            const grafo = s.criarMapa(valor('mapaFormNome') || 'Novo mapa', valor('mapaFormPasta') || null);
-            abrirMapa.call(this, grafo.id);
-        } else if (tipo === 'renomear') s.renomearMapa(id, valor('mapaFormNome') || null);
-        else if (tipo === 'mover') s.moverMapaParaPasta(id, valor('mapaFormPasta') || null);
-        else if (tipo === 'conectar') conectarMapa.call(this, id, valor('mapaFormDestino'));
-        else if (tipo === 'template') {
-            const grafo = s.obterGrafo(id);
-            if (grafo) s.salvarTemplate(valor('mapaFormNome') || grafo.nome, grafo);
-        } else if (tipo === 'pasta-nova') s.criarPasta(valor('mapaFormNome') || 'Nova pasta');
-        else if (tipo === 'pasta-renomear') s.renomearPasta(id, valor('mapaFormNome') || null);
+        if (tipo === 'conectar') conectarMapa.call(this, id, valor('mapaFormDestino'));
         else if (tipo === 'no-mover-para') mapaMoverNoPara.call(this, id, valor('mapaFormDestino') || null);
         else if (tipo === 'no-conteudo') mapaSalvarConteudoNo.call(this, form.dataset.mapaNoId || id, form);
         else if (tipo === 'no-conectar-para') {
@@ -437,22 +453,263 @@
     }
 
     function tratarMudancaMapa(evento) {
-        if (evento.target && evento.target.id === 'mapaOrdem') {
-            this.mapaOrdenacao = evento.target.value;
-            renderArea.call(this);
-        } else if (evento.target && evento.target.id === 'mapaLayout') {
+        if (evento.target && evento.target.id === 'mapaLayout') {
             mapaDefinirLayout.call(this, evento.target.value);
         } else if (evento.target && evento.target.id === 'mapaTema') {
             mapaDefinirTema.call(this, evento.target.value);
         }
     }
+    // 🔄 [FIM: MAPA - RENDER/CONTROLE]
 
-    function tratarBuscaMapa(evento) {
-        if (!evento.target || evento.target.id !== 'mapaBusca') return;
-        this.mapaBusca = evento.target.value;
+    // ⚡ [INÍCIO: MAPA - FAIXA DE CHIPS E MENU DO MAPA (ESPELHO DOS CHIPS DE NOTA)]
+    /**
+     * Faixa de chips dos MAPAS da pasta ativa — espelha FIELMENTE a faixa de chips de
+     * Notas (`renderNotesNavEm`, em app.js): MESMAS classes (`.notes-context-nav` /
+     * `.notes-context-chip` / `.notes-context-chip-add` / `.notes-chip-menu`), mesmo "+"
+     * para criar, duplo clique renomeia e o menu do chip (Renomear · Duplicar · Mover
+     * para pasta · Excluir) abre com o botão direito ou toque longo.
+     */
+    function renderMapasNav() {
+        const nav = document.getElementById('mapaChipsNav');
+        if (!nav) return;
+        const ativo = this.mapaAbertaId;
+        nav.replaceChildren();
+        mapasDaPasta.call(this).forEach(mapa => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'notes-context-chip' + (mapa.id === ativo ? ' is-active' : '');
+            chip.dataset.mapaId = String(mapa.id);
+            chip.textContent = mapa.nome || 'Mapa';
+            chip.title = 'Abrir este mapa (duplo clique renomeia)';
+            chip.setAttribute('aria-label', 'Abrir mapa ' + (mapa.nome || 'Mapa'));
+            // MESMO accent dos chips de Notas sem cor própria (`app.js`: '#0071e3'), para
+            // o chip do mapa ficar com a MESMA cor/formatação do chip de nota.
+            chip.style.setProperty('--notes-accent', '#0071e3');
+            chip.addEventListener('click', () => {
+                if (chip.dataset.menuAberto === 'true') { delete chip.dataset.menuAberto; return; }
+                if (mapa.id !== ativo) { abrirMapa.call(this, mapa.id); renderArea.call(this); }
+            });
+            chip.addEventListener('dblclick', () => renomearMapaNoChip.call(this, mapa.id));
+            chip.addEventListener('contextmenu', evento => {
+                evento.preventDefault();
+                abrirMenuMapa.call(this, mapa, chip);
+            });
+            setupChipLongPressMapa.call(this, chip, mapa);
+            nav.append(chip);
+        });
+
+        const mais = document.createElement('button');
+        mais.type = 'button';
+        mais.className = 'notes-context-chip notes-context-chip-add';
+        mais.textContent = '+';
+        mais.title = 'Novo mapa';
+        mais.setAttribute('aria-label', 'Criar novo mapa');
+        mais.addEventListener('click', () => criarMapaNoChip.call(this));
+        nav.append(mais);
+    }
+
+    /** Cria um mapa na PASTA ativa e abre (espelha o "+" de nova nota). */
+    function criarMapaNoChip() {
+        const s = store();
+        if (!s) return null;
+        const grafo = s.criarMapa('Novo mapa', this.pastaAtiva || s.ID_PASTA_PADRAO);
+        abrirMapa.call(this, grafo.id);
+        renderArea.call(this);
+        return grafo;
+    }
+
+    /** Renomeia o mapa (duplo clique no chip ou opção do menu), igual ao chip de nota. */
+    function renomearMapaNoChip(id) {
+        const s = store();
+        const resumo = s ? s.obterResumo(id) : null;
+        if (!resumo) return;
+        let nome = null;
+        try { nome = window.prompt('Nome do mapa', resumo.nome || 'Mapa'); } catch (_) { nome = null; }
+        if (nome === null) return;
+        nome = String(nome).trim().slice(0, 60);
+        if (!nome || nome === resumo.nome) return;
+        s.renomearMapa(id, nome);
         renderArea.call(this);
     }
-    // 🔄 [FIM: MAPA - RENDER/CONTROLE]
+
+    /** Duplica o mapa (novo id, mesmo conteúdo) na pasta ativa e abre a cópia. */
+    function duplicarMapaNoChip(id) {
+        const s = store();
+        const copia = s ? s.duplicarMapa(id) : null;
+        if (!copia) return null;
+        if (this.pastaAtiva) s.moverMapaParaPasta(copia.id, this.pastaAtiva);
+        abrirMapa.call(this, copia.id);
+        renderArea.call(this);
+        return copia;
+    }
+
+    /** Move o mapa para outra pasta (opção "Mover para pasta…" do menu do chip). */
+    function moverMapaDeChip(id, pastaId) {
+        const s = store();
+        if (!s) return false;
+        s.moverMapaParaPasta(id, pastaId);
+        renderArea.call(this);
+        return true;
+    }
+
+    /** Exclui o mapa com confirmação; se for o último da pasta, volta às Pastas. */
+    function excluirMapaDoChip(id) {
+        const s = store();
+        const resumo = s ? s.obterResumo(id) : null;
+        if (!s || !resumo) return false;
+        let ok = false;
+        try { ok = window.confirm('Excluir o mapa "' + (resumo.nome || 'Mapa') + '"?'); } catch (_) { ok = false; }
+        if (!ok) return false;
+        const eraAberto = this.mapaAbertaId === id;
+        s.excluirMapa(id);
+        if (eraAberto) {
+            this.mapaAbertaId = null;
+            this.mapaAcao = null;
+            // Seleciona o mapa restante da pasta (MESMA regra da abertura padrão).
+            garantirMapaSelecionado.call(this);
+        }
+        renderArea.call(this);
+        return true;
+    }
+    /** Menu do chip de mapa (MESMA estrutura/estilo do menu do chip de nota). */
+    function criarMenuMapa(rotulo) {
+        const menu = document.createElement('div');
+        menu.id = 'mapaChipMenu';
+        menu.className = 'notes-chip-menu';
+        menu.setAttribute('role', 'menu');
+        menu.setAttribute('aria-label', rotulo || 'Ações do mapa');
+        return menu;
+    }
+
+    /** Posiciona (preso ao chip, com clamp de viewport) e registra o menu aberto. */
+    function mostrarMenuMapa(menu, chip) {
+        document.body.append(menu);
+        const caixa = chip.getBoundingClientRect();
+        menu.style.left = Math.max(8, Math.min(caixa.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+        menu.style.top = Math.min(caixa.bottom + 6, window.innerHeight - menu.offsetHeight - 8) + 'px';
+        menu.querySelector('button')?.focus();
+        this.mapaChipMenu = menu;
+    }
+
+    /** Menu de ações do mapa (renomear/duplicar/mover para pasta/excluir). */
+    function abrirMenuMapa(mapa, chip) {
+        fecharMenuMapa.call(this);
+        const menu = criarMenuMapa('Ações do mapa');
+        const acoes = [
+            ['Renomear', () => renomearMapaNoChip.call(this, mapa.id)],
+            ['Duplicar', () => duplicarMapaNoChip.call(this, mapa.id)],
+            ['Mover para pasta…', () => abrirMenuMoverMapa.call(this, mapa, chip)],
+            ['Excluir', () => excluirMapaDoChip.call(this, mapa.id)]
+        ];
+        for (const [texto, acao] of acoes) {
+            const botao = document.createElement('button');
+            botao.type = 'button';
+            botao.setAttribute('role', 'menuitem');
+            botao.textContent = texto;
+            botao.addEventListener('click', () => { fecharMenuMapa.call(this); acao(); });
+            menu.append(botao);
+        }
+        mostrarMenuMapa.call(this, menu, chip);
+    }
+
+    /** Submenu "Mover para pasta": lista as pastas (a atual marcada). */
+    function abrirMenuMoverMapa(mapa, chip) {
+        fecharMenuMapa.call(this);
+        const s = store();
+        if (!s) return;
+        const menu = criarMenuMapa('Mover mapa para pasta');
+        const opcoes = [['Sem pasta', null]].concat(
+            (s.listarPastas() || []).map(pasta => [pasta.nome || 'Pasta', pasta.id]));
+        for (const [texto, pastaId] of opcoes) {
+            const botao = document.createElement('button');
+            botao.type = 'button';
+            botao.setAttribute('role', 'menuitemradio');
+            const atual = (mapa.pastaId ?? null) === (pastaId ?? null);
+            botao.setAttribute('aria-checked', String(atual));
+            if (atual) botao.classList.add('is-active');
+            botao.textContent = texto;
+            botao.addEventListener('click', () => { fecharMenuMapa.call(this); moverMapaDeChip.call(this, mapa.id, pastaId); });
+            menu.append(botao);
+        }
+        mostrarMenuMapa.call(this, menu, chip);
+    }
+
+    /** Fecha o menu do chip de mapa (se aberto). */
+    function fecharMenuMapa() {
+        this.mapaChipMenu?.remove();
+        this.mapaChipMenu = null;
+    }
+
+    /** Toque longo no chip (celular) abre o menu, sem abrir o mapa. */
+    function setupChipLongPressMapa(chip, mapa) {
+        let timer = null;
+        const cancelar = () => { clearTimeout(timer); timer = null; };
+        chip.addEventListener('pointerdown', evento => {
+            if (evento.pointerType === 'mouse') return;
+            cancelar();
+            timer = setTimeout(() => {
+                timer = null;
+                chip.dataset.menuAberto = 'true';
+                abrirMenuMapa.call(this, mapa, chip);
+            }, 550);
+        });
+        ['pointerup', 'pointerleave', 'pointercancel', 'click'].forEach(tipo => chip.addEventListener(tipo, cancelar));
+    }
+    // ⚡ [FIM: MAPA - FAIXA DE CHIPS E MENU DO MAPA (ESPELHO DOS CHIPS DE NOTA)]
+
+    // 🔄 [INÍCIO: MAPA - MODELOS (DIÁLOGO — ESPELHO DO "MODELOS DE NOTA")]
+    /**
+     * Diálogo "Modelos do mapa" — REFLETE fielmente o "Modelos de nota"
+     * (`notesTemplates`, em notes/extras.js): MESMO diálogo base
+     * (`notesExtraDialog` → `.notes-extra-dialog`/`.notes-template-help`) e o mesmo
+     * padrão de botões. Salva o mapa atual como modelo e cria um mapa novo (na pasta
+     * ativa) a partir de um modelo PRONTO ou SALVO.
+     */
+    function mapaTemplates(trigger) {
+        const s = store();
+        const tpl = modelo();
+        if (!s || !tpl || typeof this.notesExtraDialog !== 'function') return null;
+        const botao = (rotulo, texto, acao) => {
+            const el = document.createElement('button');
+            el.type = 'button';
+            el.textContent = texto;
+            el.title = rotulo;
+            el.setAttribute('aria-label', rotulo);
+            el.addEventListener('click', acao);
+            return el;
+        };
+        this.notesExtraDialog('Modelos do mapa', dialog => {
+            const ajuda = document.createElement('p');
+            ajuda.className = 'notes-template-help';
+            ajuda.textContent = 'Salve o mapa atual como modelo. Ao escolher um modelo, um mapa NOVO é criado na pasta ativa como cópia editável; editar o mapa não altera o modelo salvo.';
+            dialog.append(ajuda);
+
+            const nome = document.createElement('input');
+            nome.placeholder = 'Nome do modelo';
+            nome.maxLength = 100;
+            dialog.append(nome, botao('Salvar mapa como modelo', 'Salvar mapa atual como modelo', () => {
+                const grafo = this.mapaAbertaId ? s.obterGrafo(this.mapaAbertaId) : null;
+                if (!grafo) { this.showToast?.('Abra um mapa para salvá-lo como modelo.', 'error'); return; }
+                s.salvarTemplate(String(nome.value || '').trim() || grafo.nome || 'Modelo', grafo);
+                dialog.close();
+                mapaTemplates.call(this, trigger);
+            }));
+
+            const lista = document.createElement('div');
+            dialog.append(lista);
+            const itens = (tpl.TEMPLATES_PRONTOS || [])
+                .map(item => ({ id: item.id, nome: item.nome, pronto: true }))
+                .concat(s.listarTemplates().map(item => ({ id: item.id, nome: item.nome, pronto: false })));
+            itens.forEach(item => lista.append(botao('Usar ' + item.nome, 'Aplicar: ' + item.nome, () => {
+                dialog.close();
+                if (item.pronto) aplicarTemplatePronto.call(this, item.id);
+                else aplicarTemplateSalvo.call(this, item.id);
+                renderArea.call(this);
+            })));
+        }, trigger);
+        return true;
+    }
+    // 🔄 [FIM: MAPA - MODELOS (DIÁLOGO — ESPELHO DO "MODELOS DE NOTA")]
 
     // ⚡ [INÍCIO: MAPA - COLAPSO DAS BARRAS]
     /**
@@ -471,24 +728,9 @@
         }
     }
 
-    /** Animação de painel (altura/opacidade) com versão — igual ao motion de Notas. */
+    /** Animação de painel — MESMA implementação da classe compartilhada `AppExpandir`. */
     function mapaPanelMotion(elemento, esconder, versao) {
-        if (!elemento || this.mapaMotionVersion !== versao) return Promise.resolve();
-        elemento.getAnimations().forEach(a => a.cancel());
-        const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-        elemento.hidden = false;
-        let animacao = null;
-        if (!reduced) {
-            const altura = elemento.getBoundingClientRect().height;
-            const estilo = getComputedStyle(elemento);
-            const aberto = { height: altura + 'px', opacity: 1, paddingTop: estilo.paddingTop, paddingBottom: estilo.paddingBottom };
-            const fechado = { height: '0px', opacity: 0, paddingTop: '0px', paddingBottom: '0px' };
-            animacao = elemento.animate(esconder ? [aberto, fechado] : [fechado, aberto], { duration: 220, easing: 'ease-in-out' });
-        }
-        const fim = animacao ? animacao.finished.catch(() => { }) : Promise.resolve();
-        return fim.then(() => {
-            if (this.mapaMotionVersion === versao) elemento.hidden = esconder;
-        });
+        return AppExpandir.motion(elemento, esconder, versao, () => this.mapaMotionVersion);
     }
 
     /** Alterna o colapso das barras da área (botão da topbar). */
@@ -514,6 +756,44 @@
             this.mapaBarrasColapsadas = esconder;
             setMapaBarrasColapsadas.call(this, esconder);
         }
+    }
+    /** Barras da área que recolhem na TELA CHEIA (ordem de recolher/mostrar). */
+    const BARRAS_FULLSCREEN = ['mapaToolbar', 'mapaFormatBar', 'mapaChipsNav', 'mapaRodape'];
+
+    /** Instância ÚNICA do expandir/contrair da área (classe compartilhada `AppExpandir`). */
+    function expandidorMapa(app) {
+        if (!app.expandirMapa) app.expandirMapa = new AppExpandir({
+            alvo: () => document.querySelector('#mapaArea .mapa-shell'),
+            expandido: () => Boolean(app.mapaFullscreen),
+            classeArea: 'mapa-fullscreen',
+            barras: () => BARRAS_FULLSCREEN.map(id => document.getElementById(id)),
+            botao: () => document.getElementById('mapaFullscreenBtn'),
+            rotulos: { aberto: 'Restaurar tamanho', fechado: 'Expandir (tela cheia)' },
+            versao: { nova: () => (app.mapaMotionVersion = (app.mapaMotionVersion || 0) + 1), atual: () => app.mapaMotionVersion },
+            ladoALadoAtivo: () => Boolean(app.mapaSplit),
+            aplicarLadoALado: ligado => aplicarSplit.call(app, ligado),
+            aoAplicar: aberto => { app.mapaFullscreen = aberto; }
+        });
+        return app.expandirMapa;
+    }
+
+    /** Aplica (SEM animação) o estado de tela cheia das barras — usado no re-render. */
+    function aplicarBarrasFullscreen(esconder) {
+        BARRAS_FULLSCREEN.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.hidden = Boolean(esconder);
+        });
+        expandidorMapa(this).aplicar(Boolean(esconder));
+    }
+
+    /**
+     * Expandir/contrair a área — comportamento PADRÃO (o MESMO de Notas, via a classe
+     * única `AppExpandir`):
+     *  - EXPANDIR: fecha o que está ao lado (lado a lado) e recolhe as barras UMA POR VEZ;
+     *  - CONTRAIR: mostra as barras UMA POR VEZ (ordem INVERSA) e reabre o que estava ao lado.
+     */
+    async function mapaAlternarFullscreen() {
+        return expandidorMapa(this).alternar();
     }
     // ⚡ [FIM: MAPA - COLAPSO DAS BARRAS]
 
@@ -544,7 +824,7 @@
         if (!secao) return;
         secao.innerHTML = '';
         const shell = document.createElement('div');
-        shell.className = 'pastas-shell';
+        shell.className = 'pastas-shell app-rolagem';
         secao.append(shell);
         if (!this.pastasAreaOuvintesLigados) {
             secao.addEventListener('click', evento => tratarCliquePastas.call(this, evento));
@@ -763,8 +1043,14 @@
      * Visão lado a lado (PC): a nota e o mapa aparecem juntos. Opt-in pelo botão da
      * topbar; arrastar a BARRA SUPERIOR de um painel para o lado inverso TROCA os
      * lados. Persistido em `notas-pwa-split`.
+     *
+     * `opcoes.manter` (usado pelo expandir/contrair): ao DESLIGAR, só remove o
+     * lado a lado — NÃO troca de área. Sem isso, fechar o split a partir da tela
+     * cheia das NOTAS chamava `aplicarArea('mapa')`, que removia o `active` do
+     * modal e entregava a tela ao mapa. Com `manter: 'notas'`, o painel do Mapa
+     * sai de cena (não rouba o teclado) e o modal de Notas continua ativo.
      */
-    function aplicarSplit(ligado) {
+    function aplicarSplit(ligado, opcoes = {}) {
         const html = document.documentElement;
         this.mapaSplit = Boolean(ligado) && !(typeof this.ehMobile === 'function' && this.ehMobile());
         html.classList.toggle('app-split', this.mapaSplit);
@@ -779,6 +1065,17 @@
             botao.setAttribute('aria-label', rotulo);
         }
         if (!this.mapaSplit) {
+            if (opcoes.manter === 'notas') {
+                // A NOTA fica com a tela: o mapa sai de cena (a área ativa NÃO muda).
+                const secao = document.getElementById('mapaArea');
+                if (secao) secao.hidden = true;
+                return;
+            }
+            if (opcoes.manter === 'mapa') {
+                const backdrop = document.getElementById('notesModalBackdrop');
+                if (backdrop) backdrop.classList.remove('active');
+                return;
+            }
             aplicarArea.call(this, this.mapaAreaAtiva === 'pastas' ? 'notas' : (this.mapaAreaAtiva || 'notas'));
             return;
         }
@@ -2194,11 +2491,11 @@
         alvo.append(caixa);
     }
 
-    /** Montagem lazy: só na primeira entrada (não pesa o boot). */
+    /** Montagem lazy: só na primeira entrada (não pesa o boot). Retorna `true` se montou agora. */
     function montarAreaMapa() {
-        if (this.mapaAreaMontada) return;
+        if (this.mapaAreaMontada) return false;
         const secao = document.getElementById('mapaArea');
-        if (!secao) return;
+        if (!secao) return false;
         // Blindagem: se um módulo do mapa não carregou (ex.: cache antigo do Service
         // Worker), mostra um aviso VISÍVEL em vez de deixar a área vazia em silêncio.
         // NÃO marca como montada, para permitir nova tentativa na próxima entrada.
@@ -2208,7 +2505,7 @@
             mostrarFalhaMapa(secao, faltando.length
                 ? 'Módulos do mapa não carregaram: ' + faltando.join(', ') + '. Abra "Reparar (limpar cache)" e tente de novo.'
                 : 'O módulo de renderização do mapa não carregou. Abra "Reparar (limpar cache)" e tente de novo.');
-            return;
+            return false;
         }
         try {
             r.montarShell(secao);
@@ -2218,7 +2515,6 @@
                 this.mapaAreaOuvintesLigados = true;
                 secao.addEventListener('click', evento => tratarCliqueMapa.call(this, evento));
                 secao.addEventListener('change', evento => tratarMudancaMapa.call(this, evento));
-                secao.addEventListener('input', evento => tratarBuscaMapa.call(this, evento));
                 secao.addEventListener('submit', evento => tratarSubmitMapa.call(this, evento));
                 // Fase 3: edição por duplo clique e atalhos dos nós.
                 secao.addEventListener('dblclick', evento => {
@@ -2259,15 +2555,18 @@
             this.mapaConexaoOrigem = null;
             this.mapaConexaoMenuId = null;
             this.mapaConexaoArrasto = null;
-            // Retoma o último mapa aberto (se ele ainda existir).
-            const ativo = store() ? store().lerMapaAtivo() : null;
-            if (ativo && store().obterGrafo(ativo)) this.mapaAbertaId = ativo;
+            // Abertura padrão (espelho das Notas): deixa o PRIMEIRO mapa da pasta
+            // ativa já selecionado/renderizado — preservando o mapa aberto quando ele
+            // pertencer à pasta (ver `garantirMapaSelecionado`).
+            garantirMapaSelecionado.call(this);
             aplicarTemaMapa(secao);
             this.mapaAreaMontada = true;
             renderArea.call(this);
+            return true;
         } catch (erro) {
             this.mapaAreaMontada = false;
             mostrarFalhaMapa(secao, 'Erro ao montar a área do mapa: ' + (erro && erro.message ? erro.message : erro));
+            return false;
         }
     }
 
@@ -2280,6 +2579,8 @@
             if (store()) store().salvarSplit({ ligado: false, lado: this.mapaSplitLado });
         }
         const alvo = (area === 'mapa' || area === 'pastas') ? area : 'notas';
+        // Sair do mapa restaura a tela cheia (não deixa a área "presa" ao voltar).
+        if (alvo !== 'mapa') { this.mapaFullscreen = false; expandidorMapa(this).aplicar(false); }
         this.mapaAreaAtiva = alvo;
         if (store()) store().salvarAreaAtiva(alvo);
 
@@ -2293,7 +2594,12 @@
         if (alvo === 'mapa') {
             // Sair de Notas: grava a nota atual e esconde o modal (sem encerrar o motor).
             if (typeof this.persistNow === 'function') this.persistNow();
-            montarAreaMapa.call(this);
+            const montouAgora = montarAreaMapa.call(this);
+            // Abertura padrão a cada entrada: mantém o mapa já selecionado se ele
+            // pertencer à pasta ativa; senão abre o primeiro da pasta. Ao REENTRAR
+            // (área já montada) o DOM é re-renderizado para refletir o estado atual
+            // (pasta vazia, troca de pasta/nota, etc.).
+            if (garantirMapaSelecionado.call(this) || !montouAgora) renderArea.call(this);
             if (secao) secao.hidden = false;
             if (backdrop) backdrop.classList.remove('active');
             // Foco no canvas: superficie dos atalhos de criacao/navegacao por teclado.
@@ -2319,9 +2625,18 @@
             this.mapaConexaoMenuId = null;
             if (secao) secao.hidden = true;
             if (backdrop) backdrop.classList.add('active');
-            const ativa = typeof this.lerNotaAtiva === 'function' ? this.lerNotaAtiva() : null;
-            const idNota = ativa || (this.projectsData && this.projectsData[0] ? this.projectsData[0].id : null);
-            if (idNota && typeof this.openNotesModal === 'function') this.openNotesModal(idNota);
+            // Abertura padrão (espelho da área de MAPAS): mantém a nota JÁ aberta se
+            // ela pertencer à pasta ativa; senão abre a PRIMEIRA nota da pasta (e cria
+            // uma "Nova nota" se a pasta estiver vazia — Notas sempre tem ao menos 1).
+            // `definirPastaAtivaNotas` é o equivalente, nas Notas, de
+            // `garantirMapaSelecionado` (mapa/mapa.js).
+            if (typeof this.definirPastaAtivaNotas === 'function') {
+                this.definirPastaAtivaNotas(this.notaPastaAtiva);
+            } else {
+                const ativa = typeof this.lerNotaAtiva === 'function' ? this.lerNotaAtiva() : null;
+                const idNota = ativa || (this.projectsData && this.projectsData[0] ? this.projectsData[0].id : null);
+                if (idNota && typeof this.openNotesModal === 'function') this.openNotesModal(idNota);
+            }
         }
         return alvo;
     }
@@ -2377,13 +2692,10 @@
                 const aba = evento.target.closest('[data-app-area]');
                 if (aba) { this.aplicarArea(aba.dataset.appArea); return; }
                 if (evento.target.closest('[data-app-voltar]')) {
-                    // A seta ‹ sempre volta à raiz de Pastas e FECHA o modal de Notas
-                    // (revelando os cartões de pasta).
-                    const backdrop = document.getElementById('notesModalBackdrop');
-                    if (backdrop && backdrop.classList.contains('active') && typeof this.closeNotesModal === 'function') {
-                        this.closeNotesModal();
-                    }
-                    this.aplicarArea('pastas');
+                    // Seta ‹ (navegação única, igual a Notas): SEMPRE volta à tela
+                    // principal de Pastas (cada pasta é um workspace com Notas + Mapas)
+                    // e fecha o modal de Notas, revelando os cartões de pasta.
+                    mapaVoltarParaPastas.call(this);
                     return;
                 }
                 if (evento.target.closest('[data-app-split]')) { aplicarSplit.call(this, !this.mapaSplit); }
@@ -2424,11 +2736,8 @@
             mapaAreasLigadas: false,
             mapaAreaAtiva: 'notas',
             mapaAbertaId: null,
-            mapaBusca: '',
-            mapaOrdenacao: 'nome',
             mapaFiltroPasta: 'todas',
-            mapaIncluirArquivados: false,
-            mapaMostrarTemplates: false,
+            mapaChipMenu: null,
             mapaAcao: null,
             mapaCanvasViewport: null,
             mapaCanvasMapaId: null,
@@ -2477,6 +2786,7 @@
             mapaSplitDivisorLigado: false,
             mapaSplitArrastoRatio: false,
             aplicarArea, inicializarAreasMapa, montarAreaMapa, aplicarTemaMapa, renderArea,
+            garantirMapaSelecionado,
             definirViewport, salvarViewportAgora,
             mapaCriarFilhoDeNo, mapaCriarIrmaoDeNo, mapaCriarNoIndependente, mapaExcluirNo,
             mapaDuplicarNo, mapaCopiarNo, mapaRecortarNo, mapaColarNo,
@@ -2497,6 +2807,9 @@
             mapaMoverBotaoBarra, mapaRestaurarBarra,
             mapaAlternarColapsoBarras, setMapaBarrasColapsadas,
             montarAreaPastas, renderPastas, abrirPasta,
+            renderMapasNav, mapasDaPasta, mapaTemplates,
+            criarMapaNoChip, renomearMapaNoChip, duplicarMapaNoChip, excluirMapaDoChip,
+            abrirMenuMapa, abrirMenuMoverMapa, fecharMenuMapa,
             aplicarSplit, trocarLadoSplit, aplicarSplitRatio,
             mapaAlternarEstiloRapido, mapaDefinirEstiloRapido, mapaPassoEstiloRapido,
             mapaAbrirCor, mapaGravarCorRecente,

@@ -297,6 +297,17 @@
         return listarMapas().filter(m => (m.pastaId || ID_PASTA_PADRAO) === pastaId).length;
     }
 
+    /**
+     * Mapas de uma pasta (a "Geral" adota os sem pasta) — a faixa de chips da área de
+     * mapas lista SOMENTE os mapas da pasta ativa (cada mapa pertence a uma pasta).
+     */
+    function listarMapasDaPasta(pastaId) {
+        const alvo = pastaId || ID_PASTA_PADRAO;
+        return listarMapas()
+            .filter(m => (m.pastaId || ID_PASTA_PADRAO) === alvo)
+            .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || '')));
+    }
+
     const listarRecentes = () => {
         const lista = ler(CHAVES.recentes, []);
         return Array.isArray(lista) ? lista : [];
@@ -352,6 +363,7 @@
         listarBacklinks, listarSaidas, listarReferenciasQuebradas,
         listarPastas, criarPasta, renomearPasta, excluirPasta,
         ID_PASTA_PADRAO, garantirPastaPadrao, lerPastaAtiva, salvarPastaAtiva, contarMapasDaPasta,
+        listarMapasDaPasta,
         lerSplit, salvarSplit, LIMITE_SPLIT,
         listarRecentes, salvarRecentes, registrarRecente,
         listarTemplates, salvarTemplate, criarMapaDeTemplateSalvo, excluirTemplate,

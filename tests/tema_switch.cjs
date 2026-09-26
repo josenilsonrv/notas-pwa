@@ -17,7 +17,7 @@ const montar=async(page,temaSalvo)=>{
   for(const f of ['styles.css','theme-origem.css'])await page.addStyleTag({content:read(f)});
   const source=read('app.js');
   await page.addScriptTag({content:source.slice(0,source.indexOf("document.addEventListener('DOMContentLoaded'"))+'\nwindow.TestTheme = ThemeManager;'});
-  await page.evaluate(limpar=>{if(limpar)localStorage.clear();document.documentElement.dataset.theme='light';window.tm=new TestTheme();},!temaSalvo);
+  await page.evaluate(limpar=>{if(limpar)localStorage.clear();document.documentElement.dataset.theme='light';document.getElementById('pastasArea').hidden=false;document.getElementById('notesModalBackdrop').classList.remove('active');window.tm=new TestTheme();},!temaSalvo);
 };
 
 const estado=page=>page.evaluate(()=>({

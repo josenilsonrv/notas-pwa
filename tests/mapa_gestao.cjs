@@ -1,9 +1,10 @@
 // 🧪 [INÍCIO: TESTE - MAPA GESTAO]
 /*
- * FASE 1 - Gestão de mapas.
- * Cobre: criar/abrir/renomear/duplicar/excluir (com confirmação), favoritar,
- * arquivar, pastas/workspaces, mapa raiz, mapas conectados (nó-ponte/backlink),
- * templates (prontos e salvos), recentes, busca/ordenação e referência quebrada.
+ * FASE 1 (revisada) — Mapas como ITENS DA PASTA (fim da tela de gestão).
+ * Cobre: criar pelo "+" da faixa de chips, abrir/renomear/duplicar/excluir (com
+ * confirmação) e mover para pasta pelo MENU DO CHIP, mapas conectados (nó-ponte/
+ * backlink), modelos (diálogo "Modelos"), referência quebrada, ausência da antiga
+ * lista de gestão e a seta ‹ voltando à tela principal de Pastas.
  * Mesmo harness dos testes existentes; interações no DOM para determinismo.
  */
 const assert = require('node:assert/strict');
@@ -19,6 +20,12 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     const page = await browser.newPage({ viewport: { width: 1280, height: 960 }, hasTouch: true });
     const erros = [];
     page.on('pageerror', e => erros.push(e.message));
+    // prompt/confirm: o teste define o que responder antes de disparar a ação.
+    let resposta = { tipo: 'accept', valor: undefined };
+    page.on('dialog', async d => {
+      if (resposta.tipo === 'dismiss') { await d.dismiss().catch(() => {}); return; }
+      await d.accept(resposta.valor).catch(() => {});
+    });
 
     const html = ler('index.html').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, '');
     await page.route('**/*', rota => (rota.request().resourceType() === 'document'
@@ -28,12 +35,12 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     for (const f of ['styles.css', 'theme-origem.css', 'notes/editor.css', 'notes/extras.css', 'notes/tables.css', 'mapa/mapa.css']) {
       await page.addStyleTag({ content: ler(f) });
     }
-    for (const f of ['notes/editor.js', 'notes/table-math.js', 'notes/extras.js', 'notes/tables.js']) {
+    for (const f of ['fontes.js', 'notes/editor.js', 'notes/table-math.js', 'notes/extras.js', 'notes/tables.js']) {
       await page.addScriptTag({ content: ler(f) });
     }
     const fonte = ler('app.js');
     await page.addScriptTag({ content: fonte.slice(0, fonte.indexOf("document.addEventListener('DOMContentLoaded'")) + '\nwindow.TestApp = NotesPWA;' });
-    for (const f of ['mapa/mapa-modelo.js', 'mapa/mapa-store.js', 'mapa/mapa-render.js', 'mapa/mapa.js']) {
+    for (const f of ['mapa/mapa-modelo.js', 'mapa/mapa-store.js', 'mapa/mapa-layout.js', 'mapa/mapa-render.js', 'mapa/mapa-painel.js', 'mapa/mapa-cores.js', 'mapa/mapa-interacao.js', 'mapa/mapa.js']) {
       await page.addScriptTag({ content: ler(f) });
     }
 
@@ -61,192 +68,154 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     });
 
     // ---------------------------------------------------------------- helpers
+    const chipsEls = () => '#mapaChipsNav .notes-context-chip:not(.notes-context-chip-add)';
+    const chips = () => page.evaluate(sel => [...document.querySelectorAll(sel)].map(el => ({
+      id: el.dataset.mapaId, nome: el.textContent, ativo: el.classList.contains('is-active')
+    })), chipsEls());
+    const indice = () => page.evaluate(() => window.MapaMentalStore.listarMapas());
+    const tituloAberto = () => page.evaluate(() => document.getElementById('mapaTituloAtual').textContent);
     const clicar = sel => page.evaluate(s => {
       const el = document.querySelector(s);
       if (!el) throw new Error('elemento não encontrado: ' + s);
       el.click();
     }, sel);
-    const clicarAcao = (acao, extra) => page.evaluate(({ acao, extra }) => {
-      const el = document.querySelector('[data-mapa-acao="' + acao + '"]' + (extra || ''));
-      if (!el) throw new Error('ação não encontrada: ' + acao);
+    const comChip = (nome, acao) => page.evaluate(({ sel, nome, acao }) => {
+      const el = [...document.querySelectorAll(sel)].find(item => item.textContent === nome);
+      if (!el) throw new Error('chip não encontrado: ' + nome);
+      el.dispatchEvent(new MouseEvent(acao, { bubbles: true, cancelable: true }));
+    }, { sel: chipsEls(), nome, acao });
+    const acaoMenu = texto => page.evaluate(t => {
+      const b = [...document.querySelectorAll('#mapaChipMenu button')].find(el => el.textContent.trim() === t);
+      if (!b) throw new Error('ação do menu não encontrada: ' + t);
+      b.click();
+    }, texto);
+    const acaoDireta = acao => page.evaluate(a => {
+      const el = document.querySelector('[data-mapa-acao="' + a + '"]');
+      if (!el) throw new Error('ação não encontrada: ' + a);
       el.click();
-    }, { acao, extra: extra || '' });
-    const preencher = (sel, valor) => page.evaluate(({ sel, valor }) => {
-      const el = document.querySelector(sel);
-      if (!el) throw new Error('campo não encontrado: ' + sel);
-      el.value = valor;
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-    }, { sel, valor });
-    const enviarForm = async valor => {
-      if (valor !== undefined) await preencher('#mapaFormNome', valor);
-      await clicar('#mapaForm button[type="submit"]');
-    };
-    const itens = () => page.evaluate(() => [...document.querySelectorAll('#mapaCanvasWrap .mapa-item')].map(li => ({
-      id: li.dataset.mapaId,
-      nome: li.querySelector('.mapa-item-nome').textContent,
-      meta: li.querySelector('.mapa-item-meta').textContent,
-      raiz: li.classList.contains('mapa-item-raiz'),
-      arquivado: li.classList.contains('mapa-item-arquivado'),
-      favorito: li.querySelector('[data-mapa-acao="favoritar"]').getAttribute('aria-pressed') === 'true'
-    })));
-    const indice = () => page.evaluate(() => window.MapaMentalStore.listarMapas());
-    const tituloAberto = () => page.evaluate(() => document.getElementById('mapaTituloAtual').textContent);
-    const acaoItem = (nome, acao) => page.evaluate(({ nome, acao }) => {
-      const item = [...document.querySelectorAll('#mapaCanvasWrap .mapa-item')]
-        .find(li => li.querySelector('.mapa-item-nome').textContent === nome);
-      if (!item) throw new Error('mapa não encontrado: ' + nome);
-      item.querySelector('[data-mapa-acao="' + acao + '"]').click();
-    }, { nome, acao });
-    const abrirItem = nome => page.evaluate(n => {
-      const item = [...document.querySelectorAll('#mapaCanvasWrap .mapa-item')]
-        .find(li => li.querySelector('.mapa-item-nome').textContent === n);
-      if (!item) throw new Error('mapa não encontrado: ' + n);
-      item.querySelector('.mapa-item-abrir').click();
-    }, nome);
-    const voltarLista = () => clicar('#mapaVoltarLista');
+    }, acao);
 
-    // ---------------------------------------------------------------- criar/abrir
-    await clicar('#mapaNovo');
-    assert.equal(await page.evaluate(() => document.getElementById('mapaForm').dataset.mapaForm), 'novo', 'formulário de novo mapa');
-    await enviarForm('Alpha');
-    assert.equal(await tituloAberto(), 'Alpha', 'mapa criado e aberto');
+    // ---------------------------------------------------------------- 1) sem a lista de gestão
+    assert.equal(await page.locator('#mapaChipsNav .notes-context-chip-add').count(), 1, 'a faixa tem o botão "+" (novo mapa)');
+    assert.equal(await page.evaluate(sel => document.querySelectorAll(sel).length, chipsEls()), 0, 'pasta vazia: nenhum chip de mapa');
+    assert.equal(await page.locator('#mapaCanvasWrap .mapa-vazio-titulo').textContent(), 'Nenhum mapa aberto.', 'estado vazio da área (sem lista)');
+    for (const id of ['mapaBusca', 'mapaOrdem', 'mapaNovo', 'mapaNovaPasta', 'mapaTemplates', 'mapaMostrarArquivados']) {
+      assert.equal(await page.evaluate(i => document.getElementById(i) === null, id), true, 'o controle de lista #' + id + ' não existe mais');
+    }
+    assert.equal(await page.locator('#mapaCanvasWrap .mapa-itens').count(), 0, 'a lista de mapas (mapa-itens) não existe mais');
+
+    // ---------------------------------------------------------------- 2) "+" cria na pasta ativa
+    await clicar('#mapaChipsNav .notes-context-chip-add');
+    assert.equal(await tituloAberto(), 'Novo mapa', 'o "+" cria e abre o mapa');
     let lista = await indice();
     assert.equal(lista.length, 1, 'índice com 1 mapa');
-    assert.equal(lista[0].nome, 'Alpha');
-    const alphaId = lista[0].id;
-    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('notas-pwa-mapa-ativo'))), alphaId, 'mapa ativo persistido');
+    const novoId = lista[0].id;
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('notas-pwa-mapa-ativo'))), novoId, 'mapa ativo persistido');
+    assert.equal(lista[0].pastaId, 'pasta-geral', 'o mapa novo nasce na pasta ativa (Geral)');
+    assert.deepEqual((await chips()).map(c => c.ativo), [true], 'o chip do mapa aberto fica ativo');
 
-    await voltarLista();
-    assert.equal((await itens()).length, 1, 'lista com 1 item');
-    await clicar('#mapaNovo');
-    await enviarForm('Beta');
-    await voltarLista();
-    let atual = await itens();
-    assert.equal(atual.length, 2, 'lista com 2 itens');
-    assert.deepEqual(atual.map(i => i.nome), ['Alpha', 'Beta'], 'ordenado por nome');
-    const betaId = atual.find(i => i.nome === 'Beta').id;
+    // ---------------------------------------------------------------- 3) renomear pelo chip (duplo clique)
+    resposta = { tipo: 'accept', valor: 'Alpha' };
+    await comChip('Novo mapa', 'dblclick');
+    assert.equal(await tituloAberto(), 'Alpha', 'renomear pelo duplo clique no chip');
+    assert.deepEqual((await chips()).map(c => c.nome), ['Alpha'], 'a faixa mostra o novo nome');
 
-    // ---------------------------------------------------------------- favoritar/filtrar/ordenar
-    await acaoItem('Beta', 'favoritar');
-    assert.equal((await itens()).find(i => i.nome === 'Beta').favorito, true, 'Beta favoritado');
-    await clicarAcao('filtrar-pasta', '[data-mapa-pasta="favoritos"]');
-    assert.deepEqual((await itens()).map(i => i.nome), ['Beta'], 'filtro Favoritos');
-    await clicarAcao('filtrar-pasta', '[data-mapa-pasta="todas"]');
+    // ---------------------------------------------------------------- 4) segundo mapa + duplicar pelo menu
+    await clicar('#mapaChipsNav .notes-context-chip-add');
+    resposta = { tipo: 'accept', valor: 'Beta' };
+    await comChip('Novo mapa', 'dblclick');
+    assert.deepEqual((await chips()).map(c => c.nome), ['Alpha', 'Beta'], 'dois mapas na pasta (ordenados por nome)');
 
-    await preencher('#mapaBusca', 'Alp');
-    assert.deepEqual((await itens()).map(i => i.nome), ['Alpha'], 'busca por nome');
-    await preencher('#mapaBusca', '');
-
-    await page.selectOption('#mapaOrdem', 'favorito');
-    assert.deepEqual((await itens()).map(i => i.nome), ['Beta', 'Alpha'], 'ordenação por favorito');
-    await page.selectOption('#mapaOrdem', 'nome');
-    assert.deepEqual((await itens()).map(i => i.nome), ['Alpha', 'Beta'], 'ordenação por nome');
-
-    // ---------------------------------------------------------------- renomear/duplicar
-    await acaoItem('Alpha', 'renomear');
-    assert.equal(await page.evaluate(() => document.getElementById('mapaForm').dataset.mapaForm), 'renomear', 'formulário de renomear');
-    assert.equal(await page.evaluate(() => document.getElementById('mapaFormNome').value), 'Alpha', 'nome pré-preenchido');
-    await enviarForm('Alpha Renomeado');
-    assert.deepEqual((await itens()).map(i => i.nome), ['Alpha Renomeado', 'Beta'], 'renomeado');
-
-    await acaoItem('Beta', 'duplicar');
-    assert.match(await tituloAberto(), /Beta \(cópia\)/, 'cópia é aberta');
-    await voltarLista();
-    atual = await itens();
-    assert.equal(atual.length, 3, 'cópia entrou na lista');
+    await comChip('Beta', 'contextmenu');
+    await acaoMenu('Duplicar');
+    assert.match(await tituloAberto(), /Beta \(cópia\)/, 'duplicar pelo menu do chip abre a cópia');
+    assert.equal((await indice()).length, 3, 'a cópia entrou no índice');
     const copiaId = (await indice()).find(m => m.nome.includes('(cópia)')).id;
 
-    // ---------------------------------------------------------------- pastas/workspaces
-    await clicarAcao('pasta-nova');
-    await enviarForm('Trabalho');
-    const pastas = await page.evaluate(() => window.MapaMentalStore.listarPastas());
-    assert.equal(pastas.length, 2, 'pasta criada (+ a pasta padrão "Geral")');
-    const criada = pastas.find(p => p.nome === 'Trabalho');
-    assert.ok(criada, 'a pasta "Trabalho" existe');
-    const pastaId = criada.id;
+    // ---------------------------------------------------------------- 5) mover para outra pasta
+    const pastaId = await page.evaluate(() => window.MapaMentalStore.criarPasta('Trabalho').id);
+    await comChip('Alpha', 'contextmenu');
+    await acaoMenu('Mover para pasta…');
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll('#mapaChipMenu button')].find(el => el.getAttribute('aria-checked') !== null && el.textContent === 'Trabalho');
+      if (!b) throw new Error('pasta Trabalho não listada no menu');
+      b.click();
+    });
+    assert.deepEqual((await chips()).map(c => c.nome), ['Beta', 'Beta (cópia)'], 'mapa movido sai da faixa da pasta ativa');
+    assert.equal(await page.evaluate(id => window.MapaMentalStore.obterResumo(id).pastaId, (await indice()).find(m => m.nome === 'Alpha').id), pastaId, 'mapa gravado na nova pasta');
 
-    await acaoItem('Alpha Renomeado', 'mover');
-    await page.selectOption('#mapaFormPasta', pastaId);
-    await clicar('#mapaForm button[type="submit"]');
-    atual = await itens();
-    assert.match(atual.find(i => i.nome === 'Alpha Renomeado').meta, /Trabalho/, 'mapa movido para a pasta');
-    await clicarAcao('filtrar-pasta', '[data-mapa-pasta="' + pastaId + '"]');
-    assert.deepEqual((await itens()).map(i => i.nome), ['Alpha Renomeado'], 'filtro pela pasta');
-    await clicarAcao('filtrar-pasta', '[data-mapa-pasta="todas"]');
-
-    // ---------------------------------------------------------------- mapa raiz
-    await acaoItem('Alpha Renomeado', 'raiz');
-    atual = await itens();
-    assert.equal(atual.find(i => i.nome === 'Alpha Renomeado').raiz, true, 'mapa raiz marcado');
-    assert.equal(await page.evaluate(() => { const r = window.MapaMentalStore.obterMapaRaiz(); return r && r.id; }), alphaId, 'raiz persistida');
-
-    // ---------------------------------------------------------------- mapas conectados
-    await abrirItem('Alpha Renomeado');
-    await clicarAcao('conectar');
-    await page.selectOption('#mapaFormDestino', betaId);
-    await clicar('#mapaForm[data-mapa-form="conectar"] button[type="submit"]');
-    const saidas = await page.evaluate(id => window.MapaMentalStore.listarSaidas(window.MapaMentalStore.obterGrafo(id)), alphaId);
-    assert.equal(saidas.length, 1, 'nó-ponte criado');
-    assert.equal(saidas[0].idMapa, betaId, 'ponte aponta para Beta');
-    assert.equal(await page.evaluate(id => window.MapaMentalStore.listarBacklinks(id).length, betaId), 1, 'backlink visto em Beta');
-    assert.ok((await page.locator('#mapaCanvasWrap .mapa-chip').count()) >= 1, 'chip de conexão renderizado');
-    await voltarLista();
-
-    // ---------------------------------------------------------------- arquivar
-    await acaoItem('Beta', 'arquivar');
-    assert.equal((await itens()).some(i => i.nome === 'Beta'), false, 'arquivado some da lista');
-    await clicarAcao('alternar-arquivados');
-    assert.equal((await itens()).some(i => i.nome === 'Beta' && i.arquivado), true, 'arquivado aparece com o filtro');
-    await clicarAcao('alternar-arquivados');
-
-    // ---------------------------------------------------------------- excluir (com confirmação)
-    await acaoItem('Beta (cópia)', 'excluir');
-    assert.equal(await page.evaluate(() => document.getElementById('mapaForm').dataset.mapaForm), 'excluir', 'confirmação antes de excluir');
-    await clicarAcao('excluir-confirmar');
+    // ---------------------------------------------------------------- 6) excluir (com confirmação)
+    resposta = { tipo: 'dismiss' };
+    await comChip('Beta', 'contextmenu');
+    await acaoMenu('Excluir');
+    assert.equal((await indice()).some(m => m.id === copiaId), true, 'cancelar a confirmação NÃO exclui');
+    resposta = { tipo: 'accept' };
+    await comChip('Beta (cópia)', 'contextmenu');
+    await acaoMenu('Excluir');
     assert.equal((await indice()).some(m => m.id === copiaId), false, 'mapa excluído do índice');
     assert.equal(await page.evaluate(id => localStorage.getItem('notas-pwa-mapa-' + id), copiaId), null, 'grafo do mapa excluído removido');
+    assert.deepEqual((await chips()).map(c => c.nome), ['Beta'], 'a faixa reflete a exclusão');
 
-    // ---------------------------------------------------------------- referência quebrada
+    // ---------------------------------------------------------------- 7) excluir o aberto abre o restante
+    assert.equal(await tituloAberto(), 'Beta', 'excluir o mapa aberto abre o restante da pasta (sem lista)');
+
+    // ---------------------------------------------------------------- 8) modelos (diálogo "Modelos")
+    await clicar('#mapaModelosBtn');
+    assert.equal(await page.evaluate(() => Boolean(document.querySelector('.notes-extra-dialog'))), true, 'o botão Modelos abre o diálogo (mesmas classes de Notas)');
+    assert.equal(await page.evaluate(() => document.querySelector('.notes-extra-dialog .notes-template-help') !== null), true, 'o diálogo tem a ajuda padrão de Modelos');
+    await page.evaluate(() => {
+      document.querySelector('.notes-extra-dialog input').value = 'Meu Modelo';
+      [...document.querySelectorAll('.notes-extra-dialog button')]
+        .find(b => b.textContent === 'Salvar mapa atual como modelo').click();
+    });
+    assert.equal(await page.evaluate(() => window.MapaMentalStore.listarTemplates().length), 1, 'mapa salvo como modelo');
+    const antes = (await indice()).length;
+    await clicar('#mapaModelosBtn');
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll('.notes-extra-dialog button')].find(el => el.getAttribute('aria-label') === 'Usar Projeto');
+      if (!b) throw new Error('modelo pronto "Projeto" não listado');
+      b.click();
+    });
+    assert.equal(await tituloAberto(), 'Projeto', 'modelo pronto aplicado e aberto');
+    const projetoId = (await indice()).find(m => m.nome === 'Projeto').id;
+    assert.equal(await page.evaluate(id => window.MapaMentalStore.obterGrafo(id).nos.length, projetoId), 7, 'modelo Projeto materializado');
+    assert.equal(await page.evaluate(id => window.MapaMentalStore.obterResumo(id).pastaId, projetoId), 'pasta-geral', 'o mapa do modelo entra na pasta ativa');
+    assert.equal((await indice()).length, antes + 1, 'o mapa do modelo entrou no índice');
+
+    // ---------------------------------------------------------------- 9) mapas conectados
+    await comChip('Beta', 'click');
+    await page.evaluate(() => window.app.renderArea());
+    assert.equal(await tituloAberto(), 'Beta', 'clique no chip abre o mapa');
+    await acaoDireta('conectar');
+    await page.selectOption('#mapaFormDestino', projetoId);
+    await page.evaluate(() => document.querySelector('#mapaForm[data-mapa-form="conectar"] button[type="submit"]').click());
+    const betaId = (await indice()).find(m => m.nome === 'Beta').id;
+    assert.equal(await page.evaluate(id => window.MapaMentalStore.listarSaidas(window.MapaMentalStore.obterGrafo(id)).length, betaId), 1, 'nó-ponte criado');
+    assert.equal(await page.evaluate(id => window.MapaMentalStore.listarBacklinks(id).length, projetoId), 1, 'backlink visto no destino');
+
+    // ---------------------------------------------------------------- 10) referência quebrada
     await page.evaluate(id => {
       const s = window.MapaMentalStore;
       const grafo = s.obterGrafo(id);
       grafo.nos.push({ id: 'ponte-quebrada', paiId: null, ordem: 0, titulo: 'Ponte', mapaRef: 'mapa-inexistente' });
       s.salvarGrafo(grafo);
-    }, alphaId);
-    await abrirItem('Alpha Renomeado');
+    }, betaId);
+    await page.evaluate(() => window.app.renderArea());
     assert.equal(await page.locator('#mapaCanvasWrap .mapa-chip-quebrado').count(), 1, 'referência quebrada avisada sem quebrar o render');
-    await voltarLista();
 
-    // ---------------------------------------------------------------- templates
-    await abrirItem('Alpha Renomeado');
-    await clicarAcao('template-salvar');
-    await enviarForm('Meu Template');
-    assert.equal(await page.evaluate(() => window.MapaMentalStore.listarTemplates().length), 1, 'mapa salvo como template');
-    await voltarLista();
+    // ---------------------------------------------------------------- 11) seta ‹ volta às Pastas
+    await clicar('#appVoltar');
+    await page.waitForTimeout(150);
+    assert.equal(await page.evaluate(() => document.getElementById('pastasArea').hidden), false, 'a seta ‹ leva à tela principal de Pastas');
+    assert.equal(await page.evaluate(() => document.getElementById('mapaArea').hidden), true, 'a área do mapa sai de cena');
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('notas-pwa-area-ativa'))), 'pastas', 'área ativa persistida como pastas');
+    assert.equal(await page.evaluate(() => document.querySelectorAll('#pastasArea .pastas-card').length) >= 1, true, 'os cartões de pasta aparecem');
 
-    await clicar('#mapaTemplates');
-    assert.equal(await page.locator('#mapaCanvasWrap .mapa-templates').count(), 1, 'painel de templates');
-    const antes = (await indice()).length;
-    await clicarAcao('aplicar-pronto', '[data-mapa-template="projeto"]');
-    assert.equal(await tituloAberto(), 'Projeto', 'template pronto aplicado e aberto');
-    const projetoId = (await indice()).find(m => m.nome === 'Projeto').id;
-    assert.equal(await page.evaluate(id => window.MapaMentalStore.obterGrafo(id).nos.length, projetoId), 7, 'template Projeto materializado');
-    assert.equal((await indice()).length, antes + 1, 'mapa do template entrou no índice');
-    await voltarLista();
-
-    await clicar('#mapaCanvasWrap [data-mapa-acao="aplicar-salvo"]');
-    assert.equal(await tituloAberto(), 'Meu Template', 'template salvo aplicado e aberto');
-    await voltarLista();
-
-    // ---------------------------------------------------------------- recentes
-    await clicar('#mapaTemplates');
-    assert.ok((await page.locator('#mapaCanvasWrap .mapa-recentes .mapa-chip').count()) >= 1, 'lista de recentes com atalho');
-
-    // ---------------------------------------------------------------- sem erros de página
     assert.deepEqual(erros, []);
-    console.log('OK: gestão de mapas (CRUD, pastas, raiz, conexões, templates, recentes, busca/ordenação)');
+    console.log('OK: mapas como itens da pasta (chips: criar/abrir/renomear/duplicar/mover/excluir, conexões, modelos, volta às Pastas)');
   } finally {
     await browser.close();
   }
 })().catch(e => { console.error(e); process.exit(1); });
 // 🧪 [FIM: TESTE - MAPA GESTAO]
+

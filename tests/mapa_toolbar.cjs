@@ -28,7 +28,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     for (const f of ['styles.css', 'theme-origem.css', 'notes/editor.css', 'notes/extras.css', 'notes/tables.css', 'mapa/mapa.css']) {
       await page.addStyleTag({ content: ler(f) });
     }
-    for (const f of ['notes/editor.js', 'notes/table-math.js', 'notes/extras.js', 'notes/tables.js']) {
+    for (const f of ['notes/editor.js', 'notes/table-math.js', 'notes/extras.js', 'notes/tables.js', 'fontes.js']) {
       await page.addScriptTag({ content: ler(f) });
     }
     const fonte = ler('app.js');
@@ -100,8 +100,8 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     });
     assert.ok(barra.existe && barra.visivel, 'barra de ferramentas visível com o mapa aberto');
     assert.equal(barra.role, 'toolbar', 'barra com role="toolbar"');
-    assert.ok(barra.grupos >= 5, 'barra tem grupos (' + barra.grupos + ')');
-    assert.ok(barra.divisores >= 4, 'grupos separados por divisores');
+    assert.ok(barra.grupos >= 4, 'barra tem grupos (' + barra.grupos + ')');
+    assert.ok(barra.divisores >= 3, 'grupos separados por divisores');
     assert.equal(barra.linhas, 'nowrap', 'barra em UMA linha');
     assert.ok(['auto', 'scroll'].includes(barra.rolagem), 'barra com rolagem horizontal');
     ['no-desfazer', 'no-refazer', 'zoom-in', 'zoom-out', 'centralizar', 'fit', 'ir-raiz',
@@ -120,7 +120,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     // (o resto é da visão de lista).
     const topbarVisivel = await page.evaluate(() => [...document.querySelectorAll('.mapa-topbar [data-mapa-acao]')]
       .filter(el => el.offsetParent !== null).map(el => el.dataset.mapaAcao));
-    assert.deepEqual(topbarVisivel, ['voltar-lista', 'alternar-colapso', 'alternar-fullscreen', 'alternar-split', 'fechar-mapa'], 'topbar do mapa organiza como Notas: colapso, expandir, lado a lado e fechar');
+    assert.deepEqual(topbarVisivel, ['alternar-colapso', 'alternar-fullscreen', 'alternar-split', 'fechar-mapa'], 'topbar do mapa organiza como Notas: colapso, expandir, lado a lado e fechar');
 
     // ---------------------------------------------------------------- 3) barra de formatação (sempre visível, como em Notas)
     assert.equal(await page.evaluate(() => document.getElementById('mapaFormatBar').hidden), false,
@@ -181,30 +181,30 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.ok(/M6\.5 12\.5 10 3\.5/.test(iguaisNotas.cor), 'cor usa o desenho da barra de Notas');
     assert.ok(/m14 3 7 7-10 10H4v-7z/.test(iguaisNotas.fundo), 'destaque usa o desenho da barra de Notas');
 
-    // ------------------------------------------- 3.2) Fonte/Forma/Alinhamento em UM botão (menu de opções)
+    // ------------------------------------------- 3.2) Forma/Alinhamento (menu) + Fonte (catálogo)
     const opcoes = await page.evaluate(() => [...document.querySelectorAll('#mapaFormatBar [data-mapa-acao="barra-menu"]')]
       .map(b => ({ menu: b.dataset.mapaMenu, popup: b.getAttribute('aria-haspopup') })));
-    assert.deepEqual(opcoes.map(o => o.menu).sort(), ['alinhamento', 'fonte', 'forma'],
-      'fonte/forma/alinhamento têm UM botão próprio cada');
+    assert.deepEqual(opcoes.map(o => o.menu).sort(), ['alinhamento', 'forma'],
+      'forma/alinhamento têm UM botão próprio cada');
     assert.ok(opcoes.every(o => o.popup === 'menu'), 'botões de opções anunciam aria-haspopup="menu"');
 
-    await clicar('#mapaFormatBar [data-mapa-acao="barra-menu"][data-mapa-menu="fonte"]');
-    const menuFonte = await page.evaluate(() => {
-      const el = document.getElementById('mapaMenuOpcoes');
-      return el ? {
-        role: el.getAttribute('role'),
-        valores: [...el.querySelectorAll('[data-mapa-estilo="fonte"]')].map(b => b.dataset.mapaValor),
-        comIcone: [...el.querySelectorAll('[data-mapa-estilo="fonte"] svg')].length
-      } : null;
+    // Fonte: botão PRÓPRIO que abre o catálogo do sistema (o MESMO de Notas).
+    assert.equal(await page.locator('#mapaFormatBar [data-mapa-acao="fonte-abrir"]').count(), 1,
+      'barra de formatação tem o botão Fonte');
+    await clicar('#mapaFormatBar [data-mapa-acao="fonte-abrir"]');
+    assert.equal(await page.evaluate(() => Boolean(document.querySelector('.notas-seletor-fontes'))), true,
+      'botão Fonte abre o catálogo de fontes');
+    const fonteAplicada = await page.evaluate(() => {
+      const alvo = [...document.querySelectorAll('.notas-seletor-fontes-opcao')].find(b => /monospace/.test(b.dataset.fonte || ''));
+      if (!alvo) return null;
+      const escolhida = alvo.dataset.fonte;
+      alvo.click();
+      return escolhida;
     });
-    assert.ok(menuFonte, 'botão Fonte abre o menu de opções');
-    assert.equal(menuFonte.role, 'menu', 'menu de opções com role="menu"');
-    assert.deepEqual(menuFonte.valores, ['sistema', 'serif', 'mono', 'cursiva'], 'opções de fonte listadas');
-    assert.equal(menuFonte.comIcone, 4, 'opções também usam ícone padronizado');
-
-    await clicar('#mapaMenuOpcoes [data-mapa-estilo="fonte"][data-mapa-valor="serif"]');
-    assert.equal((await estiloDe('Objetivo')).fonte, 'serif', 'opção escolhida é aplicada no nó');
-    assert.equal(await page.evaluate(() => Boolean(document.getElementById('mapaMenuOpcoes'))), false, 'menu fecha ao escolher');
+    assert.ok(fonteAplicada && /monospace/.test(fonteAplicada), 'catálogo lista fontes do sistema');
+    assert.equal((await estiloDe('Objetivo')).fonte, fonteAplicada, 'fonte escolhida é aplicada no nó');
+    assert.equal(await page.evaluate(() => Boolean(document.querySelector('.notas-seletor-fontes'))), false,
+      'seletor fecha ao escolher');
 
     await clicar('#mapaFormatBar [data-mapa-acao="barra-menu"][data-mapa-menu="forma"]');
     const menuForma = await page.evaluate(() => [...document.querySelectorAll('#mapaMenuOpcoes [data-mapa-estilo="forma"]')]
