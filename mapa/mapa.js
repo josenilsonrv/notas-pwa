@@ -245,8 +245,9 @@
 
     /**
      * Volta à TELA PRINCIPAL de Pastas (fim da "lista de mapas": cada pasta é um
-     * workspace com as áreas de Notas e de Mapas). É o destino da seta ‹ fixa
-     * (topo-esquerdo) — a MESMA navegação de Notas.
+     * workspace com as áreas de Notas e de Mapas). É o destino dos botões FECHAR
+     * (`#mapaFechar` no Mapa e `#notesModalClose` em Notas) — a antiga seta ‹ fixa
+     * saiu do topo, que agora é a moldura do botão de conta (`conta.js`).
      */
     function mapaVoltarParaPastas() {
         salvarViewportAgora.call(this);
@@ -2686,15 +2687,15 @@
     function inicializarAreasMapa() {
         if (!this.mapaAreasLigadas) {
             this.mapaAreasLigadas = true;
-            // Delegação no DOCUMENTO: a seta ‹ está na barra, e os botões de área/split
-            // vivem DENTRO de cada área (cabeçalho de Notas e topbar do Mapa).
+            // Delegação no DOCUMENTO: os botões de área/split vivem DENTRO de cada área
+            // (cabeçalho de Notas e topbar do Mapa). A seta ‹ saiu — a moldura fixa do
+            // topo agora é o botão de CONTA (`conta.js`) e quem volta às Pastas é o
+            // "Fechar" do Mapa (`#mapaFechar` → `mapaVoltarParaPastas`).
             document.addEventListener('click', evento => {
                 const aba = evento.target.closest('[data-app-area]');
                 if (aba) { this.aplicarArea(aba.dataset.appArea); return; }
                 if (evento.target.closest('[data-app-voltar]')) {
-                    // Seta ‹ (navegação única, igual a Notas): SEMPRE volta à tela
-                    // principal de Pastas (cada pasta é um workspace com Notas + Mapas)
-                    // e fecha o modal de Notas, revelando os cartões de pasta.
+                    // Compatibilidade: se a seta ‹ voltar a existir, ela volta a funcionar.
                     mapaVoltarParaPastas.call(this);
                     return;
                 }

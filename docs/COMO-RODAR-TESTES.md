@@ -25,6 +25,21 @@ completa é para visão geral.
 | Suíte completa + comparação com a rodada anterior | `node tests/run-all.cjs --baseline` | ≈ 11–16 min |
 | Suíte com retry (tolera timeout transitório) | `node tests/run-all.cjs --retry=1` | + tempo dos que falham |
 | Via npm | `npm test` / `npm test -- --filter=toolbar` | igual ao comando |
+| pytest do backend (Python) | `npm run test:backend` (ou `node tests/backend_python.cjs`) | 3–20 s (1ª vez) |
+| Sync contra o backend real | `node tests/sync_snapshot.cjs` / `sync_completo.cjs` | 20–60 s cada (sobe um `uvicorn` próprio) |
+| Mapa de chaves (Node puro) | `node tests/sync_chaves.cjs` | < 1 s |
+
+> **Backend Python (opcional).** `tests/backend_python.cjs` é a ponte para o pytest: com o
+> `.venv` pronto ele roda `pytest backend/tests -q` (~5 s, 94 testes) e **reprova a suíte** se
+> o backend quebrar; **sem** `.venv`/`pytest` ele sai com `0` e diz o motivo, então a suíte do
+> PWA **nunca** falha por causa do backend. Ambiente: `pip install -r backend/requirements.txt`.
+> Checagem completa (schema + login + isolamento) com credenciais: `npm run verificar:backend`.
+>
+> **Testes de sync** (`sync_snapshot.cjs` / `sync_completo.cjs`) sobem um **`uvicorn` próprio**
+> em porta livre, com `DRIVER=memory`, e usam esse origin — provam o caminho webapp↔backend de
+> verdade (cookie, `X-CSRF`, fila e 1º login). Seguem o mesmo contrato: **sem `.venv`, saem com
+> `0`** e explicam. `sync_chaves.cjs` é Node puro e **falha se aparecer uma chave `notas-pwa-*`
+> nova sem destino declarado** em `sync/chaves.js`.
 
 ### O que significa cada resultado no console
 
@@ -87,7 +102,9 @@ Get-Content "$env:TEMP\suite.txt" -Tail 20
   a divergência foi resolvida: **remova a entrada** da lista.
 * `--baseline`: `BASELINE: SEM REGRESSOES` / `BASELINE: REGRESSAO (arquivo.cjs)` compara
   com `docs/relatorio-testes.json` (lido **antes** de rodar).
-* Resumo esperado hoje: **62 passam / 0 falham / 8 conhecidas / 1 n/a** de 71 testes.
+* Resumo esperado hoje: **66 passam / 0 falham / 9 conhecidas / 1 n/a** de 76 testes (os 71 do
+  PWA + `conta_login.cjs` + `sync_snapshot.cjs` _(conhecida — ver P98)_ + `sync_completo.cjs` +
+  `sync_chaves.cjs` + `backend_python.cjs`, que roda o pytest do backend — ver a nota acima).
 * `flaky: N` aparece quando algum teste só passou com `--retry` (ou só passou na
   reconfirmação em série, no modo `--jobs`).
 
@@ -142,7 +159,7 @@ Get-Process msedge -ErrorAction SilentlyContinue | Stop-Process -Force
   arquivo que nunca vinha). **Corrigido** em P84: o visualizador agora usa a implementação
   de rede quando não há anexo local, então o teste termina em poucos segundos.
 
-## Falhas conhecidas (determinísticas) — 8
+## Falhas conhecidas (determinísticas) — 9
 
 Ficam na constante **`FALHAS_CONHECIDAS`** (topo de `tests/run-all.cjs`) e falham
 **sempre**, em qualquer execução limpa. Não são flakiness: são divergências reais do
@@ -157,6 +174,7 @@ notes_outline_code              colapso de título + bloco de código
 notes_paste_blocks              colagem de blocos junta linhas
 notes_regression_audit          auditoria de regressão (comportamento divergente)
 test_notes_editor_ui            Enter em lista aninhada (nível diferente)
+sync_snapshot                   aparelho NOVO pode terminar com a nota vazia (P98 — autosave do boot vence a nuvem)
 ```
 
 **Regras da lista (não quebre):**

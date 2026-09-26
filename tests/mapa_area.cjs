@@ -63,16 +63,20 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       backdropAtivo: document.getElementById('notesModalBackdrop').classList.contains('active'),
       mapaOculto: document.getElementById('mapaArea').hidden,
       montado: document.getElementById('mapaArea').querySelector('.mapa-shell') !== null,
-      seta: document.querySelector('#appAreas [data-app-voltar]') !== null
+      conta: document.querySelector('#appAreas #contaBtn') !== null
     }));
 
-    // Estrutura da navegação (fora do modal de notas): SÓ a seta ‹ (sem abas de área).
+    // Estrutura da navegação (fora do modal de notas): SÓ o botão de CONTA (sem abas).
+    // A seta ‹ foi SUBSTITUÍDA pelo botão de conta: quem volta às Pastas agora é o
+    // "Fechar" de Notas (#notesModalClose) e do Mapa (#mapaFechar).
     const nav = await page.evaluate(() => ({
-      voltar: document.querySelectorAll('#appAreas [data-app-voltar]').length,
+      conta: document.querySelectorAll('#appAreas #contaBtn').length,
+      seta: document.querySelectorAll('#appAreas [data-app-voltar]').length,
       abas: document.querySelectorAll('#appAreas [data-app-area]').length,
       contemMapa: document.getElementById('notesModalBackdrop').contains(document.getElementById('mapaArea'))
     }));
-    assert.equal(nav.voltar, 1, 'navegação tem a seta ‹ (voltar às Pastas)');
+    assert.equal(nav.conta, 1, 'navegação tem o botão de conta');
+    assert.equal(nav.seta, 0, 'a seta ‹ saiu (substituída pelo botão de conta)');
     assert.equal(nav.abas, 0, 'sem abas de área (a troca vive dentro das áreas)');
     assert.equal(nav.contemMapa, false, 'área do mapa fica FORA do modal de notas');
 
@@ -85,9 +89,9 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await page.evaluate(() => app.inicializarAreasMapa());
 
     // A seta ‹ fica sempre visível (topo-esquerdo), inclusive na tela raiz de Pastas.
-    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), false, 'a seta ‹ fica sempre visível');
+    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), false, 'a moldura fixa (botão de conta) fica sempre visível');
     await page.evaluate(() => app.abrirPasta('pasta-geral'));
-    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), false, 'dentro da pasta a seta continua visível');
+    assert.equal(await page.evaluate(() => document.getElementById('appAreas').hidden), false, 'dentro da pasta o botão de conta continua visível');
 
     // Entra no Mapa Mental.
     await page.evaluate(() => app.aplicarArea('mapa'));
@@ -96,7 +100,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(noMapa.backdropAtivo, false, 'modal de notas some no mapa');
     assert.equal(noMapa.mapaOculto, false, 'área do mapa visível');
     assert.equal(noMapa.montado, true, 'shell monta na primeira entrada (lazy)');
-    assert.equal(noMapa.seta, true, 'a seta ‹ continua disponível na área do mapa');
+    assert.equal(noMapa.conta, true, 'o botão de conta continua disponível na área do mapa');
 
     // Tema acompanha o evento `themechange`.
     const tema = await page.evaluate(async () => {

@@ -727,6 +727,105 @@ html[data-theme="dark"] .app-theme-switch-sun { color: #64748b; }
 body:has(#pastasArea:not([hidden])):has(#notesModalBackdrop:not(.active)) .app-tema-fixo { display: block; }
 
 /* ============================================
+ * CONTA (login OPCIONAL) — botão do cabeçalho e diálogo
+ * O diálogo REUSA `.notes-extra-dialog` (mesma base do "Modelos"): aqui só o que
+ * é próprio da conta (botão do header, campos, erro e ações).
+ * ============================================ */
+/* 🎨 [INÍCIO: CONTA/ESTILO - BOTÃO E DIÁLOGO DE CONTA] */
+.conta-btn {
+    /* Botão da MOLDURA FIXA do topo (ver `mapa.css` → `.app-areas`): pastilha
+       flutuante, com a mesma linguagem dos controles fixos do app. Traz o ícone de
+       pessoa + o nome ("Entrar" ou o e-mail). No PC fica CENTRALIZADO no topo (na
+       metade livre) com o nome; até 1023px fica à esquerda com SÓ o ícone, para o
+       título da área ao lado continuar legível. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    max-width: 260px;
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg-container);
+    color: var(--color-text-muted);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 160ms ease, color 160ms ease;
+}
+
+.conta-btn svg { flex: none; }
+
+/* O nome trunca com "…" mas nunca empurra o layout (min-width:0 = flex encolhe). */
+.conta-btn-nome {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.conta-btn:hover { border-color: var(--color-neon-blue); color: var(--color-neon-blue); }
+.conta-btn:focus-visible { outline: 2px solid var(--color-neon-blue); outline-offset: 2px; }
+.conta-btn[data-logado="true"] {
+    color: var(--color-neon-blue);
+    border-color: rgba(0, 113, 227, .35);
+}
+
+/* Tablet/celular: SÓ o ícone. O título da área (que fica ao lado do botão) precisa
+   continuar legível, e o e-mail completo aparece no balão e no diálogo. */
+@media (max-width: 1023px) {
+    .conta-btn { padding: 9px; }
+    .conta-btn-nome { display: none; }
+}
+
+/* Tema escuro: a pastilha acompanha a superfície do tema (a moldura em si é
+   transparente — só o botão tem fundo). */
+html[data-theme="dark"] .conta-btn {
+    background: #11161D;
+    border-color: #2A3543;
+    color: #94A3B8;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+html[data-theme="dark"] .conta-btn:hover { color: #E2E8F0; border-color: #3B4A5E; }
+html[data-theme="dark"] .conta-btn[data-logado="true"] { color: #93C5FD; border-color: rgba(147, 197, 253, .45); }
+
+.conta-dialog { width: min(340px, calc(100vw - 24px)); }
+.conta-dialog p { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--color-text-muted); }
+.conta-dialog .conta-email { color: var(--color-text-main); font-weight: 600; overflow-wrap: anywhere; }
+.conta-dialog .conta-sync { color: var(--color-neon-blue); font-weight: 500; }
+.conta-dialog .conta-aviso { font-size: 12px; color: var(--color-text-label); }
+.conta-dialog .conta-erro { color: var(--color-neon-red); font-weight: 500; }
+.conta-dialog .conta-erro[hidden] { display: none; }
+
+.conta-dialog button.conta-acao,
+.conta-dialog button.conta-acao-secundaria {
+    display: block;
+    width: 100%;
+    margin: 8px 0 0;
+    padding: 10px 12px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.conta-dialog button.conta-acao { background: var(--color-neon-blue); color: #FFFFFF; }
+.conta-dialog button.conta-acao-secundaria {
+    background: transparent;
+    border-color: var(--color-border);
+    color: var(--color-neon-blue);
+}
+.conta-dialog button.conta-acao:disabled,
+.conta-dialog button.conta-acao-secundaria:disabled { opacity: .6; cursor: default; }
+/* 🎨 [FIM: CONTA/ESTILO - BOTÃO E DIÁLOGO DE CONTA] */
+
+/* ============================================
  * SELETOR DE FONTES (catálogo do sistema) — usado em Notas e no Mapa.
  * ============================================ */
 .notas-seletor-fontes {

@@ -320,6 +320,11 @@ class NotesPWA {
         if (typeof installAtualizacaoPWA === 'function') installAtualizacaoPWA(NotesPWA);
         // Modo mobile: toolbar superior oculta por padrao e colapso agindo nos chips.
         installModoMobileNotas(NotesPWA);
+        // Conta (login OPCIONAL): botão "Entrar" + diálogo. Sem sessão/sem backend o
+        // app fica exatamente como hoje (LocalStorage, offline-first) — nada muda.
+        if (typeof installConta === 'function') installConta(NotesPWA);
+        // Sincronização (seção 5): fila persistida + snapshot/push. Sem sessão, nada muda.
+        if (typeof installSync === 'function') installSync(NotesPWA);
     }
 
     // 🔄 [FIM: PWA - APLICAÇÃO (NotesPWA boot/instalação)]

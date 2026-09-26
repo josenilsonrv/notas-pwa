@@ -101,10 +101,13 @@
              Navegação: APENAS a seta ‹ (topo-esquerdo), que sempre volta à raiz de Pastas.
              A troca Notas↔Mapa é feita por botões DENTRO de cada área
              ("Ver mapa ao lado" em Notas; "Ver nota ao lado" no Mapa). -->
-        <nav id="appAreas" class="app-areas" aria-label="Navegação" hidden>
-            <button type="button" id="appVoltar" class="app-voltar" data-app-voltar="pastas" title="Voltar às pastas" aria-label="Voltar às pastas">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
+        <nav id="appAreas" class="app-areas" aria-label="Conta" hidden>
+            <!-- 🚨 [INÍCIO: CONTA - BOTÃO DA MOLDURA FIXA (substitui a seta ‹)] -->
+            <!-- Conta OPCIONAL: deslogado = "Entrar"; logado = o e-mail. É o ÚNICO
+                 controle visível em qualquer tela (fica acima das áreas e do modal);
+                 a seta ‹ saiu porque "Fechar" (Notas/Mapa) já volta às Pastas. -->
+            <button type="button" id="contaBtn" class="conta-btn" data-logado="false" title="Entrar na sua conta" aria-label="Entrar na sua conta">Entrar</button>
+            <!-- 🚨 [FIM: CONTA - BOTÃO DA MOLDURA FIXA (substitui a seta ‹)] -->
         </nav>
         <!-- Seletor de tema na TELA PRINCIPAL (fora do modal de notas e sempre visível). -->
         <div class="app-tema-fixo">
@@ -240,6 +243,11 @@
     <script src="./notes/tables.js"></script>
     <script src="./fontes.js"></script>
     <script src="./app.js"></script>
+    <!-- Conta (login OPCIONAL): botão "Entrar" + diálogo. Sem sessão, o app é o de hoje. -->
+    <script src="./conta.js"></script>
+    <!-- Sincronização (seção 5): mapa das chaves locais + cliente (fila/snapshot/push). -->
+    <script src="./sync/chaves.js"></script>
+    <script src="./sync/sync-cliente.js"></script>
     <script src="./mapa/mapa-modelo.js"></script>
     <script src="./mapa/mapa-store.js"></script>
     <script src="./mapa/mapa-layout.js"></script>

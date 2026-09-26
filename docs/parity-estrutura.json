@@ -16,10 +16,10 @@
     "pwa": [
       "appAreas",
       "appToastRegion",
-      "appVoltar",
       "bootGuard",
       "bootGuardErro",
       "bootGuardReparar",
+      "contaBtn",
       "mapaArea",
       "notesAbrirMapa",
       "notesContextNav",
@@ -64,11 +64,13 @@
       "Avisos",
       "Centralizar",
       "Checklist",
+      "Conta",
       "Cor da fonte",
       "Descer linha",
       "Desfazer",
       "Desindentar",
       "Destaque de texto",
+      "Entrar na sua conta",
       "Fechar notas",
       "Fonte",
       "Indentar",
@@ -77,7 +79,6 @@
       "Lista com marcadores",
       "Lista numerada",
       "Mapa Mental",
-      "Navegação",
       "Negrito",
       "Notas deste foco",
       "Pastas",
@@ -89,8 +90,7 @@
       "Título H1",
       "Título H2",
       "Título H3",
-      "Ver o mapa ao lado da nota",
-      "Voltar às pastas"
+      "Ver o mapa ao lado da nota"
     ],
     "faltando": []
   },

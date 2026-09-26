@@ -45,53 +45,40 @@ html[data-theme="dark"] {
 }
 
 /* ------------------------------------------------------------
- * Seletor de áreas (Notas | Mapa Mental).
- * Flutuante: NÃO participa do fluxo do modal de notas (parity visual intacta).
+ * Moldura fixa do topo: a CONTA (login OPCIONAL — seção 4).
+ * Flutuante (NÃO participa do fluxo de nenhuma área) e acima de TUDO
+ * (z-index 2400 > modal de notas 2300 > áreas 900): é o único controle que
+ * funciona em qualquer tela. SUBSTITUIU a seta ‹ — a função dela ("voltar às
+ * Pastas") continua nos botões Fechar de Notas (#notesModalClose) e do Mapa
+ * (#mapaFechar).
+ * PC (>=1024px): centralizada na METADE LIVRE do topo. O modal de Notas ocupa a
+ *   metade ESQUERDA (50%), então o centro da tela cairia sobre o ✕ dele.
+ * Até 1023px (tablet/celular): canto ESQUERDO (onde estava a seta ‹), com o nome
+ *   oculto (só o ícone) para o título da área ao lado continuar legível.
  * ------------------------------------------------------------ */
 .app-areas {
     position: fixed;
     top: 12px;
-    left: 12px;
-    /* Acima do modal de notas ativo (#notesModalBackdrop.active = z-index 2300),
-       para o botão continuar clicável em qualquer área. */
+    left: 0;
+    right: 0;
     z-index: 2400;
     display: flex;
-    gap: 4px;
-    padding: 4px;
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--color-bg-container) 92%, transparent);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
-}
-
-/* Navegação por seta ‹ (único controle): sempre volta à raiz de Pastas. */
-.app-voltar {
-    appearance: none;
-    border: 0;
-    border-radius: 999px;
-    width: 40px;
-    height: 40px;
-    display: inline-flex;
-    align-items: center;
     justify-content: center;
-    font: inherit;
-    font-size: 22px;
-    line-height: 1;
-    font-weight: 700;
-    color: var(--color-text-muted);
-    background: transparent;
-    cursor: pointer;
+    padding: 0 12px 0 50%;
+    /* A moldura é INVISÍVEL: só o botão recebe cliques. */
+    pointer-events: none;
 }
-.app-voltar:hover { color: var(--color-text-main); background: var(--mapa-hover); }
-html[data-theme="dark"] .app-voltar { color: var(--mapa-texto-suave); }
-html[data-theme="dark"] .app-voltar:hover { color: var(--mapa-texto-forte); }
 
-/* A seta ‹ é fixa no topo-esquerdo: reserva SÓ o espaço dela (não o do seletor de
-   tema, que passou para o canto inferior direito da tela de Pastas). Assim o título
-   fica ao lado da seta — o mesmo alinhamento de "Notas". */
-body:has(#appAreas:not([hidden])) .mapa-topbar,
-body:has(#appAreas:not([hidden])) .pastas-topbar,
-body:has(#appAreas:not([hidden])) .app-header { padding-left: 4.5rem; }
+.app-areas > * { pointer-events: auto; }
+
+/* Tablet/celular: botão à esquerda + reserva de espaço nas barras, porque o título
+   de cada área fica AO LADO dele e precisa continuar legível. */
+@media (max-width: 1023px) {
+    .app-areas { justify-content: flex-start; padding-left: 12px; }
+    body:has(#appAreas:not([hidden])) .pastas-topbar,
+    body:has(#appAreas:not([hidden])) .mapa-topbar,
+    body:has(#appAreas:not([hidden])) .notes-modal-header { padding-left: 3.5rem; }
+}
 
 /* Ícones das barras do MAPA com a MESMA cor/hover da barra de Notas
    (`.toolbar-btn` escuro: #94A3B8 → hover #E2E8F0 sobre #202A36). */
@@ -150,10 +137,6 @@ html[data-theme="dark"] .mapa-format-bar .toolbar-btn:hover { color: #E2E8F0; ba
 html[data-theme="dark"] .app-areas-voltar,
 html[data-theme="dark"] .app-areas-split { color: var(--mapa-texto-suave); }
 
-html[data-theme="dark"] .app-areas {
-    background: color-mix(in srgb, var(--mapa-container) 92%, transparent);
-    border-color: var(--mapa-borda);
-}
 html[data-theme="dark"] .app-areas [data-app-area] { color: var(--mapa-texto-suave); }
 html[data-theme="dark"] .app-areas [data-app-area]:hover { color: var(--mapa-texto-forte); }
 
@@ -359,7 +342,8 @@ html.notes-mobile #mapaSplitBtn { display: none !important; }
  * (espelho exato do tema de Notas — ver bloco de tokens no topo). */
 
 @media (max-width: 480px) {
-    .app-areas { top: 8px; left: 8px; }
+    /* Telas estreitas: a moldura encosta mais na borda (o botão de conta é o único filho). */
+    .app-areas { top: 8px; padding-left: 8px; }
     .app-areas [data-app-area] { padding: 8px 14px; min-height: 44px; }
 }
 

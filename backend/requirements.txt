@@ -1,0 +1,39 @@
+# Backend Python do notas-pwa - dependencias de runtime e de teste.
+#
+# NOTAS DE AMBIENTE (R1 do plano):
+#   - Este projeto roda hoje em Python 3.14.5. Se algum wheel (pydantic-core,
+#     supabase) nao existir para esta versao, o driver do repositorio cai para
+#     a implementacao pura em httpx (PostgREST + GoTrue via REST), que nao
+#     depende de wheel nativo nenhum.
+#   - `supabase` e opcional: o codigo usa `supabase_cliente.py`, que tenta o
+#     pacote oficial e, na sua ausencia, usa httpx. Nao travar a instalacao por
+#     causa dele.
+#
+# Instalar:
+#   python -m venv .venv
+#   .\.venv\Scripts\Activate.ps1
+#   pip install -r backend/requirements.txt
+#
+# VERSOES CONGELADAS: `backend/requirements.lock.txt` guarda o `pip freeze` do ambiente
+# validado (Python 3.14.5) - use-o quando precisar reproduzir exatamente o mesmo ambiente:
+#   pip install -r backend/requirements.lock.txt
+
+# --- runtime (API + estatico do PWA) ---
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+httpx
+
+# --- Supabase (opcional - ver nota R1 acima) ---
+# O cliente do backend usa httpx/PostgREST (veja app/supabase_cliente.py); o pacote
+# oficial fica disponivel para uso pontual, mas NAO e obrigatorio.
+supabase
+
+# --- Schema/migracao (opcional): psycopg permite ao `scripts/migrar.py` aplicar o
+#     schema.sql direto (com SUPABASE_DB_URL). Sem ele, o migrar orienta o SQL Editor.
+psycopg[binary]
+
+# --- testes (dev) ---
+pytest
+pytest-asyncio

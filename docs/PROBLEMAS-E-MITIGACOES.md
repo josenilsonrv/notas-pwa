@@ -1160,3 +1160,170 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
   `waitForFunction`; e reusar um único navegador entre testes.
 - **Resultado**: suíte completa **`PASSOU: 62 | FALHOU: 0 | CONHECIDAS: 8 | N/A: 1 | TOTAL: 71`**
   (`RESULTADO: SEM FALHAS`), com os relatórios regenerados.
+
+### P89 — Porta 8000 ocupada por servidores Python ANTIGOS (parecia "backend quebrado")
+- **Sintoma**: `GET /health` devolvia **404** e `GET /` devolvia **200 com HTML** — ou seja, parecia
+  que o backend subia mas não tinha as rotas. Pior: o `Stop-Process` do PID que o `Start-Process`
+  devolveu dizia "não é possível localizar um processo".
+- **Causa**: **dois processos `python.exe` de uma sessão anterior (mais de 24 h antes)** ainda
+  escutavam em `127.0.0.1:8000` e `0.0.0.0:8000`. O `uvicorn` novo **falhou no bind**
+  (`[Errno 10048]`) e a mensagem ficou no `stderr` redirecionado; quem respondia era o servidor
+  estático antigo (por isso `/` = 200 e `/health` = 404).
+- **Diagnóstico/correção**:
+  ```powershell
+  Get-NetTCPConnection -LocalPort 8000 -State Listen | Select-Object OwningProcess
+  Get-Process -Id <pid> | Select-Object Id,ProcessName,Path,StartTime
+  ```
+  com o PID em mãos, encerrar e subir o backend de novo. Para **validar sem mexer em processos
+  de terceiros**, subir em outra porta (`python -m uvicorn backend.app.main:app --port 8123`) —
+  foi assim que a Seção 1 fechou (health, PWA, `sw.js` e os 404 de bloqueio todos conferidos).
+- **Evitar nas próximas fases**: antes de subir o backend, conferir a porta (mesma higiene de
+  "deixe a máquina limpa" do `docs/COMO-RODAR-TESTES.md`); e **sempre ler o `stderr`** do
+  `Start-Process` — a falha de bind não aparece no `stdout`.
+
+### P90 — Rate-limit também conta o REGISTRO (o teste precisava saber disso)
+- **Sintoma**: o teste de rate-limit esperava **5** tentativas de login erradas antes do `429` e
+  recebeu `429` já na 5ª.
+- **Causa**: comportamento **intencional** — o plano pede rate-limit em "login/registro"; o
+  `POST /api/auth/registrar` consome a **mesma chave** (`IP|e-mail`). O registro do início do
+  teste já havia gastado 1 das 5 tentativas.
+- **Correção**: o teste passou a **zerar o limitador** (`reiniciar_limitador()`) depois do
+  registro, medindo exatamente as 5 tentativas de login; e o teste "login certo libera o
+  rate-limit" documenta o `liberar()`. O `verificar.py` também zera antes do passo de login.
+- **Evitar**: ao testar rate-limit, isolar a contagem (a chave inclui IP **e** e-mail) e lembrar
+  que o registro conta.
+
+### P91 — `.clinerules/regras-de-edicao.md` ficou com EOL misturado (CRLF + LF)
+- **Sintoma**: depois de inserir as seções novas (§1.1, tabela de linguagens, prefixos e legendas),
+  o `git diff` mostrou `\r` apenas nas linhas **antigas** — o arquivo passou a ter `\r\n` e `\n`
+  misturados.
+- **Causa**: o arquivo estava em **CRLF**, enquanto o `.gitattributes` pede `text=auto eol=lf`; as
+  linhas inseridas foram escritas com **LF**.
+- **Correção**: normalizado para **LF** (`[IO.File]::ReadAllText` + `-replace "`r`n","`n"` +
+  `WriteAllText`), alinhando com o que o `.gitattributes` já exigia. Conferido com
+  `git ls-files --eol`.
+- **Evitar**: arquivos de texto deste repo são **LF**; ao criar/editar, não misturar.
+
+### P92 — Python 3.14.5 e o risco R1 (wheels): NÃO se confirmou
+- **Risco previsto (R1)**: `pydantic-core`/`supabase`/`psycopg` poderiam não ter wheel para o
+  Python 3.14.5 e travar a Seção 1.
+- **Resultado real**: **nenhuma falha de instalação** — `pydantic-core 2.46.5` (wheel `cp314`),
+  `cryptography 50.0.1`, `psycopg 3.3.6` (binary) e `supabase 2.31.0` instalaram normalmente.
+  Só dois efeitos colaterais **inofensivos**: o `supabase` rebaixou `websockets` de `17.1` para
+  `15.0.1` (o `realtime` exige; o backend ainda não usa WebSocket) e o pip emitiu
+  `WARNING: Cache entry deserialization failed, entry ignored` (cache local corrompido, ignorado).
+- **Mitigação mantida mesmo assim**: o cliente do Supabase é **httpx + PostgREST**
+  (`backend/app/supabase_cliente.py`), e **não** o `supabase-py`. Isso deixa o backend
+  independente de wheel/versão e é o que permite testar toda a construção de URL/JSON com
+  `httpx.MockTransport` (sem rede). O pacote `supabase` continua instalado, mas é opcional.
+- **Regra para as próximas fases**: se algum wheel voltar a falhar, o caminho httpx é o plano B
+  já validado — nenhuma seção precisa parar por causa disso.
+
+### P93 — O cabeçalho do app (`.app-header`) é COBERTO pelas áreas (controle nele é inclicável)
+- **Sintoma**: o botão de conta criado no `<header>` aparecia na tela mas o clique **não chegava**
+  nele. O Playwright recusou: *"`<button class="mapa-btn" data-pastas-acao="pasta-nova">Nova pasta</button>`
+  from `<main>` subtree intercepts pointer events"*.
+- **Causa (medida no navegador)**: `.pastas-area`/`.mapa-area` são `position: fixed; inset: 0;
+  z-index: 900` e o `#notesModalBackdrop.active` é `2300`, enquanto o `<header>` é **estático**
+  (`z-index: auto`). Nas duas larguras o header fica em `y 0..68` e a barra da área (`.pastas-topbar`)
+  em `y 0..69` — **mesma faixa, desenhada por cima**. Na prática o header é **decorativo/legado**:
+  nada nele era clicável até agora (por isso o defeito nunca apareceu).
+- **Correção**: o botão foi para a **moldura fixa `#appAreas`** (`z-index: 2400`, criada justamente
+  para "continuar clicável em qualquer área") e a **seta ‹ saiu** (decisão do dono do produto): a
+  função dela — voltar às Pastas — é exercida pelo `#notesModalClose` e pelo `#mapaFechar`.
+- **Efeitos colaterais tratados**: `.app-voltar` (CSS) removido; o `padding-left: 4.5rem` das barras
+  saiu; o handler `[data-app-voltar]` ficou como **compatibilidade** documentada; 3 testes que
+  usavam a seta (`mapa_area`, `mapa_gestao`, `pastas_unificadas`) passaram a checar o botão de conta
+  e a usar o "Fechar" do Mapa para voltar às Pastas.
+
+### P94 — No PC o centro da tela é a BORDA do modal de Notas (centralizar cairia sobre o ✕)
+- **Sintoma**: com o botão "centralizado", no PC ele ficava **em cima do ✕** do modal de Notas.
+- **Causa**: o modal de Notas ocupa **50% da largura** (`--notes-width: 50vw`, medido: 640px em 1280),
+  alinhado à ESQUERDA. O centro da tela é exatamente a borda direita dele.
+- **Correção**: a moldura usa `padding: 0 12px 0 50%` no PC e `justify-content: center` — o botão fica
+  **centralizado na METADE LIVRE** do topo (`≈75%`), sem tocar no modal nem nos botões das barras.
+  Até 1023px vai para a esquerda (`padding-left: 12px`).
+
+### P95 — Reserva de espaço do botão deixou o TÍTULO da área ilegível no celular
+- **Sintoma**: no celular (390px) o título da nota virou **"in…"** (era "Minhas notas").
+- **Causa**: para o botão não cobrir a barra, a reserva de `padding-left` era de **120px** — e o
+  cabeçalho do modal tem só ~176px até os 4 botões da direita.
+- **Correção**: até 1023px o botão fica **só com o ícone** (`padding: 9px`, `.conta-btn-nome`
+  escondido) e a reserva caiu para **3.5rem (56px)** → o título da área volta a caber inteiro e o
+  e-mail completo fica no balão (`title`) e dentro do diálogo. No PC (>=1024px) o nome aparece.
+- **Regra para as próximas fases**: ao acrescentar controle na moldura fixa, **medir** o espaço da
+  barra de cada área (o app foi feito para 390px de largura útil) antes de reservar recuo.
+
+### P96 — `installSync(NotesPWA)`: `this` NÃO é a instância (e isso derrubou o BOOT)
+- **Sintoma**: no Bloco II o app **parou de bootar** quando servido pelo backend: `pageerror
+  TypeError: this.syncAtivo is not a function` em `sync/sync-cliente.js`, `__notasPronto` nunca
+  ficava `true` e `window.notesApp` ficava `undefined`. O `sync_snapshot.cjs` travou no boot.
+- **Causa**: os instaladores (`installConta`, `installSync`, `installMapaMental`) são funções
+  **chamadas como função simples** (`installSync(NotesPWA)`), então dentro delas `this` é o objeto
+  global — e eu usei `this.syncAtivo()` no código de INSTALAÇÃO (fora dos `p.metodo = function`).
+- **Correção**: no código de instalação usar o PROTÓTIPO explicitamente
+  (`p.syncFilaLer.call(p)`) e/ou escrever direto no espelho (`window.notasConta.sync`). Regra:
+  **dentro de `installX(App)`, `this` só vale dentro dos `function` que vão para o protótipo.**
+- **Como detectar rápido**: `node --check` passa (é erro de runtime) — o que pega é o teste de
+  boot REAL (`tests/conta_login.cjs`, `tests/sync_snapshot.cjs`) e o `pageerror` da página.
+
+### P97 — Corrida no boot: o 1º login subia a nota VAZIA (perda de dado silenciosa)
+- **Sintoma**: `sync_snapshot.cjs` acusou "o 1º login subiu o conteúdo que já existia no aparelho"
+  como falso. O `push` mandava `notas/local=` (vazio) e o `localStorage` acabava com a nota
+  **zerada** — perda de dado, não só de teste.
+- **Diagnóstico** (instrumentando `localStorage.setItem` com pilha + `fetch`): duas causas somadas
+  1. **`syncAoEntrar` rodava antes do `init()` terminar** de montar `projectsData` (a lista de
+     notas vive em MEMÓRIA). Com a lista vazia, a coleta mandava nada (ou a nota vazia).
+  2. **`syncAplicarNotas` gravava o armário mesmo sem nada a aplicar** (snapshot vazio): nesse
+     instante ele escrevia `[{id:'local', notas:''}]` **por cima** do texto bom.
+- **Correção** (em `sync-cliente.js`):
+  - `syncAoEntrar` **espera o boot**: laço curto aguardando `window.__notasPronto` (o sinal que o
+    próprio app publica no fim do `init()`), com teto de 5 s;
+  - `syncColetarOps` lê do **armazenamento** quando a memória ainda está vazia (rede de segurança);
+  - `syncAplicarNotas` **sai cedo** quando não há registro para aplicar (nunca reescreve o que não
+    mudou).
+- **Evitar**: qualquer rotina que leia/escreva a lista de notas precisa checar
+  `window.__notasPronto` (ou ler do armazenamento). Regra: **aplicação remota só grava o que veio
+  da nuvem** — nunca "regrava o estado atual".
+
+### P98 — ⚠️ ABERTO: aparelho NOVO pode terminar com a nota VAZIA (autosave do boot vence a nuvem)
+- **Sintoma**: `tests/sync_snapshot.cjs` falha no último passo (registrado em `FALHAS_CONHECIDAS`):
+  o 1º aparelho envia a nota (`so local` + `oi da nuvem` chegam à nuvem — os passos 1–3 passam),
+  mas o **2º aparelho** (contexto limpo) termina com `notas: [""]`.
+- **Diagnóstico (medido com instrumentação de `fetch`/`localStorage`)**: no aparelho novo a nota
+  começa VAZIA. Durante o boot, o motor agenda um **autosave com o editor ainda vazio**; esse save
+  1. **zera a nota em memória e no armário** e
+  2. **entra na fila** (`apiCall` → `syncEnfileirarNota`);
+  quando a fila drena, o carimbo `atualizada_em` do cliente é **mais novo** que o `updated_at` do
+  servidor → o LWW aceita o payload vazio e **a versão boa que veio da nuvem é sobrescrita**.
+- **O que já foi corrigido no caminho** (e resolveu o 1º login + a perda local): `syncAoEntrar`
+  espera `window.__notasPronto`; `syncAplicarNotas` sai cedo quando não há nada a aplicar;
+  `syncColetarOps` lê do armazenamento se a memória estiver vazia; `syncRefazerEditor` re-renderiza
+  o editor aberto, marca a sessão como salva e **cancela timers de autosave pendentes**.
+- **O que FALTA (próxima sessão)** — impedir que um autosave de editor VAZIO sobreponha uma versão
+  mais nova da nuvem. Caminhos estudados:
+  1. só enfileirar quando o conteúdo mudou EM RELAÇÃO À SESSÃO (`session.saved`), e não a cada
+     `apiCall` (o motor chama `apiCall` também em saves "vazios" do boot);
+  2. marcar a sessão como "aguardando render" até o primeiro render do documento (o autosave só
+     valeria depois disso);
+  3. no servidor, **não** aceitar um `upsert` de `notas` com `conteudo_html` vazio quando a linha
+     atual tem conteúdo e o cliente declara um instante apenas "um pouco" mais novo (heurística —
+     menos elegante, porém blinda contra o boot).
+- **Impacto**: **bloqueador para fechar o Bloco II com folga** — o resto do sync (pastas, mapas com
+  grafo, modelos e ajustes, ida e volta nos dois aparelhos) está provado por
+  `tests/sync_completo.cjs`. O defeito é específico da NOTA em aparelho novo.
+- **Tentativas já aplicadas (e o que cada uma mostrou)**:
+  1. `syncAoEntrar` esperando `window.__notasPronto`, `syncAplicarNotas` sem gravar quando não há o
+     que aplicar, `syncColetarOps` lendo do armazenamento quando a memória está vazia → **corrigiu
+     a perda local e o 1º login** (os passos 1–3 de `sync_snapshot.cjs` passam);
+  2. `syncRefazerEditor` reabrindo a nota pelo caminho do APP (só com o modal ativo), marcando a
+     sessão como salva e cancelando timers, + `syncEstale` (nenhum save do editor "velho" entra na
+     fila) + `syncPronto` (nada entra na fila antes do 1º snapshot) → **o 2º aparelho continua
+     terminando com a nota vazia** (`notas: [""]`);
+  3. **Suspeito que restou** (próximo passo): no aparelho novo o **upload do 1º login**
+     (`syncSubirTudo`, que é um `push` DIRETO e não passa pela fila) roda com a nota ainda não
+     renderizada pelo app e manda `conteudo_html` vazio com carimbo novo → vence o LWW. Ação
+     provável: fazer o `syncSubirTudo` também respeitar o estado "editor velho"/`__notasPronto` do
+     RENDER (não só do boot), ou enviar a nota só depois do primeiro render do documento.
+- **Como auditar**: `node tests/sync_snapshot.cjs` (falha sempre, igual) — e o diagnóstico do 2º
+  aparelho aparece no `stderr` do teste (`estado no 2º aparelho: {"notas":[""]}`).

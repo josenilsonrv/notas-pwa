@@ -203,10 +203,11 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await page.evaluate(() => window.app.renderArea());
     assert.equal(await page.locator('#mapaCanvasWrap .mapa-chip-quebrado').count(), 1, 'referência quebrada avisada sem quebrar o render');
 
-    // ---------------------------------------------------------------- 11) seta ‹ volta às Pastas
-    await clicar('#appVoltar');
+    // ------------------------------------------------- 11) Fechar do Mapa volta às Pastas
+    // (a seta ‹ saiu; o "Fechar" do Mapa exerce a mesma função)
+    await clicar('#mapaFechar');
     await page.waitForTimeout(150);
-    assert.equal(await page.evaluate(() => document.getElementById('pastasArea').hidden), false, 'a seta ‹ leva à tela principal de Pastas');
+    assert.equal(await page.evaluate(() => document.getElementById('pastasArea').hidden), false, 'o Fechar do Mapa leva à tela principal de Pastas');
     assert.equal(await page.evaluate(() => document.getElementById('mapaArea').hidden), true, 'a área do mapa sai de cena');
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('notas-pwa-area-ativa'))), 'pastas', 'área ativa persistida como pastas');
     assert.equal(await page.evaluate(() => document.querySelectorAll('#pastasArea .pastas-card').length) >= 1, true, 'os cartões de pasta aparecem');

@@ -74,13 +74,13 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       pastasVisivel: !document.getElementById('pastasArea').hidden,
       mapaVisivel: !document.getElementById('mapaArea').hidden,
       backdropAtivo: document.getElementById('notesModalBackdrop').classList.contains('active'),
-      abas: document.querySelectorAll('#appAreas [data-app-voltar]').length,
+      conta: document.querySelectorAll('#appAreas #contaBtn').length,
       pastaAtiva: JSON.parse(localStorage.getItem('notas-pwa-pasta-ativa') || 'null')
     }));
 
     // ---------------------------------------------------------------- 1) tela raiz = Pastas
     const inicial = await estado();
-    assert.equal(inicial.abas, 1, 'navegação tem só a seta ‹ (sem abas de área)');
+    assert.equal(inicial.conta, 1, 'a moldura fixa tem o botão de conta (sem abas de área)');
     assert.equal(inicial.pastasVisivel, true, 'tela de Pastas abre primeiro');
     assert.equal(inicial.mapaVisivel, false, 'área do mapa começa oculta');
     assert.equal(inicial.backdropAtivo, false, 'na raiz o modal de Notas fica fechado (cartões clicáveis)');
@@ -117,9 +117,10 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal((await estado()).mapaVisivel, true, 'área do mapa abre');
 
     // ---------------------------------------------------------------- 6) voltar para as pastas
-    await page.locator('#appVoltar').click();
+    // A seta ‹ saiu; quem volta às Pastas a partir do Mapa é o "Fechar" do Mapa.
+    await page.locator('#mapaFechar').click();
     await page.waitForTimeout(120);
-    assert.equal((await estado()).pastasVisivel, true, 'seta ‹ volta para a tela raiz');
+    assert.equal((await estado()).pastasVisivel, true, 'Fechar do Mapa volta para a tela raiz');
 
     assert.deepEqual(erros, [], 'sem erros de página');
     console.log('OK: Pastas como tela raiz (workspaces de notas + mapas)');

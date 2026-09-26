@@ -10,7 +10,10 @@
     "test:baseline": "node tests/run-all.cjs --baseline",
     "test:origem": "node tests/run-all.cjs --origem",
     "icones": "node tools/gerar-icones.cjs",
-    "rastreabilidade": "node tools/gerar-rastreabilidade.cjs"
+    "rastreabilidade": "node tools/gerar-rastreabilidade.cjs",
+    "dev:backend": ".venv\\Scripts\\python.exe -m uvicorn backend.app.main:app --port 8000 --reload",
+    "test:backend": ".venv\\Scripts\\python.exe -m pytest backend/tests -q",
+    "verificar:backend": ".venv\\Scripts\\python.exe -m backend.scripts.verificar"
   },
   "devDependencies": {
     "playwright": "^1.63.0"

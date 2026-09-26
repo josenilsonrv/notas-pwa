@@ -16,7 +16,7 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
-const CACHE_NAME = 'notas-pwa-v66';
+const CACHE_NAME = 'notas-pwa-v68';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -36,6 +36,9 @@ const ESSENCIAIS = [
     './styles.css',
     './theme-origem.css',
     './app.js',
+    './conta.js',
+    './sync/chaves.js',
+    './sync/sync-cliente.js',
     './notes/editor.js',
     './notes/editor.css',
     './notes/extras.js',

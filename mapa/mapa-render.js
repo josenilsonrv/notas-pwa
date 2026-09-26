@@ -68,9 +68,9 @@
         const topbar = criar('div', 'mapa-topbar app-vidro-barra');
         topbar.append(criar('h2', 'mapa-topbar-titulo', 'Mapa Mental'));
 
-        // O título fica AO LADO da seta ‹ (igual a Notas). A navegação da área usa a
-        // MESMA seta fixa (#appVoltar, topo-esquerdo), que volta à tela principal de
-        // Pastas (cada pasta é um workspace com as áreas de Notas e de Mapas).
+        // O título da barra. A moldura fixa do topo agora é o botão de CONTA
+        // (`conta.js`, definido no `#appAreas`); a seta ‹ saiu e quem volta às Pastas
+        // é o "Fechar" do Mapa (`#mapaFechar`).
         const tituloAtual = criar('span', 'mapa-titulo-atual', '');
         tituloAtual.id = 'mapaTituloAtual';
         tituloAtual.hidden = true;
