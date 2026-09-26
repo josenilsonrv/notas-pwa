@@ -19,6 +19,7 @@ for _var in (
     "SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_ROLE_KEY",
     "SUPABASE_DB_URL",
+    "GOOGLE_CLIENT_ID",
 ):
     os.environ[_var] = ""
 

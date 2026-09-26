@@ -823,6 +823,22 @@ html[data-theme="dark"] .conta-btn[data-logado="true"] { color: #93C5FD; border-
 }
 .conta-dialog button.conta-acao:disabled,
 .conta-dialog button.conta-acao-secundaria:disabled { opacity: .6; cursor: default; }
+
+/* Login com Google (GIS): o botão é renderizado pelo PRÓPRIO Google (iframe dele); aqui só
+   o divisor "ou" e a caixa que o recebe. Quando não há Client ID/GIS, os dois ficam `hidden`
+   e nada aparece — o e-mail/senha segue normal. */
+.conta-dialog .conta-google-divisor {
+    margin: 12px 0 0 !important;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-size: 11px;
+    color: var(--color-text-label);
+}
+
+.conta-dialog .conta-google-divisor[hidden] { display: none; }
+.conta-dialog .conta-google { display: flex; justify-content: center; margin: 8px 0 0; }
+.conta-dialog .conta-google[hidden] { display: none; }
 /* 🎨 [FIM: CONTA/ESTILO - BOTÃO E DIÁLOGO DE CONTA] */
 
 /* ============================================

@@ -23,7 +23,7 @@ _DIRETIVAS_CSP = (
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "media-src 'self' data: blob: https:",
-    "frame-src 'self' https://www.youtube-nocookie.com",
+    "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com",
     # `data:` no `connect-src`: o Chromium reporta um "connect" interno ao re-renderizar imagens
     # `data:` (o anexo local de hoje). URL `data:` NÃO sai do navegador, então liberá-la aqui não
     # abre exfiltração nenhuma — e evita um erro de console que assustava sem haver defeito.
@@ -59,7 +59,7 @@ def csp_do_html(caminho) -> str:
         hashes = _hashes_inline(caminho.read_text(encoding="utf-8"))
     except OSError:
         hashes = []
-    script = "script-src 'self'" + ((" " + " ".join(hashes)) if hashes else "")
+    script = "script-src 'self' https://accounts.google.com" + ((" " + " ".join(hashes)) if hashes else "")
     politica = "; ".join([_DIRETIVAS_CSP[0], script, *_DIRETIVAS_CSP[1:]])
     _CACHE_CSP[chave] = politica
     return politica

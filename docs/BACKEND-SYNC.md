@@ -37,12 +37,34 @@ python -m uvicorn backend.app.main:app --port 8000 --reload   # ou: npm run dev:
 5. **Conferência de segredo** (nada de chave no front):
    `Select-String -Path *.js,*.css,*.html,notes\*,mapa\*,sync\* -Pattern 'service_role|SUPABASE_'`
 
+### Ligar o login com Google (opcional)
+
+O login com Google usa o **Google Identity Services (GIS)** no navegador: o Google devolve um
+**ID token** (JWT) e o **backend** o valida contra as chaves públicas do Google (JWKS, RS256) antes
+de emitir a MESMA sessão em cookie `HttpOnly`. **Não existe `client_secret` neste fluxo** — só o
+**Client ID**, que é público.
+
+1. No **Google Cloud Console** → *APIs e serviços → Credenciais* → crie um **ID do cliente OAuth**
+   do tipo *Aplicativo da Web*.
+2. Em **Origens JavaScript autorizadas**, cadastre a origem do app (ex.: `http://localhost:8000` e o
+   domínio de produção, sem barra no fim e sem caminho).
+3. Preencha **`GOOGLE_CLIENT_ID`** em `backend/.env` (vazio = botão desligado; o app volta a ser o de
+   sempre) e reinicie o backend.
+4. Abra o diálogo de **Conta**: com o Client ID configurado, aparece o divisor **"ou"** e o **botão
+   oficial do Google** (renderizado pelo próprio GIS). Sem backend, sem Client ID ou offline, o botão
+   **não aparece** e o e-mail/senha segue normal — é o comportamento esperado.
+5. **Vínculo de conta** (padrão de mercado): o e-mail do Google vem marcado como **verificado**;
+   se ele JÁ existir como conta de senha, o acesso cai na **mesma conta** (mesmos dados/sync).
+   Uma conta criada só pelo Google fica **sem senha utilizável** (a entrada é pelo Google).
+
 ## 3. Contrato HTTP (todos os erros são `{"detail": "mensagem"}`)
 
 | Método | Rota | Para quê |
 |---|---|---|
 | `GET` | `/health` | liveness + driver |
 | `POST` | `/api/auth/registrar` · `/login` · `/logout` · `GET /me` | conta (cookie `HttpOnly` + `X-CSRF`) |
+| `GET` | `/api/auth/config` | config pública: `{google_ativo, google_client_id}` (sem segredo) |
+| `POST` | `/api/auth/google` | login com o ID token do Google (`{credential}`; e-mail verificado) |
 | `GET` | `/api/sync/snapshot?desde_rev=` | carga inicial (0) ou delta (>0, com tombstones) |
 | `GET` | `/api/sync/entidade/{entidade}/{id}` | uma entidade (nota `somenteNuvem`) |
 | `POST` | `/api/sync/push` | lote de operações (1º login e fallback do socket) |

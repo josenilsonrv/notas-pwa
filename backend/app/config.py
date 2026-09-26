@@ -72,6 +72,10 @@ class Configuracao:
     anexo_limite_mb: int = 25
     anexo_cota_mb: int = 900
 
+    # Login com Google (GIS): so o CLIENT ID, que e PUBLICO. O `client_secret` nao existe neste
+    # fluxo (a validacao e do ID token no backend) e nada disto vai ao PWA.
+    google_client_id: str = ""
+
     sessao_cookie: str = "py_session"
     sessao_segredo: str = ""
     sessao_validade: int = 7 * 24 * 60 * 60  # 7 dias
@@ -87,6 +91,12 @@ class Configuracao:
     @property
     def tem_supabase(self) -> bool:
         return bool(self.supabase_url and self.supabase_service_role_key)
+
+    @property
+    def google_ativo(self) -> bool:
+        """Ha Client ID configurado? Sem ele o login com Google fica desligado (e o front nem
+        renderiza o botao)."""
+        return bool(self.google_client_id)
 
     @property
     def driver(self) -> str:
@@ -128,6 +138,7 @@ def montar() -> Configuracao:
         supabase_bucket_anexos=_texto("SUPABASE_BUCKET_ANEXOS", "anexos") or "anexos",
         anexo_limite_mb=_inteiro("ANEXO_LIMITE_MB", 25),
         anexo_cota_mb=_inteiro("ANEXO_COTA_MB", 900),
+        google_client_id=_texto("GOOGLE_CLIENT_ID"),
         sessao_cookie=_texto("SESSAO_COOKIE", "py_session") or "py_session",
         sessao_segredo=segredo,
         sessao_validade=_inteiro("SESSAO_VALIDADE", 7 * 24 * 60 * 60),

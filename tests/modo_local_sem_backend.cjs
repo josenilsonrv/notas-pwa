@@ -79,6 +79,15 @@ const digitar = async (page, texto) => {
         assert.equal((await page.locator('#contaBtn').textContent()).trim(), 'Entrar', 'o botão continua "Entrar"');
         assert.equal(await page.evaluate(() => window.notesApp.syncWs || null), null, 'nenhum socket aberto');
         assert.equal(await page.evaluate(() => (window.notasConta.sync || {}).estado), 'local', 'o sync segue "local"');
+        // Login com Google: sem backend NÃO existe — nem script do GIS, nem botão no diálogo.
+        assert.equal(await page.locator('script[data-conta-gis]').count(), 0, 'o script do GIS não é carregado sem backend');
+        await page.locator('#contaBtn').click();
+        const caixaConta = page.locator('.conta-dialog');
+        await caixaConta.waitFor();
+        assert.equal(await caixaConta.locator('.conta-google button').count(), 0, 'sem backend não há botão do Google');
+        assert.equal(await caixaConta.locator('#contaEmail').count(), 1, 'o formulário de e-mail/senha continua');
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => !document.querySelector('.conta-dialog'));
 
         // 2) Editar salva no aparelho e NÃO cria fila de pendências.
         await digitar(page, 'texto offline');

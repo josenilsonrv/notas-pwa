@@ -21,6 +21,11 @@ from .config import obter_config
 
 ITERACOES = 120_000  # custo do PBKDF2 (so no provedor de memoria/dev)
 
+# Varredura de usuarios do GoTrue por e-mail (o admin API nao tem indice por e-mail):
+# pagina de 200 e no maximo 5 paginas (1000 usuarios) - suficiente para este produto.
+POR_PAGINA_USUARIOS = 200
+PAGINAS_USUARIOS = 5
+
 
 class ErroIdentidade(RuntimeError):
     """Falha do provedor de identidade (com status para a rota decidir)."""
@@ -90,6 +95,29 @@ class IdentidadeMemoria:
         if not perfil:
             return None
         return {"id": perfil["id"], "email": perfil["email"], "criado_em": perfil["criado_em"]}
+
+    # --- Login com Google ----------------------------------------------------
+    def google(self, email: str, nome: str = "") -> str:
+        """Resolve a conta do Google pelo e-mail VERIFICADO (vinculo automatico, padrao de
+        mercado): reusa a conta quando o e-mail ja existe e so cria uma nova quando nao existe.
+        """
+        chave = email.strip().lower()
+        with self._trava:
+            perfil = self._por_email.get(chave)
+            if perfil:
+                return str(perfil["id"])
+            user_id = str(uuid.uuid4())
+            novo = {
+                "id": user_id,
+                "email": chave,
+                "criado_em": time.time(),
+                # Sem senha utilizavel: a entrada desta conta e pelo Google.
+                "senha": None,
+                "nome": nome or "",
+            }
+            self._por_email[chave] = novo
+            self._por_id[user_id] = novo
+            return user_id
 
     def limpar(self) -> None:
         """Zera os usuarios (usado entre testes)."""
@@ -164,6 +192,54 @@ class IdentidadeGoTrue:
             return None  # credencial invalida (a rota devolve a mensagem generica)
         usuario = (resposta.json() or {}).get("user") or {}
         return str(usuario.get("id") or "") or None
+
+    def _usuario_por_email(self, email: str) -> str | None:
+        """Procura o usuario do GoTrue pelo e-mail (paginado: o admin API nao indexa por e-mail)."""
+        alvo = email.strip().lower()
+        for pagina in range(1, PAGINAS_USUARIOS + 1):
+            try:
+                resposta = self.cliente.get(
+                    "/admin/users",
+                    params={"page": pagina, "per_page": POR_PAGINA_USUARIOS},
+                )
+            except httpx.HTTPError as erro:
+                raise ErroIdentidade("servico de identidade indisponivel", status=503) from erro
+            if resposta.status_code >= 400:
+                return None
+            dados = resposta.json()
+            usuarios = dados.get("users") if isinstance(dados, dict) else dados
+            usuarios = usuarios or []
+            for usuario in usuarios:
+                if str(usuario.get("email") or "").strip().lower() == alvo:
+                    return str(usuario.get("id") or "") or None
+            if len(usuarios) < POR_PAGINA_USUARIOS:
+                return None
+        return None
+
+    def google(self, email: str, nome: str = "") -> str:
+        """Vinculo por e-mail VERIFICADO: reusa o usuario do GoTrue ou cria um sem senha util.
+
+        O `user_id` devolvido e o MESMO da conta de senha quando o e-mail ja existe - e isso
+        que faz o login com Google cair nos dados da conta (padrao de mercado).
+        """
+        existente = self._usuario_por_email(email)
+        if existente:
+            return existente
+        try:
+            resposta = self.cliente.post(
+                "/admin/users",
+                json={
+                    "email": email.strip().lower(),
+                    "password": secrets.token_urlsafe(32),
+                    "email_confirm": True,
+                    "user_metadata": {"nome": nome} if nome else {},
+                },
+            )
+        except httpx.HTTPError as erro:
+            raise ErroIdentidade("servico de identidade indisponivel", status=503) from erro
+        if resposta.status_code >= 400:
+            raise ErroIdentidade("nao foi possivel entrar com o Google", status=400)
+        return str((resposta.json() or {}).get("id") or "")
 
     def usuario(self, user_id: str) -> dict | None:
         try:

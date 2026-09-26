@@ -127,6 +127,105 @@ function installConta(App) {
     };
 // ⚡ [FIM: CONTA - BOTÃO DO CABEÇALHO]
 
+// ⚡ [INÍCIO: CONTA - LOGIN COM GOOGLE (GIS)]
+    /** Script oficial do Google Identity Services (carregado sob demanda, só se houver Google). */
+    const GOOGLE_GIS = 'https://accounts.google.com/gsi/client';
+
+    /**
+     * Config PÚBLICA do login social: o backend diz se o Google está ativo e qual é o
+     * Client ID (nunca há segredo aqui). SILENCIOSO de propósito — sem backend/celular
+     * offline nada disto existe e o app segue exatamente como hoje.
+     */
+    p.contaGoogleConfig = async function () {
+        if (this.contaGoogleInfo !== undefined) return this.contaGoogleInfo;
+        try {
+            this.contaGoogleInfo = await this.contaPedir('/config');
+        } catch (_) {
+            this.contaGoogleInfo = null; // offline/sem backend: nada de Google
+        }
+        return this.contaGoogleInfo;
+    };
+
+    /**
+     * Injeta o script do GIS UMA vez. Resolve `null` quando ele não carrega (offline, CSP
+     * ou bloqueio) — é isso que faz o botão simplesmente NÃO aparecer, sem erro no console.
+     */
+    p.contaGoogleScript = function () {
+        if (this.contaGoogleCarregado) return this.contaGoogleCarregado;
+        this.contaGoogleCarregado = new Promise(resolver => {
+            const pronto = () => (window.google && window.google.accounts ? window.google : null);
+            const existente = document.querySelector('script[data-conta-gis]');
+            if (existente) {
+                if (pronto()) return resolver(pronto());
+                existente.addEventListener('load', () => resolver(pronto()));
+                existente.addEventListener('error', () => resolver(null));
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = GOOGLE_GIS;
+            script.async = true;
+            script.defer = true;
+            script.dataset.contaGis = '1';
+            script.addEventListener('load', () => resolver(pronto()));
+            script.addEventListener('error', () => resolver(null));
+            document.head.append(script);
+        });
+        return this.contaGoogleCarregado;
+    };
+
+    /**
+     * Monta o botão OFICIAL do Google no diálogo (renderizado pelo próprio GIS). Padrão de
+     * mercado: só aparece quando o backend tem Client ID E o script do Google carregou.
+     */
+    p.contaGoogleMontar = async function (dialog, mostrarErro) {
+        const alvo = dialog.querySelector('[data-conta-google]');
+        if (!alvo) return;
+        const info = await this.contaGoogleConfig();
+        if (!info || !info.google_ativo || !info.google_client_id) return;
+        const google = await this.contaGoogleScript();
+        if (!google) return;
+        alvo.hidden = false;
+        const divisor = dialog.querySelector('[data-conta-google-divisor]');
+        if (divisor) divisor.hidden = false;
+        try {
+            google.accounts.id.initialize({
+                client_id: info.google_client_id,
+                callback: resposta => this.contaGoogleEntrar((resposta && resposta.credential) || '', mostrarErro)
+            });
+            const largura = Math.max(200, Math.min(320, alvo.clientWidth || 280));
+            google.accounts.id.renderButton(alvo, {
+                type: 'standard',
+                theme: 'outline',
+                size: 'large',
+                text: 'signin_with',
+                shape: 'pill',
+                logo_alignment: 'center',
+                locale: 'pt-BR',
+                width: largura
+            });
+        } catch (_) {
+            // Falha do GIS (script novo/instável): não escondemos o e-mail/senha por causa disto.
+            alvo.hidden = true;
+            if (divisor) divisor.hidden = true;
+        }
+    };
+
+    /** Troca o ID token do Google pela sessão do backend (mesmo cookie `HttpOnly`). */
+    p.contaGoogleEntrar = async function (credential, mostrarErro) {
+        if (!credential) return;
+        try {
+            await this.contaPedir('/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credential })
+            });
+            await this.contaVerificar();
+        } catch (falha) {
+            if (typeof mostrarErro === 'function') mostrarErro(falha.message);
+        }
+    };
+// ⚡ [FIM: CONTA - LOGIN COM GOOGLE (GIS)]
+
 // ⚡ [INÍCIO: CONTA - DIÁLOGO (entrar / criar conta / sair)]
     /** Cria um elemento do MEU diálogo (`data-conta` = o que eu removo ao redesenhar). */
     const criar = (tag, classe) => {
@@ -225,12 +324,25 @@ function installConta(App) {
             submeter(false);
         });
 
+        // Login com Google (padrão de mercado): o divisor e o contêiner do botão OFICIAL do
+        // GIS. Nascem escondidos — `contaGoogleMontar` só os mostra quando o backend tem
+        // Client ID E o script do Google carrega (senão nada aparece, sem erro).
+        const divisor = paragrafo('ou', 'conta-google-divisor');
+        divisor.dataset.contaGoogleDivisor = '';
+        divisor.hidden = true;
+        const google = criar('div', 'conta-google');
+        google.dataset.contaGoogle = '';
+        google.hidden = true;
+
         dialog.append(
             paragrafo('A conta é opcional: sem ela, suas notas ficam somente neste aparelho.', 'conta-ajuda'),
             formulario,
+            divisor,
+            google,
             paragrafo('Ao entrar pela primeira vez, o conteúdo deste aparelho é enviado para a sua conta.', 'conta-aviso'),
             erro
         );
+        this.contaGoogleMontar(dialog, mostrarErro);
     };
 
     /** (Re)desenha o conteúdo do diálogo conforme o estado ATUAL da conta. */

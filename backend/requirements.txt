@@ -26,6 +26,10 @@ python-dotenv
 httpx
 # `UploadFile` (multipart) dos anexos: obrigatorio para o FastAPI ler o formulario de upload.
 python-multipart
+# Login com Google: validamos o ID token LOCALMENTE (RS256 via JWKS do Google), sem chamada
+# extra ao Google a cada login. `PyJWT[crypto]` traz a `cryptography` (RSA). Vinha no lock como
+# transitiva do `supabase`; aqui fica EXPLICITA porque o login com Google nao depende dele.
+PyJWT[crypto]
 
 # --- Supabase (opcional - ver nota R1 acima) ---
 # O cliente do backend usa httpx/PostgREST (veja app/supabase_cliente.py); o pacote

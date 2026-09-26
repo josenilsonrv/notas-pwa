@@ -1449,3 +1449,32 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
 - **Como auditar**: `node tests/sync_websocket.cjs` (passo 4: fila zerada e as duas páginas com o
   texto `escrita offline`).
 
+### P106 — CSP bloqueava o script do GIS (o botão de "Entrar com Google" nunca aparecia)
+- **Sintoma**: com `GOOGLE_CLIENT_ID` preenchido, o diálogo de Conta mostrava só e-mail/senha; no
+  console, `Refused to load the script 'https://accounts.google.com/gsi/client' because it violates
+  the following Content Security Policy directive: "script-src 'self' …"`.
+- **Causa**: a CSP do backend (`_DIRETIVAS_CSP`, em `main.py`) nasceu só com `'self'` e só o YouTube
+  nocookie no `frame-src`. O GIS carrega o script de `https://accounts.google.com` e desenha o botão
+  num **iframe da mesma origem do Google** — nenhuma das duas coisas estava liberada.
+- **Correção**: `script-src` e `frame-src` passaram a liberar **apenas** `https://accounts.google.com`
+  (a origem exata do GIS — nada de `apis.google.com` nem de curinga). O botão continua degradando em
+  SILÊNCIO quando o script não carrega (offline/CSP/bloqueio de terceiros): a caixa `.conta-google`
+  fica `hidden` e o e-mail/senha segue — é o que preserva o modo local.
+- **Como auditar**: `node tests/conta_google.cjs` (sem backend, **nenhum** `<script data-conta-gis>`
+  é injetado e nenhum botão aparece; com `/config` dizendo `google_ativo`, o botão aparece e o
+  `credential` fecha o login). No navegador: `backend/.env` com `GOOGLE_CLIENT_ID`, abrir a Conta e
+  conferir que o botão aparece **sem** erro de CSP no console.
+
+### P107 — `recarregar()` dentro de um teste TROCA o singleton e quebra outros arquivos
+- **Sintoma**: ao adicionar `backend/tests/test_google.py`, um teste **antigo** passou a falhar
+  (`test_health.py::test_hsts_aparece_com_sessao_segura`): a `Configuracao` parecia não mudar.
+- **Causa**: o `main.py` guarda `config = obter_config()` **no import**. `recarregar()` descarta o
+  singleton e cria OUTRO objeto; o monkeypatch do teste passava a mutar o objeto NOVO, enquanto o
+  `main.config` continuava apontando para o ANTIGO. O efeito só aparece quando um teste usou
+  `recarregar()` e outro (arquivo diferente) depende do singleton.
+- **Correção**: quem precisa variar a config NÃO recria o singleton — muta **o próprio objeto**
+  (`monkeypatch.setattr(obter_config(), "google_client_id", …)`), que o `monkeypatch` reverte sozinho.
+  `recarregar()` fica reservado para quando se quer reler o `.env` de verdade.
+- **Como auditar**: `pytest backend/tests -q` (a suíte inteira, não só o arquivo novo) — era o único
+  jeito de ver a falha cruzada.
+
