@@ -59,14 +59,18 @@ def ambiente_de_contas():
     `obter_identidade`, `repositorio`, o assinador da sessão e o rate-limit são
     SINGLETONS do processo — sem esta fixture um teste herdaria o estado do anterior.
     """
+    from backend.app.assets import StorageMemoria, definir_storage
     from backend.app.identidade import IdentidadeMemoria, definir_identidade
     from backend.app.repositorio import RepositorioMemoria, definir_repositorio
     from backend.app.seguranca import reiniciar_assinador, reiniciar_limitador
+    from backend.app.sync.ws import reiniciar_hub
 
     definir_identidade(IdentidadeMemoria())
     definir_repositorio(RepositorioMemoria())
+    definir_storage(StorageMemoria())
     reiniciar_limitador()
     reiniciar_assinador()
+    reiniciar_hub()
     yield
     reiniciar_limitador()
     reiniciar_assinador()

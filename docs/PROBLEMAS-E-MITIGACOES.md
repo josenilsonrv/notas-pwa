@@ -1327,3 +1327,125 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
      RENDER (não só do boot), ou enviar a nota só depois do primeiro render do documento.
 - **Como auditar**: `node tests/sync_snapshot.cjs` (falha sempre, igual) — e o diagnóstico do 2º
   aparelho aparece no `stderr` do teste (`estado no 2º aparelho: {"notas":[""]}`).
+- **Blindagem aplicada nos blocos III/IV**: o `apiCall` do sync agora ignora um save **VAZIO**
+  enquanto `syncEstale` estiver ligado (o editor ainda não re-renderizou o documento que veio da
+  nuvem). Medido em `tests/sync_snapshot.cjs`: a **nuvem** termina com o texto certo.
+
+### P98 — RESOLVIDO: o sync rodava no PROTÓTIPO, não na INSTÂNCIA (memória × `localStorage`)
+- **Causa-raiz**: `installConta`/`installSync` rodam DENTRO de `new NotesPWA()` (via
+  `installNotesFeatures`) e chamavam, no boot, `p.instalarContaUI()` / `p.syncLigarTempoReal()` —
+  ou seja, com `this` = **protótipo**. O encadeamento `contaVerificar → contaAplicar →
+  syncAoEntrar → syncAplicarNotas → gravarNotasLocaisComCota` herdava esse `this`, e o sync
+  escrevia em `NotesPWA.prototype.projectsData` (uma lista **SEPARADA**), enquanto o app (a
+  instância `window.notesApp`) lia/gravava a SUA própria lista. Sintoma exato: no 2º aparelho o
+  `localStorage` ficava com o texto (o `gravarNotasLocaisComCota` grava no storage) mas
+  `window.notesApp.projectsData` continuava vazio — a "divergência memória × `localStorage`".
+- **Diagnóstico**: instrumentando a propriedade `projectsData` com um `setter` que loga a pilha,
+  ficou claro que `gravarNotasLocaisComCota` rodava com `this` = protótipo (nenhum `SET` na
+  instância). O `SET projectsData 0 -> 178` só apareceu depois da correção.
+- **Correção**: os dois gatilhos de boot passaram a ser agendados para o 1º instante em que a
+  INSTÂNCIA existe (`window.notesApp`, atribuído logo após o construtor): `conta.js` (bloco
+  `🚀 CONTA - INSTALAÇÃO`) e `sync/sync-cliente.js` (bloco `🔄 SYNC - TEMPO REAL`).
+- **Como auditar**: `node tests/sync_snapshot.cjs` passa; a entrada foi **removida** de
+  `FALHAS_CONHECIDAS` (`tests/run-all.cjs`).
+- **Lição** (reforço do P96): dentro de `installX(App)`, TODO caminho que mexe em estado do app —
+  não só os `p.metodo = function` — tem de rodar com a INSTÂNCIA, nunca com o protótipo.
+
+### P98b — Extensão do P98: qualquer boot `install…` deve mirar a instância
+- **Sintoma**: estava latente o mesmo defeito em outros `install…(App)` que disparam trabalho no
+  boot. Aqui ficou restrito a `conta.js`/`sync-cliente.js` (os demais não guardam estado na
+  instância no boot), mas o padrão deve ser reaplicado se surgir um novo gancho.
+- **Regra**: use `window.notesApp` + um `setTimeout(fn, 0)` (a instância é publicada logo após o
+  construtor) — ou um trait `__iniciado` na instância para não ligar duas vezes.
+
+### P105 — `syncEstale` ficava PRESO (o aparelho salvava local e a NUVEM ficava vazia)
+- **Sintoma**: `tests/sync_websocket.cjs` passou a falhar (timeout no editor do 2º aparelho) depois de
+  a correção do P98; o 1º aparelho editava e salvava, mas o texto **nunca** subia — a nuvem ficava
+  vazia (o `_dbgops.txt` do servidor só registrava os upserts VAZIOS do 1º login).
+- **Causa**: `syncAplicarEntidades` ligava `this.syncEstale = true` sempre que
+  `currentNotesProjectId` casava com um registro recebido — **mesmo com o editor FECHADO**. Como
+  `syncRefazerEditor` (o único que LIMPA a flag) sai cedo quando o modal não está ativo, a flag
+  **nunca era limpa**; o gancho do `apiCall` então deixava de enfileirar TODA edição seguinte
+  (salvava no aparelho e não subia).
+- **Por que passou batido antes**: antes do P98 a flag era gravada no PROTÓTIPO e o gancho lia a da
+  INSTÂNCIA (`undefined`) — funcionava **por acidente**. Ao mover o estado para a instância, o defeito
+  apareceu.
+- **Correção**: só marca `syncEstale` com o **editor ABERTO** (`#notesModalBackdrop.active`) e, com
+  o editor fechado, **limpa** a flag (`sync-cliente.js`, bloco `SYNC - RECEBIMENTO`).
+- **Como auditar**: `node tests/sync_websocket.cjs` (duas rodadas verdes) e `node tests/sync_snapshot.cjs`.
+
+### P99 — Service Worker cacheando `/api` (o "login que não pega")
+- **Sintoma**: com a API no ar, o login ou o sync parecem congelados; o `snapshot` volta velho; o
+  `GET /api/auth/me` devolve o resultado do cache em vez do servidor.
+- **Causa**: o handler de `fetch` do `sw.js` era *cache-first* para **tudo** do mesmo origin,
+  inclusive `/api/*`. O `caches.match` respondia antes de a rede ser consultada.
+- **Correção (seção 10)**: o `fetch` agora **sai fora** para `/api/*` e `/ws`
+  (`if (url.pathname.indexOf('/api/') === 0 || url.pathname === '/ws') return;`), e o `_headers`
+  reforça `Cache-Control: no-store` nesses caminhos. `CACHE_NAME` subiu para `notas-pwa-v70`.
+- **Como auditar**: `tests/sync_websocket.cjs` e `tests/notes_anexos_nuvem.cjs` rodam contra o
+  backend REAL — se o SW interceptasse `/api`, os dois falhariam.
+
+### P100 — `Origin` do WebSocket recusado quando o PWA é servido por outra porta (4401 fantasma)
+- **Sintoma**: o app conectava e **fechava na hora**, mostrando "Sessão expirada (entre novamente)"
+  mesmo com a sessão válida (o teste `sync_snapshot.cjs` travava no `esperarSincronizado`).
+- **Causa**: a checagem de `Origin` do handshake só aceitava o que estivesse em
+  `ORIGENS_PERMITIDAS` (padrão `http://localhost:8000`). Servindo em `http://127.0.0.1:<porta>`
+  (como fazem os testes de navegador), a origem não batia → **4401**.
+- **Correção**: além da lista explícita, o handshake aceita o `Origin` **igual ao `Host` do próprio
+  pedido** — que é exatamente o caso da origem única (o Python serve o PWA e a API). Origem de
+  terceiros continua recusada.
+- **Como auditar**: `backend/tests/test_sync_ws.py::test_origin_da_propria_origem_do_pedido_e_aceito`.
+
+### P101 — Bloco novo inserido FORA do `installSync` (`p is not defined`)
+- **Sintoma**: `pageerror: p is not defined` no boot; o sync ficava em `offline` com `socket: null`
+  e a nota vazia (o app parecia "quebrado sem motivo").
+- **Causa**: o `}` que fecha `installSync` ficava **antes** do comentário file-level
+  `// 🔄 [FIM: SYNC - CLIENTE ...]`. Um insert feito "antes do FIM" caiu **fora** da função, onde
+  `p` não existe. O segundo caso foi mais sutil: o bloco entrou **dentro** de outra função
+  (`syncLigarTempoReal`), e as atribuições só rodavam quando o usuário voltava a rede
+  (`wrapperSubirTudo: false`, `syncMigrarAnexos: undefined`).
+- **Correção**: os blocos foram reposicionados **dentro** de `installSync`, depois do fechamento da
+  função anterior. Lição registrada: ao inserir, **conferir a árvore de chaves**, não só o marcador.
+- **Como auditar**: `node tests/sync_websocket.cjs` (falha se o socket não abrir) e
+  `node tests/notes_anexos_nuvem.cjs` (falha se a migração não existir).
+
+### P102 — Migração de anexos lendo a MEMÓRIA (e o nome do anexo perdido)
+- **Sintoma 1**: no 1º login, o anexo antigo (`data:`) **não** era migrado, embora o HTML da nota
+  tivesse o `data:` URL.
+- **Causa 1**: a varredura usava `projectsData`, e a memória pode estar **sem o HTML da nota**
+  logo após o boot (a mesma divergência memória × `localStorage` do P98).
+- **Sintoma 2**: os anexos migrados apareciam como `anexo-<aleatório>.png`.
+- **Causa 2**: o `data:` URL não guarda o nome do arquivo.
+- **Correção**: a varredura passa a ler `lerNotasLocais()` (o **armazenamento**, fonte da verdade,
+  como faz `syncColetarOps`) e o nome é recuperado da pista que o app deixa (`alt` da imagem ou o
+  texto do link `📎 nome`).
+- **Como auditar**: `node tests/notes_anexos_nuvem.cjs` (passo B: `data:` some e o `info.name`
+  continua `antiga.png`).
+
+### P104 — CSP bloqueando o `data:` do PRÓPRIO app (dois efeitos: migração e ruído no console)
+- **Sintoma 1 (funcional)**: depois de ligar a CSP, o `tests/notes_anexos_nuvem.cjs` passou a FALHAR
+  na migração (o anexo antigo continuava `data:`), embora passasse antes da CSP.
+- **Causa 1**: a migração fazia `fetch(dataUrl)` para virar `Blob`, e `connect-src 'self' ws: wss:`
+  bloqueia `fetch('data:…')`. A CSP estava **certa** — o código é que tomava um atalho.
+- **Correção 1**: `syncDataUrlParaBlob` decodifica o `data:` **à mão** (`atob`/`decodeURIComponent`),
+  sem `fetch` e sem afrouxar a política.
+- **Sintoma 2 (ruído)**: `Connecting to 'data:image/png;…' violates … connect-src` (2×) no boot
+  logado, **antes** da migração, com tudo funcionando (a imagem aparece).
+- **Causa 2**: o próprio Chromium reporta um "connect" interno ao re-renderizar a imagem `data:`
+  da nota (reproduzido fora do app: `img data:` puro **não** viola; `fetch(data:)` viola; a
+  decodificação manual não viola). Não é defeito do app.
+- **Correção 2**: `data:` entrou no `connect-src` — uma URL `data:` **nunca sai do navegador**, então
+  não há exfiltração possível; o ganho é o console limpo (erro que "assusta" sem haver defeito).
+- **Como auditar**: `node tests/notes_anexos_nuvem.cjs` (passa e o console fica sem as 2 mensagens)
+  e `backend/tests/test_health.py::test_cabecalhos_de_seguranca_no_app`.
+
+### P103 — Socket aberto após "voltar a rede" deixava a fila parada
+- **Sintoma**: `setOffline(false)` → as duas páginas **não** convergiam; o indicador ficava em
+  `Offline — N na fila` mesmo com a rede de volta.
+- **Causa**: o navegador **não fecha** um WebSocket já aberto ao emular offline, então o app nunca
+  via o `close`. O gatilho de `online`/`visibilitychange` só reconectava quando o socket estava
+  fechado — e ninguém retomava o dreno.
+- **Correção**: o gatilho agora **sempre** chama `syncDrenar()` (além de reconectar se preciso).
+- **Como auditar**: `node tests/sync_websocket.cjs` (passo 4: fila zerada e as duas páginas com o
+  texto `escrita offline`).
+

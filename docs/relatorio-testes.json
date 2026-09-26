@@ -1,8 +1,8 @@
 {
-  "geradoEm": "2026-09-26T05:24:18.881Z",
+  "geradoEm": "2026-09-26T13:15:28.118Z",
   "projetoTestado": "C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa",
-  "total": 76,
-  "passaram": 66,
+  "total": 79,
+  "passaram": 70,
   "falharam": 0,
   "naoAplicaveis": 1,
   "flaky": 0,
@@ -14,7 +14,6 @@
     "notes_outline_code.cjs",
     "notes_paste_blocks.cjs",
     "notes_regression_audit.cjs",
-    "sync_snapshot.cjs",
     "test_notes_editor_ui.cjs"
   ],
   "conhecidasMotivo": {
@@ -25,402 +24,415 @@
     "notes_outline_code.cjs": "colapso de titulo + bloco de codigo diverge do original",
     "notes_paste_blocks.cjs": "colagem de blocos de codigo junta linhas do original",
     "notes_regression_audit.cjs": "auditoria de regressao: comportamento divergente registrado",
-    "test_notes_editor_ui.cjs": "Enter em lista aninhada cria nivel diferente do original",
-    "sync_snapshot.cjs": "aparelho NOVO pode terminar com a nota vazia: o autosave do boot (editor ainda vazio) vence a versao da nuvem no LWW — ver P98 em docs/PROBLEMAS-E-MITIGACOES.md"
+    "test_notes_editor_ui.cjs": "Enter em lista aninhada cria nivel diferente do original"
   },
   "resolvidas": [],
-  "tempoTotalMs": 560683,
+  "tempoTotalMs": 871829,
   "falhasNovas": [],
   "falhasResolvidas": [],
   "resultados": [
     {
       "passou": true,
-      "ms": 23106,
+      "ms": 48452,
       "motivo": "",
       "arquivo": "backend_python.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 6496,
+      "ms": 10699,
       "motivo": "",
       "arquivo": "conta_login.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 10585,
+      "ms": 17353,
       "motivo": "",
       "arquivo": "expandir.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 4106,
+      "ms": 9582,
       "motivo": "",
       "arquivo": "mapa_abertura_padrao.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 3305,
+      "ms": 18926,
       "motivo": "",
       "arquivo": "mapa_area.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 10520,
+      "ms": 9581,
       "motivo": "",
       "arquivo": "mapa_atalhos.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 9104,
+      "ms": 17777,
       "motivo": "",
       "arquivo": "mapa_canvas.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 9604,
+      "ms": 15867,
       "motivo": "",
       "arquivo": "mapa_chips.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 16219,
+      "ms": 24837,
       "motivo": "",
       "arquivo": "mapa_colapso.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 6793,
+      "ms": 23477,
       "motivo": "",
       "arquivo": "mapa_conexoes.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 15002,
+      "ms": 11261,
       "motivo": "",
       "arquivo": "mapa_conteudo.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 14719,
+      "ms": 24433,
       "motivo": "",
       "arquivo": "mapa_dragdrop.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 8210,
+      "ms": 4390,
       "motivo": "",
       "arquivo": "mapa_estilo.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 8189,
+      "ms": 4776,
       "motivo": "",
       "arquivo": "mapa_gestao.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 10457,
+      "ms": 4868,
       "motivo": "",
       "arquivo": "mapa_layout.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 10973,
+      "ms": 12610,
       "motivo": "",
       "arquivo": "mapa_nos.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 7241,
+      "ms": 25017,
       "motivo": "",
       "arquivo": "mapa_padrao_notas.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 7142,
+      "ms": 8355,
       "motivo": "",
       "arquivo": "mapa_toolbar.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 8211,
+      "ms": 14553,
       "motivo": "",
       "arquivo": "mapa_undo.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 7822,
+      "ms": 9029,
       "motivo": "",
       "arquivo": "mapa_vazio.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 9381,
+      "ms": 10539,
+      "motivo": "",
+      "arquivo": "modo_local_sem_backend.cjs",
+      "tentativas": 1
+    },
+    {
+      "passou": true,
+      "ms": 18341,
       "motivo": "",
       "arquivo": "multi_notas.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 9116,
+      "ms": 13508,
       "motivo": "",
       "arquivo": "multi_notas_100.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5696,
+      "ms": 19837,
       "motivo": "",
       "arquivo": "nota_abertura_padrao.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5533,
+      "ms": 7353,
       "motivo": "",
       "arquivo": "nota_grande_pwa.cjs",
       "tentativas": 1
     },
     {
+      "passou": true,
+      "ms": 15596,
+      "motivo": "",
+      "arquivo": "notes_anexos_nuvem.cjs",
+      "tentativas": 1
+    },
+    {
       "passou": false,
-      "ms": 7371,
+      "ms": 8957,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
       "arquivo": "notes_cascade_defaults.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 4533,
+      "ms": 6046,
       "motivo": "",
       "arquivo": "notes_checklist_enter.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 2662,
+      "ms": 5284,
       "motivo": "",
       "arquivo": "notes_checklist_numbers.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5021,
+      "ms": 7203,
       "motivo": "",
       "arquivo": "notes_checklist_order.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5206,
+      "ms": 8406,
       "motivo": "",
       "arquivo": "notes_chip_menu.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5840,
+      "ms": 9110,
       "motivo": "",
       "arquivo": "notes_clear_all.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 5524,
+      "ms": 7963,
       "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
       "arquivo": "notes_collapse_motion.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 6490,
+      "ms": 7758,
       "motivo": "",
       "arquivo": "notes_collapsed_heading.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 3690,
+      "ms": 4270,
       "motivo": "",
       "arquivo": "notes_colors_persistence.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5689,
+      "ms": 3952,
       "motivo": "",
       "arquivo": "notes_completion_spacing.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 3322,
+      "ms": 5896,
       "motivo": "",
       "arquivo": "notes_cut_background.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 4909,
+      "ms": 5888,
       "motivo": "",
       "arquivo": "notes_document_migration.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 109,
+      "ms": 177,
       "motivo": "",
       "arquivo": "notes_document_model.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 3580,
+      "ms": 4523,
       "motivo": "",
       "arquivo": "notes_enter_child.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5316,
+      "ms": 8985,
       "motivo": "",
       "arquivo": "notes_enter_robust.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 16331,
+      "ms": 19505,
       "motivo": "",
       "arquivo": "notes_extras.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 3585,
+      "ms": 5179,
       "motivo": "",
       "arquivo": "notes_import_spacing.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 2003,
+      "ms": 5000,
       "motivo": "",
       "arquivo": "notes_indent_child.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 2999,
+      "ms": 4573,
       "motivo": "",
       "arquivo": "notes_indent_levels.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 6075,
+      "ms": 6678,
       "motivo": "",
       "arquivo": "notes_large_document.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5869,
+      "ms": 6567,
       "motivo": "",
       "arquivo": "notes_last_line_enter.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 3772,
+      "ms": 6082,
       "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
       "arquivo": "notes_markdown.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5839,
+      "ms": 6731,
       "motivo": "",
       "arquivo": "notes_million.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 8067,
+      "ms": 7405,
       "motivo": "",
       "arquivo": "notes_million_extras.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 5851,
+      "ms": 7834,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
       "arquivo": "notes_navigation_completion.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 2914,
+      "ms": 8864,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
       "arquivo": "notes_outline_code.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 8263,
+      "ms": 7594,
       "motivo": "",
       "arquivo": "notes_parent_undo.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 8374,
+      "ms": 6483,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
       "arquivo": "notes_paste_blocks.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5080,
+      "ms": 6374,
       "motivo": "",
       "arquivo": "notes_paste_selection.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 19292,
+      "ms": 5394,
       "motivo": "",
       "arquivo": "notes_performance.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 2732,
+      "ms": 5477,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to:",
       "arquivo": "notes_regression_audit.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 8833,
+      "ms": 5880,
       "motivo": "",
       "arquivo": "notes_renumber_structure.cjs",
       "tentativas": 1
@@ -434,133 +446,140 @@
     },
     {
       "passou": true,
-      "ms": 82,
+      "ms": 133,
       "motivo": "",
       "arquivo": "notes_table_math.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 6133,
+      "ms": 9991,
       "motivo": "",
       "arquivo": "notes_table_media.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 9178,
+      "ms": 9197,
       "motivo": "",
       "arquivo": "notes_table_tools.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 2898,
+      "ms": 3965,
       "motivo": "",
       "arquivo": "notes_tone_picker.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 2896,
+      "ms": 9413,
       "motivo": "",
       "arquivo": "notes_tone_picker_mobile.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 7333,
+      "ms": 8372,
       "motivo": "",
       "arquivo": "notes_underline.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 118,
+      "ms": 182,
       "motivo": "",
       "arquivo": "parity_structure.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 13357,
+      "ms": 18862,
       "motivo": "",
       "arquivo": "parity_visual.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 6175,
+      "ms": 19872,
       "motivo": "",
       "arquivo": "pastas_unificadas.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 7696,
+      "ms": 14820,
       "motivo": "",
       "arquivo": "pwa_service_worker.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 13523,
+      "ms": 21872,
       "motivo": "",
       "arquivo": "shortcuts.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 6529,
+      "ms": 10850,
       "motivo": "",
       "arquivo": "split_view.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 214,
+      "ms": 248,
       "motivo": "",
       "arquivo": "sync_chaves.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 10218,
+      "ms": 23165,
       "motivo": "",
       "arquivo": "sync_completo.cjs",
       "tentativas": 1
     },
     {
-      "passou": false,
-      "ms": 31089,
-      "motivo": "at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\sync_snapshot.cjs:164:17 {",
+      "passou": true,
+      "ms": 20281,
+      "motivo": "",
       "arquivo": "sync_snapshot.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 5280,
+      "ms": 30997,
+      "motivo": "",
+      "arquivo": "sync_websocket.cjs",
+      "tentativas": 1
+    },
+    {
+      "passou": true,
+      "ms": 13250,
       "motivo": "",
       "arquivo": "tema_switch.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 8445,
+      "ms": 17517,
       "motivo": "",
       "arquivo": "tema_vidro.cjs",
       "tentativas": 1
     },
     {
       "passou": false,
-      "ms": 4445,
+      "ms": 7367,
       "motivo": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
       "arquivo": "test_notes_editor_ui.cjs",
       "tentativas": 1
     },
     {
       "passou": true,
-      "ms": 12403,
+      "ms": 14420,
       "motivo": "",
       "arquivo": "toolbar_pwa.cjs",
       "tentativas": 1
@@ -577,7 +596,7 @@
       "arquivo": "notes_collapse_motion.cjs",
       "motivo": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:",
       "conhecida": true,
-      "saida": "{\n  start: 238.578125,\n  middle: 186.40625,\n  nearEnd: 184.390625,\n  end: 181.390625\n}\nAssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(Math.abs(result.nearEnd-result.end)<3)\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_collapse_motion.cjs:37:103 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}"
+      "saida": "{\n  start: 238.578125,\n  middle: 186.203125,\n  nearEnd: 184.390625,\n  end: 181.390625\n}\nAssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(Math.abs(result.nearEnd-result.end)<3)\n\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_collapse_motion.cjs:37:103 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}"
     },
     {
       "arquivo": "notes_markdown.cjs",
@@ -608,12 +627,6 @@
       "motivo": "AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to:",
       "conhecida": true,
       "saida": "AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to:\n\n'hidden'\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\notes_regression_audit.cjs:43:140 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 'hidden',\n  expected: 'hidden',\n  operator: 'notStrictEqual',\n  diff: 'simple'\n}"
-    },
-    {
-      "arquivo": "sync_snapshot.cjs",
-      "motivo": "at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\sync_snapshot.cjs:164:17 {",
-      "conhecida": true,
-      "saida": "estado no 2º aparelho: {\"sync\":{\"estado\":\"sincronizado\",\"pendentes\":0},\"logado\":true,\"notas\":[\"\"]}\npage.waitForFunction: Timeout 15000ms exceeded.\n    at C:\\Users\\Usuario\\OneDrive\\Desktop\\notas-pwa\\tests\\sync_snapshot.cjs:164:17 {\n  log: [],\n  name: 'TimeoutError'\n}"
     },
     {
       "arquivo": "test_notes_editor_ui.cjs",

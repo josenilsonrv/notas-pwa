@@ -55,6 +55,42 @@ def test_sw_nunca_e_cacheado(cliente):
     assert resposta.headers["service-worker-allowed"] == "/"
 
 
+def test_cabecalhos_de_seguranca_no_app(cliente):
+    """CSP por HASH (cacheável), nosniff, anti-clickjacking e WS liberado no connect-src."""
+    resposta = cliente.get("/")
+    politica = resposta.headers["content-security-policy"]
+    assert "sha256-" in politica, "o script inline do index.html entra por hash"
+    assert "frame-ancestors 'none'" in politica
+    assert "connect-src 'self' ws: wss:" in politica, "o WebSocket precisa passar"
+    assert "object-src 'none'" in politica
+    assert resposta.headers["x-content-type-options"] == "nosniff"
+    assert resposta.headers["x-frame-options"] == "DENY"
+    assert resposta.headers["referrer-policy"] == "strict-origin-when-cross-origin"
+    # HSTS só quando SESSAO_SEGURA=true (em http://localhost ele atrapalharia).
+    assert "strict-transport-security" not in resposta.headers
+    # O JS não recebe CSP (não é documento), mas recebe o nosniff.
+    assert cliente.get("/app.js").headers["x-content-type-options"] == "nosniff"
+
+
+def test_hashes_inline_mudam_com_o_conteudo():
+    """O hash acompanha o TEXTO do script inline (é o que permite a CSP ser cacheável)."""
+    from backend.app.main import _hashes_inline, csp_do_html
+    from backend.app.config import obter_config
+
+    assert _hashes_inline("<script>um()</script>") != _hashes_inline("<script>dois()</script>")
+    assert _hashes_inline("<script src='externo.js'></script>") == []
+    assert "sha256-" in csp_do_html(obter_config().raiz / "index.html")
+
+
+def test_hsts_aparece_com_sessao_segura(monkeypatch):
+    from backend.app import config as config_mod
+    from backend.app.main import cabecalhos_de_seguranca
+
+    monkeypatch.setattr(config_mod.obter_config(), "seguro", True, raising=False)
+    index = config_mod.obter_config().raiz / "index.html"
+    assert "Strict-Transport-Security" in cabecalhos_de_seguranca(index)
+
+
 @pytest.mark.parametrize(
     "caminho",
     [

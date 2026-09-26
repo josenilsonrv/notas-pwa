@@ -58,8 +58,7 @@ const FALHAS_CONHECIDAS = {
   'notes_outline_code.cjs': 'colapso de titulo + bloco de codigo diverge do original',
   'notes_paste_blocks.cjs': 'colagem de blocos de codigo junta linhas do original',
   'notes_regression_audit.cjs': 'auditoria de regressao: comportamento divergente registrado',
-  'test_notes_editor_ui.cjs': 'Enter em lista aninhada cria nivel diferente do original',
-  'sync_snapshot.cjs': 'aparelho NOVO pode terminar com a nota vazia: o autosave do boot (editor ainda vazio) vence a versao da nuvem no LWW — ver P98 em docs/PROBLEMAS-E-MITIGACOES.md'
+  'test_notes_editor_ui.cjs': 'Enter em lista aninhada cria nivel diferente do original'
 };
 
 const RAIZ_PWA = path.join(__dirname, '..');

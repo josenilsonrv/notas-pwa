@@ -9,6 +9,19 @@
 
 /*
   Cache-Control: public, max-age=0, must-revalidate
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# A API e o WebSocket NUNCA entram em cache (o Service Worker os ignora; aqui garantimos o
+# mesmo comportamento no host). O login/sync "nao pegar" costuma ser exatamente isto (P99).
+/api/*
+  Cache-Control: no-store
+  X-Content-Type-Options: nosniff
+
+/ws
+  Cache-Control: no-store
 
 # O Service Worker precisa ser JavaScript de verdade (ver _redirects) e nunca vir do
 # cache HTTP, senao o cliente fica preso em uma versao antiga do app.

@@ -7,4 +7,18 @@
 # estaticos, mesmo que exista um catch-all apontando para o index.html.
 /sw.js          /sw.js          200
 /manifest.json  /manifest.json  200
+
+# ---------------------------------------------------------------------------
+# API e WebSocket (backend Python). O deploy PADRAO deste projeto e de ORIGEM UNICA:
+# o proprio FastAPI serve o PWA E a API, entao nada precisa ser roteado aqui
+# (docs/BACKEND-SYNC.md explica o porque e como rodar).
+#
+# Se voce optar por separar (PWA no host estatico + API em outro servidor), o
+# Cloudflare Pages NAO encaminha para outro dominio por `_redirects`: use uma
+# Pages Function (`functions/api/[[path]].js`) como proxy para o host do Python,
+# liberando `/api/*` e `/ws`. Nesse cenario, o backend precisa de
+# ORIGENS_PERMITIDAS com a origem do PWA e de SESSAO_SEGURA=true (cookie
+# SameSite=Lax + Secure) - veja docs/BACKEND-SYNC.md.
+# ---------------------------------------------------------------------------
+
 # 🚀 [FIM: DEPLOY - REDIRECTS (SW/MANIFEST FORA DO FALLBACK DE SPA)]

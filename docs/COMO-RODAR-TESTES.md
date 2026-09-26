@@ -30,7 +30,7 @@ completa é para visão geral.
 | Mapa de chaves (Node puro) | `node tests/sync_chaves.cjs` | < 1 s |
 
 > **Backend Python (opcional).** `tests/backend_python.cjs` é a ponte para o pytest: com o
-> `.venv` pronto ele roda `pytest backend/tests -q` (~5 s, 94 testes) e **reprova a suíte** se
+> `.venv` pronto ele roda `pytest backend/tests -q` (~10 s, 120 testes) e **reprova a suíte** se
 > o backend quebrar; **sem** `.venv`/`pytest` ele sai com `0` e diz o motivo, então a suíte do
 > PWA **nunca** falha por causa do backend. Ambiente: `pip install -r backend/requirements.txt`.
 > Checagem completa (schema + login + isolamento) com credenciais: `npm run verificar:backend`.
@@ -39,7 +39,9 @@ completa é para visão geral.
 > em porta livre, com `DRIVER=memory`, e usam esse origin — provam o caminho webapp↔backend de
 > verdade (cookie, `X-CSRF`, fila e 1º login). Seguem o mesmo contrato: **sem `.venv`, saem com
 > `0`** e explicam. `sync_chaves.cjs` é Node puro e **falha se aparecer uma chave `notas-pwa-*`
-> nova sem destino declarado** em `sync/chaves.js`.
+> nova sem destino declarado** em `sync/chaves.js`. `modo_local_sem_backend.cjs` é o guarda do
+> **invariante §0.5/R7**: com o backend fora (`/api/**` abortado) o app sobe, edita, salva no
+> aparelho e **não** cria fila nem socket.
 
 ### O que significa cada resultado no console
 
@@ -159,7 +161,7 @@ Get-Process msedge -ErrorAction SilentlyContinue | Stop-Process -Force
   arquivo que nunca vinha). **Corrigido** em P84: o visualizador agora usa a implementação
   de rede quando não há anexo local, então o teste termina em poucos segundos.
 
-## Falhas conhecidas (determinísticas) — 9
+## Falhas conhecidas (determinísticas) — 8
 
 Ficam na constante **`FALHAS_CONHECIDAS`** (topo de `tests/run-all.cjs`) e falham
 **sempre**, em qualquer execução limpa. Não são flakiness: são divergências reais do
@@ -174,7 +176,6 @@ notes_outline_code              colapso de título + bloco de código
 notes_paste_blocks              colagem de blocos junta linhas
 notes_regression_audit          auditoria de regressão (comportamento divergente)
 test_notes_editor_ui            Enter em lista aninhada (nível diferente)
-sync_snapshot                   aparelho NOVO pode terminar com a nota vazia (P98 — autosave do boot vence a nuvem)
 ```
 
 **Regras da lista (não quebre):**

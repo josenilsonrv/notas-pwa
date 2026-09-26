@@ -16,7 +16,7 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
-const CACHE_NAME = 'notas-pwa-v68';
+const CACHE_NAME = 'notas-pwa-v71';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -166,6 +166,11 @@ self.addEventListener('fetch', (event) => {
 
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
+
+    // A API e o WebSocket NUNCA passam pelo Service Worker: `/api/*` tem de ir SEMPRE à rede
+    // (o cache-first serviria um `snapshot`/anexo velho — P99) e `/ws` é um upgrade de conexão
+    // (não é um `fetch`). Sem isto, o login/sync pareceriam "não pegar".
+    if (url.pathname.indexOf('/api/') === 0 || url.pathname === '/ws') return;
 
     event.respondWith((async () => {
         const emCache = await caches.match(request);

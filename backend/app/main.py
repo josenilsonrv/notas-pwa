@@ -5,20 +5,97 @@
 🔗 QUEM DEPENDE DELE: `uvicorn backend.app.main:app`, `scripts/verificar.py`, os testes de
                       `backend/tests/` e o wrapper `tests/backend_python.cjs`.
 """
-# ============================================
-# 🔄 [INÍCIO: BACKEND - APP/ROTAS]
 from __future__ import annotations
 
+# ============================================
+# 🚨 [INÍCIO: BACKEND - SEGURANÇA (CABEÇALHOS)]
+import base64
+import hashlib
+import re
+
+# CSP conservadora e CACHEÁVEL (o Service Worker guarda o HTML COM este cabeçalho; por isso
+# usamos HASH do script inline - e não um nonce por requisição, que quebraria o cache).
+# `style-src 'unsafe-inline'` é obrigatório: o app usa `style` inline em toda a interface
+# (mapa, cores, split) e isso NÃO é vetor de execução. `connect-src` libera o WebSocket.
+_DIRETIVAS_CSP = (
+    "default-src 'self'",
+    "worker-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "media-src 'self' data: blob: https:",
+    "frame-src 'self' https://www.youtube-nocookie.com",
+    # `data:` no `connect-src`: o Chromium reporta um "connect" interno ao re-renderizar imagens
+    # `data:` (o anexo local de hoje). URL `data:` NÃO sai do navegador, então liberá-la aqui não
+    # abre exfiltração nenhuma — e evita um erro de console que assustava sem haver defeito.
+    "connect-src 'self' ws: wss: data:",
+    "font-src 'self' data:",
+    "manifest-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+)
+_CACHE_CSP: dict[str, str] = {}
+
+
+def _hashes_inline(texto: str) -> list[str]:
+    """Hashes `sha256-…` dos `<script>` INLINE (os com `src` não precisam de hash)."""
+    conteudos = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", texto, re.S | re.I)
+    hashes = []
+    for conteudo in conteudos:
+        if not conteudo.strip():
+            continue
+        digest = hashlib.sha256(conteudo.encode("utf-8")).digest()
+        hashes.append("'sha256-" + base64.b64encode(digest).decode("ascii") + "'")
+    return hashes
+
+
+def csp_do_html(caminho) -> str:
+    """CSP do HTML com os hashes dos scripts inline (calculados uma vez por arquivo)."""
+    chave = str(caminho)
+    if chave in _CACHE_CSP:
+        return _CACHE_CSP[chave]
+    try:
+        hashes = _hashes_inline(caminho.read_text(encoding="utf-8"))
+    except OSError:
+        hashes = []
+    script = "script-src 'self'" + ((" " + " ".join(hashes)) if hashes else "")
+    politica = "; ".join([_DIRETIVAS_CSP[0], script, *_DIRETIVAS_CSP[1:]])
+    _CACHE_CSP[chave] = politica
+    return politica
+
+
+def cabecalhos_de_seguranca(caminho) -> dict:
+    """Cabeçalhos de toda resposta do app (CSP por hash + blindagem de sniff/frame/referrer)."""
+    cabecalhos = {
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Frame-Options": "DENY",
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    }
+    if str(caminho).lower().endswith((".html", ".htm")):
+        cabecalhos["Content-Security-Policy"] = csp_do_html(caminho)
+    if config.seguro:
+        # Só em https: em `http://localhost` o HSTS atrapalharia o desenvolvimento.
+        cabecalhos["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return cabecalhos
+# 🚨 [FIM: BACKEND - SEGURANÇA (CABEÇALHOS)]
+
+
+# 🔄 [INÍCIO: BACKEND - APP/ROTAS]
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 
+from .assets import router as assets_router
 from .auth import router as auth_router
 from .config import obter_config
 from .repositorio import repositorio
 from .sync.http import router as sync_router
+from .sync.ws import router as ws_router
 
 config = obter_config()
 
@@ -47,10 +124,12 @@ def health() -> dict:
         "avisos": config.avisos,
     }
 
-# As rotas de `/ws` entram AQUI (antes do estatico), na proxima secao -
-# a ordem importa: o catch-all do estatico e o ULTIMO.
+# As rotas de `/ws` entram AQUI (antes do estatico) - a ordem importa:
+# o catch-all do estatico e o ULTIMO.
 app.include_router(auth_router)
 app.include_router(sync_router)
+app.include_router(ws_router)
+app.include_router(assets_router)
 
 
 # ---------------------------------------------------------------------------
@@ -121,6 +200,8 @@ def servir(caminho: str) -> FileResponse:
         raise HTTPException(status_code=404, detail="nao encontrado")
 
     cabecalhos: dict[str, str] = {}
+    # Blindagem de TODA resposta do app (CSP por hash, nosniff, anti-clickjacking, referrer).
+    cabecalhos.update(cabecalhos_de_seguranca(alvo))
     if alvo.name == "sw.js":
         # O Service Worker NUNCA pode ficar preso em cache (P63).
         cabecalhos["Cache-Control"] = "no-store, no-cache, must-revalidate"

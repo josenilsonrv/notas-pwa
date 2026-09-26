@@ -37,20 +37,6 @@
   {
     "tema": "light",
     "seletor": "#notesContextNav",
-    "propriedade": "padding",
-    "pwa": "9.98476px 21.9633px 9.98476px 14.9771px",
-    "origem": "12px 18px"
-  },
-  {
-    "tema": "light",
-    "seletor": "#notesContextNav",
-    "propriedade": "height",
-    "pwa": "55.6406px",
-    "origem": "59.6719px"
-  },
-  {
-    "tema": "light",
-    "seletor": "#notesContextNav",
     "propriedade": "overflow",
     "pwa": "hidden auto",
     "origem": "hidden"
@@ -66,14 +52,14 @@
     "tema": "light",
     "seletor": "#notesEditorContainer",
     "propriedade": "height",
-    "pwa": "738.359px",
+    "pwa": "734.328px",
     "origem": "704.328px"
   },
   {
     "tema": "light",
     "seletor": "#notesEditor",
     "propriedade": "height",
-    "pwa": "696.359px",
+    "pwa": "692.328px",
     "origem": "662.328px"
   },
   {

@@ -141,6 +141,32 @@ Chaves usadas no dispositivo:
 > `notas-pwa-notes` — nada é perdido. Os **modelos** aplicam o texto exatamente como
 > foi salvo (substituem toda a nota atual; `Ctrl+Z` desfaz).
 
+## ☁️ Conta opcional (login + sync na nuvem)
+
+O app tem uma **camada opcional** em Python (FastAPI) para quem quiser as notas na conta, em
+qualquer aparelho. **Sem login nada muda**: o app continua local-first, offline e sem exigir rede.
+
+- **Botão de conta** no topo (moldura fixa): deslogado = "Entrar"; logado = seu e-mail.
+- **Login por e-mail/senha**; a sessão vive num cookie `HttpOnly` (assinado pelo backend) — o token
+  do Supabase **nunca** chega ao JavaScript.
+- **1º login**: o conteúdo deste aparelho **sobe sozinho** para a conta (sem diálogo e sem duplicar
+  nada — os ids são preservados), inclusive os **anexos** que estavam como `data:` na nota.
+- **Depois**: sync **bidirecional em tempo real** por WebSocket (`/ws`) — o que você escreve no PC
+  aparece no celular **sem recarregar**. Sem rede, a alteração entra numa **fila persistida** e sobe
+  quando a conexão volta (o indicador mostra "Offline — N na fila").
+- **Anexos na conta** (Supabase Storage): imagem/PDF/documento abre em **qualquer** aparelho, com
+  limite de 25 MB por arquivo e cota por conta.
+- **Escopo**: pastas, notas, mapas (com o grafo), modelos e **todas** as configurações do app.
+
+Como subir o backend, ligar o Supabase, os contratos HTTP/WS e o diagnóstico de problemas estão em
+**`docs/BACKEND-SYNC.md`**. Atalhos:
+
+```powershell
+npm run dev:backend        # sobe PWA + API em http://localhost:8000/
+npm run verificar:backend  # checa config, estático, schema, dados e login
+npm run test:backend       # pytest do backend
+```
+
 ## 📁 Estrutura de Arquivos
 
 ```

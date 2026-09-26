@@ -302,7 +302,21 @@ function installConta(App) {
         return this.contaVerificar();
     };
 
-    p.instalarContaUI();
+    /**
+     * O boot acontece DENTRO de `new NotesPWA()` (o `installNotesFeatures` chama `installConta`),
+     * então `window.notesApp` ainda não existe. Rodar `contaVerificar` no PROTÓTIPO espalharia o
+     * estado do sync (`projectsData`, `currentNotesProjectId`…) entre protótipo e instância — o
+     * app lê/grava a SUA lista e o sync mexeria em outra (raiz do P98, mesma lição do P96).
+     * Por isso agendamos o start para o 1º instante em que a INSTÂNCIA existir.
+     */
+    const iniciarConta = () => {
+        const aplicacao = window.notesApp;
+        if (!aplicacao || aplicacao.__contaIniciada) return;
+        aplicacao.__contaIniciada = true;
+        aplicacao.instalarContaUI();
+    };
+    if (window.notesApp) iniciarConta();
+    else setTimeout(iniciarConta, 0);
 }
 // 🚀 [FIM: CONTA - INSTALAÇÃO (installConta)]
 

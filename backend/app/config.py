@@ -68,6 +68,10 @@ class Configuracao:
     supabase_service_role_key: str = ""
     supabase_bucket_anexos: str = "anexos"
 
+    # Anexos: teto por ARQUIVO (segurança/antiabuso) e cota por CONTA (plano gratuito ~1 GB).
+    anexo_limite_mb: int = 25
+    anexo_cota_mb: int = 900
+
     sessao_cookie: str = "py_session"
     sessao_segredo: str = ""
     sessao_validade: int = 7 * 24 * 60 * 60  # 7 dias
@@ -122,6 +126,8 @@ def montar() -> Configuracao:
         supabase_anon_key=_texto("SUPABASE_ANON_KEY"),
         supabase_service_role_key=_texto("SUPABASE_SERVICE_ROLE_KEY"),
         supabase_bucket_anexos=_texto("SUPABASE_BUCKET_ANEXOS", "anexos") or "anexos",
+        anexo_limite_mb=_inteiro("ANEXO_LIMITE_MB", 25),
+        anexo_cota_mb=_inteiro("ANEXO_COTA_MB", 900),
         sessao_cookie=_texto("SESSAO_COOKIE", "py_session") or "py_session",
         sessao_segredo=segredo,
         sessao_validade=_inteiro("SESSAO_VALIDADE", 7 * 24 * 60 * 60),

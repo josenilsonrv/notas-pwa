@@ -24,6 +24,8 @@ uvicorn[standard]
 pydantic
 python-dotenv
 httpx
+# `UploadFile` (multipart) dos anexos: obrigatorio para o FastAPI ler o formulario de upload.
+python-multipart
 
 # --- Supabase (opcional - ver nota R1 acima) ---
 # O cliente do backend usa httpx/PostgREST (veja app/supabase_cliente.py); o pacote
