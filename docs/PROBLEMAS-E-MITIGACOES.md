@@ -1503,3 +1503,167 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
   correto e o `activate` apaga o cache antigo. O `app.js` recarrega a aba uma vez ao receber
   `SW_ATIVADO`, portanto não há passo manual para o usuário.
 
+### P109 — FOTO do perfil do Google no botão da conta (o e-mail saía no cabeçalho)
+- **Pedido**: com o login pelo Google, o topo mostrava **o e-mail** — queria-se **a foto do perfil**
+  da conta Google (não a marca "G").
+- **Caminho escolhido**: o `picture` do ID token. Ele vem no **mesmo JWT que já era validado**
+  (`google.py`), então o backend passou a extrair **`{email, nome, foto}`** (`perfil_do_token`) e a
+  **assinar a foto dentro da sessão** (campo `foto` do `Sessao`, ao lado de `provedor`). O front não
+  guarda nada: o rosto vem do `GET /api/auth/me` no boot — por isso ele **sobrevive ao reload**.
+- **Três detalhes que evitam regressão**:
+  1. **Defesa em profundidade** — a URL vira `src` de um `<img>`, então `_foto_segura()` só aceita
+     `https://` de `*.googleusercontent.com`/`*.google.com`; qualquer outra coisa vira `""`;
+  2. **Imagem externa pode falhar** (offline, URL expirada): `conta.js` guarda as URLs que falharam
+     num `Set` (`FOTOS_QUE_FALHARAM`) e o `onerror` redesenha o botão com o **ícone de pessoa +
+     e-mail** — sem loop e sem erro de página (coberto pelo caso B de `tests/conta_google.cjs`);
+  3. **Cookie antigo** (sem `provedor`/`foto`) continua valendo e cai em `senha` + sem foto —
+     travado em `test_auth.py::test_cookie_sem_provedor_continua_valendo`.
+- **CSP**: nenhuma mudança — `img-src 'self' data: blob: https:` já liberava a imagem do Google.
+- **Como auditar**: `node tests/conta_google.cjs` (A mostra a foto e o reload; B derruba a imagem e
+  exige o rosto padrão) · `node tests/conta_login.cjs` (sessão por senha **sem** `.conta-btn-foto`).
+  O e-mail continua em `title`/`aria-label` e no diálogo — a acessibilidade não perdeu informação.
+
+### P110 — FOTO da conta ficava em lugar diferente no PC (centro da metade livre) e no celular (canto esquerdo)
+- **Sintoma**: com o login pelo Google, no **celular/tablet** o avatar (`.conta-btn-foto`) ficava no
+  **canto esquerdo** do topo; no **PC** ele aparecia **centralizado na metade livre** (≈73% da largura),
+  porque a moldura `.app-areas` usa `justify-content: center` + `padding: 0 12px 0 50%` — decisão tomada
+  quando o botão era só a **pastilha de texto** ("Entrar"/e-mail), para o centro da tela não cair sobre o
+  ✕ do modal de Notas (que ocupa a metade esquerda).
+- **Causa**: a exceção do avatar nunca existiu; e o teste (`tests/conta_google.cjs`) rodava **só em
+  viewport de celular** (`390×800`), então a diferença no PC não era pega por nenhuma verificação.
+- **Correção**: `mapa/mapa.css` ganhou `@media (min-width: 1024px)` com
+  `.app-areas:has(#contaBtn[data-rosto="foto"])` → `justify-content: flex-start; padding-left: 12px`
+  (mesma âncora do mobile). Como o avatar passa a cair sobre as barras do topo, elas reservam
+  `padding-left: 3.5rem` — o **mesmo remédio** já usado até 1023px (`.pastas-topbar`, `.mapa-topbar`,
+  `.notes-modal-header`). O botão com **TEXTO** não mudou naquele momento — **até o P113**, que
+  unificou a âncora no canto esquerdo para QUALQUER rosto (a pastilha passou a ser só ícone em
+  todas as larguras).
+- **Bump de cache**: `CACHE_NAME` **v74 → v75** (o CSS é cache-first e o ajuste só chega ao dispositivo
+  com um cache novo; nenhum asset novo entrou em `ESSENCIAIS`).
+- **Como auditar**: `node tests/conta_google.cjs` (caso A: no PC a foto fica no canto esquerdo, `x < 60`,
+  a barra reserva `56px` e, sem o atributo `data-rosto`, o botão volta a centralizar — `x > 600`).
+
+### P111 — O ✕ do modal de Notas era um BOTÃO MORTO (e os dois "Fechar" fechavam a área errada)
+- **Sintoma**: clicar no ✕ do cabeçalho de Notas (`#notesModalClose`) **não fechava nada** — a nota
+  continuava na tela; e o "Fechar" do Mapa (`#mapaFechar`) voltava às Pastas mesmo quando a intenção era
+  fechar SÓ o mapa.
+- **Causa**: `closeNotesModal()` em `app.js` era um *placeholder* (`return true`): o motor de notas substitui
+  o comportamento em outros caminhos, mas o ✕ ficou INERTE (ninguém ligava o método real).
+- **Correção (regra espelhada — cada botão fecha SÓ a própria área)**:
+  1. `closeNotesModal()` (em `app.js`) passou a fechar de verdade: salva a nota, remove `active` do
+    `#notesModalBackdrop` e zera `currentNotesProjectId`/`currentNotesStageId`;
+  2. novo **`fecharAreaNotas()`** (em `mapa/mapa.js`, exportado): salva pela via acima e, **em lado a lado**,
+    chama `aplicarSplit(false, { manter: 'mapa' })` (o MAPA fica com a tela, sem trocar de área); **sozinha**,
+    chama `aplicarArea('pastas')` (a raiz de Pastas/cartões é o destino);
+  3. o listener de `#notesModalClose` chama `fecharAreaNotas()` (com *fallback* para `closeNotesModal()`).
+- **Rede de proteção**: a nota é SALVA antes de fechar — se o salvamento falhar, **nada fecha**
+  (o texto não se perde).
+- **Bump de cache**: `CACHE_NAME` **v75 → v76** (mudaram `app.js`, `mapa/mapa.js` e `index.html`).
+- **Como auditar**: `node tests/pastas_unificadas.cjs` — casos 7/8a/8b/8c medem, em lado a lado e sem ele,
+  quem sai de cena e quem fica (o helper `estado()` ganhou `split`).
+
+### P112 — "Ver mapa ao lado"/"Ver nota ao lado" saíram: o ⛶ passou a ser o ÚNICO controle do lado a lado
+- **Pedido**: remover o botão de ver o mapa lado a lado e dar a função ao **⛶** (expandir/retrair):
+  **expandir** → UMA tela só (a área clicada); **retrair** (segundo clique) → **as duas áreas, Mapa e Notas**.
+- **Correção**:
+  1. novo flag **`contrairEmLadoALado`** na classe compartilhada `AppExpandir` (`app.js`): ao CONTRAIR, a tela
+    volta ao lado a lado **mesmo quando não havia split antes** (antes só reabria o que já estava ao lado).
+    Cada área define `contrairEmLadoALado: () => !ehMobile()` — no celular não existe lado a lado, então o ⛶
+    apenas devolve o tamanho normal;
+  2. `rotulos` passou a aceitar **texto OU função** (`app.js`): "Expandir (só o mapa)"/"Expandir (só as notas)"
+    e "Retrair (notas + mapa)" — no celular, "Restaurar tamanho";
+  3. SAÍRAM: o botão `#notesAbrirMapa` ("Ver mapa ao lado", `index.html`), o botão `#mapaSplitBtn` ("Ver nota
+    ao lado", `mapa/mapa-render.js`) **e o ícone `split`**; em `mapa/mapa.js` saíram a ação `alternar-split`,
+    o `[data-app-split]` do listener global (agora de 2 abas) e o trecho que atualizava o botão em
+    `aplicarSplit`; `atualizarBarraAreas` ficou só com a moldura fixa (`#appAreas`/botão de CONTA);
+  4. em `mapa/mapa.css` saíram as duas regras de `#mapaSplitBtn` (inclusive a que a escondia no mobile).
+- **O que permanece**: `aplicarSplit` continua exportado — o boot restaura `notas-pwa-split.ligado`, o atalho
+  `abrir-nota` do card abre em lado a lado no PC e os dois "Fechar" desfazem o split corretamente.
+- **Testes ajustados**: `tests/mapa_toolbar.cjs` (topbar = colapso · expandir/contrair · Fechar, e o
+  `#mapaSplitBtn` não existe), `tests/split_view.cjs` (§4: expandir → 1 tela; contrair → Notas + Mapa;
+  §6: sair do split pelo Fechar do Mapa) e `tests/expandir.cjs` (novo caso 4: contrair sem split anterior
+  LIGA o lado a lado; rótulos do ⛶).
+- **Bump de cache**: `CACHE_NAME` **v76 → v77** (mudaram `app.js`, `notes/editor.js`, `index.html`,
+  `mapa/mapa.js`, `mapa/mapa-render.js` e `mapa/mapa.css`).
+- **Como auditar**: `node tests/expandir.cjs` · `node tests/split_view.cjs` · `node tests/mapa_toolbar.cjs`.
+
+### P113 — O botão de conta ficava centralizado no PC (metade livre) em vez do canto esquerdo
+- **Pedido**: o botão **"Entrar"** aparecia no **meio do topo** no PC, e não no **canto esquerdo**
+  como no celular.
+- **Causa**: `.app-areas` (moldura fixa do topo, `mapa/mapa.css`) centralizava na METADE LIVRE no PC
+  (`justify-content: center` + `padding: 0 12px 0 50%`) porque a pastilha trazia o **texto**
+  ("Entrar"/e-mail) e cobria o título do cabeçalho de Notas — os `3.5rem` reservados só bastavam para
+  um botão de **ícone**. Como o `@media (min-width: 1024px)` tratava a exceção **apenas** para a FOTO
+  (P110), o "Entrar" deslogado continuava no centro.
+- **Correção (âncora única)**:
+  1. `mapa/mapa.css`: `.app-areas` passa a `justify-content: flex-start; padding: 0 12px` (canto
+     esquerdo em QUALQUER largura) e a reserva `padding-left: 3.5rem` de `.pastas-topbar`/
+     `.mapa-topbar`/`.notes-modal-header` saiu do media query e vale sempre — o
+     `@media (min-width: 1024px)` da FOTO e o `@media (max-width: 1023px)` saíram (diziam o mesmo);
+  2. `styles.css`: `.conta-btn { padding: 9px }` e `.conta-btn-nome { display: none }` deixaram de ser
+     `@media (max-width: 1023px)` — a pastilha é **só ícone/avatar em qualquer largura** (é o que faz
+     os `3.5rem` bastarem); o e-mail segue no `title`, no `aria-label` e no diálogo da conta.
+- **Efeito visível**: no PC o botão fica em `x = 12` (36×36) e o título da área começa em `x = 56`;
+  no celular/tablet nada mudou (já era o canto esquerdo).
+- **Bump de cache**: `CACHE_NAME` **v77 → v78** (mudaram `mapa/mapa.css` e `styles.css`).
+- **Testes ajustados**: `tests/conta_login.cjs` ganhou o passo **2.0** (no PC: `x < 60`, largura < 60 e
+  `padding-left: 56px` no `.notes-modal-header`) e `tests/conta_google.cjs` deixou de exigir que o
+  botão de texto voltasse ao centro da metade livre (a exceção não existe mais).
+- **Como auditar**: `node tests/conta_login.cjs` · `node tests/conta_google.cjs`.
+
+
+
+### P114 — No celular não havia como ir das Notas ao Mapa (o ⛶ só restaurava o tamanho)
+- **Pedido**: no **celular**, um botão que **alterne Notas ⇄ Mapa**. O `⛶` existente
+  (`#notesFullscreenBtn`) só devolvia o tamanho normal — não dava acesso ao Mapa.
+- **Causa**: no celular cada área já ocupa a tela toda e **não existe lado a lado**; o `⛶` é o
+  controle do split no PC (`contrairEmLadoALado: () => !ehMobile()` — `app.js` e
+  `notes/editor.js`). Sem split e sem troca de área, o Mapa ficava fora de alcance no celular.
+- **Correção (⇄ nas duas pontas)**:
+  1. `index.html`: novo botão **`#notesAlternarAreaBtn`** (⇄) no cabeçalho de Notas, ao lado do `⛶`
+     — SVG 20×20 na grade 24, `stroke: currentColor`, dois pares de seta oposta;
+  2. `mapa/mapa-render.js`: ícone **`alternar-area`** em `ICONES` e botão **`#mapaAlternarAreaBtn`**
+     na topbar (entre o colapso das barras e o `⛶`), com `hidden` sincronizado pelo `atualizarShell`;
+  3. `mapa/mapa.js`: ação **`alternar-area`** → `aplicarArea.call(this, 'notas')` (sair do Mapa já
+     desliga a tela cheia e o split, como faz qualquer troca de área);
+  4. `app.js`: listener do ⇄ (`installModoMobileNotas` → **`alternarAreaNotasMapa`**) e blindagem
+     **`sairDaTelaCheiaNotasMobile`** — ao ENTRAR no modo mobile o `⛶` sai de cena, então a tela
+     cheia ligada antes não pode ficar presa sem controle visível;
+  5. `styles.css` + `mapa/mapa.css`: os **dois ⇄ só aparecem no celular** (`html.notes-mobile`);
+     no desktop eles ficam escondidos (lá o lado a lado já mostra as duas áreas) e o `⛶` de Notas é
+     escondido no celular (`display: none !important`). O `⛶` do Mapa continua no celular (é o
+     caminho de volta ao tamanho normal).
+- **Efeito visível**: no celular o cabeçalho de Notas fica **recolher · ⇄ · ✕** e a topbar do Mapa
+  ganha o espelho ⇄; no PC nada muda.
+- **Bump de cache**: `CACHE_NAME` **v78 → v79** (mudaram `index.html`, `app.js`, `styles.css`,
+  `mapa/mapa.css`, `mapa/mapa-render.js` e `mapa/mapa.js`).
+- **Testes**: novo **`tests/alternar_areas_mobile.cjs`** (⇄ oculto no desktop; no celular aparece,
+  o `⛶` sai de cena, o vaivém funciona nos dois sentidos e a tela cheia é liberada), novo
+  **`tests/barras_botoes.cjs`** (auditoria das 8 barras) e `tests/mapa_toolbar.cjs` (o ⇄ da topbar
+  fica oculto no desktop).
+- **Como auditar**: `node tests/alternar_areas_mobile.cjs` · `node tests/barras_botoes.cjs`.
+
+### P115 — A paleta de cores e o seletor de tons ficavam BRANCOS no tema escuro
+- **Pedido**: revisar as **cores** das barras/popovers para respeitarem o **tema claro/escuro**.
+- **Sintoma**: no tema escuro, a **paleta de cores** do editor (`#notesColorPalette`) e o diálogo
+  **"Escolher tonalidade"** (`.notes-tone-picker`) apareciam com **fundo branco** e texto quase
+  preto (`#1D1D1F`), uma tela clara no meio do modal escuro.
+- **Causa**: `notes/editor.css` define, no escuro, `--notes-popup-background: var(--color-bg-container, #1e293b)`
+  — e o **projeto original redefine os tokens globais** em `html[data-theme=dark]`
+  (`frontend/styles.css`: `--color-bg-container: #1c1d20`, `--color-text-main: #f5f5f7`, …). O PWA
+  consome apenas um **recorte** desse compilado (`theme-origem.css`), que traz as regras de
+  **componente** do escuro mas **não** o bloco de tokens: sem o token, o **fallback claro `#FFF`**
+  do compilado vencia. O seletor de tons ainda herdava `color: var(--color-text-main)`.
+- **Correção (`notes/editor.css`)**: no escuro, `--notes-popup-background: #151B23` (a **MESMA**
+  superfície das barras do modal no escuro — `theme-origem.css`, comprovada por
+  `tests/tema_vidro.cjs`), texto **`#CBD5E1`** e divisor **`#2A3543`**; a paleta e o seletor ganham
+  `color`/`border-color` no escuro. No tema claro **nada mudou** (`#eeefef`).
+- **Efeito visível**: contraste WCAG **AA** (≈11:1) nos dois popovers, sem tela branca no escuro.
+- **Paridade**: o ORIGINAL não tem o defeito (tem o bloco de tokens no escuro) — a correção
+  APROXIMA o PWA do original. `tests/parity_visual.cjs` não mede esses seletores (nada mudou lá).
+- **Bump de cache**: `CACHE_NAME` **v78 → v79** (junto do P114).
+- **Testes**: novo **`tests/paletas_tema.cjs`** — mede os dois popovers nos DOIS temas (superfície,
+  texto e divisor) e exige contraste AA em todos os quatro casos.
+- **Como auditar**: `node tests/paletas_tema.cjs` · `node tests/tema_vidro.cjs`.
+
+

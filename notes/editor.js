@@ -1090,8 +1090,9 @@ function installNotesEditor(App) {
     p.notesPanelMotion=async function(element,hide,version){return AppExpandir.motion(element,hide,version,()=>this.notesMotionVersion);};
     /**
      * Expandir/contrair (tela cheia) — config da área de Notas para a CLASSE ÚNICA
-     * `AppExpandir` (a MESMA do Mapa): fecha/reabre o lado a lado e recolhe/mostra
-     * as barras UMA POR VEZ, na ordem inversa ao voltar.
+     * `AppExpandir` (a MESMA do Mapa): EXPANDIR deixa as notas SOZINHAS na tela;
+     * CONTRAIR volta ao LADO A LADO (notas + mapa) e recolhe/mostra as barras UMA
+     * POR VEZ, na ordem inversa ao voltar.
      */
     p.toggleNotesFullscreen=async function(force){
         if(!this.expandirNotas)this.expandirNotas=new AppExpandir({
@@ -1100,9 +1101,16 @@ function installNotesEditor(App) {
             classeArea:'fullscreen',
             barras:()=>[document.getElementById('notesToolbar'),document.getElementById('notesContextNav')],
             botao:()=>document.getElementById('notesFullscreenBtn'),
-            rotulos:{aberto:'Restaurar tamanho',fechado:'Expandir para tela cheia'},
+            rotulos:{
+                aberto:()=>(document.documentElement.classList.contains('notes-mobile')?'Restaurar tamanho':'Retrair (notas + mapa)'),
+                fechado:'Expandir (só as notas)'
+            },
             versao:{nova:()=>(this.notesMotionVersion=(this.notesMotionVersion||0)+1),atual:()=>this.notesMotionVersion},
             ladoALadoAtivo:()=>document.documentElement.classList.contains('app-split'),
+            // CONTRAIR (retrair) volta à tela LADO A LADO: Notas + Mapa. É o ⛶ que liga o
+            // split (o botão "Ver mapa ao lado" saiu); no celular não existe lado a lado,
+            // então o flag devolve false e o ⛶ apenas restaura o tamanho normal.
+            contrairEmLadoALado:()=>!(typeof this.ehMobile==='function'&&this.ehMobile()),
             // Fechar o lado a lado na TELA CHEIA não troca de área: sem `manter:'notas'`,
             // `aplicarSplit(false)` chamaria `aplicarArea('mapa')`, que REMOVE o
             // `active` do modal de Notas — o mapa assumiria a tela e a nota sairia

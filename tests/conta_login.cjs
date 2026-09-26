@@ -7,7 +7,8 @@
  *   1) SEM backend (rotas abortadas): o app sobe e funciona, o diálogo abre e o erro é
  *      amigável ("Não foi possível falar com o servidor") — nada quebra (P62);
  *   2) COM backend (stub): entrar, erro de credencial inline, criar conta, sair (com
- *      `X-CSRF`) e o botão voltando para "Entrar";
+ *      `X-CSRF`) e o botão voltando para "Entrar" — e, no PC (1280×900), o botão fica
+ *      no CANTO ESQUERDO (pastilha só de ícone: âncora única em qualquer largura);
  *   3) `Esc` e clique FORA fecham o diálogo.
  */
 const assert = require('node:assert/strict');
@@ -60,7 +61,7 @@ const montar = async (page, api) => {
 
 const novoEstado = () => {
     const alvo = { logado: false, email: '', csrf: 'csrf-de-teste' };
-    alvo.sessao = () => ({ id: 'u-1', email: alvo.email, criado_em: 1, csrf: alvo.csrf });
+    alvo.sessao = () => ({ id: 'u-1', email: alvo.email, criado_em: 1, csrf: alvo.csrf, provedor: 'senha', foto: '' });
     alvo.entrar = email => { alvo.logado = true; alvo.email = email; };
     alvo.sair = () => { alvo.logado = false; alvo.email = ''; };
     return alvo;
@@ -141,6 +142,18 @@ const instalarApi = (page, estado, chamadas) => page.route('**/api/auth/**', rot
   await esperar(page2, () => chamadas.some(c => c.caminho === '/me'));
   assert.equal((await page2.locator('#contaBtn').textContent()).trim(), 'Entrar', '401 no /me = deslogado');
 
+  // 2.0) Âncora no PC (1280×900): o botão "Entrar" fica no CANTO ESQUERDO, como no
+  //      celular — a antiga centralização na "metade livre" saiu —, e a pastilha é só
+  //      ÍCONE em qualquer largura, então os 3.5rem reservados nas barras do topo
+  //      bastam para o título da área ao lado não ficar sob o botão.
+  const caixaBotao = await page2.locator('#contaBtn').boundingBox();
+  assert.ok(caixaBotao.x < 60, 'o botão "Entrar" fica no canto ESQUERDO no PC, x=' + caixaBotao.x);
+  assert.ok(caixaBotao.width < 60, 'no PC a pastilha também é SÓ ÍCONE, w=' + caixaBotao.width);
+  assert.equal(
+    await page2.evaluate(() => getComputedStyle(document.querySelector('.notes-modal-header')).paddingLeft),
+    '56px', 'o cabeçalho de Notas reserva 3.5rem para o título não ficar sob o botão'
+  );
+
   // 2.1) senha errada: erro inline e SEGUE no formulário
   const caixa = page2.locator('.conta-dialog');
   await page2.locator('#contaBtn').click();
@@ -154,10 +167,14 @@ const instalarApi = (page, estado, chamadas) => page.route('**/api/auth/**', rot
   assert.equal(await caixa.locator('#contaSenha').count(), 1, 'continua no formulário depois do erro');
   assert.equal((await page2.locator('#contaBtn').textContent()).trim(), 'Entrar');
 
-  // 2.2) senha certa: logado — o botão passa a mostrar o e-mail
+  // 2.2) senha certa: logado — o botão passa a mostrar o e-mail (sem foto: isto não é Google)
   await caixa.locator('#contaSenha').fill('senha-certa');
   await caixa.getByRole('button', { name: 'Entrar', exact: true }).click();
   await esperar(page2, async () => (await page2.locator('#contaBtn').textContent()).trim() === 'dona@exemplo.com');
+  assert.equal(await page2.locator('#contaBtn img.conta-btn-foto').count(), 0, 'sessão por senha não tem foto do Google');
+  assert.equal(await page2.locator('#contaBtn svg').count(), 1, 'fica o ícone de pessoa + o e-mail');
+  assert.equal(await page2.locator('#contaBtn').getAttribute('aria-label'), 'Conta de dona@exemplo.com');
+  assert.equal(await page2.evaluate(() => window.notasConta.provedor), 'senha');
   assert.equal((await caixa.locator('.conta-email').textContent()).trim(), 'dona@exemplo.com', 'o diálogo mostra o e-mail');
   assert.ok(((await caixa.locator('.conta-sync').textContent()) || '').trim().length > 0, 'o diálogo mostra a situação do sync');
   assert.equal(await page2.evaluate(() => window.notasConta.logado), true);

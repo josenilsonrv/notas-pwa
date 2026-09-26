@@ -50,6 +50,8 @@ def _token(**mudancas) -> str:
         "iat": agora,
         "exp": agora + 3600,
         "name": "Dona Exemplo",
+        # A foto do perfil: e dela que sai o rosto da conta no cabecalho.
+        "picture": "https://lh3.googleusercontent.com/a/foto-da-dona=s96-c",
     }
     corpo.update(mudancas)
     return jwt.encode(corpo, _CHAVE, algorithm="RS256", headers={"kid": _KID})
@@ -102,6 +104,23 @@ def test_login_google_abre_a_sessao(cliente, google):
     assert corpo["email"] == EMAIL
     assert corpo["id"]
     assert corpo["csrf"]
+    # Rosto da conta: provedor + foto do perfil viajam na sessao (o front so desenha).
+    assert corpo["provedor"] == "google"
+    assert corpo["foto"] == "https://lh3.googleusercontent.com/a/foto-da-dona=s96-c"
+
+
+def test_foto_de_host_estranho_e_descartada(cliente, google):
+    """A foto vira `src` de um <img> no front: so vale vinda de um host do Google."""
+    _entrar_com_google(cliente, _token(picture="https://rastreador.exemplo.com/x.png"))
+    assert cliente.get("/api/auth/me").json()["foto"] == ""
+
+
+def test_sem_picture_a_sessao_fica_sem_foto(cliente, google):
+    """Conta Google sem foto (o Google manda `picture` vazio): o front cai no rosto padrao."""
+    _entrar_com_google(cliente, _token(picture=""))
+    corpo = cliente.get("/api/auth/me").json()
+    assert corpo["provedor"] == "google"
+    assert corpo["foto"] == ""
 
 
 def test_login_google_reusa_a_conta_pelo_email(cliente, google):
@@ -118,9 +137,14 @@ def test_login_google_vincula_a_conta_de_senha(cliente, google):
         "/api/auth/registrar", json={"email": EMAIL, "senha": "senha-boa-123"}
     ).status_code == 204
     da_senha = cliente.get("/api/auth/me").json()["id"]
+    assert cliente.get("/api/auth/me").json()["foto"] == ""
     cliente.cookies.clear()
     assert _entrar_com_google(cliente).status_code == 204
-    assert cliente.get("/api/auth/me").json()["id"] == da_senha
+    corpo = cliente.get("/api/auth/me").json()
+    assert corpo["id"] == da_senha
+    # O rosto segue o ULTIMO login: a mesma conta passa a mostrar a foto do Google.
+    assert corpo["provedor"] == "google"
+    assert corpo["foto"].startswith("https://lh3.googleusercontent.com/")
 
 
 def test_email_nao_verificado_da_403(cliente, google):

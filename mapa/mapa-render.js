@@ -82,10 +82,11 @@
         colapso.hidden = true;
         colapso.setAttribute('aria-expanded', 'true');
 
-        // Lado a lado: ver a nota e o mapa ao mesmo tempo (espelha o "Ver mapa ao lado" de Notas).
-        const splitBtn = btnIcone('split', 'split', 'Ver nota ao lado', 'alternar-split', null, 'mapaSplitBtn');
-        splitBtn.hidden = true;
-        splitBtn.setAttribute('aria-pressed', 'false');
+        // ⇄ (alternar área): MESMO botão do cabeçalho de Notas (`#notesAlternarAreaBtn`).
+        // SÓ aparece no CELULAR (o CSS esconde no PC, onde o lado a lado já mostra as duas
+        // áreas): a função é levar de volta às Notas, o caminho inverso do ⇄ de Notas.
+        const alternarArea = btnIcone('alternar-area', 'alternar-area', 'Ver as Notas', 'alternar-area', null, 'mapaAlternarAreaBtn');
+        alternarArea.hidden = true;
 
         // Fechar o mapa (espelha o #notesModalClose de Notas): só fecha o mapa,
         // mantendo a nota (e vice-versa).
@@ -94,11 +95,13 @@
 
         // Expandir/contrair a área (espelha o #notesFullscreenBtn de Notas): MESMO par
         // de ícones (expandir/restaurar) e a MESMA alternância por classe no shell.
+        // É o ÚNICO controle do lado a lado: EXPANDIR deixa só o mapa na tela e
+        // CONTRAIR (segundo clique) volta a Notas + Mapa (ver `contrairEmLadoALado`).
         const telaCheia = btnTelaCheia('mapaFullscreenBtn');
         telaCheia.hidden = true;
         telaCheia.setAttribute('aria-pressed', 'false');
 
-        topbar.append(tituloAtual, espaco, colapso, telaCheia, splitBtn, fechar);
+        topbar.append(tituloAtual, espaco, colapso, alternarArea, telaCheia, fechar);
 
         const form = document.createElement('form');
         form.id = 'mapaForm';
@@ -163,17 +166,21 @@
         visivel('mapaChipsNav', true);
         visivel('mapaToolbar', !lista);
         visivel('mapaColapsoBarras', !lista);
-        visivel('mapaSplitBtn', !lista);
+        // ⇄ (celular): espelho do ⇄ de Notas; no PC o CSS esconde (lado a lado).
+        visivel('mapaAlternarAreaBtn', !lista);
         visivel('mapaFechar', !lista);
         visivel('mapaRodape', !lista);
         visivel('mapaFullscreenBtn', !lista);
         // Estado de "tela cheia" da área (espelha o fullscreen de Notas): aplica a
         // classe no shell (que troca o ícone expandir/restaurar via CSS) e o título.
+        // O rótulo do CONTRAIR só promete "notas + mapa" onde o lado a lado existe
+        // (`notes-mobile` = celular, onde cada área é uma tela inteira).
         const telaCheia = document.getElementById('mapaFullscreenBtn');
         if (telaCheia) {
             const ativo = Boolean(estado.telaCheia);
+            const movel = document.documentElement.classList.contains('notes-mobile');
+            const rotulo = ativo ? (movel ? 'Restaurar tamanho' : 'Retrair (notas + mapa)') : 'Expandir (só o mapa)';
             telaCheia.setAttribute('aria-pressed', String(ativo));
-            const rotulo = ativo ? 'Restaurar tamanho' : 'Expandir (tela cheia)';
             telaCheia.title = rotulo;
             telaCheia.setAttribute('aria-label', rotulo);
         }
@@ -434,13 +441,15 @@
         'barra-editar': { d: '<path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h13"/><circle cx="16" cy="6" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="19" cy="18" r="2.2"/>' },
         // Colapso das barras (MESMO desenho da seta do cabeçalho de Notas).
         colapso: { d: '<path d="m5 15 7-7 7 7"/>' },
-        // Lado a lado: dois painéis divididos.
-        split: { d: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/>' },
         // Fechar (MESMO desenho do #notesModalClose de Notas).
         fechar: { d: '<path d="M18 6 6 18M6 6l12 12"/>' },
         // Expandir/contrair (MESMO desenho do #notesFullscreenBtn de Notas).
         'tela-cheia': { d: '<path d="M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3"/>' },
-        'restaurar-tela': { d: '<path d="M16 3v3a2 2 0 0 0 2 2h3M8 21v-3a2 2 0 0 0-2-2H3"/>' }
+        'restaurar-tela': { d: '<path d="M16 3v3a2 2 0 0 0 2 2h3M8 21v-3a2 2 0 0 0-2-2H3"/>' },
+        // Alternar área (⇄) — MESMO desenho do `#notesAlternarAreaBtn` de Notas: duas
+        // setas opostas. No celular cada área ocupa a tela toda, então este botão é o
+        // caminho direto entre Notas e Mapa (no PC as duas convivem lado a lado).
+        'alternar-area': { d: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>' }
     };
 
     /** Cria o SVG padronizado de um ícone (16×16, `stroke: currentColor`). */

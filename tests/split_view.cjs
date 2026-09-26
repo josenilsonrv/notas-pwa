@@ -2,8 +2,10 @@
 /*
  * FRENTE 4 - Vínculo Notas↔Mapa + visão lado a lado (PC).
  * Cobre: vincular uma nota a um nó pelo painel, o atalho "abrir nota" no card,
- * o botão de lado a lado (opt-in), Nota e Mapa visíveis juntos e o gesto de
- * ARRASTAR a barra superior para o lado inverso (troca os lados, com persistência).
+ * o lado a lado ligado pelo PRÓPRIO ⛶ (EXPANDIR = uma tela; CONTRAIR = Notas +
+ * Mapa — os botões "Ver mapa/nota ao lado" foram removidos), Nota e Mapa visíveis
+ * juntos e o gesto de ARRASTAR a barra superior para o lado inverso (troca os
+ * lados, com persistência).
  */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -99,13 +101,18 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(aposAtalho.mapaVisivel, true, 'o mapa continua visível ao lado');
     assert.equal(aposAtalho.backdropAtivo, true, 'a nota aparece ao lado do mapa');
 
-    // ---------------------------------------------------------------- 4) lado a lado (opt-in)
+    // -------------------------- 4) o ⛶ é o ÚNICO controle do lado a lado: EXPANDIR
+    //                                 deixa UMA tela, CONTRAIR volta a Notas + Mapa
     await page.evaluate(() => app.aplicarArea('mapa'));
     assert.equal((await split()).appSplit, false, 'começa fora do modo lado a lado');
-    await page.locator('#mapaSplitBtn').click();
-    await page.waitForTimeout(120);
+    await page.locator('#mapaFullscreenBtn').click();
+    await page.waitForFunction(ids => window.app.mapaFullscreen && ids.every(id => document.getElementById(id).hidden),
+      ['mapaToolbar', 'mapaFormatBar', 'mapaChipsNav', 'mapaRodape']);
+    assert.equal((await split()).appSplit, false, 'EXPANDIR (⛶) deixa uma tela só — não entra no lado a lado');
+    await page.locator('#mapaFullscreenBtn').click();
+    await page.waitForFunction(() => !window.app.mapaFullscreen && document.documentElement.classList.contains('app-split'));
     const ligado = await split();
-    assert.equal(ligado.appSplit, true, 'botão liga o modo lado a lado');
+    assert.equal(ligado.appSplit, true, 'CONTRAIR (⛶ de novo) liga o modo lado a lado');
     assert.equal(ligado.mapaVisivel, true, 'mapa visível no split');
     assert.equal(ligado.backdropAtivo, true, 'nota visível no split');
     assert.equal(ligado.notaDireita, false, 'nota começa à esquerda');
@@ -159,10 +166,14 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal((await split()).notaDireita, true, 'arrastar a barra da nota para a direita troca os lados');
     assert.equal(await page.evaluate(() => window.app.mapaSplitLado), 'direita', 'lado da nota persistido como direita');
 
-    // ---------------------------------------------------------------- 6) sair do split
-    await page.locator('#mapaSplitBtn').click();
+    // ------------------- 6) sair do split: cada botão de Fechar fecha a SUA área
+    // (o "Ver nota ao lado" saiu; aqui quem desfaz o lado a lado é o Fechar do Mapa)
+    await page.locator('#mapaFechar').click();
     await page.waitForTimeout(120);
-    assert.equal((await split()).appSplit, false, 'botão desliga o modo lado a lado');
+    const depoisDeFechar = await split();
+    assert.equal(depoisDeFechar.appSplit, false, 'Fechar do Mapa desliga o modo lado a lado');
+    assert.equal(depoisDeFechar.mapaVisivel, false, 'o mapa sai de cena');
+    assert.equal(depoisDeFechar.backdropAtivo, true, 'a nota permanece (cada botão fecha a SUA área)');
 
     assert.deepEqual(erros, [], 'sem erros de página');
     console.log('OK: vínculo Nota↔Mapa + lado a lado (opt-in, arrastar troca o lado)');

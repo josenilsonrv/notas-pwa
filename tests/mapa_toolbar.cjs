@@ -116,11 +116,17 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       .filter(el => !el.closest('#mapaToolbar, #mapaFormatBar, .mapa-topbar, .mapa-menu, #mapaAtalhos, #mapaBarraEditor, .mapa-painel, #mapaForm, .mapa-canvas-vazio, .mapa-no, .mapa-conexoes, #mapaMinimapa'))
       .map(el => el.dataset.mapaAcao));
     assert.deepEqual(soltos, [], 'nenhum botão solto fora das barras/menus/painel');
-    // No mapa aberto, a topbar mostra SÓ "‹ Mapas" + o botão de colapso das barras
-    // (o resto é da visão de lista).
+    // No mapa aberto, a topbar mostra: colapso das barras, expandir/contrair e Fechar.
+    // O "Ver nota ao lado" SAIU — o lado a lado é ligado pelo CONTRAIR do próprio ⛶.
     const topbarVisivel = await page.evaluate(() => [...document.querySelectorAll('.mapa-topbar [data-mapa-acao]')]
       .filter(el => el.offsetParent !== null).map(el => el.dataset.mapaAcao));
-    assert.deepEqual(topbarVisivel, ['alternar-colapso', 'alternar-fullscreen', 'alternar-split', 'fechar-mapa'], 'topbar do mapa organiza como Notas: colapso, expandir, lado a lado e fechar');
+    assert.deepEqual(topbarVisivel, ['alternar-colapso', 'alternar-fullscreen', 'fechar-mapa'], 'topbar do mapa: colapso, expandir/contrair (único controle do lado a lado) e fechar');
+    // O ⇄ (`alternar-area`) também vive na topbar, mas é do CELULAR: no desktop fica
+    // escondido (lá o lado a lado já mostra as duas áreas). Ver `tests/alternar_areas_mobile.cjs`.
+    assert.equal(await page.evaluate(() => getComputedStyle(document.getElementById('mapaAlternarAreaBtn')).display), 'none',
+      '⇄ da topbar do mapa escondido no desktop');
+    assert.equal(await page.evaluate(() => Boolean(document.getElementById('mapaSplitBtn'))), false, 'o botão "Ver nota ao lado" não existe mais');
+    assert.equal(await page.evaluate(() => Boolean(document.querySelector('#mapaArea [data-mapa-acao="alternar-split"]'))), false, 'não sobrou nenhuma ação de lado a lado na área do mapa');
 
     // ---------------------------------------------------------------- 3) barra de formatação (sempre visível, como em Notas)
     assert.equal(await page.evaluate(() => document.getElementById('mapaFormatBar').hidden), false,

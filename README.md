@@ -26,10 +26,10 @@ Editor de notas avançado como Progressive Web App (PWA) para uso em celular, co
 
 ### Áreas do app: Pastas, Notas e Mapa Mental
 - **Pastas/workspaces (tela principal)**: é a primeira tela; cada pasta abrange as **Notas e os Mapas** dela. A pasta "Geral" adota o que não tem pasta (a escolha fica em `notas-pwa-pasta-ativa`)
-- **Seletor de áreas (dentro da pasta)**: barra flutuante **Notas | Mapa Mental** (a escolha é lembrada em `notas-pwa-area-ativa`), com "‹ Pastas" (volta à tela principal) e "Abrir mapa" (ver o mapa ao lado da nota)
+- **Seletor de áreas (dentro da pasta)**: barra flutuante **Notas | Mapa Mental** (a escolha é lembrada em `notas-pwa-area-ativa`), com "‹ Pastas" (volta à tela principal) e os botões de **Fechar** de cada área (cada um fecha SÓ a sua)
 - **Notas**: chips filtrados pela pasta ativa; clique-direito/toque longo no chip abre o menu (Renomear · Duplicar · Mover para pasta · Excluir)
 - **Mapa Mental**: área separada do editor, em camadas (pasta `mapa/`), montada só na primeira entrada (lazy) para não pesar o boot
-- **Lado a lado (PC)**: botão na topbar mostra a nota e o mapa juntos (o preferência fica em `notas-pwa-split`); **arrastar a barra superior** de um painel para o lado inverso troca os lados, e **arrastar o divisor** entre eles ajusta a largura (um painel acompanha o outro)
+- **Lado a lado (PC)**: o botão **⛶** de cada área é o ÚNICO controle — **expandir** deixa só a área clicada na tela e **retrair** (segundo clique) volta a **Notas + Mapa** juntos (a preferência fica em `notas-pwa-split`); **arrastar a barra superior** de um painel para o lado inverso troca os lados, e **arrastar o divisor** entre eles ajusta a largura (um painel acompanha o outro)
 - **Vínculo Notas↔Mapa**: um tópico pode apontar para uma nota (atalho 📄 que abre a nota)
 - **Gestão de mapas**: criar, abrir, renomear, duplicar e excluir (com confirmação); favoritar (estrela) e arquivar/desarquivar
 - **Pastas/workspaces**: criar, renomear, excluir e mover mapas entre pastas

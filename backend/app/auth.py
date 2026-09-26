@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from .config import obter_config
-from .google import ErroGoogle, configurado, email_do_token
+from .google import ErroGoogle, configurado, perfil_do_token
 from .identidade import ErroIdentidade, obter_identidade
 from .repositorio import repositorio
 from .seguranca import (
@@ -70,8 +70,9 @@ def _limitar(request: Request, email: str) -> None:
         raise HTTPException(status_code=429, detail=MSG_LIMITE)
 
 
-def _abrir_sessao(response: Response, user_id: str, email: str) -> None:
-    token = obter_assinador().emitir(nova_sessao(user_id, email))
+def _abrir_sessao(response: Response, user_id: str, email: str, provedor: str = "senha", foto: str = "") -> None:
+    """Emite o cookie da sessao com o rosto da conta (`provedor` + `foto`), quando houver."""
+    token = obter_assinador().emitir(nova_sessao(user_id, email, provedor, foto))
     definir_cookie(response, token)
 
 
@@ -138,15 +139,17 @@ def login_google(dados: CredencialGoogle, request: Request, response: Response) 
     """Entra com o ID token do Google (validado no backend) e emite a sessao de sempre.
 
     O e-mail so vem do token VALIDADO (nunca do cliente). O vinculo e automatico por e-mail
-    verificado: mesma conta quando o e-mail ja existe (padrao de mercado).
+    verificado: mesma conta quando o e-mail ja existe (padrao de mercado). A `foto` do perfil
+    tambem sai do token e vai na sessao: e o rosto da conta no cabecalho.
     """
     if not configurado():
         raise HTTPException(status_code=503, detail=MSG_GOOGLE_DESLIGADO)
     _limitar(request, "")  # sem e-mail antes da validacao: limita por IP
     try:
-        email = email_do_token(dados.credential, obter_config().google_client_id)
+        perfil = perfil_do_token(dados.credential, obter_config().google_client_id)
     except ErroGoogle as erro:
         raise HTTPException(status_code=erro.status, detail=str(erro)) from erro
+    email = perfil["email"]
     try:
         user_id = obter_identidade().google(email)
     except ErroIdentidade as erro:
@@ -155,7 +158,7 @@ def login_google(dados: CredencialGoogle, request: Request, response: Response) 
         raise HTTPException(status_code=503, detail=MSG_IDENTIDADE)
     obter_limitador().liberar(chave_limite(request, email))
     repositorio().salvar_perfil(user_id, email)
-    _abrir_sessao(response, user_id, email)
+    _abrir_sessao(response, user_id, email, provedor="google", foto=perfil["foto"])
 
 
 # 🚨 [FIM: BACKEND - AUTH]

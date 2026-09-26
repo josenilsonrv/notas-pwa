@@ -2,9 +2,11 @@
 /* CLASSE ÚNICA do expandir/contrair (AppExpandir, em app.js) usada pelas DUAS áreas.
  *
  * Cobre: expandir FECHA o lado a lado e recolhe as barras UMA POR VEZ (na ordem);
- * contrair mostra as barras UMA POR VEZ (ORDEM INVERSA) e REABRE o lado a lado;
- * barra que já estava recolhida não reaparece sozinha; `aria-pressed` do botão
- * sincronizado; e a MESMA classe compartilhada `.app-tela-cheia` nas duas áreas.
+ * contrair mostra as barras UMA POR VEZ (ORDEM INVERSA) e volta ao LADO A LADO
+ * (`contrairEmLadoALado`: o ⛶ é o ÚNICO controle do split — sem ele, contrair
+ * só devolvia o tamanho normal); barra que já estava recolhida não reaparece
+ * sozinha; `aria-pressed` do botão sincronizado; e a MESMA classe compartilhada
+ * `.app-tela-cheia` nas duas áreas.
  */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -156,8 +158,38 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     assert.equal(await page.evaluate(() => document.querySelector('#mapaArea .mapa-shell').classList.contains('app-tela-cheia')), false, 'classe compartilhada removida ao restaurar');
     assert.equal(await page.evaluate(() => app.expandirMapa instanceof AppExpandir), true, 'Mapa usa a CLASSE ÚNICA AppExpandir');
 
+    // ------------------- 4) ⛶ é o ÚNICO controle do lado a lado (os botões "Ver mapa
+    //                        ao lado"/"Ver nota ao lado" foram REMOVIDOS): EXPANDIR
+    //                        deixa UMA tela; CONTRAIR volta a Notas + Mapa
+    await page.evaluate(() => app.aplicarArea('mapa'));
+    await page.evaluate(() => window.__reiniciar());
+    assert.equal(await page.evaluate(() => document.documentElement.classList.contains('app-split')), false, 'estado inicial: só o mapa na tela (sem lado a lado)');
+    await page.locator('#mapaFullscreenBtn').click();
+    await page.waitForFunction(ids => window.app.mapaFullscreen && ids.every(id => document.getElementById(id).hidden), BARRAS);
+    assert.equal(await page.evaluate(() => document.documentElement.classList.contains('app-split')), false, 'EXPANDIR deixa uma tela SÓ (não liga o lado a lado)');
+    assert.equal(await page.evaluate(() => document.getElementById('mapaFullscreenBtn').title), 'Retrair (notas + mapa)', 'expandido, o rótulo anuncia a volta ao lado a lado');
+    await page.locator('#mapaFullscreenBtn').click();
+    await page.waitForFunction(() => !window.app.mapaFullscreen && document.documentElement.classList.contains('app-split'));
+    const doisLados = await page.evaluate(() => {
+      const backdrop = document.getElementById('notesModalBackdrop');
+      return {
+        mapa: !document.getElementById('mapaArea').hidden,
+        nota: backdrop.classList.contains('active'),
+        larguraNota: Math.round(backdrop.getBoundingClientRect().width),
+        vista: window.innerWidth,
+        telaCheia: document.querySelector('#mapaArea .mapa-shell').classList.contains('app-tela-cheia'),
+        titulo: document.getElementById('mapaFullscreenBtn').title
+      };
+    });
+    assert.equal(doisLados.mapa, true, 'CONTRAIR traz o MAPA de volta');
+    assert.equal(doisLados.nota, true, 'CONTRAIR traz a NOTA de volta — Notas + Mapa lado a lado');
+    assert.ok(doisLados.larguraNota < doisLados.vista, 'a nota ocupa METADE da tela (não é tela cheia)');
+    assert.equal(doisLados.telaCheia, false, 'a área sai da tela cheia ao contrair');
+    assert.equal(doisLados.titulo, 'Expandir (só o mapa)', 'em tela normal, o rótulo do ⛶ diz o que o clique faz');
+    assert.equal(await page.evaluate(() => Boolean(document.getElementById('mapaSplitBtn'))), false, 'o botão "Ver nota ao lado" não existe mais');
+
     assert.deepEqual(erros, [], 'sem erros de página');
-    console.log('OK: expandir/contrair único (Notas + Mapa) — fecha/reabre o lado e recolhe/mostra as barras uma por vez');
+    console.log('OK: expandir/contrair único (Notas + Mapa) — expandir deixa uma tela, contrair volta ao lado a lado (barras uma por vez)');
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exit(1); });
 // 🧪 [FIM: TESTE - EXPANDIR (NOTAS + MAPA)]

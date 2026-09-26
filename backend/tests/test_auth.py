@@ -7,6 +7,7 @@
 """
 # 🧪 [INÍCIO: TESTE - BACKEND/TEST_AUTH]
 import json
+import time
 
 import httpx
 import pytest
@@ -14,7 +15,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.identidade import ErroIdentidade, IdentidadeGoTrue
 from backend.app.main import app
-from backend.app.seguranca import obter_assinador, reiniciar_limitador
+from backend.app.seguranca import _b64, obter_assinador, reiniciar_limitador
 
 EMAIL = "dona@exemplo.com"
 SENHA = "senha-boa-123"
@@ -45,6 +46,9 @@ def test_registrar_ja_deixa_logado(cliente):
     corpo = cliente.get("/api/auth/me").json()
     assert corpo["email"] == EMAIL
     assert corpo["id"]
+    # Rosto da conta: quem entra por senha nao tem foto (o front mostra o e-mail).
+    assert corpo["provedor"] == "senha"
+    assert corpo["foto"] == ""
 
 
 def test_cookie_e_httponly_lax_e_com_validade(cliente):
@@ -138,6 +142,30 @@ def test_login_certo_libera_o_rate_limit(cliente):
     cliente.cookies.clear()
     assert _login(cliente, senha="errada").status_code == 401
     assert _login(cliente).status_code == 204
+
+
+def _sessao_antiga() -> str:
+    """Cookie no formato ANTIGO (payload sem `provedor`/`foto`), assinado de verdade."""
+    agora = time.time()
+    corpo = json.dumps({
+        "uid": "u-antigo",
+        "email": EMAIL,
+        "csrf": "csrf-antigo",
+        "iat": agora,
+        "exp": agora + 600,
+    })
+    assinatura = obter_assinador()._assinar(_b64(corpo.encode("utf-8")).encode("ascii"))
+    return f"{_b64(corpo.encode('utf-8'))}.{assinatura}"
+
+
+def test_cookie_sem_provedor_continua_valendo(cliente):
+    """Sessao emitida ANTES do campo existir segue logada e cai no rosto padrao (`senha`)."""
+    cliente.cookies.set("py_session", _sessao_antiga())
+    corpo = cliente.get("/api/auth/me").json()
+    assert corpo["id"] == "u-antigo"
+    assert corpo["email"] == EMAIL
+    assert corpo["provedor"] == "senha"
+    assert corpo["foto"] == ""
 
 
 def test_cookie_adulterado_e_recusado(cliente):

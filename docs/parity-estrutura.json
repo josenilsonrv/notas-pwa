@@ -21,7 +21,7 @@
       "bootGuardReparar",
       "contaBtn",
       "mapaArea",
-      "notesAbrirMapa",
+      "notesAlternarAreaBtn",
       "notesContextNav",
       "notesEditor",
       "notesEditorContainer",
@@ -58,6 +58,7 @@
       "Título H3"
     ],
     "pwa": [
+      "Abrir o Mapa Mental",
       "Alinhar à direita",
       "Alinhar à esquerda",
       "Alternar tema claro/escuro",
@@ -89,8 +90,7 @@
       "Tachado",
       "Título H1",
       "Título H2",
-      "Título H3",
-      "Ver o mapa ao lado da nota"
+      "Título H3"
     ],
     "faltando": []
   },

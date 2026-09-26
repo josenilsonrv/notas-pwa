@@ -15,6 +15,10 @@ window.notasConta = window.notasConta || {
     logado: false,
     email: '',
     csrf: '',
+    /** Como a sessão nasceu: `senha` | `google` (vem do `/me`; o backend assina). */
+    provedor: '',
+    /** URL da foto do perfil do Google (vazia fora do Google) — é o rosto no cabeçalho. */
+    foto: '',
     sync: { estado: 'local', pendentes: 0 }
 };
 
@@ -59,6 +63,8 @@ function installConta(App) {
         alvo.logado = Boolean(dados && dados.id);
         alvo.email = alvo.logado ? (dados.email || '') : '';
         alvo.csrf = alvo.logado ? (dados.csrf || '') : '';
+        alvo.provedor = alvo.logado && dados.provedor === 'google' ? 'google' : (alvo.logado ? 'senha' : '');
+        alvo.foto = alvo.logado ? (dados.foto || '') : '';
         if (typeof this.contaAtualizarBotao === 'function') this.contaAtualizarBotao();
         if (typeof this.contaAtualizarDialogo === 'function') this.contaAtualizarDialogo();
         // Gancho do SYNC (seção 5): entrar dispara snapshot + 1º envio; sair limpa a fila.
@@ -110,18 +116,44 @@ function installConta(App) {
 // 🚨 [FIM: CONTA - SESSÃO (aplicar/verificar/entrar/registrar/sair)]
 
 // ⚡ [INÍCIO: CONTA - BOTÃO DO CABEÇALHO]
-    /** Deslogado = "Entrar"; logado = o e-mail. Traz ícone + nome (o CSS esconde o
-     *  nome até 1023px, para o título da área ao lado continuar legível). */
+    /** Fotos do perfil que NÃO carregaram (offline, URL expirada): não tentamos de novo. */
+    const FOTOS_QUE_FALHARAM = new Set();
+
+    /**
+     * Deslogado = "Entrar"; logado com Google = a FOTO do perfil; logado por senha = o e-mail.
+     * O nome trunca e o CSS o esconde até 1023px, para o título da área ao lado continuar
+     * legível — e a foto dispensa texto em qualquer largura (o e-mail segue no balão, no
+     * `aria-label` e no diálogo da conta).
+     */
     p.contaAtualizarBotao = function () {
         const botao = document.getElementById('contaBtn');
         if (!botao) return;
         const estado = window.notasConta;
-        if (!botao.querySelector('.conta-btn-nome')) {
-            botao.innerHTML = ICONE_PESSOA + '<span class="conta-btn-nome"></span>';
+        const foto = estado.logado && estado.foto && !FOTOS_QUE_FALHARAM.has(estado.foto) ? estado.foto : '';
+        // Só refaz o miolo quando o rosto muda (e quando a URL da foto troca): preserva o foco
+        // e não recria o `<img>` a cada chamada.
+        const rosto = foto ? 'foto' : (estado.logado ? 'email' : 'entrar');
+        if (botao.dataset.rosto !== rosto || (botao.dataset.foto || '') !== foto) {
+            botao.dataset.rosto = rosto;
+            botao.dataset.foto = foto;
+            botao.innerHTML = foto
+                ? '<img class="conta-btn-foto" src="' + foto + '" alt="" referrerpolicy="no-referrer">'
+                : ICONE_PESSOA + '<span class="conta-btn-nome"></span>';
         }
-        botao.querySelector('.conta-btn-nome').textContent = estado.logado ? estado.email : 'Entrar';
+        if (foto) {
+            // A imagem é EXTERNA (Google): se falhar, o botão volta ao ícone de pessoa + e-mail.
+            botao.querySelector('.conta-btn-foto').onerror = () => {
+                FOTOS_QUE_FALHARAM.add(estado.foto);
+                window.notasConta && this.contaAtualizarBotao();
+            };
+        } else {
+            const alvoNome = botao.querySelector('.conta-btn-nome');
+            if (alvoNome) alvoNome.textContent = estado.logado ? estado.email : 'Entrar';
+        }
         botao.dataset.logado = estado.logado ? 'true' : 'false';
-        const rotulo = estado.logado ? 'Conta de ' + estado.email : 'Entrar na sua conta';
+        const rotulo = estado.logado
+            ? 'Conta de ' + estado.email + (estado.provedor === 'google' ? ' (Google)' : '')
+            : 'Entrar na sua conta';
         botao.title = rotulo;
         botao.setAttribute('aria-label', rotulo);
     };

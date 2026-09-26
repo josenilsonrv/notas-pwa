@@ -1,10 +1,12 @@
 """
 🗺️ COMPONENTE: Verificacao do ID token do Google (login com Google)
 🎯 OBJETIVO: Validar o JWT que o Google Identity Services entrega no navegador (assinatura
-             RS256 via JWKS, `iss`, `aud` e `exp`) e devolver o e-mail VERIFICADO - nada mais:
-             o backend nunca confia em dado vindo do cliente sem esta checagem.
+             RS256 via JWKS, `iss`, `aud` e `exp`) e devolver o PERFIL do token: e-mail
+             VERIFICADO (o unico dado que resolve a conta) + `nome`/`foto`, que sao apenas
+             apresentacao (o rosto da conta no cabecalho) - o backend nunca confia em dado
+             vindo do cliente sem esta checagem.
 🔗 QUEM DEPENDE DELE: `backend/app/auth.py` (rotas `/api/auth/config` e `/api/auth/google`) e
-             `backend/tests/test_google.py`.
+             `backend/tests/test_google.py`. A `foto` chega ao front pelo `GET /api/auth/me`.
 
 Escolha de desenho: validamos o token LOCALMENTE com `PyJWT` + as chaves publicas do Google
 (`https://www.googleapis.com/oauth2/v3/certs`), com cache em memoria. Assim nao ha chamada ao
@@ -16,6 +18,7 @@ from __future__ import annotations
 
 import threading
 import time
+from urllib.parse import urlsplit
 
 import httpx
 import jwt
@@ -147,8 +150,25 @@ def reiniciar_verificador() -> None:
     _VERIFICADOR = None
 
 
-def email_do_token(token: str, publico: str) -> str:
-    """Email VERIFICADO do token, ou `ErroGoogle` (a conta so e resolvida por ele).
+# Hosts de onde a FOTO do perfil pode vir (o `picture` do Google vive em `*.googleusercontent.com`).
+# Lista FECHADA de proposito: a URL vira `src` de um <img> no front, entao um valor inesperado
+# (host qualquer, `data:`, `http:`) e descartado e o front cai no rosto padrao da conta.
+HOSTS_FOTO = ("googleusercontent.com", "google.com")
+
+
+def _foto_segura(valor) -> str:
+    """URL https da foto do perfil, ou "" quando nao vier de um host do proprio Google."""
+    url = str(valor or "").strip()
+    if not url.startswith("https://"):
+        return ""
+    host = (urlsplit(url).hostname or "").lower()
+    if not any(host == dominio or host.endswith("." + dominio) for dominio in HOSTS_FOTO):
+        return ""
+    return url
+
+
+def perfil_do_token(token: str, publico: str) -> dict:
+    """Perfil do token VALIDADO: `{"email", "nome", "foto"}` - a base do rosto da conta.
 
     Regra de seguranca: o e-mail so vale quando o proprio Google o marca como verificado
     (`email_verified`), que e o que sustenta o vinculo automatico por e-mail (padrao de mercado).
@@ -159,5 +179,14 @@ def email_do_token(token: str, publico: str) -> str:
         raise ErroGoogle(MSG_TOKEN, status=400)
     if not dados.get("email_verified"):
         raise ErroGoogle(MSG_EMAIL, status=403)
-    return email
+    return {
+        "email": email,
+        "nome": str(dados.get("name") or "").strip(),
+        "foto": _foto_segura(dados.get("picture")),
+    }
+
+
+def email_do_token(token: str, publico: str) -> str:
+    """Email VERIFICADO do token (atalho de `perfil_do_token`: a conta so e resolvida por ele)."""
+    return perfil_do_token(token, publico)["email"]
 # 🚨 [FIM: BACKEND - GOOGLE]

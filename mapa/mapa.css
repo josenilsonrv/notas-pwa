@@ -1,3 +1,8 @@
+/**
+ * 🗺️ COMPONENTE: Área do Mapa Mental + moldura fixa do topo (botão/avatar da Conta)
+ * 🎯 OBJETIVO: Estilizar o shell do mapa (topbar, chips, canvas, nós, painel, controles) e ancorar o botão de conta da moldura `.app-areas`
+ * 🔗 QUEM DEPENDE DELE: `index.html` (área do mapa e `#appAreas`), `mapa/mapa-render.js` e `conta.js` (`#contaBtn`)
+ */
 /* 🎨 [INÍCIO: MAPA/ESTILO - ÁREA, CANVAS, NÓS, PAINEL E CONEXÕES] */
 /* ============================================
  * MAPA MENTAL - Área independente de Notas
@@ -51,10 +56,14 @@ html[data-theme="dark"] {
  * funciona em qualquer tela. SUBSTITUIU a seta ‹ — a função dela ("voltar às
  * Pastas") continua nos botões Fechar de Notas (#notesModalClose) e do Mapa
  * (#mapaFechar).
- * PC (>=1024px): centralizada na METADE LIVRE do topo. O modal de Notas ocupa a
- *   metade ESQUERDA (50%), então o centro da tela cairia sobre o ✕ dele.
- * Até 1023px (tablet/celular): canto ESQUERDO (onde estava a seta ‹), com o nome
- *   oculto (só o ícone) para o título da área ao lado continuar legível.
+ * Âncora ÚNICA: CANTO ESQUERDO, em QUALQUER largura (a MESMA posição do celular).
+ *   A moldura não usa mais `justify-content: center` + `padding-left: 50%` — a antiga
+ *   centralização na "metade livre" do PC existia porque a pastilha trazia o TEXTO
+ *   ("Entrar"/e-mail) e cobria o título do modal de Notas (`padding-left: 3.5rem`
+ *   não bastava para ~87px de pastilha). Agora a pastilha é SÓ ÍCONE/avatar em
+ *   qualquer largura (`.conta-btn-nome { display: none }`, em `styles.css`), então
+ *   ela cabe nos 3.5rem reservados nas barras do topo e o título de cada área
+ *   (Pastas/Mapa/Notas) segue legível ao lado.
  * ------------------------------------------------------------ */
 .app-areas {
     position: fixed;
@@ -63,22 +72,20 @@ html[data-theme="dark"] {
     right: 0;
     z-index: 2400;
     display: flex;
-    justify-content: center;
-    padding: 0 12px 0 50%;
+    justify-content: flex-start;
+    padding: 0 12px;
     /* A moldura é INVISÍVEL: só o botão recebe cliques. */
     pointer-events: none;
 }
 
 .app-areas > * { pointer-events: auto; }
 
-/* Tablet/celular: botão à esquerda + reserva de espaço nas barras, porque o título
-   de cada área fica AO LADO dele e precisa continuar legível. */
-@media (max-width: 1023px) {
-    .app-areas { justify-content: flex-start; padding-left: 12px; }
-    body:has(#appAreas:not([hidden])) .pastas-topbar,
-    body:has(#appAreas:not([hidden])) .mapa-topbar,
-    body:has(#appAreas:not([hidden])) .notes-modal-header { padding-left: 3.5rem; }
-}
+/* Reserva de espaço nas barras do topo: o botão de conta é o PRIMEIRO item da faixa
+   e o título de cada área começa AO LADO dele (mesmo remédio em qualquer largura,
+   porque a âncora é a mesma em todas elas — a exceção do PC deixou de existir). */
+body:has(#appAreas:not([hidden])) .pastas-topbar,
+body:has(#appAreas:not([hidden])) .mapa-topbar,
+body:has(#appAreas:not([hidden])) .notes-modal-header { padding-left: 3.5rem; }
 
 /* Ícones das barras do MAPA com a MESMA cor/hover da barra de Notas
    (`.toolbar-btn` escuro: #94A3B8 → hover #E2E8F0 sobre #202A36). */
@@ -221,10 +228,10 @@ html[data-theme="dark"] .mapa-area {
 .pastas-card-acoes { display: flex; gap: 6px; }
 
 /* ------------------------------------------------------------
- * Lado a lado (PC): Nota | Mapa. Opt-in pelo botão; arrastar a BARRA
- * SUPERIOR de um painel para o lado inverso troca os lados.
+ * Lado a lado (PC): Nota | Mapa. É ligado pelo CONTRAIR (⛶) de qualquer
+ * uma das áreas (não há mais botão próprio); arrastar a BARRA SUPERIOR de
+ * um painel para o lado inverso troca os lados.
  * ------------------------------------------------------------ */
-html.notes-mobile #mapaSplitBtn { display: none !important; }
 /* Divisor arrastável entre os painéis (só aparece no modo lado a lado). */
 .app-split-divisor { display: none; }
 
@@ -1005,7 +1012,12 @@ html[data-theme="dark"] .mapa-atalhos { background: var(--mapa-superficie); bord
    aplicada ao shell pelo `mapaAlternarFullscreen` (a MESMA usada em Notas). Aqui
    `.mapa-fullscreen` serve só para trocar o ícone (expandir ⇄ restaurar). */
 #mapaColapsoBarras[hidden] { display: none !important; }
-#mapaSplitBtn[hidden], #mapaFechar[hidden], #mapaFullscreenBtn[hidden] { display: none !important; }
+#mapaFechar[hidden], #mapaFullscreenBtn[hidden], #mapaAlternarAreaBtn[hidden] { display: none !important; }
+/* ⇄ (alternar área): MESMO critério do ⇄ de Notas (`styles.css`) — o botão vive sempre na
+   topbar, mas só APARECE no CELULAR (no PC o lado a lado já mostra as duas áreas). O ⛶ do
+   mapa CONTINUA no celular: ele é o caminho de volta ao tamanho normal. */
+#mapaArea .mapa-topbar #mapaAlternarAreaBtn { display: none; }
+html.notes-mobile #mapaArea .mapa-topbar #mapaAlternarAreaBtn { display: inline-flex; }
 
 /* Ícone de expandir/contrair: MESMO par do `#notesFullscreenBtn` — mostra o desenho
    de restaurar quando a área está em tela cheia (garante o ícone sempre visível). */

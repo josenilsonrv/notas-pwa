@@ -413,8 +413,13 @@
                 return;
             }
             case 'alternar-colapso': mapaAlternarColapsoBarras.call(this); return;
-            // Expandir/contrair a área (espelha o fullscreen de Notas): fecha/reabre o
-            // lado a lado e recolhe/mostra as barras UMA POR VEZ (animação sequencial).
+            // Alternar área (⇄, celular): volta para as NOTAS — espelho exato do ⇄ de
+            // Notas (`#notesAlternarAreaBtn`), que traz o Mapa. `aplicarArea` já desliga
+            // a tela cheia do mapa e o lado a lado ao trocar.
+            case 'alternar-area': aplicarArea.call(this, 'notas'); return;
+            // Expandir/contrair a área (espelha o fullscreen de Notas): EXPANDIR deixa só
+            // o mapa na tela; CONTRAIR volta ao lado a lado (notas + mapa) e recolhe/mostra
+            // as barras UMA POR VEZ (animação sequencial).
             case 'alternar-fullscreen': mapaAlternarFullscreen.call(this); return;
             // Grade (pontinhos) da superfície: alterna e persiste (padrão: desligada).
             case 'alternar-grade': {
@@ -423,9 +428,8 @@
                 if (sGrade && typeof sGrade.salvarGrade === 'function') sGrade.salvarGrade(novo);
                 break;
             }
-            case 'alternar-split': aplicarSplit.call(this, !this.mapaSplit); return;
-            // Fechar o MAPA (espelha o #notesModalClose de Notas): em lado a lado fecha
-            // SÓ o mapa (a nota permanece); sozinho, volta à raiz de Pastas.
+            // Fechar a ÁREA DO MAPA (o espelho exato é `fecharAreaNotas()`, do ✕ de Notas):
+            // em lado a lado fecha SÓ o mapa (a nota permanece); sozinho, volta à raiz.
             case 'fechar-mapa':
                 if (this.mapaSplit) { aplicarSplit.call(this, false); aplicarArea.call(this, 'notas'); }
                 else { aplicarArea.call(this, 'pastas'); }
@@ -769,10 +773,17 @@
             classeArea: 'mapa-fullscreen',
             barras: () => BARRAS_FULLSCREEN.map(id => document.getElementById(id)),
             botao: () => document.getElementById('mapaFullscreenBtn'),
-            rotulos: { aberto: 'Restaurar tamanho', fechado: 'Expandir (tela cheia)' },
+            rotulos: {
+                aberto: () => (document.documentElement.classList.contains('notes-mobile') ? 'Restaurar tamanho' : 'Retrair (notas + mapa)'),
+                fechado: 'Expandir (só o mapa)'
+            },
             versao: { nova: () => (app.mapaMotionVersion = (app.mapaMotionVersion || 0) + 1), atual: () => app.mapaMotionVersion },
             ladoALadoAtivo: () => Boolean(app.mapaSplit),
             aplicarLadoALado: ligado => aplicarSplit.call(app, ligado),
+            // CONTRAIR (retrair) volta à tela LADO A LADO: Notas + Mapa — é o ⛶ que liga o
+            // split (o espelho "Ver nota ao lado" saiu). No celular não existe lado a lado,
+            // então o flag devolve false e o ⛶ apenas restaura o tamanho normal.
+            contrairEmLadoALado: () => !(typeof app.ehMobile === 'function' && app.ehMobile()),
             aoAplicar: aberto => { app.mapaFullscreen = aberto; }
         });
         return app.expandirMapa;
@@ -790,8 +801,8 @@
     /**
      * Expandir/contrair a área — comportamento PADRÃO (o MESMO de Notas, via a classe
      * única `AppExpandir`):
-     *  - EXPANDIR: fecha o que está ao lado (lado a lado) e recolhe as barras UMA POR VEZ;
-     *  - CONTRAIR: mostra as barras UMA POR VEZ (ordem INVERSA) e reabre o que estava ao lado.
+     *  - EXPANDIR: a área toma a tela SOZINHA (fecha o lado a lado) e recolhe as barras
+     *    UMA POR VEZ; CONTRAIR mostra UMA POR VEZ (INVERSA) e volta ao LADO A LADO.
      */
     async function mapaAlternarFullscreen() {
         return expandidorMapa(this).alternar();
@@ -928,26 +939,16 @@
     // ⚡ [FIM: MAPA - PASTAS (ÁREA RAIZ / WORKSPACES)]
     // ⚡ [INÍCIO: MAPA - LADO A LADO (SPLIT NOTA + MAPA)]
     /**
-     * Navegação: apenas a seta ‹ (sempre visível, topo-esquerdo) que volta à raiz de
-     * Pastas. A troca Notas↔Mapa é feita por botões DENTRO de cada área — "Ver mapa ao
-     * lado" (cabeçalho de Notas) e "Ver nota ao lado" (topbar do Mapa) ligam o split.
+     * Navegação: só a MOLDURA FIXA do topo (`#appAreas` — o botão de CONTA, definido no
+     * `conta.js`), sempre visível. A troca Notas↔Mapa é feita pelo ⛶ de cada área:
+     * EXPANDIR deixa uma tela só e CONTRAIR volta ao lado a lado (Notas + Mapa) — os
+     * botões "Ver mapa ao lado" (Notas) e "Ver nota ao lado" (Mapa) foram REMOVIDOS.
      */
-    function atualizarBarraAreas(alvo) {
+    function atualizarBarraAreas() {
         const nav = document.getElementById('appAreas');
-        // A seta ‹ fica SEMPRE disponível (topo-esquerdo): volta à raiz de Pastas e,
-        // estando na raiz, fecha o modal de Notas (revelando os cartões).
+        // A moldura fica SEMPRE disponível (topo-esquerdo): é por ela que se volta à raiz
+        // de Pastas (Fechar de Notas/Mapa) e se abre o painel da CONTA.
         if (nav) nav.hidden = false;
-        // A troca de área vive em botões internos: "Ver mapa ao lado" (Notas) e
-        // "Ver nota ao lado" (Mapa) ligam/desligam o modo lado a lado.
-        const ligado = Boolean(this.mapaSplit);
-        const abrir = document.getElementById('notesAbrirMapa');
-        if (abrir) {
-            abrir.hidden = !(alvo === 'notas' || ligado);
-            const rotulo = ligado ? 'Fechar o mapa ao lado' : 'Ver o mapa ao lado da nota';
-            abrir.title = rotulo;
-            abrir.setAttribute('aria-label', rotulo);
-            abrir.setAttribute('aria-pressed', String(ligado));
-        }
     }
 
 
@@ -1041,8 +1042,9 @@
     }
 
     /**
-     * Visão lado a lado (PC): a nota e o mapa aparecem juntos. Opt-in pelo botão da
-     * topbar; arrastar a BARRA SUPERIOR de um painel para o lado inverso TROCA os
+     * Visão lado a lado (PC): a nota e o mapa aparecem juntos. É LIGADA pelo CONTRAIR
+     * (⛶) das DUAS áreas — `contrairEmLadoALado`, na classe `AppExpandir` — e lembrada
+     * no boot; arrastar a BARRA SUPERIOR de um painel para o lado inverso TROCA os
      * lados. Persistido em `notas-pwa-split`.
      *
      * `opcoes.manter` (usado pelo expandir/contrair): ao DESLIGAR, só remove o
@@ -1058,13 +1060,6 @@
         html.classList.toggle('app-split-nota-direita', this.mapaSplit && this.mapaSplitLado === 'direita');
         if (store()) store().salvarSplit({ ligado: this.mapaSplit, lado: this.mapaSplitLado, ratio: this.mapaSplitRatio });
         montarDivisorSplit.call(this);
-        const botao = document.getElementById('mapaSplitBtn');
-        if (botao) {
-            botao.setAttribute('aria-pressed', String(this.mapaSplit));
-            const rotulo = this.mapaSplit ? 'Sair do modo lado a lado' : 'Ver nota e mapa lado a lado';
-            botao.title = rotulo;
-            botao.setAttribute('aria-label', rotulo);
-        }
         if (!this.mapaSplit) {
             if (opcoes.manter === 'notas') {
                 // A NOTA fica com a tela: o mapa sai de cena (a área ativa NÃO muda).
@@ -1090,7 +1085,7 @@
         if (secao) secao.hidden = false;
         if (pastas) pastas.hidden = true;
         if (backdrop) backdrop.classList.add('active');
-        atualizarBarraAreas.call(this, 'mapa');
+        atualizarBarraAreas.call(this);
         aplicarSplitRatio.call(this);
     }
 
@@ -2585,7 +2580,7 @@
         this.mapaAreaAtiva = alvo;
         if (store()) store().salvarAreaAtiva(alvo);
 
-        atualizarBarraAreas.call(this, alvo);
+        atualizarBarraAreas.call(this);
 
         const secao = document.getElementById('mapaArea');
         const pastasSecao = document.getElementById('pastasArea');
@@ -2699,7 +2694,6 @@
                     mapaVoltarParaPastas.call(this);
                     return;
                 }
-                if (evento.target.closest('[data-app-split]')) { aplicarSplit.call(this, !this.mapaSplit); }
             });
             window.addEventListener('themechange', () => aplicarTemaMapa());
             // Atalhos do mapa: no documento (o foco pode ficar no editor de notas oculto).
@@ -2727,6 +2721,27 @@
         const resultado = this.aplicarArea(s ? s.lerAreaAtiva() : 'pastas');
         if (splitSalvo && splitSalvo.ligado) aplicarSplit.call(this, true);
         return resultado;
+    }
+
+    /**
+     * Fecha a ÁREA DE NOTAS (✕ `#notesModalClose`) — a MESMA regra dos DOIS botões de
+     * fechar, cada um fechando a SUA área: `#mapaFechar` (ação `fechar-mapa`) fecha o
+     * Mapa; esta fecha as Notas. Em LADO A LADO a área pedida sai e a OUTRA fica com a
+     * tela; sozinha (sem a outra aberta ao lado), volta à TELA INICIAL de Pastas.
+     * A nota é SALVA antes: se o salvamento falhar, nada fecha (o texto não se perde).
+     */
+    async function fecharAreaNotas() {
+        const fechou = typeof this.closeNotesModal === 'function' ? await this.closeNotesModal() : true;
+        if (fechou === false) return false;
+        if (this.mapaSplit) {
+            // O MAPA fica com a tela: sai do lado a lado SEM trocar de área (a área do mapa
+            // continua ativa e a seção visível) — a Nota já foi fechada acima.
+            aplicarSplit.call(this, false, { manter: 'mapa' });
+        } else {
+            // Não sobrou nada aberto: a tela inicial de Pastas (os cartões) é o destino.
+            aplicarArea.call(this, 'pastas');
+        }
+        return true;
     }
 
     function installMapaMental(NotesPWA) {
@@ -2811,7 +2826,7 @@
             renderMapasNav, mapasDaPasta, mapaTemplates,
             criarMapaNoChip, renomearMapaNoChip, duplicarMapaNoChip, excluirMapaDoChip,
             abrirMenuMapa, abrirMenuMoverMapa, fecharMenuMapa,
-            aplicarSplit, trocarLadoSplit, aplicarSplitRatio,
+            aplicarSplit, trocarLadoSplit, aplicarSplitRatio, fecharAreaNotas,
             mapaAlternarEstiloRapido, mapaDefinirEstiloRapido, mapaPassoEstiloRapido,
             mapaAbrirCor, mapaGravarCorRecente,
             mapaAlternarModoConexao, mapaCriarConexaoEntre, mapaCliqueConexaoNo,

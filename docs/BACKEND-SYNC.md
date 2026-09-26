@@ -56,7 +56,13 @@ de emitir a MESMA sessão em cookie `HttpOnly`. **Não existe `client_secret` ne
 5. **Vínculo de conta** (padrão de mercado): o e-mail do Google vem marcado como **verificado**;
    se ele JÁ existir como conta de senha, o acesso cai na **mesma conta** (mesmos dados/sync).
    Uma conta criada só pelo Google fica **sem senha utilizável** (a entrada é pelo Google).
-6. **Em nuvem (Render/Fly/Railway)**: o `backend/.env` **não** é publicado (está no `.gitignore`) —
+6. **Rosto da conta**: o `picture` do ID token (a **foto do perfil**) vai **assinado dentro da
+   sessão** e o botão **do topo** passa a mostrar essa foto em vez do e-mail — inclusive **depois de
+   um reload** (o front lê `provedor`/`foto` do `GET /api/auth/me`). É **só apresentação**: nada de
+   foto vai para o banco. Se a imagem não carregar (offline/URL expirada) ou não vier de um host do
+   Google, o botão cai no ícone de pessoa + e-mail — e o e-mail segue no balão, no `aria-label` e no
+   diálogo.
+7. **Em nuvem (Render/Fly/Railway)**: o `backend/.env` **não** é publicado (está no `.gitignore`) —
    a variável vai no **painel do serviço** (*Environment*). E a origem pública
    (`https://seu-app.onrender.com`, sem barra no fim) precisa estar em **Origens JavaScript
    autorizadas** no Google Cloud, senão o GIS recusa com `origin_mismatch`. Para conferir se o
@@ -67,7 +73,7 @@ de emitir a MESMA sessão em cookie `HttpOnly`. **Não existe `client_secret` ne
 | Método | Rota | Para quê |
 |---|---|---|
 | `GET` | `/health` | liveness + driver |
-| `POST` | `/api/auth/registrar` · `/login` · `/logout` · `GET /me` | conta (cookie `HttpOnly` + `X-CSRF`) |
+| `POST` | `/api/auth/registrar` · `/login` · `/logout` · `GET /me` | conta (cookie `HttpOnly` + `X-CSRF`); o `/me` devolve `{id, email, criado_em, csrf, provedor, foto}` — `provedor`/`foto` são o rosto da conta no topo |
 | `GET` | `/api/auth/config` | config pública: `{google_ativo, google_client_id}` (sem segredo) |
 | `POST` | `/api/auth/google` | login com o ID token do Google (`{credential}`; e-mail verificado) |
 | `GET` | `/api/sync/snapshot?desde_rev=` | carga inicial (0) ou delta (>0, com tombstones) |

@@ -191,10 +191,19 @@ body:has(#notesModalBackdrop.active) main {
 @media(prefers-reduced-motion:reduce){#notesEditor .notes-line-controls[data-completion-label]::after{transition:none;}}
 
 :root { --notes-popup-background:#eeefef; }
-html[data-theme="dark"] { --notes-popup-background:var(--color-bg-container,#1e293b); }
+html[data-theme="dark"] { --notes-popup-background:#151B23; --notes-popup-texto:#CBD5E1; --notes-popup-borda:#2A3543; }
 #notesModal .notes-color-palette,
 .notes-tone-picker,
 #notesEditor .notes-line-controls[data-completion-label]::after { background:var(--notes-popup-background); }
+/* Tema escuro dos popovers de cor (paleta de cores e seletor de tons). O compilado só
+   define os tokens no CLARO (`--color-bg-container` = #FFF), então SEM estas linhas o
+   popover ficava BRANCO no tema escuro e o texto quase preto (#1D1D1F) sobre ele (P115).
+   #151B23 é a MESMA superfície das barras do modal no escuro (theme-origem.css) e #CBD5E1
+   o MESMO texto; os divisores seguem #2A3543. */
+html[data-theme="dark"] #notesModal .notes-color-palette,
+html[data-theme="dark"] .notes-tone-picker { color:var(--notes-popup-texto); border-color:var(--notes-popup-borda); }
+html[data-theme="dark"] .notes-tone-picker :is(.notes-tone-strip button,.notes-tone-fields input),
+html[data-theme="dark"] #notesModal .notes-color-palette :is(.notes-color-custom,.notes-color-custom input[type="color"]) { border-color:var(--notes-popup-borda); }
 
 #notesEditor, #notesEditor * { caret-color:var(--notes-accent,var(--color-neon-blue)); }
 .notes-default-history { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }

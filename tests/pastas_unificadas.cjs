@@ -74,6 +74,7 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       pastasVisivel: !document.getElementById('pastasArea').hidden,
       mapaVisivel: !document.getElementById('mapaArea').hidden,
       backdropAtivo: document.getElementById('notesModalBackdrop').classList.contains('active'),
+      split: app.mapaSplit,
       conta: document.querySelectorAll('#appAreas #contaBtn').length,
       pastaAtiva: JSON.parse(localStorage.getItem('notas-pwa-pasta-ativa') || 'null')
     }));
@@ -121,6 +122,61 @@ const ler = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
     await page.locator('#mapaFechar').click();
     await page.waitForTimeout(120);
     assert.equal((await estado()).pastasVisivel, true, 'Fechar do Mapa volta para a tela raiz');
+
+    // -------------------------------------------- 7) ✕ de Notas: fecha a ÁREA DE NOTAS
+    // Cada botão de fechar fecha a SUA área: o ✕ de Notas fecha as Notas e, sem mapa
+    // ao lado, a tela que sobra é a raiz de Pastas (antes o ✕ não fechava nada — P111).
+    await page.locator('#pastasArea [data-pastas-acao="abrir-pasta"][data-pasta-id="' + trabId + '"]').click();
+    await page.waitForTimeout(150);
+    assert.equal((await estado()).backdropAtivo, true, 'a pasta reabre a nota por cima dos cartões');
+    await page.locator('#notesModalClose').click();
+    await page.waitForTimeout(200);
+    const fechouNotas = await estado();
+    assert.equal(fechouNotas.backdropAtivo, false, '✕ de Notas fecha a área de Notas');
+    assert.equal(fechouNotas.mapaVisivel, false, 'o mapa não entra em cena');
+    assert.equal(fechouNotas.pastasVisivel, true, 'sozinhas, as Notas dão lugar à raiz de Pastas');
+    assert.equal(JSON.parse(fechouNotas.area), 'pastas', 'área ativa persistida como "pastas"');
+
+    // --------------------------------------- 8) lado a lado: cada botão fecha SÓ a sua área
+    await page.locator('#pastasArea [data-pastas-acao="abrir-pasta"][data-pasta-id="' + trabId + '"]').click();
+    await page.waitForTimeout(150);
+    await page.evaluate(() => app.aplicarArea('mapa'));
+    await page.waitForTimeout(120);
+    await page.evaluate(() => app.aplicarSplit(true));
+    await page.waitForTimeout(120);
+    assert.equal((await estado()).mapaVisivel, true, 'lado a lado mostra o mapa ao lado da nota');
+
+    // 8a) ✕ de Notas: a NOTA sai e o MAPA fica com a tela.
+    await page.locator('#notesModalClose').click();
+    await page.waitForTimeout(200);
+    const soMapa = await estado();
+    assert.equal(soMapa.backdropAtivo, false, '✕ de Notas tira a nota de cena');
+    assert.equal(soMapa.mapaVisivel, true, 'em lado a lado o MAPA permanece (fecha só a área de Notas)');
+    assert.equal(soMapa.split, false, 'sai do modo lado a lado');
+    assert.equal(JSON.parse(soMapa.area), 'mapa', 'a área ativa continua sendo o mapa');
+
+    // 8b) Fechar do Mapa: o MAPA sai e a NOTA fica (o espelho exato do ✕ de Notas).
+    await page.evaluate(() => app.aplicarArea('notas'));
+    await page.waitForTimeout(120);
+    assert.equal((await estado()).backdropAtivo, true, 'a nota da pasta reabre');
+    await page.evaluate(() => app.aplicarSplit(true));
+    await page.waitForTimeout(120);
+    assert.equal((await estado()).mapaVisivel, true, 'lado a lado de novo');
+    await page.locator('#mapaFechar').click();
+    await page.waitForTimeout(200);
+    const soNota = await estado();
+    assert.equal(soNota.mapaVisivel, false, 'Fechar do Mapa tira o mapa de cena');
+    assert.equal(soNota.backdropAtivo, true, 'em lado a lado a NOTA permanece (fecha só a área do Mapa)');
+    assert.equal(soNota.split, false, 'sai do modo lado a lado');
+
+    // 8c) fechando a nota depois, os DOIS estão fechados: a tela é a raiz de Pastas.
+    await page.locator('#notesModalClose').click();
+    await page.waitForTimeout(200);
+    const raiz = await estado();
+    assert.equal(raiz.backdropAtivo, false, 'a nota também sai');
+    assert.equal(raiz.mapaVisivel, false, 'nenhuma área de mapa fica aberta');
+    assert.equal(raiz.pastasVisivel, true, 'com as duas áreas fechadas, sobra a raiz de Pastas');
+    assert.equal(JSON.parse(raiz.area), 'pastas', 'área ativa persistida como "pastas"');
 
     assert.deepEqual(erros, [], 'sem erros de página');
     console.log('OK: Pastas como tela raiz (workspaces de notas + mapas)');

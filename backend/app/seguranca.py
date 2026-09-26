@@ -33,16 +33,31 @@ def _desb64(texto: str) -> bytes:
 
 @dataclass
 class Sessao:
-    """O que vive DENTRO do cookie assinado (nada de token do Supabase)."""
+    """O que vive DENTRO do cookie assinado (nada de token do Supabase).
+
+    `provedor` diz COMO esta sessao nasceu (`senha` ou `google`) e `foto` traz a imagem do
+    perfil do Google - juntos, sao o que permite o front desenhar o rosto certo da conta
+    (foto x pessoa/e-mail) DEPOIS de um reload, quando o login ja passou. Cookie antigo
+    (sem os campos) cai em `senha` + sem foto: nada quebra.
+    """
 
     user_id: str
     email: str
     csrf: str
     criado_em: float
+    provedor: str = "senha"
+    foto: str = ""
 
     def publico(self) -> dict:
-        """Corpo de `GET /api/auth/me` (o front precisa do e-mail e do X-CSRF)."""
-        return {"id": self.user_id, "email": self.email, "criado_em": self.criado_em, "csrf": self.csrf}
+        """Corpo de `GET /api/auth/me` (o front precisa do e-mail, do X-CSRF e do rosto)."""
+        return {
+            "id": self.user_id,
+            "email": self.email,
+            "criado_em": self.criado_em,
+            "csrf": self.csrf,
+            "provedor": self.provedor,
+            "foto": self.foto,
+        }
 
 
 class Assinador:
@@ -63,6 +78,8 @@ class Assinador:
                     "uid": sessao.user_id,
                     "email": sessao.email,
                     "csrf": sessao.csrf,
+                    "provedor": sessao.provedor,
+                    "foto": sessao.foto,
                     "iat": agora,
                     "exp": agora + self.validade,
                 },
@@ -90,11 +107,26 @@ class Assinador:
             email=str(dados.get("email") or ""),
             csrf=str(dados.get("csrf") or ""),
             criado_em=float(dados.get("iat") or 0),
+            # Retrocompativel: cookie emitido antes de existir o campo vira `senha`.
+            provedor=str(dados.get("provedor") or "senha"),
+            foto=str(dados.get("foto") or ""),
         )
 
 
-def nova_sessao(user_id: str, email: str) -> Sessao:
-    return Sessao(user_id=str(user_id), email=str(email), csrf=secrets.token_urlsafe(24), criado_em=time.time())
+def nova_sessao(user_id: str, email: str, provedor: str = "senha", foto: str = "") -> Sessao:
+    """Cria a sessao; `provedor` = `senha` (login/registro) ou `google` (ID token validado).
+
+    `foto` e a URL da foto do perfil do Google (vazia fora do Google): fica no cookie assinado
+    para o cabecalho continuar mostrando o rosto certo depois de um reload.
+    """
+    return Sessao(
+        user_id=str(user_id),
+        email=str(email),
+        csrf=secrets.token_urlsafe(24),
+        criado_em=time.time(),
+        provedor=str(provedor or "senha"),
+        foto=str(foto or ""),
+    )
 
 
 _ASSINADOR: Assinador | None = None

@@ -27,11 +27,13 @@ html[data-theme="dark"] {
     --app-status-bar: #11161D;
 }
 
-/* Tema escuro: o CSS compilado do projeto original NAO redefine as variaveis
- * globais (--color-*) em [data-theme="dark"] — ele ajusta apenas componentes
- * especificos, e esses ajustes vivem em notes/editor.css (identico ao original).
- * Para manter a replica fiel ao compilado, as variaveis do tema claro tambem
- * valem no escuro. Ver docs/RELATORIO-PARIDADE.md. */
+/* Tema escuro: o original REDEFINE os tokens globais no escuro
+ * (`html[data-theme=dark]{--color-bg-container:#1c1d20;--color-text-main:#f5f5f7;…}`, em
+ * `frontend/styles.css`). O PWA consome apenas um RECORTE desse compilado
+ * (`theme-origem.css`), que traz as regras de COMPONENTE do escuro mas NÃO o bloco de
+ * tokens — então aqui os tokens mantêm os valores claros. Onde o valor escuro depender de
+ * token, ele é declarado no próprio componente (ex.: a paleta de cores de Notas, em
+ * `notes/editor.css` — P115). Ver docs/RELATORIO-PARIDADE.md. */
 
 /* 🎨 [FIM: PWA/ESTILO - VARIÁVEIS DE TEMA] */
 
@@ -500,6 +502,14 @@ img, svg, video, canvas, audio, iframe, embed, object { display: block; vertical
  * passa a alternar apenas os chips (`notes-chips-collapsed`). As classes são
  * aplicadas pelo app.js (`installModoMobileNotas`).
  * ============================================ */
+/* ⇄ (alternar área): botão do cabeçalho de Notas que leva ao Mapa Mental. Existe só no
+   CELULAR — no PC as duas áreas convivem lado a lado (o controle de lá é o ⛶). No celular
+   ele também substitui o ⛶, que sai de cena (cada área já ocupa a tela toda e o ⛶ só
+   restaurava o tamanho, sem dar acesso ao Mapa). Ver `alternarAreaNotasMapa` (app.js). */
+html #notesModal .notes-alternar-area-btn { display: none !important; }
+html.notes-mobile #notesModal .notes-alternar-area-btn { display: inline-flex !important; }
+html.notes-mobile #notesModal #notesFullscreenBtn { display: none !important; }
+
 html.notes-mobile #notesModal #notesToolbar:not(.notes-toolbar-docked) {
     display: none !important;
 }
@@ -734,10 +744,11 @@ body:has(#pastasArea:not([hidden])):has(#notesModalBackdrop:not(.active)) .app-t
 /* 🎨 [INÍCIO: CONTA/ESTILO - BOTÃO E DIÁLOGO DE CONTA] */
 .conta-btn {
     /* Botão da MOLDURA FIXA do topo (ver `mapa.css` → `.app-areas`): pastilha
-       flutuante, com a mesma linguagem dos controles fixos do app. Traz o ícone de
-       pessoa + o nome ("Entrar" ou o e-mail). No PC fica CENTRALIZADO no topo (na
-       metade livre) com o nome; até 1023px fica à esquerda com SÓ o ícone, para o
-       título da área ao lado continuar legível. */
+       flutuante, com a mesma linguagem dos controles fixos do app. Deslogado traz o
+       ícone de pessoa ("Entrar" fica no balão/aria-label); logado por senha, o e-mail;
+       logado com Google, a FOTO do perfil. Em QUALQUER largura a pastilha fica no
+       CANTO ESQUERDO e mostra SÓ o ícone/avatar (`.conta-btn-nome { display: none }`
+       abaixo), para o título da área ao lado continuar legível. */
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -760,6 +771,19 @@ body:has(#pastasArea:not([hidden])):has(#notesModalBackdrop:not(.active)) .app-t
 
 .conta-btn svg { flex: none; }
 
+/* Rosto da conta vindo do Google: a foto do perfil entra REDONDA e sozinha na pastilha
+   (sem texto ao lado — o e-mail segue no balão, no `aria-label` e no diálogo da conta). */
+.conta-btn-foto {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex: none;
+}
+
+/* Com foto, a pastilha vira um AVATAR do mesmo tamanho do botão de ícone (24 + 2×5 = 34px). */
+.conta-btn[data-rosto="foto"] { padding: 5px; }
+
 /* O nome trunca com "…" mas nunca empurra o layout (min-width:0 = flex encolhe). */
 .conta-btn-nome {
     min-width: 0;
@@ -775,12 +799,11 @@ body:has(#pastasArea:not([hidden])):has(#notesModalBackdrop:not(.active)) .app-t
     border-color: rgba(0, 113, 227, .35);
 }
 
-/* Tablet/celular: SÓ o ícone. O título da área (que fica ao lado do botão) precisa
-   continuar legível, e o e-mail completo aparece no balão e no diálogo. */
-@media (max-width: 1023px) {
-    .conta-btn { padding: 9px; }
-    .conta-btn-nome { display: none; }
-}
+/* SÓ o ícone/avatar, em QUALQUER largura: o título de cada área (que fica ao lado do
+   botão, na moldura fixa) precisa continuar legível, e o e-mail completo aparece no
+   balão (`title`), no `aria-label` e no diálogo da conta. */
+.conta-btn { padding: 9px; }
+.conta-btn-nome { display: none; }
 
 /* Tema escuro: a pastilha acompanha a superfície do tema (a moldura em si é
    transparente — só o botão tem fundo). */

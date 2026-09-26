@@ -88,17 +88,23 @@ class ThemeManager {
  * Notas e pela área do Mapa, no espírito das classes compartilhadas de CSS
  * (`.app-tela-cheia`): uma definição só, reutilizada pelas duas áreas.
  *
- *  - EXPANDIR: fecha o que está aberto ao lado (lado a lado) e recolhe as barras
- *    UMA POR VEZ;
- *  - CONTRAIR: mostra as barras UMA POR VEZ, em ORDEM INVERSA, e o que estava ao
- *    lado REAPARECE.
+ *  - EXPANDIR: a área toma a tela SOZINHA (fecha o que estiver ao lado) e recolhe as
+ *    barras UMA POR VEZ;
+ *  - CONTRAIR: mostra as barras UMA POR VEZ, em ORDEM INVERSA, e a tela volta ao
+ *    LADO A LADO, com a OUTRA área reaparecendo.
+ *
+ * QUEM liga o lado a lado é o PRÓPRIO botão: `contrairEmLadoALado` faz o CONTRAIR cair
+ * sempre em Notas + Mapa, então o ⛶ (expandir/contrair) é o ÚNICO controle do split —
+ * os botões "Ver mapa ao lado" (Notas) e "Ver nota ao lado" (Mapa) foram REMOVIDOS.
+ * Onde o lado a lado não existe (celular), o CONTRAIR devolve só o tamanho normal.
  *
  * O estado `hidden` de cada barra é guardado ao entrar e RESPEITADO ao sair (uma
  * barra que já estava recolhida antes não reaparece sozinha). Cada área informa os
  * elementos e as ações por FUNÇÃO, porque o DOM da área é re-renderizado.
  *
- * Config: alvo / classeArea / barras / botao / rotulos / expandido / versao /
- * ladoALadoAtivo / aplicarLadoALado / antesDaTroca / aoAplicar / aoFinalizar.
+ * Config: alvo / classeArea / barras / botao / rotulos (texto OU função) / expandido /
+ * versao / ladoALadoAtivo / aplicarLadoALado / contrairEmLadoALado / antesDaTroca /
+ * aoAplicar / aoFinalizar.
  */
 class AppExpandir {
     /** Pausa (ms) antes de recolher/mostrar as barras — deixa a tela cheia assentar. */
@@ -160,7 +166,10 @@ class AppExpandir {
         }
         const botao = typeof c.botao === 'function' ? c.botao() : null;
         if (botao) {
-            const rotulo = ativo ? (c.rotulos && c.rotulos.aberto) : (c.rotulos && c.rotulos.fechado);
+            const pedido = ativo ? (c.rotulos && c.rotulos.aberto) : (c.rotulos && c.rotulos.fechado);
+            // O rótulo pode ser TEXTO ou FUNÇÃO — a área decide na hora (no celular, por
+            // exemplo, não há lado a lado: o "contrair" não promete Notas + Mapa).
+            const rotulo = typeof pedido === 'function' ? pedido() : pedido;
             botao.setAttribute('aria-pressed', String(ativo));
             if (rotulo) { botao.title = rotulo; botao.setAttribute('aria-label', rotulo); }
         }
@@ -215,8 +224,12 @@ class AppExpandir {
         if (this.versaoAtual() !== versao) return;
         await this.aplicarBarras(entrar, versao);
         if (this.versaoAtual() !== versao) return;
-        // 3) ao sair, o que estava aberto ao lado REAPARECE.
-        if (!entrar && this.ladoALadoAntes && typeof c.aplicarLadoALado === 'function') c.aplicarLadoALado(true);
+        // 3) ao sair, a tela volta ao LADO A LADO (a outra área reaparece): quando o split
+        // já existia antes de expandir E também quando a ÁREA pede isso SEMPRE
+        // (`contrairEmLadoALado` — é o ⛶ que liga/desliga o lado a lado).
+        const voltarLadoALado = this.ladoALadoAntes
+            || (typeof c.contrairEmLadoALado === 'function' ? Boolean(c.contrairEmLadoALado()) : c.contrairEmLadoALado === true);
+        if (!entrar && voltarLadoALado && typeof c.aplicarLadoALado === 'function') c.aplicarLadoALado(true);
         if (!entrar) { this.ladoALadoAntes = false; this.barrasOcultas = []; }
         if (typeof c.aoFinalizar === 'function') c.aoFinalizar(Boolean(entrar));
     }
@@ -811,8 +824,11 @@ class NotesPWA {
     }
     // ⚡ [FIM: INTERAÇÃO/JS - MÚLTIPLAS NOTAS (CHIPS + BOTÃO "+")]
 
-    // Placeholders chamados pelo motor antes de serem substituídos pelo install.
-    closeNotesModal() { return true; }
+    // Ponte com o motor de notas: `setupModalListeners` e `toggleNotesFullscreen` são
+    // placeholders substituídos pelo `install` (`notes/editor.js`) e `closeNotesModal` é
+    // a BASE REAL que o motor chama DEPOIS de salvar. Sem corpo, ela não fechava nada: o
+    // modal seguia ativo e a nota continuava selecionada — o ✕ de Notas ficava INERTE (P111).
+    closeNotesModal() { document.getElementById('notesModalBackdrop')?.classList.remove('active'); this.currentNotesProjectId = null; this.currentNotesStageId = null; return true; }
     setupModalListeners() { this.setupNotesEditing(); }
     toggleNotesFullscreen() { return true; }
 
@@ -1036,7 +1052,17 @@ class NotesPWA {
 
         document.getElementById('notesFullscreenBtn')?.addEventListener('click', () => this.toggleNotesFullscreen());
         document.getElementById('notesHeaderCollapseBtn')?.addEventListener('click', () => this.toggleNotesHeaderCollapse());
-        document.getElementById('notesModalClose')?.addEventListener('click', () => this.closeNotesModal());
+        // ⇄ (alternar área): no CELULAR leva às Notas ⇄ Mapa Mental (no PC o CSS esconde o
+        // botão — lá o lado a lado já mostra as duas áreas). Sair da tela cheia antes de
+        // trocar evita a nota ficar "presa" (ver `alternarAreaNotasMapa`).
+        document.getElementById('notesAlternarAreaBtn')?.addEventListener('click', () => {
+            if (typeof this.alternarAreaNotasMapa === 'function') this.alternarAreaNotasMapa();
+        });
+        // ✕ de Notas: fecha a ÁREA DE NOTAS — a MESMA regra do "Fechar" do Mapa, cada
+        // botão fechando a SUA área (`fecharAreaNotas`, em `mapa/mapa.js`): em lado a lado
+        // o MAPA fica com a tela; sozinha, volta à TELA INICIAL de Pastas. Sem a área do
+        // Mapa montada (harness só de Notas), cai no fechamento simples do modal.
+        document.getElementById('notesModalClose')?.addEventListener('click', () => (typeof this.fecharAreaNotas === 'function' ? this.fecharAreaNotas() : this.closeNotesModal()));
         // Contagem de tópicos do rodapé acompanha a digitação.
         document.getElementById('notesEditor')?.addEventListener('input', () => { this.updateNotesTopicCount(); this.updateNotesLastEdit(Date.now()); });
 
@@ -1643,6 +1669,9 @@ function installModoMobileNotas(App) {
         const backdrop = document.getElementById('notesModalBackdrop');
         const toolbar = document.getElementById('notesToolbar');
         if (mobile) {
+            // Tela cheia do ⛶ ficaria "presa" no celular: ali o botão de tela cheia de
+            // Notas sai de cena e dá lugar ao ⇄ — sai do estado ao entrar no modo mobile.
+            this.sairDaTelaCheiaNotasMobile();
             // No mobile o colapso do cabeçalho não deve esconder a barra do teclado:
             // a toolbar é escondida pelo CSS (só aparece quando acoplada).
             backdrop?.classList.remove('notes-header-collapsed');
@@ -1651,6 +1680,26 @@ function installModoMobileNotas(App) {
             backdrop?.classList.remove('notes-chips-collapsed');
         }
         this.sincronizarBotaoColapsoChips(Boolean(backdrop?.classList.contains('notes-chips-collapsed')));
+    };
+
+    /**
+     * Sai da tela cheia (⛶) de Notas quando o modo mobile liga. No celular o ⛶ de Notas
+     * sai de cena e dá lugar ao ⇄: sem esta saída o modal ficaria em tela cheia SEM
+     * controle visível para restaurar.
+     */
+    p.sairDaTelaCheiaNotasMobile = function () {
+        const modal = document.getElementById('notesModal');
+        if (modal && modal.classList.contains('fullscreen')) this.toggleNotesFullscreen(false);
+    };
+
+    /**
+     * ⇄ do cabeçalho de Notas (celular): sai da tela cheia e entrega a tela ao MAPA.
+     * Espelho exato do ⇄ da topbar do Mapa (`#mapaAlternarAreaBtn`), que volta às
+     * Notas. Sem a área do Mapa montada (harness só de Notas), não faz nada.
+     */
+    p.alternarAreaNotasMapa = function () {
+        this.sairDaTelaCheiaNotasMobile();
+        if (typeof this.aplicarArea === 'function') this.aplicarArea('mapa');
     };
 
     p.sincronizarBotaoColapsoChips = function (recolhido) {

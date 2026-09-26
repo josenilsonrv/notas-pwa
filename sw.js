@@ -20,9 +20,28 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
+// v79: o ⛶ de Notas saiu do CELULAR e entrou o ⇄ (`#notesAlternarAreaBtn`), que leva
+// direto ao Mapa (e o ⇄ da topbar do Mapa, `#mapaAlternarAreaBtn`, volta às Notas) — o ⛶
+// do celular só restaurava o tamanho, sem dar acesso ao mapa (P114); a paleta de cores e
+// o seletor de tons de Notas passaram a respeitar o TEMA ESCURO (P115); `index.html`,
+// `app.js`, `styles.css`, `mapa/mapa.css`, `mapa/mapa-render.js`, `mapa/mapa.js` e
+// `notes/editor.css` mudaram, então o cache precisa virar.
+// v78: o botão de conta ficou no CANTO ESQUERDO em QUALQUER largura (o PC não tem mais
+// a exceção que o centralizava na metade livre) e a pastilha passa a mostrar SÓ o
+// ícone/avatar em todas as telas — `mapa/mapa.css` e `styles.css` mudaram, cache vira.
+// v77: o ⛶ (expandir/contrair) passou a ser o ÚNICO controle do lado a lado — EXPANDIR
+// deixa uma tela só e CONTRAIR volta a Notas + Mapa; os botões "Ver mapa ao lado" e
+// "Ver nota ao lado" saíram (`app.js`, `notes/editor.js`, `index.html`, `mapa/mapa.js`,
+// `mapa/mapa-render.js` e `mapa/mapa.css` mudaram), então o cache precisa virar.
+// v76: os DOIS botões de fechar passaram a fechar a PRÓPRIA área — o ✕ de Notas estava
+// inerte (P111): `app.js`, `mapa/mapa.js` e `index.html` mudaram, cache precisa virar.
+// v75: no PC a FOTO do perfil passou a ficar no canto ESQUERDO (mesma posição do
+// tablet/celular) — `mapa/mapa.css` mudou, então o cache precisa virar de versão.
+// v74: o botão da conta mostra a FOTO do perfil do Google (o e-mail sai do cabeçalho) —
+// `conta.js` e `styles.css` mudaram, então o cache precisa virar de versão.
 // v73: o `index.html` é cacheado COM os cabeçalhos; o fix do COOP (`same-origin-allow-popups`,
 // P108) só chega ao dispositivo com um cache NOVO — o antigo serviria o cabeçalho velho.
-const CACHE_NAME = 'notas-pwa-v73';
+const CACHE_NAME = 'notas-pwa-v79';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +

@@ -98,9 +98,10 @@
     <main class="flex-1 flex flex-col">
         <!-- Áreas do aplicativo (Notas | Mapa Mental) + navegação.
              Fica FORA do bloco #notesModalBackdrop (parity_* compara o modal de notas).
-             Navegação: APENAS a seta ‹ (topo-esquerdo), que sempre volta à raiz de Pastas.
-             A troca Notas↔Mapa é feita por botões DENTRO de cada área
-             ("Ver mapa ao lado" em Notas; "Ver nota ao lado" no Mapa). -->
+             A moldura fixa carrega o BOTÃO DE CONTA (#contaBtn) no CANTO ESQUERDO — único
+             controle comum a todas as áreas. A troca Notas↔Mapa é feita pelo ⛶ de cada
+             área: EXPANDIR deixa uma tela só e CONTRAIR volta a Notas + Mapa (os botões
+             "Ver mapa ao lado" e "Ver nota ao lado" saíram; a seta ‹ também). -->
         <nav id="appAreas" class="app-areas" aria-label="Conta" hidden>
             <!-- 🚨 [INÍCIO: CONTA - BOTÃO DA MOLDURA FIXA (substitui a seta ‹)] -->
             <!-- Conta OPCIONAL: deslogado = "Entrar"; logado = o e-mail. É o ÚNICO
@@ -134,17 +135,18 @@
                             <button class="toolbar-btn notes-header-collapse-btn" id="notesHeaderCollapseBtn" type="button" title="Recolher cabeçalho" aria-label="Recolher cabeçalho" aria-expanded="true">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 15 7-7 7 7"/></svg>
                             </button>
+                            <!-- ⇄ (alternar área): SÓ no celular (o CSS esconde no PC). Leva direto ao
+                                 Mapa Mental, espelhando o ⇄ da topbar do Mapa, que volta às Notas. -->
+                            <button class="toolbar-btn notes-alternar-area-btn" id="notesAlternarAreaBtn" type="button" title="Abrir o Mapa Mental" aria-label="Abrir o Mapa Mental">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>
+                            </button>
                             <button class="toolbar-btn" id="notesFullscreenBtn" title="Expandir para tela cheia">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path class="notes-expand-icon" d="M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3"></path>
                                     <path class="notes-restore-icon" d="M16 3v3a2 2 0 0 0 2 2h3M8 21v-3a2 2 0 0 0-2-2H3"></path>
                                 </svg>
                             </button>
-                            <!-- Ver o mapa ao lado da nota (espelha o "Ver nota ao lado" do Mapa). -->
-                            <button type="button" class="toolbar-btn" id="notesAbrirMapa" data-app-split="1" title="Ver o mapa ao lado da nota" aria-label="Ver o mapa ao lado da nota" aria-pressed="false">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg>
-                            </button>
-                            <button class="toolbar-btn" id="notesModalClose" aria-label="Fechar notas">
+                            <button class="toolbar-btn" id="notesModalClose" aria-label="Fechar notas" title="Fechar notas">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             </button>
                     </div>
