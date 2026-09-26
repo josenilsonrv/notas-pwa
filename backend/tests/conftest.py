@@ -10,10 +10,17 @@ import sys
 from pathlib import Path
 
 # ANTES de qualquer import do backend: os testes NUNCA usam a nuvem real.
-# (o .env carrega com override=False, entao o que esta aqui sempre ganha)
+# `load_dotenv(..., override=False)` respeita o que JA existe no ambiente - por
+# isso gravamos string VAZIA (e nao `pop`): assim um `backend/.env` real no disco
+# nao liga o driver `supabase` dentro da suite (que precisa ser hermética).
 os.environ["DRIVER"] = "memory"
-for _var in ("SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"):
-    os.environ.pop(_var, None)
+for _var in (
+    "SUPABASE_URL",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_DB_URL",
+):
+    os.environ[_var] = ""
 
 import pytest  # noqa: E402
 

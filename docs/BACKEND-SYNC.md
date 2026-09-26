@@ -26,6 +26,12 @@ python -m uvicorn backend.app.main:app --port 8000 --reload   # ou: npm run dev:
    `SESSAO_SEGREDO` (string longa aleatória).
 2. Aplique o schema: `python -m backend.scripts.migrar` (aplica com `SUPABASE_DB_URL`) **ou** cole
    `backend/supabase/schema.sql` no SQL Editor. É **idempotente**: pode rodar quantas vezes quiser.
+   > ⚠️ **`SUPABASE_DB_URL`**: nos projetos novos o host direto `db.<ref>.supabase.co` é
+   > **IPv6-only** e falha em redes IPv4 (`getaddrinfo failed`). Use o **Session pooler**
+   > (Dashboard → *Project Settings → Database → Connection string → Session pooler*):
+   > `postgresql://postgres.<ref>:<senha>@aws-0-<regiao>.pooler.supabase.com:5432/postgres`.
+   > Se a senha tiver caracteres especiais, **percent-encode** (ex.: `@` → `%40`). O usuário
+   > do pooler leva o **ref do projeto**: `postgres.<ref>`.
 3. Crie o bucket **privado** `anexos` (Storage) — o backend assina/serve com `service_role`.
 4. `GET /health` deve responder `{"ok":true,"driver":"supabase"}`.
 5. **Conferência de segredo** (nada de chave no front):

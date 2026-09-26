@@ -49,7 +49,10 @@ def conferir_via_rest(config) -> tuple[list[str], list[str]]:
     ausentes: list[str] = []
     for tabela in TABELAS:
         try:
-            cliente.selecionar(tabela, limite=1)
+            # `ordem=""`: nem toda tabela tem `rev` (ex.: `profiles`). Sem isso o
+            # PostgREST devolve 400 "column profiles.rev does not exist" e a
+            # tabela boa seria reportada como ausente.
+            cliente.selecionar(tabela, ordem="", limite=1)
             presentes.append(tabela)
         except ErroSupabase:
             ausentes.append(tabela)
