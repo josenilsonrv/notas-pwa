@@ -687,6 +687,12 @@ function installSync(App) {
     };
 
     p.syncEnfileirarNota = function (nota) {
+        // P119 (apaga-tudo): uma nota `somenteNuvem` NÃO tem o texto no aparelho (o que não
+        // coube na cota fica só na nuvem e é baixado ao abrir). Subir esse `upsert` mandaria
+        // `conteudo_html` VAZIO com carimbo novo e APAGARIA a nota na nuvem. O texto volta ao
+        // aparelho quando a nota é aberta (`openNotesModal` baixa e zera `somenteNuvem`) — aí
+        // a edição segue normalmente, inclusive o "apagar tudo" que o usuário fez de propósito.
+        if (nota && nota.somenteNuvem) return false;
         return this.syncEnfileirar('notas', 'upsert', String(nota.id), this.syncDadosDaNota(nota));
     };
 
@@ -702,9 +708,14 @@ function installSync(App) {
         const notas = (this.projectsData && this.projectsData.length)
             ? this.projectsData
             : this.lerNotasLocais();
-        (notas || []).forEach(nota => ops.push(Object.assign({
-            entidade: 'notas', acao: 'upsert', id: String(nota.id), dados: this.syncDadosDaNota(nota)
-        }, semBase)));
+        (notas || []).forEach(nota => {
+            // Nota `somenteNuvem`: o texto não está no aparelho (cota) — sobe só quando for
+            // aberta. Sem isto, o 1º login mandaria conteúdo vazio e apagaria a nota (P119).
+            if (nota && nota.somenteNuvem) return;
+            ops.push(Object.assign({
+                entidade: 'notas', acao: 'upsert', id: String(nota.id), dados: this.syncDadosDaNota(nota)
+            }, semBase));
+        });
 
         const pastas = this.syncLer('notas-pwa-mapa-pastas', []);
         (Array.isArray(pastas) ? pastas : []).forEach(pasta => ops.push(Object.assign({
@@ -713,15 +724,16 @@ function installSync(App) {
         }, semBase)));
 
         const indice = this.syncLer('notas-pwa-maps', []);
-        (Array.isArray(indice) ? indice : []).forEach(item => ops.push(Object.assign({
-            entidade: 'mapas', acao: 'upsert', id: String(item.id),
-            dados: {
-                nome: item.nome || '',
-                pasta_id: item.pastaId === undefined ? null : item.pastaId,
-                grafo: this.syncLer('notas-pwa-mapa-' + item.id, null),
-                item
-            }
-        }, semBase)));
+        (Array.isArray(indice) ? indice : []).forEach(item => {
+            const grafo = this.syncLer('notas-pwa-mapa-' + item.id, null);
+            // Sem o GRAFO no aparelho, subir só o índice apagaria o conteúdo do mapa na nuvem
+            // (o payload precisa da data de EDIÇÃO do grafo para o LWW) — P119.
+            if (!grafo) return;
+            ops.push(Object.assign({
+                entidade: 'mapas', acao: 'upsert', id: String(item.id),
+                dados: this.syncDadosDoMapa(grafo, item)
+            }, semBase));
+        });
 
         [['nota', 'notas-pwa-templates'], ['mapa', 'notas-pwa-mapa-templates']].forEach(([tipo, chave]) => {
             const modelos = this.syncLer(chave, []);
@@ -1484,6 +1496,84 @@ function installSync(App) {
         });
     };
     // 🔄 [FIM: SYNC - PASTAS (criar/renomear/excluir entram na fila)]
+    // 🔄 [INÍCIO: SYNC - MAPAS (grafo edita/salva e entra na fila ao vivo)]
+    /** Mapa local -> payload da nuvem (mesmo formato do 1º login, COM a data de EDIÇÃO do
+     *  grafo: sem ela o servidor compara "0 > 0" e REJEITA toda atualização do mapa). */
+    p.syncDadosDoMapa = function (grafo, item) {
+        const resumo = item || null;
+        const pastaId = (resumo && resumo.pastaId !== undefined)
+            ? resumo.pastaId
+            : (grafo ? grafo.pastaId : null);
+        return {
+            nome: (resumo && resumo.nome) || (grafo && grafo.nome) || 'Mapa',
+            pasta_id: pastaId === undefined ? null : pastaId,
+            grafo: grafo || null,
+            item: resumo,
+            // A data do ÍNDICE (`dtAlterado`) é sempre >= a do grafo (o `salvarGrafo` atualiza
+            // as duas): prefere-a para que favoritar/arquivar/mover também vençam o LWW.
+            atualizada_em: (resumo && resumo.dtAlterado) || (grafo && grafo.atualizadoEm) || ''
+        };
+    };
+
+    p.syncEnfileirarMapa = function (grafo) {
+        if (!grafo || !grafo.id) return false;
+        const indice = this.syncLer('notas-pwa-maps', []);
+        const item = (Array.isArray(indice) ? indice : []).find(m => String(m.id) === String(grafo.id)) || null;
+        return this.syncEnfileirar('mapas', 'upsert', String(grafo.id), this.syncDadosDoMapa(grafo, item));
+    };
+
+    p.syncEnfileirarExcluirMapa = function (id) {
+        return this.syncEnfileirar('mapas', 'delete', String(id), {});
+    };
+
+    /** TODA edição do grafo (nó, título, conexão, renome, mover de pasta) passa por
+     *  `salvarGrafo`: envolver esse ponto faz o mapa sincronizar AO VIVO (antes só subia no
+     *  1º login). `criarMapa`/`duplicarMapa` gravam o grafo sem passar por `salvarGrafo` —
+     *  por isso também entram. */
+    p.syncLigarMapas = function () {
+        if (this.syncMapasLigado) return;
+        this.syncMapasLigado = true;
+        const app = this;
+        const store = (typeof MapaMentalStore !== 'undefined') ? MapaMentalStore : null;
+        if (!store) return;
+        const embrulhar = (nome, aoMudar) => {
+            const original = store[nome];
+            if (typeof original !== 'function') return;
+            store[nome] = function (...args) {
+                const resultado = original.apply(store, args);
+                try {
+                    if (app.syncAtivo() && !app.syncAplicando) aoMudar(app, args, resultado);
+                } catch (_) { /* best-effort: a gravação local já aconteceu */ }
+                return resultado;
+            };
+        };
+        embrulhar('salvarGrafo', (aplicacao, args, resultado) => {
+            if (!resultado) return;
+            const grafo = args[0];
+            if (grafo && grafo.id) aplicacao.syncEnfileirarMapa(grafo);
+        });
+        embrulhar('criarMapa', (aplicacao, _args, resultado) => {
+            if (resultado && resultado.id) aplicacao.syncEnfileirarMapa(resultado);
+        });
+        embrulhar('duplicarMapa', (aplicacao, _args, resultado) => {
+            if (resultado && resultado.id) aplicacao.syncEnfileirarMapa(resultado);
+        });
+        embrulhar('excluirMapa', (aplicacao, args) => {
+            aplicacao.syncEnfileirarExcluirMapa(args[0]);
+        });
+        // Metadados do ÍNDICE (favorito/arquivado/raiz): só o índice muda; sobe lendo o
+        // grafo atual do aparelho (o `dtAlterado` do índice já foi atualizado).
+        const enfileirarMapa = (aplicacao, id) => {
+            const grafo = id ? aplicacao.syncLer('notas-pwa-mapa-' + id, null) : null;
+            if (grafo) aplicacao.syncEnfileirarMapa(grafo);
+        };
+        embrulhar('favoritarMapa', (aplicacao, args) => enfileirarMapa(aplicacao, args[0]));
+        embrulhar('arquivarMapa', (aplicacao, args) => enfileirarMapa(aplicacao, args[0]));
+        embrulhar('definirMapaRaiz', aplicacao => {
+            (aplicacao.syncLer('notas-pwa-maps', []) || []).forEach(m => enfileirarMapa(aplicacao, m.id));
+        });
+    };
+    // 🔄 [FIM: SYNC - MAPAS (grafo edita/salva e entra na fila ao vivo)]
 
     // 🔄 [INÍCIO: SYNC - MODELOS (templates entram na fila)]
     /** Modelos (templates de nota e de mapa) só subiam no 1º login. Aqui eles viram `op` ao vivo. */
@@ -1590,6 +1680,16 @@ function installSync(App) {
     };
     if (window.notesApp) ligarModelos();
     else setTimeout(ligarModelos, 0);
+
+    /** Mesma deferência: liga o gancho dos MAPAS (grafo ao vivo) na INSTÂNCIA. */
+    const ligarMapas = () => {
+        const aplicacao = window.notesApp;
+        if (!aplicacao || aplicacao.__syncMapasIniciado) return;
+        aplicacao.__syncMapasIniciado = true;
+        aplicacao.syncLigarMapas();
+    };
+    if (window.notesApp) ligarMapas();
+    else setTimeout(ligarMapas, 0);
     // 🔄 [FIM: SYNC - TEMPO REAL (WebSocket)]
 }
 // 🔄 [FIM: SYNC - CLIENTE (FILA + SNAPSHOT/PUSH)]

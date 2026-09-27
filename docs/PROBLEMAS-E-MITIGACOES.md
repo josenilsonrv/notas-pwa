@@ -1781,4 +1781,41 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
   quem não mandou a foto (conferir o deploy/`GET /api/auth/me`); com `foto` preenchida, a imagem
   está falhando na rede e a recuperação age no `online`.
 
+### P119 — "Escrevo e sincroniza e APAGA TUDO": conteúdo AUSENTE no aparelho subia VAZIO (notas da cota + mapa sem grafo) e o LWW REJEITAVA toda edição de mapa
+- **Sintoma**: ao escrever e sincronizar, notas (e mapas) apareciam **apagadas** na nuvem/outro
+  aparelho. Na área de Mapas, as edições feitas **depois do 1º login** simplesmente não subiam (nó,
+  título, conexão, mover de pasta ficavam só no aparelho de origem).
+- **Causa 1 — notas `somenteNuvem` subindo vazias**: a estratégia de cota (opção C) marca como
+  `somenteNuvem` a nota que **não coube** no aparelho e zera `notas` (`gravarNotasLocaisComCota`); o
+  texto fica SÓ na nuvem. Tanto o `notasBackend.salvar` (que enfileira **todas** as notas a cada
+  gravação) quanto o `syncColetarOps` (1º login) mandavam essas notas com `conteudo_html: ''` e o
+  carimbo `atualizada_em` a favor do cliente → o servidor aceitava o VAZIO e **apagava a nota**.
+- **Causa 2 — mapa sem grafo no aparelho**: o `syncColetarOps` mandava `grafo: null` quando o grafo
+  não estava no armazenamento (mesma ideia da cota), só com o índice — subir o índice sem o grafo
+  apagaria o conteúdo do mapa.
+- **Causa 3 — LWW dos mapas SEMPRE rejeitava**: o payload de mapa **não levava** `atualizada_em`
+  (o servidor só lê `atualizada_em`/`atualizadaEm`), então `instante_de_edicao` dava `0` dos DOIS
+  lados e a regra `0 > 0` é falsa → **depois da 1ª gravação o mapa nunca mais atualizava**.
+- **Causa 4 — sem sync ao vivo do GRAFO**: não havia gancho para `MapaMentalStore.salvarGrafo` (único
+  ponto por onde passa TODA edição do grafo); o mapa só subia no 1º login.
+- **Correção** (`sync/sync-cliente.js`):
+  - `syncEnfileirarNota` **recusa** nota `somenteNuvem` (o texto volta ao aparelho ao abrir a nota,
+    via `openNotesModal`, que baixa e zera a flag — aí a edição, inclusive o "apagar tudo" que o
+    usuário fez de propósito, sobe normalmente);
+  - `syncColetarOps` **pula** nota `somenteNuvem` e mapa **sem grafo local** (nunca sobe conteúdo
+    ausente como vazio);
+  - novo `syncDadosDoMapa`: payload com `grafo` + `atualizada_em` (`item.dtAlterado` ≥
+    `grafo.atualizadoEm`) → o LWW dos mapas volta a funcionar;
+  - novo bloco **`SYNC - MAPAS`**: `syncEnfileirarMapa`/`syncEnfileirarExcluirMapa` + `syncLigarMapas`
+    (embrulha `salvarGrafo`, `criarMapa`, `duplicarMapa`, `excluirMapa`, `favoritarMapa`,
+    `arquivarMapa`, `definirMapaRaiz`), ligado na INSTÂNCIA via `ligarMapas()` → o grafo sincroniza
+    **AO VIVO**.
+- **Decisão do dono (mantida)**: apagar um texto/mapa até ficar vazio é uma edição LEGÍTIMA e deve
+  persistir — por isso a blindagem é no CLIENTE (não subir o que o aparelho NÃO tem) e não um
+  bloqueio genérico de "conteúdo vazio" no servidor (que impediria o "apagar de verdade").
+- **Como auditar**: `node tests/sync_completo.cjs` (passos 1b/1c: a op do mapa leva `atualizada_em`;
+  nota `somenteNuvem` e mapa sem grafo NÃO entram na coleta; passo 5: editar um nó DEPOIS do login
+  chega ao 2º aparelho) · `node tests/sync_snapshot.cjs`.
+
+
 

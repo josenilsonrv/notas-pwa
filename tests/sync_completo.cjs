@@ -131,6 +131,30 @@ const semearAparelho = page => page.evaluate(() => {
     assert.ok(entidades.configuracoes.some(c => c.id === 'theme'), 'a configuração do tema subiu');
     assert.ok(!entidades.configuracoes.some(c => String(c.id).includes('historico')), 'o histórico NÃO subiu');
 
+    // ---------- 1b) LWW dos MAPAS: o payload leva a data de EDIÇÃO (`atualizada_em`) ----------
+    const mapaTemData = await page.evaluate(() => {
+      const op = window.notesApp.syncColetarOps().find(o => o.entidade === 'mapas');
+      return op ? op.dados.atualizada_em : null;
+    });
+    assert.ok(mapaTemData, 'a op do mapa leva `atualizada_em` (sem ela o LWW rejeita toda atualização)');
+
+    // ---------- 1c) P119: conteúdo AUSENTE no aparelho não sobe VAZIO (apagaria a nuvem) ----------
+    const notaSomenteNuvem = await page.evaluate(() => window.notesApp.syncEnfileirarNota({
+      id: 'nota-somente-nuvem', nome: 'Grande', notas: '', somenteNuvem: true,
+      atualizadaEm: new Date().toISOString()
+    }));
+    assert.equal(notaSomenteNuvem, false, 'nota `somenteNuvem` NÃO sobe vazia (P119)');
+
+    const mapaSemGrafo = await page.evaluate(() => {
+      const id = JSON.parse(localStorage.getItem('notas-pwa-maps'))[0].id;
+      const guardado = localStorage.getItem('notas-pwa-mapa-' + id);
+      localStorage.removeItem('notas-pwa-mapa-' + id);
+      const ops = window.notesApp.syncColetarOps().filter(o => o.entidade === 'mapas');
+      localStorage.setItem('notas-pwa-mapa-' + id, guardado);   // restaura
+      return ops.length;
+    });
+    assert.equal(mapaSemGrafo, 0, 'mapa sem grafo local NÃO sobe vazio (P119)');
+
     // ---------- 2) APARELHO 2: vê TUDO (tema cru e grafo com nós) ----------
     const ctx2 = await browser.newContext();
     const page2 = await ctx2.newPage();
@@ -179,6 +203,23 @@ const semearAparelho = page => page.evaluate(() => {
     await page2.waitForFunction(
       () => JSON.parse(localStorage.getItem('notas-pwa-mapa-templates') || '[]').some(t => t.nome === 'Modelo Vivo'),
       null,
+      { timeout: 15000 }
+    );
+
+    // ---------- 5) MAPA AO VIVO: editar um NÓ DEPOIS do login chega ao 2º aparelho ----------
+    const idMapa = await page.evaluate(() => JSON.parse(localStorage.getItem('notas-pwa-maps'))[0].id);
+    await page.evaluate(mapaId => {
+      const store = window.MapaMentalStore;
+      const grafo = store.obterGrafo(mapaId);
+      window.MapaMentalModelo.criarNo(grafo, { titulo: 'No ao vivo' });
+      store.salvarGrafo(grafo);   // gancho ao vivo: enfileira o mapa na hora
+    }, idMapa);
+    await page2.waitForFunction(
+      id => {
+        const grafo = JSON.parse(localStorage.getItem('notas-pwa-mapa-' + id) || 'null');
+        return grafo && (grafo.nos || []).some(no => no.titulo === 'No ao vivo');
+      },
+      idMapa,
       { timeout: 15000 }
     );
 
