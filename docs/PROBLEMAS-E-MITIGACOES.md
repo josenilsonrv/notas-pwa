@@ -1743,4 +1743,42 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
 - **Como auditar**: `node tests/mapa_toolbar.cjs` · `node tests/mapa_mobile_topbar.cjs` ·
   `node tests/mapa_colapso.cjs`.
 
+### P118 — A FOTO do perfil (Google) não aparecia e o rosto da conta ficava igual ao de "deslogado"
+- **Sintoma**: numa conta **Google**, o botão do topo mostrava o **ícone de pessoa** — nada que
+  identificasse a conta — e a foto do perfil não aparecia em lugar nenhum.
+- **Diagnóstico** (o caminho do front estava correto; o rosto tem QUATRO origens e três delas
+  terminam em "sem foto"):
+  1. **A sessão não trouxe `foto`** — o backend só assina a foto no login pelo Google
+     (`backend/app/auth.py`: `_abrir_sessao(..., foto=perfil["foto"])` **apenas** em `/api/auth/google`
+     — em `/login` e `/registrar` a foto é vazia); `_foto_segura()` (`backend/app/google.py`)
+     descarta qualquer URL que não seja `https://` de `*.googleusercontent.com`/`*.google.com`;
+     conta Google **sem foto** manda `picture` vazio; e um **backend antigo** (deploy anterior ao
+     P109) devolve `/me` **sem** `provedor`/`foto` — o front cai em `data-rosto="email"`, que desde
+     o **P113** (pastilha só de ícone) desenha o **mesmo** ícone de quem está deslogado;
+  2. **A imagem existe, mas não carregou** (abertura sem rede, URL expirada): `FOTOS_QUE_FALHARAM` +
+     `onerror` trocavam o rosto pelo ícone de pessoa **e não tentavam de novo até um reload** — a
+     foto "sumia" para sempre naquela sessão.
+- **Correção** (`conta.js` + `styles.css`):
+  - **Terceiro rosto**: logado SEM foto ⇒ **avatar com as INICIAIS do e-mail**
+    (`.conta-btn-iniciais`, 1–2 letras, MESMO tamanho do avatar com foto) — nunca o ícone de pessoa,
+    que é indistinguível de "deslogado" (`data-rosto="iniciais"`);
+  - **Recuperação**: `online` e a volta ao primeiro plano **esquecem a falha** e redesenham o botão
+    (a foto volta sozinha quando a rede retorna), **sem loop** — o `onerror` volta a banir a URL se
+    ela falhar outra vez;
+  - **Blindagem**: o `src` da foto passou a ser definido pela PROPRIEDADE (`imagem.src = foto`),
+    nunca concatenado no `innerHTML`;
+  - **Centralização vertical** (`mapa/mapa.css`): `.app-areas` passou a assumir a ALTURA da barra do
+    topo da área ativa (`--app-conta-barra` = 69px; **55px** na topbar do Mapa, pela exceção
+    `body:has(#mapaArea:not([hidden])):not(:has(#notesModalBackdrop.active))`) e a centralizar a
+    pastilha (`align-items: center`). O `top: 12px` fixo deixava o avatar ~5px **acima** do centro
+    (medido: 28×28 na topbar do Mapa e 35×35 em Notas/Pastas, no PC e no celular).
+- **Bump de cache**: `CACHE_NAME` **v81 → v82** (`conta.js`, `styles.css`, `mapa/mapa.css`).
+- **Testes**: `tests/conta_google.cjs` (B: foto quebrada ⇒ iniciais; **D (novo)**: a FOTO volta no
+  evento `online`) · `tests/conta_login.cjs` (sessão por senha ⇒ iniciais `D`/`N`, sem o ícone de
+  pessoa).
+- **Como auditar**: `node tests/conta_google.cjs` · `node tests/conta_login.cjs` · no navegador,
+  `window.notasConta` mostra `provedor`/`foto` — com `foto` VAZIO numa sessão Google, o backend é
+  quem não mandou a foto (conferir o deploy/`GET /api/auth/me`); com `foto` preenchida, a imagem
+  está falhando na rede e a recuperação age no `online`.
+
 

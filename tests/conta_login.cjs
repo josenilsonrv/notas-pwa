@@ -167,12 +167,13 @@ const instalarApi = (page, estado, chamadas) => page.route('**/api/auth/**', rot
   assert.equal(await caixa.locator('#contaSenha').count(), 1, 'continua no formulário depois do erro');
   assert.equal((await page2.locator('#contaBtn').textContent()).trim(), 'Entrar');
 
-  // 2.2) senha certa: logado — o botão passa a mostrar o e-mail (sem foto: isto não é Google)
+  // 2.2) senha certa: logado — o botão passa a mostrar as INICIAIS do e-mail (sem foto: não é Google)
   await caixa.locator('#contaSenha').fill('senha-certa');
   await caixa.getByRole('button', { name: 'Entrar', exact: true }).click();
-  await esperar(page2, async () => (await page2.locator('#contaBtn').textContent()).trim() === 'dona@exemplo.com');
+  await esperar(page2, async () => (await page2.locator('#contaBtn').getAttribute('data-rosto')) === 'iniciais');
   assert.equal(await page2.locator('#contaBtn img.conta-btn-foto').count(), 0, 'sessão por senha não tem foto do Google');
-  assert.equal(await page2.locator('#contaBtn svg').count(), 1, 'fica o ícone de pessoa + o e-mail');
+  assert.equal((await page2.locator('#contaBtn .conta-btn-iniciais').textContent()).trim(), 'D', 'logado sem foto mostra a INICIAL do e-mail');
+  assert.equal(await page2.locator('#contaBtn svg').count(), 0, 'não sobra o ícone de pessoa (é o rosto de "deslogado")');
   assert.equal(await page2.locator('#contaBtn').getAttribute('aria-label'), 'Conta de dona@exemplo.com');
   assert.equal(await page2.evaluate(() => window.notasConta.provedor), 'senha');
   assert.equal((await caixa.locator('.conta-email').textContent()).trim(), 'dona@exemplo.com', 'o diálogo mostra o e-mail');
@@ -198,7 +199,7 @@ const instalarApi = (page, estado, chamadas) => page.route('**/api/auth/**', rot
   await caixa.getByRole('button', { name: 'Criar conta' }).click();
   await esperar(page2, () => estado.logado && estado.email === 'nova@exemplo.com');
   assert.ok(chamadas.some(c => c.caminho === '/registrar' && c.metodo === 'POST'), 'criou conta via POST /registrar');
-  await esperar(page2, async () => (await page2.locator('#contaBtn').textContent()).trim() === 'nova@exemplo.com');
+  await esperar(page2, async () => (await page2.locator('#contaBtn .conta-btn-iniciais').textContent() || '').trim() === 'N');
 
   // 2.5) clique FORA fecha o diálogo (padrão P67)
   await page2.mouse.click(5, 880);

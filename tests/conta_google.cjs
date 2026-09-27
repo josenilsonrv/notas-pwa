@@ -9,9 +9,12 @@
  *   A) COM Google ativo: o botão aparece no diálogo e o clique abre a sessão (o botão do
  *      topo passa a mostrar a FOTO do perfil vinda do `/me` — e sobrevive a um reload);
  *      a FOTO fica no CANTO ESQUERDO também no PC (mesma âncora do celular).
- *   B) FOTO que não carrega (offline/URL expirada): o topo volta ao ícone de pessoa + e-mail;
+ *   B) FOTO que não carrega (offline/URL expirada): o topo mostra as INICIAIS do e-mail
+ *      (nunca o ícone de pessoa, indistinguível de "deslogado");
  *   C) SEM backend (`/api/**` abortado): o botão NÃO aparece, o script do GIS NÃO é
  *      carregado e o app segue 100% utilizável (invariante do modo local).
+ *   D) A falha da foto NÃO é definitiva: com a conexão de volta (`online`), a foto é
+ *      buscada outra vez e o rosto volta a ser a imagem.
  */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -213,7 +216,7 @@ const instalarApi = (page, estado, chamadas) => (async () => {
         assert.deepEqual(erros, [], 'sem erro de página com o Google ativo');
         await page.close();
 
-        // ---------- B) FOTO indisponível (offline/URL expirada): volta o rosto padrão ----------
+        // ---------- B) FOTO indisponível (offline/URL expirada): volta o rosto das INICIAIS ----------
         const estadoRuim = novoEstado('https://lh3.googleusercontent.com/a/foto-fora-do-ar=s96-c');
         const chamadasRuim = [];
         const page3 = await browser.newPage({ viewport: { width: 390, height: 800 } });
@@ -227,10 +230,11 @@ const instalarApi = (page, estado, chamadas) => (async () => {
         const botaoRuim = caixa3.locator('.conta-google .gis-fake');
         await botaoRuim.waitFor();
         await botaoRuim.click();
-        await esperar(page3, async () => (await page3.locator('#contaBtn').textContent()).trim() === 'dona@gmail.com');
+        await esperar(page3, async () => (await page3.locator('#contaBtn .conta-btn-iniciais').count()) === 1);
         assert.equal(await page3.locator('#contaBtn img.conta-btn-foto').count(), 0, 'a foto quebrada sai do botão');
-        assert.equal(await page3.locator('#contaBtn svg').count(), 1, 'volta o ícone de pessoa');
-        assert.equal(await page3.locator('#contaBtn').getAttribute('data-rosto'), 'email');
+        assert.equal((await page3.locator('#contaBtn .conta-btn-iniciais').textContent()).trim(), 'D', 'logado sem foto mostra a INICIAL do e-mail');
+        assert.equal(await page3.locator('#contaBtn svg').count(), 0, 'não sobra o ícone de pessoa (é o rosto de "deslogado")');
+        assert.equal(await page3.locator('#contaBtn').getAttribute('data-rosto'), 'iniciais');
         assert.equal(await page3.evaluate(() => window.notasConta.logado), true, 'a sessão continua válida: só o rosto cai no padrão');
         assert.deepEqual(erros3, [], 'imagem quebrada não gera erro de página');
         await page3.close();
@@ -250,8 +254,46 @@ const instalarApi = (page, estado, chamadas) => (async () => {
         assert.equal(await caixa2.locator('.conta-google button').count(), 0, 'nenhum botão do Google');
         assert.equal(await page2.locator('script[data-conta-gis]').count(), 0, 'o script do GIS não é carregado sem backend');
         assert.deepEqual(erros2, [], 'sem erro de página no modo local');
-        console.log('OK: login com Google — botão só com backend/Client ID; a FOTO do perfil assume o topo (e cai no ícone se não carregar); sem backend nada muda');
         await page2.close();
+
+        // ---------- D) A foto VOLTA quando a conexão retorna (a falha não é definitiva) ----------
+        const FOTO_QUE_VOLTA = 'https://lh3.googleusercontent.com/a/foto-que-volta=s96-c';
+        const estadoVolta = novoEstado(FOTO_QUE_VOLTA);
+        const chamadasVolta = [];
+        const page4 = await browser.newPage({ viewport: { width: 390, height: 800 } });
+        const erros4 = [];
+        page4.on('pageerror', e => erros4.push(e.message));
+        let liberarFoto = false;
+        await montar(page4, async pagina => {
+            await instalarApi(pagina, estadoVolta, chamadasVolta);
+            // A foto só responde DEPOIS de a rede "voltar" (antes disso, a imagem falha).
+            await pagina.route(FOTO_QUE_VOLTA, rota => (liberarFoto
+                ? rota.fulfill({ contentType: 'image/svg+xml; charset=utf-8', body: FOTO_SVG })
+                : rota.abort()));
+        });
+
+        await page4.locator('#contaBtn').click();
+        const caixa4 = page4.locator('.conta-dialog');
+        await caixa4.waitFor();
+        const botao4 = caixa4.locator('.conta-google .gis-fake');
+        await botao4.waitFor();
+        await botao4.click();
+        await esperar(page4, async () => (await page4.locator('#contaBtn .conta-btn-iniciais').count()) === 1);
+        assert.equal(await page4.locator('#contaBtn').getAttribute('data-rosto'), 'iniciais', 'foto indisponível: o rosto fica nas iniciais');
+
+        // A conexão voltou: o evento `online` esquece a falha e busca a foto outra vez.
+        liberarFoto = true;
+        await page4.evaluate(() => window.dispatchEvent(new Event('online')));
+        await esperar(page4, async () => (await page4.locator('#contaBtn img.conta-btn-foto').count()) === 1);
+        assert.equal(await page4.locator('#contaBtn').getAttribute('data-rosto'), 'foto', 'a FOTO volta sozinha quando a rede retorna');
+        assert.ok(
+            await page4.locator('#contaBtn img.conta-btn-foto').evaluate(img => img.complete && img.naturalWidth > 0),
+            'a foto recarregada tem bytes de verdade'
+        );
+        assert.deepEqual(erros4, [], 'sem erro de página na recuperação da foto');
+        await page4.close();
+
+        console.log('OK: login com Google — botão só com backend/Client ID; a FOTO do perfil assume o topo (iniciais se faltar/ falhar, e a foto VOLTA quando a rede retorna); sem backend nada muda');
     } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exit(1); });
 // 🧪 [FIM: TESTE - CONTA GOOGLE - PARTE 2]

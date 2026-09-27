@@ -20,6 +20,12 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
+// v82: o rosto da conta ganhou um TERCEIRO estado (INICIAIS do e-mail) para quem está logado
+// SEM foto — conta Google sem foto, URL fora da lista do backend ou imagem que não carregou —
+// e a imagem que falha passa a ser TENTADA de novo quando a conexão volta (`online`/voltar ao
+// primeiro plano), em vez de ficar escondida até um reload; a pastilha da conta ficou CENTRADA
+// verticalmente na barra do topo da área ativa. Mudaram `conta.js`, `styles.css` e
+// `mapa/mapa.css`, então o cache precisa virar.
 // v81: a barra do MAPA virou UMA só (ferramentas + formatação na mesma linha, casca
 // `#mapaBarraUnica`) e no CELULAR ela sai do topo e aparece ACOPLADA acima do teclado
 // (`mapa-barra-docked`), como o `#notesToolbar`; os ícones de IRMÃO/FILHO estavam
@@ -50,7 +56,7 @@
 // `conta.js` e `styles.css` mudaram, então o cache precisa virar de versão.
 // v73: o `index.html` é cacheado COM os cabeçalhos; o fix do COOP (`same-origin-allow-popups`,
 // P108) só chega ao dispositivo com um cache NOVO — o antigo serviria o cabeçalho velho.
-const CACHE_NAME = 'notas-pwa-v81';
+const CACHE_NAME = 'notas-pwa-v82';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +

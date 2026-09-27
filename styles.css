@@ -784,6 +784,31 @@ body:has(#pastasArea:not([hidden])):has(#notesModalBackdrop:not(.active)) .app-t
 /* Com foto, a pastilha vira um AVATAR do mesmo tamanho do botão de ícone (24 + 2×5 = 34px). */
 .conta-btn[data-rosto="foto"] { padding: 5px; }
 
+/* Logado SEM foto (conta Google sem foto, URL fora da lista do backend ou imagem que não
+   carregou): o rosto é a INICIAL do e-mail — NUNCA o ícone de pessoa, que desde o P113
+   (pastilha só de ícone em qualquer largura) é indistinguível de "deslogado". Mesmo tamanho
+   do avatar com foto (24 + 2×5 = 34px), com o azul do app. */
+.conta-btn-iniciais {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--color-neon-blue);
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    flex: none;
+}
+
+.conta-btn[data-rosto="iniciais"] { padding: 5px; }
+
+html[data-theme="dark"] .conta-btn-iniciais { background: #2563EB; }
+
 /* O nome trunca com "…" mas nunca empurra o layout (min-width:0 = flex encolhe). */
 .conta-btn-nome {
     min-width: 0;

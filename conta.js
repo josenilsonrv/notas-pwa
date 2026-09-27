@@ -116,39 +116,65 @@ function installConta(App) {
 // 🚨 [FIM: CONTA - SESSÃO (aplicar/verificar/entrar/registrar/sair)]
 
 // ⚡ [INÍCIO: CONTA - BOTÃO DO CABEÇALHO]
-    /** Fotos do perfil que NÃO carregaram (offline, URL expirada): não tentamos de novo. */
+    /** Fotos do perfil que NÃO carregaram AGORA (offline/URL expirada): não insistimos a cada render. */
     const FOTOS_QUE_FALHARAM = new Set();
+    /** A recuperação da foto (`online`/volta ao primeiro plano) é ligada UMA vez, no 1º desenho. */
+    let recuperacaoDaFotoLigada = false;
+
+    /** Iniciais do e-mail (1 ou 2 letras) — o rosto de quem está logado SEM foto. */
+    function iniciaisDoEmail(email) {
+        const local = String(email || '').split('@')[0];
+        const partes = local.split(/[._+-]+/).filter(Boolean);
+        const letras = partes.length > 1 ? partes[0][0] + partes[1][0] : (local[0] || '');
+        return letras.toUpperCase() || '?';
+    }
 
     /**
-     * Deslogado = "Entrar"; logado com Google = a FOTO do perfil; logado por senha = o e-mail.
-     * O nome trunca e o CSS o esconde até 1023px, para o título da área ao lado continuar
-     * legível — e a foto dispensa texto em qualquer largura (o e-mail segue no balão, no
-     * `aria-label` e no diálogo da conta).
+     * Deslogado = "Entrar"; logado com a FOTO do perfil (Google) = a imagem; logado SEM foto
+     * (conta Google sem foto, URL fora da lista do backend ou imagem que não carregou) = as
+     * INICIAIS do e-mail — nunca o ícone de pessoa, que desde o P113 (pastilha só de ícone em
+     * qualquer largura) é indistinguível de "deslogado". O e-mail completo segue no balão, no
+     * `aria-label` e no diálogo da conta.
      */
     p.contaAtualizarBotao = function () {
         const botao = document.getElementById('contaBtn');
         if (!botao) return;
         const estado = window.notasConta;
         const foto = estado.logado && estado.foto && !FOTOS_QUE_FALHARAM.has(estado.foto) ? estado.foto : '';
+        const rosto = foto ? 'foto' : (estado.logado ? 'iniciais' : 'entrar');
         // Só refaz o miolo quando o rosto muda (e quando a URL da foto troca): preserva o foco
         // e não recria o `<img>` a cada chamada.
-        const rosto = foto ? 'foto' : (estado.logado ? 'email' : 'entrar');
         if (botao.dataset.rosto !== rosto || (botao.dataset.foto || '') !== foto) {
             botao.dataset.rosto = rosto;
             botao.dataset.foto = foto;
-            botao.innerHTML = foto
-                ? '<img class="conta-btn-foto" src="' + foto + '" alt="" referrerpolicy="no-referrer">'
-                : ICONE_PESSOA + '<span class="conta-btn-nome"></span>';
+            if (foto) {
+                // `src` pela PROPRIEDADE (nunca concatenado no innerHTML): a URL vem do backend.
+                const imagem = document.createElement('img');
+                imagem.className = 'conta-btn-foto';
+                imagem.alt = '';
+                imagem.referrerPolicy = 'no-referrer';
+                imagem.src = foto;
+                botao.replaceChildren(imagem);
+            } else if (estado.logado) {
+                const avatar = document.createElement('span');
+                avatar.className = 'conta-btn-iniciais';
+                avatar.setAttribute('aria-hidden', 'true');
+                avatar.textContent = iniciaisDoEmail(estado.email);
+                botao.replaceChildren(avatar);
+            } else {
+                botao.innerHTML = ICONE_PESSOA + '<span class="conta-btn-nome"></span>';
+            }
         }
         if (foto) {
-            // A imagem é EXTERNA (Google): se falhar, o botão volta ao ícone de pessoa + e-mail.
+            // A imagem é EXTERNA (Google): se falhar, o botão cai nas INICIAIS do e-mail — e a
+            // recuperação no fim deste método tenta a foto de novo quando a conexão voltar.
             botao.querySelector('.conta-btn-foto').onerror = () => {
-                FOTOS_QUE_FALHARAM.add(estado.foto);
-                window.notasConta && this.contaAtualizarBotao();
+                FOTOS_QUE_FALHARAM.add(foto);
+                if (window.notasConta) this.contaAtualizarBotao();
             };
-        } else {
+        } else if (!estado.logado) {
             const alvoNome = botao.querySelector('.conta-btn-nome');
-            if (alvoNome) alvoNome.textContent = estado.logado ? estado.email : 'Entrar';
+            if (alvoNome) alvoNome.textContent = 'Entrar';
         }
         botao.dataset.logado = estado.logado ? 'true' : 'false';
         const rotulo = estado.logado
@@ -156,6 +182,23 @@ function installConta(App) {
             : 'Entrar na sua conta';
         botao.title = rotulo;
         botao.setAttribute('aria-label', rotulo);
+        // Uma falha da foto NÃO é definitiva: `online` e a volta ao primeiro plano esquecem a
+        // falha e redesenham — URL expirada/abertura sem rede deixam de esconder a foto para
+        // sempre. Sem loop: só reavaliamos nesses eventos e o `onerror` bane a URL de novo se
+        // ela falhar outra vez.
+        if (!recuperacaoDaFotoLigada) {
+            recuperacaoDaFotoLigada = true;
+            const tentarDeNovo = () => {
+                const url = window.notasConta.foto;
+                if (!url || !FOTOS_QUE_FALHARAM.has(url)) return;
+                FOTOS_QUE_FALHARAM.delete(url);
+                this.contaAtualizarBotao();
+            };
+            window.addEventListener('online', tentarDeNovo);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') tentarDeNovo();
+            });
+        }
     };
 // ⚡ [FIM: CONTA - BOTÃO DO CABEÇALHO]
 

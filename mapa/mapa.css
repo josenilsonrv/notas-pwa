@@ -67,15 +67,28 @@ html[data-theme="dark"] {
  * ------------------------------------------------------------ */
 .app-areas {
     position: fixed;
-    top: 12px;
+    /* A pastilha fica CENTRADA VERTICALMENTE na barra do topo da ÁREA ativa: a moldura é fixa
+       e não participa do fluxo, então ela assume a ALTURA da barra e centraliza o botão dentro
+       dela (antes o `top: 12px` fixo deixava o avatar ~5px ACIMA do centro). Alturas medidas:
+       Notas (`.notes-modal-header`) e Pastas (`.pastas-topbar`) = 69px; a topbar do MAPA
+       (`.mapa-topbar`) = 55px — a exceção do Mapa está logo abaixo, pelo `:has`. */
+    top: 0;
+    height: var(--app-conta-barra, 4.3125rem);
     left: 0;
     right: 0;
     z-index: 2400;
     display: flex;
+    align-items: center;
     justify-content: flex-start;
     padding: 0 12px;
     /* A moldura é INVISÍVEL: só o botão recebe cliques. */
     pointer-events: none;
+}
+
+/* A topbar do MAPA é a ÚNICA barra do topo quando o mapa ocupa a tela (sem o modal de Notas
+   ativo — no lado a lado quem manda continua sendo o cabeçalho de Notas). */
+body:has(#mapaArea:not([hidden])):not(:has(#notesModalBackdrop.active)) .app-areas {
+    --app-conta-barra: 3.4375rem;
 }
 
 .app-areas > * { pointer-events: auto; }
@@ -349,8 +362,9 @@ html[data-theme="dark"] .mapa-area {
  * (espelho exato do tema de Notas — ver bloco de tokens no topo). */
 
 @media (max-width: 480px) {
-    /* Telas estreitas: a moldura encosta mais na borda (o botão de conta é o único filho). */
-    .app-areas { top: 8px; padding-left: 8px; }
+    /* Telas estreitas: a moldura encosta mais na borda (o botão de conta é o único filho).
+       O `top` NÃO é mais fixo aqui: a altura da barra (`--app-conta-barra`) é quem centra. */
+    .app-areas { padding-left: 8px; }
     .app-areas [data-app-area] { padding: 8px 14px; min-height: 44px; }
 }
 

@@ -147,7 +147,7 @@ Chaves usadas no dispositivo:
 O app tem uma **camada opcional** em Python (FastAPI) para quem quiser as notas na conta, em
 qualquer aparelho. **Sem login nada muda**: o app continua local-first, offline e sem exigir rede.
 
-- **Botão de conta** no topo (moldura fixa): deslogado = "Entrar"; logado = seu e-mail.
+- **Botão de conta** no topo (moldura fixa, **centralizado na altura da barra**): deslogado = "Entrar"; logado = a **foto do perfil** (login pelo Google), as **iniciais do e-mail** (conta sem foto, ou foto que não carregou — ela volta sozinha quando a rede retorna) ou o ícone de pessoa; o e-mail completo fica no balão, no `aria-label` e no diálogo
 - **Login por e-mail/senha**; a sessão vive num cookie `HttpOnly` (assinado pelo backend) — o token
   do Supabase **nunca** chega ao JavaScript.
 - **1º login**: o conteúdo deste aparelho **sobe sozinho** para a conta (sem diálogo e sem duplicar
