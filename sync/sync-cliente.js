@@ -1248,6 +1248,33 @@ function installSync(App) {
     };
     // 🔄 [FIM: SYNC - MIGRAÇÃO DOS ANEXOS ANTIGOS (1º login)]
 
+    // 🔄 [INÍCIO: SYNC - CRIAÇÃO DE NOTA (pasta vazia/botão + entram na fila)]
+    /** A nota criada ao ABRIR UMA PASTA VAZIA (ou pelo botão +) era salva só no aparelho
+     *  (`salvarNotasLocais` não passa pelo `notasBackend.salvar`) e só subia quando o usuário
+     *  digitava. Resultado: o outro aparelho abria a pasta (ainda vazia) e criava OUTRA nota —
+     *  duplicação. Aqui a nota recém-criada entra na fila na hora. */
+    p.syncLigarCriacaoNota = function () {
+        if (this.syncCriacaoNotaLigado) return;
+        this.syncCriacaoNotaLigado = true;
+        const embrulhar = nome => {
+            const original = p[nome];
+            if (typeof original !== 'function') return;
+            p[nome] = function (...args) {
+                const resultado = original.apply(this, args);
+                try {
+                    if (this.syncAtivo() && !this.syncAplicando) {
+                        const nota = (this.projectsData || []).find(n => String(n.id) === String(this.currentNotesProjectId));
+                        if (nota) this.syncEnfileirarNota(nota);
+                    }
+                } catch (_) { /* best-effort: a gravação local já aconteceu */ }
+                return resultado;
+            };
+        };
+        embrulhar('criarNota');
+        embrulhar('definirPastaAtivaNotas');
+    };
+    // 🔄 [FIM: SYNC - CRIAÇÃO DE NOTA (pasta vazia/botão + entram na fila)]
+
     // 🔄 [INÍCIO: SYNC - PASTAS (criar/renomear/excluir entram na fila)]
     /** Notas já têm o gancho via `notasBackend`; as PASTAS (mapa-store) ficavam órfãs:
      *  criadas/renomeadas/excluídas só subiam no 1º login. Aqui elas viram `op` na fila. */
@@ -1316,6 +1343,16 @@ function installSync(App) {
     };
     if (window.notesApp) ligarPastas();
     else setTimeout(ligarPastas, 0);
+
+    /** Mesma deferência: liga o gancho de CRIAÇÃO DE NOTA na INSTÂNCIA. */
+    const ligarCriacaoNota = () => {
+        const aplicacao = window.notesApp;
+        if (!aplicacao || aplicacao.__syncCriacaoNotaIniciado) return;
+        aplicacao.__syncCriacaoNotaIniciado = true;
+        aplicacao.syncLigarCriacaoNota();
+    };
+    if (window.notesApp) ligarCriacaoNota();
+    else setTimeout(ligarCriacaoNota, 0);
     // 🔄 [FIM: SYNC - TEMPO REAL (WebSocket)]
 }
 // 🔄 [FIM: SYNC - CLIENTE (FILA + SNAPSHOT/PUSH)]
