@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from ..repositorio import repositorio
 from ..seguranca import exigir_csrf, exigir_sessao
 from .regras import aplicar_op, snapshot_do_usuario
+from .ws import difundir_em_segundo_plano, montar_change
 
 router = APIRouter(prefix="/api/sync", tags=["sync"])
 
@@ -96,6 +97,11 @@ def push(lote: Lote, request: Request) -> dict:
             acks.append(resultado["ack"])
         else:
             conflitos.append(resultado["conflito"])
+    # Avisa os aparelhos conectados por WebSocket (mesma conta): o envio por HTTP também
+    # propaga em tempo real. Best-effort, em segundo plano — não bloqueia o loop e a
+    # consulta periódica do cliente cobre a eventual falha de aviso.
+    for ack in acks:
+        difundir_em_segundo_plano(sessao.user_id, None, montar_change(sessao.user_id, ack))
     return {
         "acks": acks,
         "conflitos": conflitos,

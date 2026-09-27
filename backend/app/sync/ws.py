@@ -53,6 +53,9 @@ class Hub:
 
     def __init__(self) -> None:
         self._por_usuario: dict[str, set[WebSocket]] = {}
+        # Loop de eventos em execução (capturado no 1º socket). Usado pelo `push` HTTP
+        # (threadpool) para agendar a difusão sem bloquear o chamador.
+        self.loop = None
 
     async def registrar(self, user_id: str, socket: WebSocket) -> None:
         self._por_usuario.setdefault(str(user_id), set()).add(socket)
@@ -98,6 +101,42 @@ def reiniciar_hub() -> Hub:
     global _HUB
     _HUB = Hub()
     return _HUB
+
+
+def montar_change(user_id: str, ack: dict) -> dict:
+    """Monta o `change` canônico de um `ack` (lê a versão GRAVADA no servidor).
+
+    Compartilhado pelo WebSocket (`_op`) e pelo HTTP (`/push`): a decisão de quem
+    recebe o quê não existe em dois lugares.
+    """
+    change = {"t": "change", "entidade": ack["entidade"], "id": ack["id"], "rev": ack["rev"]}
+    try:
+        registro = repositorio().obter(ack["entidade"], user_id, ack["id"], incluir_excluido=True)
+    except ValueError:
+        registro = None
+    if registro:
+        change.update(
+            {
+                "updated_at": registro["updated_at"],
+                "deleted_at": registro["deleted_at"],
+                "dados": registro["dados"],
+            }
+        )
+    return change
+
+
+def difundir_em_segundo_plano(user_id: str, autor, mensagem: dict) -> None:
+    """Publica `mensagem` para os OUTROS sockets da conta SEM bloquear o chamador.
+
+    Usado pelo `/api/sync/push` (síncrono, roda em threadpool): agenda a difusão no loop
+    de eventos do servidor e volta imediatamente. É best-effort — a consulta periódica do
+    cliente cobre a eventual falha de aviso em tempo real.
+    """
+    hub = obter_hub()
+    loop = getattr(hub, "loop", None)
+    if loop is None or loop.is_closed():
+        return
+    asyncio.run_coroutine_threadsafe(hub.difundir(user_id, autor, mensagem), loop)
 
 
 async def enviar(socket: WebSocket, mensagem: dict) -> None:
@@ -164,6 +203,13 @@ async def _hello(websocket: WebSocket, sessao, mensagem: dict) -> None:
                     "dados": registro["dados"],
                 },
             )
+    # Marcador de FIM do lote: o cliente só avança o ponto de retomada (cursor de
+    # recebimento) DEPOIS de aplicar o lote inteiro — uma interrupção no meio não
+    # adianta o cursor nem perde dado (a reconexão reenvia desde o rev anterior).
+    await enviar(
+        websocket,
+        {"t": "sync_fim", "rev_global": repo.rev_global(sessao.user_id)},
+    )
 
 
 async def _op(websocket: WebSocket, hub: Hub, sessao, mensagem: dict) -> None:
@@ -191,23 +237,8 @@ async def _op(websocket: WebSocket, hub: Hub, sessao, mensagem: dict) -> None:
     ack = dict(resultado["ack"])
     await enviar(websocket, {"t": "ack", **ack})
 
-    # `change` para os OUTROS aparelhos: lemos o registro GRAVADO (versao canonica do servidor).
-    change = {"t": "change", "entidade": ack["entidade"], "id": ack["id"], "rev": ack["rev"]}
-    try:
-        registro = repositorio().obter(
-            ack["entidade"], sessao.user_id, ack["id"], incluir_excluido=True
-        )
-    except ValueError:
-        registro = None
-    if registro:
-        change.update(
-            {
-                "updated_at": registro["updated_at"],
-                "deleted_at": registro["deleted_at"],
-                "dados": registro["dados"],
-            }
-        )
-    await hub.difundir(sessao.user_id, websocket, change)
+    # `change` para os OUTROS aparelhos: versão canônica gravada no servidor.
+    await hub.difundir(sessao.user_id, websocket, montar_change(sessao.user_id, ack))
 
 
 async def _vigia(websocket: WebSocket, estado: dict) -> None:
@@ -279,6 +310,10 @@ async def ws_sync(websocket: WebSocket) -> None:
         return
 
     hub = obter_hub()
+    try:
+        hub.loop = asyncio.get_running_loop()
+    except RuntimeError:
+        pass
     await hub.registrar(sessao.user_id, websocket)
     try:
         await _atender(websocket, hub, sessao)

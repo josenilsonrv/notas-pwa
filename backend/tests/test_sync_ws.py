@@ -62,6 +62,11 @@ def coletar(socket, *envios) -> list[dict]:
         recebidas.append(mensagem)
 
 
+def mudancas(lista: list[dict]) -> list[dict]:
+    """Descarta o marcador `sync_fim` (fim do lote) e devolve só os dados/`bemvindo`."""
+    return [m for m in lista if m["t"] != "sync_fim"]
+
+
 def test_ws_sem_sessao_fecha_4401():
     """Sem cookie de sessao o socket NAO entra no hub: fechamento 4401 (sem loop de reconexao)."""
     with TestClient(app) as cliente:
@@ -88,7 +93,8 @@ def test_hello_devolve_bemvindo_e_delta_com_tombstones():
             assert inicial[0]["t"] == "bemvindo"
             assert inicial[0]["rev_global"] == 0
             assert inicial[0]["usuario"]["email"] == "hello-ws@exemplo.com"
-            assert inicial[1:] == [], "conta vazia: nenhum change"
+            assert mudancas(inicial[1:]) == [], "conta vazia: nenhum change"
+            assert inicial[-1]["t"] == "sync_fim", "o lote termina com o marcador de fim"
 
             assert escrever(socket, operacao("notas", "n1", {"nome": "um"}))["t"] == "ack"
             assert escrever(socket, operacao("notas", "n2", {"nome": "dois"}))["t"] == "ack"
@@ -98,11 +104,12 @@ def test_hello_devolve_bemvindo_e_delta_com_tombstones():
             # Carga inicial (desde_rev = 0): SEM tombstones.
             completa = coletar(socket, {"t": "hello", "desde_rev": 0})
             assert completa[0]["rev_global"] == 3
-            assert [m["id"] for m in completa[1:]] == ["n2"]
+            assert [m["id"] for m in mudancas(completa[1:])] == ["n2"]
+            assert completa[-1]["t"] == "sync_fim"
 
             # Delta (desde_rev > 0): COM o tombstone de n1.
             delta = coletar(socket, {"t": "hello", "desde_rev": 1})
-            por_id = {m["id"]: m for m in delta[1:]}
+            por_id = {m["id"]: m for m in mudancas(delta[1:])}
             assert por_id["n1"]["deleted_at"], "o delta traz o tombstone"
             assert por_id["n1"]["rev"] == 3
             assert por_id["n2"]["dados"]["nome"] == "dois"
@@ -175,7 +182,7 @@ def test_acesso_negado_quando_o_user_id_diverge_da_sessao():
             assert resposta["id_local"] == "c9"
             # Nada foi gravado na conta do usuario da sessao.
             delta = coletar(socket, {"t": "hello", "desde_rev": 0})
-            assert delta[1:] == []
+            assert mudancas(delta[1:]) == []
 
 
 def test_ping_responde_pong():
@@ -199,11 +206,11 @@ def test_isolamento_entre_contas_no_ws():
 
                 assert escrever(socket_a, operacao("notas", "n1", {"nome": "do A"}))["t"] == "ack"
                 assert coletar(socket_b) == [], "contas diferentes: B nao recebe o change de A"
-                assert coletar(socket_b, {"t": "hello", "desde_rev": 0})[1:] == []
+                assert mudancas(coletar(socket_b, {"t": "hello", "desde_rev": 0})[1:]) == []
 
                 # B grava o MESMO id: nao le nem afeta o dado de A.
                 assert escrever(socket_b, operacao("notas", "n1", {"nome": "do B"}))["t"] == "ack"
-                nomes = [m["dados"]["nome"] for m in coletar(socket_a, {"t": "hello", "desde_rev": 0})[1:]]
+                nomes = [m["dados"]["nome"] for m in mudancas(coletar(socket_a, {"t": "hello", "desde_rev": 0})[1:])]
                 assert nomes == ["do A"]
 
 
@@ -229,5 +236,24 @@ def test_vigia_fecha_socket_em_silencio(monkeypatch):
             with cliente.websocket_connect("/ws") as socket:
                 socket.receive_text()
         assert erro.value.code == 1001
+def test_push_http_notifica_o_websocket_da_mesma_conta():
+    """Envio por HTTP (`/api/sync/push`) também propaga `change` aos sockets conectados."""
+    with TestClient(app) as cliente:
+        registrar(cliente, "http-notifica@exemplo.com")
+        with cliente.websocket_connect("/ws") as socket:
+            coletar(socket, {"t": "hello", "desde_rev": 0})
+            csrf = cliente.get("/api/auth/me").json()["csrf"]
+            resposta = cliente.post(
+                "/api/sync/push",
+                json={"ops": [{"entidade": "notas", "acao": "upsert", "id": "n1",
+                               "dados": {"nome": "via HTTP"}}]},
+                headers={"X-CSRF": csrf},
+            )
+            assert resposta.status_code == 200, resposta.text
+            # O aparelho conectado por WebSocket recebe o `change` sem recarregar.
+            mensagem = socket.receive_json()
+            assert mensagem["t"] == "change"
+            assert (mensagem["entidade"], mensagem["id"]) == ("notas", "n1")
+            assert mensagem["dados"]["nome"] == "via HTTP"
 # 🧪 [FIM: TESTE - BACKEND/TEST_SYNC_WS]
 

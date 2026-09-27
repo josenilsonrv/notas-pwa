@@ -38,6 +38,34 @@ def normalizar_entidade(entidade: str) -> str:
     return ent
 
 
+# Campos que carregam a data de EDIÇÃO do aparelho. O `updated_at` (persistência no
+# servidor) NÃO decide o vencedor do LWW — só a data de edição (`atualizada_em`).
+CAMPOS_DE_TEMPO = ("atualizada_em", "atualizadaEm")
+
+
+def momento(valor) -> float:
+    """ISO-8601 (ou epoch) -> epoch em segundos. Devolve 0 quando não dá para ler."""
+    if valor in (None, ""):
+        return 0.0
+    if isinstance(valor, (int, float)) and not isinstance(valor, bool):
+        return float(valor)
+    texto = str(valor).strip().replace("Z", "+00:00")
+    try:
+        data = datetime.fromisoformat(texto)
+    except ValueError:
+        return 0.0
+    if data.tzinfo is None:
+        data = data.replace(tzinfo=timezone.utc)
+    return data.timestamp()
+
+
+def instante_de_edicao(dados: dict) -> float:
+    """A data de EDIÇÃO declarada pelo aparelho (a mais nova entre os apelidos)."""
+    if not isinstance(dados, dict):
+        return 0.0
+    return max((momento(dados.get(campo)) for campo in CAMPOS_DE_TEMPO), default=0.0)
+
+
 class Repositorio:
     """Contrato dos drivers. Toda implementacao expoe estes 5 metodos.
 
@@ -76,6 +104,24 @@ class Repositorio:
         base_rev: int | None = None,
         forcar: bool = False,
     ) -> dict:
+        raise NotImplementedError
+
+    def salvar_lww(
+        self,
+        entidade: str,
+        user_id: str,
+        id: str,
+        dados: dict,
+        base_rev: int | None = None,
+    ) -> dict:
+        """Upsert ATÔMICO com LWW: a edição mais recente prevalece.
+
+        Compara a data de EDIÇÃO declarada pelo cliente (`dados.atualizada_em`) com a
+        data de EDIÇÃO da linha GRAVADA — nunca com o `updated_at` de persistência.
+        Cliente vence só quando declara instante MAIS NOVO; empate ou ausência de data
+        mantém a versão do servidor. Devolve `{gravado: True, ...}` ou
+        `{gravado: False, conflito: {rev, updated_at, deleted_at, dados}}`.
+        """
         raise NotImplementedError
 
     def excluir(self, entidade: str, user_id: str, id: str) -> dict | None:
@@ -217,6 +263,43 @@ class RepositorioMemoria(Repositorio):
             saida = self._publico(registro)
         saida["gravado"] = True
         return saida
+
+    def salvar_lww(
+        self,
+        entidade: str,
+        user_id: str,
+        id: str,
+        dados: dict,
+        base_rev: int | None = None,
+    ) -> dict:
+        ent = normalizar_entidade(entidade)
+        if dados is None:
+            dados = {}
+        if not isinstance(dados, dict):
+            raise ValueError("dados deve ser um objeto JSON")
+        user_id, id = str(user_id), str(id)
+        # A comparação E a gravação acontecem sob a MESMA trava: duas gravações
+        # simultâneas não conseguem deixar uma versão antiga vencer.
+        with self._trava:
+            atual = self._dados[ent].get((user_id, id))
+            desejo = instante_de_edicao(dados)
+            gravado_instante = instante_de_edicao((atual or {}).get("dados") or {})
+            if atual is None or desejo > gravado_instante:
+                registro = self._novo_registro(ent, user_id, id, dados, atual=atual)
+                self._dados[ent][(user_id, id)] = registro
+                saida = self._publico(registro)
+                saida["gravado"] = True
+                return saida
+            # Servidor vence (empate, edição mais antiga ou sem data confiável).
+            publico = self._publico(atual)
+            publico["gravado"] = False
+            publico["conflito"] = {
+                "rev": atual["rev"],
+                "updated_at": atual["updated_at"],
+                "deleted_at": atual["deleted_at"],
+                "dados": copy.deepcopy(atual["dados"]),
+            }
+            return publico
 
     def excluir(self, entidade: str, user_id: str, id: str) -> dict | None:
         """Soft delete: grava `deleted_at` e um `rev` novo (propaga entre aparelhos)."""

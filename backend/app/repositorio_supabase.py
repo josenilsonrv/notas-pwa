@@ -15,8 +15,8 @@ Mapa entidade -> tabela (ver `backend/supabase/schema.sql`):
 from __future__ import annotations
 
 from .config import obter_config
-from .repositorio import Repositorio, agora_iso, normalizar_entidade
-from .supabase_cliente import ClienteSupabase, criar_cliente
+from .repositorio import Repositorio, agora_iso, instante_de_edicao, normalizar_entidade
+from .supabase_cliente import ClienteSupabase, ErroSupabase, criar_cliente
 
 ESQUEMA: dict[str, dict[str, str]] = {
     "pastas": {"tabela": "pastas", "pk": "id", "campo": "dados"},
@@ -137,6 +137,63 @@ class RepositorioSupabase(Repositorio):
         registro = self._publico(gravadas[0] if gravadas else linha, ent, cfg["campo"])
         registro["gravado"] = True
         return registro
+
+    def salvar_lww(
+        self,
+        entidade: str,
+        user_id: str,
+        id: str,
+        dados: dict,
+        base_rev: int | None = None,
+    ) -> dict:
+        """Upsert ATÔMICO com LWW via RPC `upsert_entidade_lww` (Postgres).
+
+        A comparação (data de edição do cliente × data de edição gravada) e a gravação
+        acontecem numa ÚNICA transação no banco, com `SELECT ... FOR UPDATE` — duas
+        gravações simultâneas não deixam uma versão antiga vencer.
+        """
+        ent, cfg = self._cfg(entidade)
+        if dados is None:
+            dados = {}
+        if not isinstance(dados, dict):
+            raise ValueError("dados deve ser um objeto JSON")
+        user_id, id = str(user_id), str(id)
+        corpo = self.cliente.rpc(
+            "upsert_entidade_lww",
+            {
+                "p_user_id": user_id,
+                "p_tabela": cfg["tabela"],
+                "p_pk": cfg["pk"],
+                "p_campo": cfg["campo"],
+                "p_id": id,
+                "p_dados": dados,
+                "p_desejo": instante_de_edicao(dados),
+            },
+        )
+        if not isinstance(corpo, dict):
+            raise ErroSupabase(500, "RPC upsert_entidade_lww sem resposta", "/rpc/upsert_entidade_lww")
+        if corpo.get("gravado"):
+            registro = {
+                "entidade": ent,
+                "id": id,
+                "user_id": user_id,
+                "rev": int(corpo.get("rev") or 0),
+                "updated_at": corpo.get("updated_at"),
+                "criado_em": None,
+                "deleted_at": corpo.get("deleted_at"),
+                "dados": dados,
+            }
+            registro["gravado"] = True
+            return registro
+        return {
+            "gravado": False,
+            "conflito": {
+                "rev": int(corpo.get("rev") or 0),
+                "updated_at": corpo.get("updated_at"),
+                "deleted_at": corpo.get("deleted_at"),
+                "dados": corpo.get("dados"),
+            },
+        }
 
     def excluir(self, entidade: str, user_id: str, id: str) -> dict | None:
         """Soft delete: PATCH com `deleted_at` + `rev` novo (tombstone se nao existir)."""

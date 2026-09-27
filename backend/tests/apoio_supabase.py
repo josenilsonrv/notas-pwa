@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from urllib.parse import parse_qsl, urlparse
 
 import httpx
@@ -18,6 +19,27 @@ PARAMS_DE_CONTROLE = ("select", "order", "limit", "offset", "on_conflict", "colu
 
 def _pk(tabela: str) -> str:
     return PK_POR_TABELA.get(tabela, "id")
+
+
+def _instante_de_edicao(dados) -> float:
+    """Replica `instante_de_edicao_jsonb`: epoch da data de EDIÇÃO mais nova."""
+    if not isinstance(dados, dict):
+        return 0.0
+    total = 0.0
+    for campo in ("atualizada_em", "atualizadaEm"):
+        valor = dados.get(campo)
+        if valor in (None, ""):
+            continue
+        if isinstance(valor, (int, float)) and not isinstance(valor, bool):
+            atual = float(valor)
+        else:
+            texto = str(valor).strip().replace("Z", "+00:00")
+            try:
+                atual = datetime.fromisoformat(texto).timestamp()
+            except ValueError:
+                atual = 0.0
+        total = max(total, atual)
+    return total
 
 
 class FakePostgrest:
@@ -74,10 +96,52 @@ class FakePostgrest:
     # --- HTTP -------------------------------------------------------------
     def _rpc(self, partes: list[str], request: httpx.Request) -> httpx.Response:
         funcao = partes[3] if len(partes) > 3 else ""
-        if funcao != "proximo_rev":
-            return httpx.Response(404, json={"message": "rpc desconhecida"})
-        corpo = json.loads(request.content or b"{}")
-        return httpx.Response(200, json=self.proximo_rev(str(corpo.get("p_user_id"))))
+        if funcao == "proximo_rev":
+            corpo = json.loads(request.content or b"{}")
+            return httpx.Response(200, json=self.proximo_rev(str(corpo.get("p_user_id"))))
+        if funcao == "upsert_entidade_lww":
+            return self._upsert_lww(json.loads(request.content or b"{}"))
+        return httpx.Response(404, json={"message": "rpc desconhecida"})
+
+    def _upsert_lww(self, corpo: dict) -> httpx.Response:
+        """Emula a RPC `upsert_entidade_lww` (comparação e gravação numa operação só)."""
+        tabela = corpo.get("p_tabela")
+        pk = corpo.get("p_pk")
+        campo = corpo.get("p_campo")
+        user_id = str(corpo.get("p_user_id"))
+        id_ = str(corpo.get("p_id"))
+        dados = corpo.get("p_dados") or {}
+        desejo = float(corpo.get("p_desejo") or 0)
+        agora = datetime.now(timezone.utc).isoformat()
+        self.tabelas.setdefault(tabela, {})
+        chave = (user_id, id_)
+        atual = self.tabelas[tabela].get(chave)
+        if atual is None:
+            rev = self.proximo_rev(user_id)
+            linha = {
+                "user_id": user_id, pk: id_, campo: dados,
+                "rev": rev, "updated_at": agora, "criado_em": agora, "deleted_at": None,
+            }
+            self.tabelas[tabela][chave] = linha
+            return httpx.Response(200, json={
+                "gravado": True, "rev": rev, "updated_at": agora,
+                "deleted_at": None, "dados": dados,
+            })
+        gravado_instante = _instante_de_edicao(atual.get(campo) or {})
+        if desejo > gravado_instante:
+            rev = self.proximo_rev(user_id)
+            atual[campo] = dados
+            atual["rev"] = rev
+            atual["updated_at"] = agora
+            atual["deleted_at"] = None
+            return httpx.Response(200, json={
+                "gravado": True, "rev": rev, "updated_at": agora,
+                "deleted_at": None, "dados": dados,
+            })
+        return httpx.Response(200, json={
+            "gravado": False, "rev": atual.get("rev"), "updated_at": atual.get("updated_at"),
+            "deleted_at": atual.get("deleted_at"), "dados": atual.get(campo),
+        })
 
     def _tabela(self, tabela: str, request: httpx.Request, params: dict) -> httpx.Response:
         self.tabelas.setdefault(tabela, {})

@@ -468,14 +468,18 @@ function installConta(App) {
                 return pendentes > 0
                     ? 'Enviando ' + pendentes + ' alteraç' + (pendentes === 1 ? 'ão' : 'ões') + '…'
                     : 'Enviando alterações…';
+            case 'pendente':
+                return pendentes > 0 ? 'Aguardando envio — ' + pendentes + ' na fila' : 'Aguardando envio…';
             case 'offline':
                 return 'Offline — ' + pendentes + ' na fila';
             case 'expirada':
                 return 'Sessão expirada (entre novamente)';
+            case 'erro':
+                return 'Falha ao salvar as alterações no aparelho';
             case 'local':
-                return 'Só neste aparelho';
+                return 'Salvo neste aparelho';
             default:
-                return window.notasConta.logado ? 'Sincronizado' : 'Só neste aparelho';
+                return window.notasConta.logado ? 'Sincronizado' : 'Salvo neste aparelho';
         }
     };
 // ⚡ [FIM: CONTA - DIÁLOGO (entrar / criar conta / sair)]

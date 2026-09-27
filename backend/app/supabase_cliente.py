@@ -126,6 +126,10 @@ class ClienteSupabase:
         """Chama a funcao ATOMICA `proximo_rev(user_id)` no Postgres."""
         return int(self._pedir("POST", "/rpc/proximo_rev", json={"p_user_id": str(user_id)}))
 
+    def rpc(self, funcao: str, corpo: dict) -> Any:
+        """Chama uma funcao Postgres generica (`POST /rpc/{funcao}`)."""
+        return self._pedir("POST", f"/rpc/{funcao}", json=corpo)
+
     def rev_global(self, user_id: str) -> int:
         linhas = self.selecionar(
             "contadores", {"user_id": f"eq.{user_id}"}, ordem="rev.desc", limite=1

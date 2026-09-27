@@ -7,45 +7,18 @@
 Regras (secao 2.5 do plano):
   - `rev` e SEMPRE do servidor: o cliente manda `base_rev` e recebe o novo.
   - Exclusao e SOFT DELETE (`deleted_at`) — precisa chegar aos outros aparelhos.
-  - **LWW por `updated_at`**: comparamos o instante que vem no payload do cliente
-    (`atualizada_em`/`updated_at`, relogio do APARELHO) com o `updated_at` da linha
-    (relogio do SERVIDOR). Se o do cliente for mais novo, ele vence (gravamos com
-    `forcar=True`); senao, devolvemos `conflito` com a versao atual e o cliente decide
-    (reenviar com `base_rev` novo ou aceitar a do servidor).
-  - Empate de instante: vence o servidor (o `rev` maior).
+  - **LWW por data de EDIÇÃO** (`dados.atualizada_em`): a comparação e a gravação são
+    ATÔMICAS, feitas dentro do repositório (`salvar_lww`). Compara a data de edição do
+    cliente com a data de edição da linha GRAVADA — nunca com o `updated_at` de
+    persistência. A edição mais recente prevalece; empate (ou ausência de data)
+    mantém a versão do servidor. Funciona com ou sem `base_rev`.
 """
 # ⚙️ [INÍCIO: BACKEND - SYNC (REGRAS)]
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from ..repositorio import ENTIDADES, agora_iso, normalizar_entidade
 
 ACOES = ("upsert", "delete")
-CAMPOS_DE_TEMPO = ("atualizada_em", "atualizadaEm", "updated_at", "updatedAt")
-
-
-def momento(valor) -> float:
-    """ISO-8601 (ou epoch) -> epoch em segundos. Devolve 0 quando nao da para ler."""
-    if valor in (None, ""):
-        return 0.0
-    if isinstance(valor, (int, float)):
-        return float(valor)
-    texto = str(valor).strip().replace("Z", "+00:00")
-    try:
-        data = datetime.fromisoformat(texto)
-    except ValueError:
-        return 0.0
-    if data.tzinfo is None:
-        data = data.replace(tzinfo=timezone.utc)
-    return data.timestamp()
-
-
-def instante_do_cliente(dados: dict) -> float:
-    """O instante declarado pelo aparelho (o mais novo entre os apelidos conhecidos)."""
-    if not isinstance(dados, dict):
-        return 0.0
-    return max((momento(dados.get(campo)) for campo in CAMPOS_DE_TEMPO), default=0.0)
 
 
 def _normalizar_op(op: dict) -> tuple[str, str, str, dict, int | None, str]:
@@ -83,15 +56,9 @@ def aplicar_op(repo, user_id: str, op: dict) -> dict:
             }
         }
 
-    atual = repo.obter(entidade, user_id, id_, incluir_excluido=True)
-    desejo_cliente = instante_do_cliente(dados)
-    instante_servidor = momento((atual or {}).get("updated_at"))
-    # O cliente vence quando declarou um instante mais NOVO que o do servidor.
-    venceu = bool(atual) and desejo_cliente > 0 and desejo_cliente > instante_servidor
-
-    resultado = repo.salvar(
-        entidade, user_id, id_, dados, base_rev=base_rev, forcar=venceu or not atual
-    )
+    # A comparação E a gravação são atômicas (dentro do repositório): duas gravações
+    # simultâneas não deixam uma versão antiga vencer.
+    resultado = repo.salvar_lww(entidade, user_id, id_, dados, base_rev=base_rev)
     if resultado.get("gravado"):
         return {
             "ack": {
@@ -103,32 +70,18 @@ def aplicar_op(repo, user_id: str, op: dict) -> dict:
             }
         }
 
-    if atual and atual.get("deleted_at") and not venceu:
-        # O servidor excluiu DEPOIS de o aparelho ter salvado: avisamos o cliente.
-        return {
-            "conflito": {
-                "id_local": id_local,
-                "entidade": entidade,
-                "id": id_,
-                "motivo": "apagado_no_servidor",
-                "versao_atual": {
-                    "rev": atual["rev"],
-                    "updated_at": atual["updated_at"],
-                    "deleted_at": atual["deleted_at"],
-                    "dados": atual["dados"],
-                },
-            }
-        }
     conflito = resultado.get("conflito") or {}
+    motivo = "apagado_no_servidor" if conflito.get("deleted_at") else "rev_mais_novo"
     return {
         "conflito": {
             "id_local": id_local,
             "entidade": entidade,
             "id": id_,
-            "motivo": "rev_mais_novo",
+            "motivo": motivo,
             "versao_atual": {
                 "rev": conflito.get("rev", 0),
                 "updated_at": conflito.get("updated_at"),
+                "deleted_at": conflito.get("deleted_at"),
                 "dados": conflito.get("dados"),
             },
         }

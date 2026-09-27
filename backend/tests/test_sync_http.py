@@ -127,6 +127,40 @@ def test_lww_conflito_quando_o_payload_e_mais_velho():
     assert estado["nome"] == "servidor"
 
 
+def test_lww_antigo_sem_base_rev_nao_sobrescreve():
+    """Defeito reproduzido: a edição antiga que chega DEPOIS, SEM `base_rev`, sobrescrevia a recente."""
+    cliente, csrf = novo_cliente("antigo-sem-base@exemplo.com")
+    empurrar(cliente, csrf, op("notas", "n1", {"nome": "recente", "atualizada_em": agora(5)}))
+    corpo = empurrar(cliente, csrf, op("notas", "n1", {"nome": "velho", "atualizada_em": agora(-600)}))
+    assert corpo["acks"] == [], corpo
+    conflito = corpo["conflitos"][0]
+    assert conflito["motivo"] == "rev_mais_novo"
+    assert conflito["versao_atual"]["dados"]["nome"] == "recente"
+    estado = cliente.get("/api/sync/snapshot").json()["entidades"]["notas"][0]["dados"]
+    assert estado["nome"] == "recente"
+
+
+def test_lww_empate_mantem_a_versao_confirmada():
+    """Empate de instante de edição: a versão já confirmada pelo servidor vence."""
+    cliente, csrf = novo_cliente("empate@exemplo.com")
+    instante = agora(0)
+    empurrar(cliente, csrf, op("notas", "n1", {"nome": "servidor", "atualizada_em": instante}))
+    corpo = empurrar(cliente, csrf, op("notas", "n1", {"nome": "cliente", "atualizada_em": instante}))
+    assert corpo["acks"] == [], corpo
+    estado = cliente.get("/api/sync/snapshot").json()["entidades"]["notas"][0]["dados"]
+    assert estado["nome"] == "servidor"
+
+
+def test_lww_sem_data_confiavel_nao_vence():
+    """Conteúdo local sem data confiável não pode sobrescrever uma versão com data."""
+    cliente, csrf = novo_cliente("sem-data@exemplo.com")
+    empurrar(cliente, csrf, op("notas", "n1", {"nome": "recente", "atualizada_em": agora(5)}))
+    corpo = empurrar(cliente, csrf, op("notas", "n1", {"nome": "sem-data"}))
+    assert corpo["acks"] == [], corpo
+    estado = cliente.get("/api/sync/snapshot").json()["entidades"]["notas"][0]["dados"]
+    assert estado["nome"] == "recente"
+
+
 def test_isolamento_entre_contas():
     a, csrf_a = novo_cliente("a@exemplo.com")
     b, csrf_b = novo_cliente("b@exemplo.com")

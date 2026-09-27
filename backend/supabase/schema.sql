@@ -55,6 +55,109 @@ as $$
 $$;
 
 -- ---------------------------------------------------------------------------
+-- 2.1) LWW atomico - a edicao mais recente prevalece (regra de concorrencia)
+--      `instante_de_edicao_jsonb` extrai a data de EDIÇÃO do payload jsonb
+--      (atualizada_em / atualizadaEm), NUNCA o `updated_at` de persistencia.
+--      `upsert_entidade_lww` compara e grava numa UNICA transacao (SELECT ...
+--      FOR UPDATE) — duas requisicoes simultaneas nao deixam versao antiga vencer.
+-- ---------------------------------------------------------------------------
+create or replace function public.instante_de_edicao_jsonb(p_dados jsonb)
+returns numeric
+language plpgsql
+immutable
+as $$
+declare
+    v_valor   text;
+    v_total   numeric := 0;
+    v_atual   numeric;
+begin
+    if p_dados is null then
+        return 0;
+    end if;
+    foreach v_valor in array array['atualizada_em', 'atualizadaEm'] loop
+        if p_dados ? v_valor then
+            begin
+                if (p_dados ->> v_valor) ~ '^[+-]?[0-9]+(\.[0-9]+)?$' then
+                    v_atual := (p_dados ->> v_valor)::numeric;
+                else
+                    v_atual := extract(epoch from (p_dados ->> v_valor)::timestamptz);
+                end if;
+            exception when others then
+                v_atual := 0;
+            end;
+            if v_atual > v_total then
+                v_total := v_atual;
+            end if;
+        end if;
+    end loop;
+    return v_total;
+end;
+$$;
+
+create or replace function public.upsert_entidade_lww(
+    p_user_id uuid,
+    p_tabela  text,
+    p_pk      text,
+    p_campo   text,
+    p_id      text,
+    p_dados   jsonb,
+    p_desejo  numeric
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_atual            record;
+    v_gravado_instante numeric := 0;
+    v_rev              bigint;
+    v_instante         timestamptz := now();
+begin
+    -- Bloqueia a linha existente (se houver) ate o fim da transacao: serializa
+    -- gravações concorrentes sobre o MESMO (user_id, id).
+    execute format(
+        'select rev, updated_at, deleted_at, %I as dados from %I '
+        'where user_id = $1 and %I = $2 for update',
+        p_campo, p_tabela, p_pk
+    ) into v_atual using p_user_id, p_id;
+
+    if v_atual is null then
+        v_rev := public.proximo_rev(p_user_id);
+        execute format(
+            'insert into %I (user_id, %I, %I, rev, updated_at, criado_em, deleted_at) '
+            'values ($1, $2, $3, $4, $5, $5, null)',
+            p_tabela, p_pk, p_campo
+        ) using p_user_id, p_id, p_dados, v_rev, v_instante;
+        return jsonb_build_object(
+            'gravado', true, 'rev', v_rev, 'updated_at', v_instante,
+            'deleted_at', jsonb 'null', 'dados', p_dados
+        );
+    end if;
+
+    v_gravado_instante := public.instante_de_edicao_jsonb(v_atual.dados);
+    if p_desejo > v_gravado_instante then
+        v_rev := public.proximo_rev(p_user_id);
+        execute format(
+            'update %I set %I = $1, rev = $2, updated_at = $3, deleted_at = null '
+            'where user_id = $4 and %I = $5',
+            p_tabela, p_campo, p_pk
+        ) using p_dados, v_rev, v_instante, p_user_id, p_id;
+        return jsonb_build_object(
+            'gravado', true, 'rev', v_rev, 'updated_at', v_instante,
+            'deleted_at', jsonb 'null', 'dados', p_dados
+        );
+    end if;
+
+    -- Servidor vence (empate ou edicao mais antiga): devolve a versao atual.
+    return jsonb_build_object(
+        'gravado', false, 'rev', v_atual.rev, 'updated_at', v_atual.updated_at,
+        'deleted_at', to_jsonb(v_atual.deleted_at), 'dados', v_atual.dados
+    );
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- 3) pastas - workspaces (notas-pwa-mapas-pastas)
 -- ---------------------------------------------------------------------------
 create table if not exists public.pastas (
@@ -251,6 +354,8 @@ grant select, insert, update, delete on public.modelos           to authenticate
 grant select, insert, update, delete on public.ativos            to authenticated;
 grant select, insert, update, delete on public.ativos_anotacoes  to authenticated;
 grant execute on function public.proximo_rev(uuid) to authenticated;
+grant execute on function public.instante_de_edicao_jsonb(jsonb) to authenticated;
+grant execute on function public.upsert_entidade_lww(uuid, text, text, text, text, jsonb, numeric) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 12) CONFERENCIA - rode e confira: devem aparecer as 9 tabelas abaixo.

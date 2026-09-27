@@ -17,7 +17,13 @@ function installSync(App) {
     const FILA = 'notas-pwa-fila-sync';
     const MARCA_CONTA = 'notas-pwa-sync-conta';
     const TAMANHO_LOTE = 60;
-    const TENTATIVAS_MAX = 2;
+    // Identificador único e PERSISTENTE da operação (enviado como `id_local`). O `seq` é só
+    // a ordem local; o `op_id` sobrevive a mesclas/reaquisitamentos da fila.
+    const opId = () => (typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : 'op-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
+    // `id_local` estável de um item (itens legados sem `op_id` caem no `seq`).
+    const idLocalDe = item => String(item.op_id || item.seq);
 
     // 💾 [INÍCIO: SYNC - FILA DE PENDÊNCIAS (persistida)]
     p.syncLer = function (chave, padrao) {
@@ -33,8 +39,35 @@ function installSync(App) {
     };
 
     p.syncFilaGravar = function (lista) {
-        try { localStorage.setItem(FILA, JSON.stringify(lista)); } catch (_) { /* sem espaço: a memória segue */ }
+        try {
+            localStorage.setItem(FILA, JSON.stringify(lista));
+        } catch (_) {
+            // Sem espaço para persistir: a fila segue em memória (o texto NÃO se perde) e o
+            // estado reflete a FALHA de persistência — nunca "sincronizado".
+            this.syncEstado('erro', lista.length);
+            return;
+        }
         this.syncEstado((window.notasConta.sync || {}).estado, lista.length);
+    };
+
+    /** Itens da fila que pertencem à conta ATUAL (as outras ficam preservadas, sem envio). */
+    p.syncFilaDaConta = function () {
+        const email = (window.notasConta && window.notasConta.email) || '';
+        return this.syncFilaLer().filter(item => (item.conta || '') === email);
+    };
+
+    /** Associa itens LEGADOS (sem `conta`) à marca persistida da conta, se houver. */
+    p.syncMigrarFilaLegada = function () {
+        const email = (window.notasConta && window.notasConta.email) || '';
+        let marca = '';
+        try { marca = localStorage.getItem(MARCA_CONTA) || ''; } catch (_) { marca = ''; }
+        const dono = email || marca;
+        const fila = this.syncFilaLer();
+        let mudou = false;
+        for (const item of fila) {
+            if (!item.conta && dono) { item.conta = dono; mudou = true; }
+        }
+        if (mudou) this.syncFilaGravar(fila);
     };
 
     /** Há sessão? (deslogado não enfileira nada e o offline segue intacto) */
@@ -53,14 +86,12 @@ function installSync(App) {
      */
     p.syncEnfileirar = function (entidade, acao, id, dados, baseRev) {
         if (!this.syncAtivo() || this.syncAplicando) return false;
-        // ANTES do 1º snapshot o aparelho ainda não conhece o estado da conta: enfileirar aqui
-        // subiria um retrato INCOMPLETO (ex.: a nota vazia do boot por cima da versão boa). Os
-        // saves desse intervalo continuam locais e entram na conta no próximo envio — P98.
-        if (!this.syncPronto) return false;
         const fila = this.syncFilaLer();
         const maior = fila.reduce((valor, item) => Math.max(valor, Number(item.seq) || 0), 0);
         fila.push({
             seq: maior + 1,
+            op_id: opId(),
+            conta: window.notasConta.email || '',
             entidade,
             acao,
             id: String(id),
@@ -70,7 +101,9 @@ function installSync(App) {
             criado_em: new Date().toISOString()
         });
         this.syncFilaGravar(fila);
-        this.syncAgendarDrenagem();
+        // Registra a alteração MESMO antes de conhecer o estado da conta (`syncPronto`):
+        // o que fica adiado é só o ENVIO, até a reconciliação inicial terminar — nada se perde.
+        if (this.syncPronto) this.syncAgendarDrenagem();
         return true;
     };
 
@@ -110,67 +143,92 @@ function installSync(App) {
     };
 
     /**
-     * Drena a fila EM ORDEM: sai do armário só o que teve `ack`; no `conflito`, decide por LWW
-     * (se o local declarou instante mais novo, reenvia com o `base_rev` novo — máx. 2 voltas).
+     * Drena a fila EM ORDEM (por `seq`). Sai do armário SÓ o que teve `ack` ou foi resolvido por
+     * conflito — alterações enfileiradas DURANTE o envio permanecem e disparam um novo envio.
      */
     p.syncDrenar = async function () {
         if (!this.syncAtivo() || this.syncDrenando) return;
-        const fila = this.syncFilaLer();
+        const email = (window.notasConta && window.notasConta.email) || '';
+        const fila = this.syncFilaDaConta();
         if (!fila.length) { this.syncEstado('sincronizado', 0); return; }
         this.syncDrenando = true;
         this.syncEstado('sincronizando', fila.length);
         try {
-            const lote = fila.map(item => ({
-                entidade: item.entidade,
-                acao: item.acao,
-                id: item.id,
-                base_rev: item.base_rev,
-                dados: item.dados,
-                id_local: String(item.seq)
-            }));
+            const lote = fila
+                .slice()
+                .sort((a, b) => (Number(a.seq) || 0) - (Number(b.seq) || 0))
+                .slice(0, TAMANHO_LOTE)
+                .map(item => ({
+                    entidade: item.entidade,
+                    acao: item.acao,
+                    id: item.id,
+                    base_rev: item.base_rev,
+                    dados: item.dados,
+                    id_local: idLocalDe(item)
+                }));
             const corpo = await this.syncEmpurrar(lote);
-            const resolvidos = new Set((corpo.acks || []).map(ack => String(ack.id_local)));
-            const restantes = fila.filter(item => !resolvidos.has(String(item.seq)));
-            for (const conflito of corpo.conflitos || []) {
-                const indice = restantes.findIndex(item => String(item.seq) === String(conflito.id_local));
-                if (indice < 0) continue;
-                const item = restantes[indice];
-                if (this.syncConflitoLocalVence(item, conflito)) {
-                    item.tentativas = (Number(item.tentativas) || 0) + 1;
-                    item.base_rev = ((conflito.versao_atual || {}).rev === undefined)
-                        ? item.base_rev
-                        : conflito.versao_atual.rev;
-                    if (item.tentativas > TENTATIVAS_MAX) {
-                        restantes.splice(indice, 1);
-                        this.syncAplicarItem(conflito);
-                    }
-                } else {
-                    restantes.splice(indice, 1);
+            const confirmados = new Set((corpo.acks || []).map(ack => String(ack.id_local)));
+            const conflitoPorId = {};
+            (corpo.conflitos || []).forEach(c => { conflitoPorId[String(c.id_local)] = c; });
+            // RELÊ a fila DEPOIS do envio: itens novos (adicionados enquanto aguardávamos a rede)
+            // e itens de OUTRAS contas não podem ser descartados. Só saem os confirmados e os
+            // resolvidos por conflito da conta atual.
+            const restantes = [];
+            for (const item of this.syncFilaLer()) {
+                const idLocal = idLocalDe(item);
+                if ((item.conta || '') !== email) { restantes.push(item); continue; }
+                if (confirmados.has(idLocal)) continue;
+                const conflito = conflitoPorId[idLocal];
+                if (conflito) {
+                    // O servidor venceu o LWW: preserva cópia de recuperação do texto divergente
+                    // e aplica a versão vencedora pelo MESMO fluxo (nunca reenvia o antigo).
+                    this.syncPreservarRecuperacao(item, conflito);
                     this.syncAplicarItem(conflito);
+                    continue;
                 }
+                restantes.push(item);
             }
             this.syncFilaGravar(restantes);
+            this.syncDrenoFalhas = 0;
         } catch (erro) {
-            this.syncEstado(erro && erro.status === 401 ? 'expirada' : 'offline', this.syncFilaLer().length);
+            // Falha temporária (rede) ou sessão expirada: a fila PERMANECE intacta.
+            if (erro && erro.status === 401) {
+                this.syncEstado('expirada', this.syncFilaDaConta().length);
+                return;
+            }
+            this.syncEstado('offline', this.syncFilaDaConta().length);
+            this.syncAgendarDrenagem(this.syncBackoff());
             return;
         } finally {
             this.syncDrenando = false;
         }
-        const pendentes = this.syncFilaLer().length;
+        const pendentes = this.syncFilaDaConta().length;
         this.syncEstado(pendentes ? 'offline' : 'sincronizado', pendentes);
-        if (pendentes && pendentes < fila.length) this.syncAgendarDrenagem(200);
+        if (pendentes) this.syncAgendarDrenagem(400);
     };
 
-    /** LWW do lado do cliente: o instante declarado na op é MAIS NOVO que o do servidor? */
-    p.syncConflitoLocalVence = function (item, conflito) {
-        const momento = valor => {
-            if (!valor) return 0;
-            const data = new Date(String(valor).replace('Z', '+00:00'));
-            return isNaN(data) ? 0 : data.getTime();
-        };
-        const dados = item.dados || {};
-        const local = dados.atualizada_em || dados.updated_at;
-        return momento(local) > momento((conflito.versao_atual || {}).updated_at);
+    /** Espera progressiva para reenvio (1s → 30s), reiniciada a cada sucesso. */
+    p.syncBackoff = function () {
+        const falhas = (Number(this.syncDrenoFalhas) || 0) + 1;
+        this.syncDrenoFalhas = falhas;
+        return Math.min(30000, 1000 * Math.pow(2, Math.min(falhas, 5)));
+    };
+
+    /** Guarda o texto divergente ANTES de a versão vencedora substituí-lo (recuperação). */
+    p.syncPreservarRecuperacao = function (item, conflito) {
+        const dados = item && item.dados;
+        if (!dados || typeof dados.conteudo_html !== 'string') return;
+        try {
+            const chave = 'notas-pwa-sync-recuperacao-' + String(item.id);
+            const atual = JSON.parse(localStorage.getItem(chave) || '[]');
+            atual.push({
+                em: new Date().toISOString(),
+                entidade: item.entidade,
+                id: item.id,
+                dados: dados
+            });
+            localStorage.setItem(chave, JSON.stringify(atual.slice(-20)));
+        } catch (_) { /* cota: a recuperação é best-effort */ }
     };
     // 🔄 [FIM: SYNC - ENVIO (push HTTP)]
 
@@ -459,7 +517,9 @@ function installSync(App) {
             accent: nota.accent || '',
             conteudo_html: String(nota.notas || ''),
             criada_em: nota.criadaEm || '',
-            atualizada_em: nota.atualizadaEm || new Date().toISOString()
+            // A data de EDIÇÃO nunca é inventada: sem data confiável, o campo fica vazio e
+            // a regra LWW do servidor preserva a versão já confirmada (não a faz "vencer").
+            atualizada_em: nota.atualizadaEm || ''
         };
     };
 
@@ -549,6 +609,8 @@ function installSync(App) {
      */
     p.syncAoEntrar = async function () {
         if (!this.syncAtivo()) return false;
+        // Migração idempotente: associa pendências legadas (sem `conta`) à marca da conta.
+        this.syncMigrarFilaLegada();
         // ESPERA O BOOT TERMINAR: a lista de notas vive em memória (`projectsData`) e é o
         // `init()` que a monta; `window.__notasPronto` é o sinal que o próprio app publica no
         // fim. Sem esta espera, um login logo no boot subiria um retrato INCOMPLETO do aparelho
@@ -575,11 +637,12 @@ function installSync(App) {
         }
     };
 
-    /** Ao SAIR: a fila é DA CONTA (não pode vazar para outra); nada local é apagado. */
+    /** Ao SAIR: a fila é DA CONTA — NÃO é apagada; as pendências ficam vinculadas à conta de
+     *  origem e só são retomadas quando ela voltar (troca de conta não vaza nem descarta nada). */
     p.syncAoSair = function () {
         clearTimeout(this.syncDrenoTimer);
         this.syncPronto = false;
-        if (this.syncFilaLer().length) this.syncFilaGravar([]);
+        this.syncMigrarFilaLegada();
         this.syncEstado('local', 0);
     };
     // 🔄 [FIM: SYNC - COLETA E 1º LOGIN (local -> nuvem)]
@@ -791,12 +854,17 @@ function installSync(App) {
     };
 
 
-    /** Uma mensagem do servidor: `bemvindo`, `change`, `ack`, `conflito`, `erro` ou `pong`. */
+    /** Uma mensagem do servidor: `bemvindo`, `change`, `sync_fim`, `ack`, `conflito`, `erro` ou `pong`. */
     p.syncReceberWs = function (mensagem) {
         const tipo = mensagem.t;
         if (tipo === 'pong') { this.syncWsUltimoPong = Date.now(); return; }
-        const rev = Math.max(Number(mensagem.rev_global) || 0, Number(mensagem.rev) || 0);
-        if (rev) this.syncRevGlobal = Math.max(Number(this.syncRevGlobal) || 0, rev);
+        if (tipo === 'sync_fim') {
+            // Fim do lote: SÓ agora avança o cursor de recebimento (o lote inteiro já foi
+            // aplicado). Interromper no meio NÃO adianta o cursor — a reconexão reenvia o lote.
+            const revGlobal = Number(mensagem.rev_global) || 0;
+            if (revGlobal) this.syncRevGlobal = Math.max(Number(this.syncRevGlobal) || 0, revGlobal);
+            return;
+        }
 
         if (tipo === 'bemvindo') {
             this.syncWsUltimoPong = Date.now();
@@ -942,12 +1010,22 @@ function installSync(App) {
                 this.syncWsTimer = null;
                 this.syncConectar();
             }
-            // Voltou a rede (ou a aba): RETOMA a fila. Sem isto, um socket que nunca chegou a
-            // fechar (o `setOffline` do navegador faz isso) deixaria as pendências paradas.
+            // Voltou a rede (ou a aba): RETOMA a fila e consulta o delta desde o cursor de
+            // recebimento — recupera mudanças que o aviso em tempo real possa ter perdido.
             this.syncDrenar().catch(() => { });
+            if (this.syncPronto && !document.hidden) this.syncSnapshot(Number(this.syncRevGlobal) || 0).catch(() => { });
         };
         window.addEventListener('online', acordar);
         document.addEventListener('visibilitychange', acordar);
+        // Consulta periódica (30 s) enquanto a página está visível e autenticada: o caminho de
+        // recuperação quando o aviso em tempo real falha. Serializado por `syncConsultando`.
+        this.syncPollingTimer = setInterval(() => {
+            if (document.hidden || !this.syncAtivo() || !this.syncPronto || this.syncConsultando) return;
+            this.syncConsultando = true;
+            this.syncSnapshot(Number(this.syncRevGlobal) || 0)
+                .catch(() => { })
+                .finally(() => { this.syncConsultando = false; });
+        }, 30000);
         if (this.syncAtivo() && this.syncPronto) this.syncConectar();
     };
 
