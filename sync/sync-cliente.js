@@ -1509,6 +1509,54 @@ function installSync(App) {
     };
     // 🔄 [FIM: SYNC - CRIAÇÃO DE NOTA (pasta vazia/botão + entram na fila)]
 
+    // 🔄 [INÍCIO: SYNC - NOTAS: METADADOS AO VIVO (renomear/duplicar/mover/excluir)]
+    /** Renomear/duplicar/mover/excluir uma NOTA **não passa** pelo `notasBackend.salvar`: o nome
+     *  (e a duplicação/movimentação/exclusão) ficava SÓ no aparelho — o PC não via. Aqui cada uma
+     *  vira `op` na hora (renomear/mover já atualizam `atualizadaEm` no app para o LWW aceitar). */
+    p.syncEnfileirarExcluirNota = function (id) {
+        return this.syncEnfileirar('notas', 'delete', String(id), {});
+    };
+
+    p.syncLigarNotas = function () {
+        if (this.syncNotasLigado) return;
+        this.syncNotasLigado = true;
+        const embrulhar = (nome, aoMudar) => {
+            const original = p[nome];
+            if (typeof original !== 'function') return;
+            p[nome] = function (...args) {
+                const resultado = original.apply(this, args);
+                try {
+                    if (this.syncAtivo() && !this.syncAplicando) aoMudar(this, args, resultado);
+                } catch (_) { /* best-effort: a gravação local já aconteceu */ }
+                return resultado;
+            };
+        };
+        // A nota pode estar `somenteNuvem` (sem o TEXTO no aparelho): baixa antes de subir o
+        // metadado — senão o upsert mandaria conteúdo vazio e apagaria a nota (P119).
+        const enfileirarPorId = (aplicacao, id) => {
+            const nota = (aplicacao.projectsData || []).find(n => String(n.id) === String(id));
+            if (!nota) return;
+            if (nota.somenteNuvem && !String(nota.notas || '').length) {
+                aplicacao.syncBaixarNota(nota.id).then(texto => {
+                    nota.notas = texto; nota.somenteNuvem = false;
+                    aplicacao.syncEnfileirarNota(nota);
+                }).catch(() => { /* offline: sobe na próxima edição/conexão */ });
+                return;
+            }
+            aplicacao.syncEnfileirarNota(nota);
+        };
+        embrulhar('renomearNota', (aplicacao, args) => enfileirarPorId(aplicacao, args[0]));
+        embrulhar('moverNotaParaPasta', (aplicacao, args) => enfileirarPorId(aplicacao, args[0]));
+        embrulhar('duplicarNota', (aplicacao, _args, resultado) => {
+            if (resultado && resultado.id) aplicacao.syncEnfileirarNota(resultado);
+        });
+        embrulhar('excluirNota', (aplicacao, args) => {
+            const id = args[0];
+            if (id != null) aplicacao.syncEnfileirarExcluirNota(id);
+        });
+    };
+    // 🔄 [FIM: SYNC - NOTAS: METADADOS AO VIVO (renomear/duplicar/mover/excluir)]
+
     // 🔄 [INÍCIO: SYNC - PASTAS (criar/renomear/excluir entram na fila)]
     /** Notas já têm o gancho via `notasBackend`; as PASTAS (mapa-store) ficavam órfãs:
      *  criadas/renomeadas/excluídas só subiam no 1º login. Aqui elas viram `op` na fila. */
@@ -1623,12 +1671,15 @@ function installSync(App) {
         embrulhar('excluirMapa', (aplicacao, args) => {
             aplicacao.syncEnfileirarExcluirMapa(args[0]);
         });
-        // Metadados do ÍNDICE (favorito/arquivado/raiz): só o índice muda; sobe lendo o
-        // grafo atual do aparelho (o `dtAlterado` do índice já foi atualizado).
+        // Metadados do ÍNDICE (favorito/arquivado/raiz) e as operações que chamam o `salvarGrafo`
+        // INTERNO do store (`renomearMapa`/`moverMapaParaPasta`) — essas NÃO passam pelo
+        // `store.salvarGrafo` embrulhado; sobem lendo o grafo atual do aparelho.
         const enfileirarMapa = (aplicacao, id) => {
             const grafo = id ? aplicacao.syncLer('notas-pwa-mapa-' + id, null) : null;
             if (grafo) aplicacao.syncEnfileirarMapa(grafo);
         };
+        embrulhar('renomearMapa', (aplicacao, args) => enfileirarMapa(aplicacao, args[0]));
+        embrulhar('moverMapaParaPasta', (aplicacao, args) => enfileirarMapa(aplicacao, args[0]));
         embrulhar('favoritarMapa', (aplicacao, args) => enfileirarMapa(aplicacao, args[0]));
         embrulhar('arquivarMapa', (aplicacao, args) => enfileirarMapa(aplicacao, args[0]));
         embrulhar('definirMapaRaiz', aplicacao => {
@@ -1732,6 +1783,16 @@ function installSync(App) {
     };
     if (window.notesApp) ligarCriacaoNota();
     else setTimeout(ligarCriacaoNota, 0);
+
+    /** Mesma deferência: liga o gancho de METADADOS DA NOTA (renomear/duplicar/mover/excluir). */
+    const ligarNotas = () => {
+        const aplicacao = window.notesApp;
+        if (!aplicacao || aplicacao.__syncNotasIniciado) return;
+        aplicacao.__syncNotasIniciado = true;
+        aplicacao.syncLigarNotas();
+    };
+    if (window.notesApp) ligarNotas();
+    else setTimeout(ligarNotas, 0);
 
     /** Mesma deferência: liga o gancho de MODELOS na INSTÂNCIA. */
     const ligarModelos = () => {

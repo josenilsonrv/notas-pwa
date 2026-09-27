@@ -165,6 +165,18 @@ const esperarSincronizado = page => page.waitForFunction(() => {
       nota => String(nota.notas || '').includes('oi da nuvem')
     ), null, { timeout: 15000 });
 
+    // ---------- 4b) RENOMEAR a nota no 1º aparelho chega ao 2º (nome espelhado) ----------
+    await page.evaluate(() => { window.prompt = () => 'Nome do Celular'; });
+    await page.evaluate(() => {
+      const nota = (window.notesApp.projectsData || [])[0];
+      window.notesApp.renomearNota(nota.id);
+    });
+    await page2.waitForFunction(
+      () => (window.notesApp.projectsData || []).some(nota => nota.nome === 'Nome do Celular'),
+      null,
+      { timeout: 15000 }
+    );
+
     // ---------- 5) SAIR limpa a fila da conta ----------
     await page.evaluate(async () => {
       await fetch('/api/auth/logout', {

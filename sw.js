@@ -20,6 +20,10 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
+// v91: RENOMEAR/MOVER a NOTA (chip) espelha em tempo real (renomear não passava pelo
+// `notasBackend.salvar` e nem atualizava `atualizadaEm`); excluir/duplicar nota também passam a
+// sincronizar. No MAPA, `renomearMapa`/`moverMapaParaPasta` (que usam o `salvarGrafo` interno)
+// também entram na fila. Mudaram `app.js` e `sync/sync-cliente.js`, então o cache precisa virar.
 // v90: o "refresh" do sync não desloca mais o cursor/rolagem da nota (a rolagem passou a ser
 // preservada mesmo SEM caret) nem a VIEWPORT do mapa (por aparelho); e o editor/mapa só
 // re-renderizam quando o conteúdo REALMENTE mudou. Mudou `sync/sync-cliente.js`.
@@ -81,7 +85,7 @@
 // `conta.js` e `styles.css` mudaram, então o cache precisa virar de versão.
 // v73: o `index.html` é cacheado COM os cabeçalhos; o fix do COOP (`same-origin-allow-popups`,
 // P108) só chega ao dispositivo com um cache NOVO — o antigo serviria o cabeçalho velho.
-const CACHE_NAME = 'notas-pwa-v90';
+const CACHE_NAME = 'notas-pwa-v91';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +

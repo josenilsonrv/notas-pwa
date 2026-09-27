@@ -665,10 +665,16 @@ class NotesPWA {
         nome = String(nome).trim().slice(0, 60);
         if (!nome || nome === nota.nome) return;
         nota.nome = nome;
+        // Renomear é uma EDIÇÃO: atualiza a data (o LWW do sync precisa dela para a mudança
+        // vencer e o nome espelhar no outro aparelho) — P121.
+        nota.atualizadaEm = new Date().toISOString();
         this.salvarNotasLocais();
         if (id === this.currentNotesProjectId) {
             const title = document.getElementById('notesModalTitle');
             if (title) title.textContent = nome;
+            // O rodapé mostra a "última edição": reflete a renomeação.
+            this.notesUltimaEdicao = nota.atualizadaEm;
+            if (typeof this.updateNotesLastEdit === 'function') this.updateNotesLastEdit();
         }
         this.renderNotesNav();
     }
@@ -736,6 +742,8 @@ class NotesPWA {
         const nota = (this.projectsData || []).find(item => item.id === id);
         if (!nota) return false;
         nota.pastaId = pastaId || null;
+        // Mover é uma EDIÇÃO: atualiza a data para o LWW aceitar a mudança (P121).
+        nota.atualizadaEm = new Date().toISOString();
         this.salvarNotasLocais();
         this.renderNotesNav();
         return true;

@@ -1848,3 +1848,27 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
   mapa é preservada, mas os nós novos são aplicados) · `node tests/sync_snapshot.cjs` ·
   `node tests/sync_completo.cjs`.
 
+
+### P121 — Renomear o chip da NOTA no celular não espelhava no PC (e o MESMO caminho do MAPA)
+- **Sintoma**: renomear uma nota pelo chip no **celular** não aparecia no **PC** (o nome continuava
+  o antigo). A ideia é espelhar praticamente em tempo real.
+- **Causa (notas)**: `renomearNota` (app.js) só chamava `salvarNotasLocais()` — que **NÃO passa pelo
+  `notasBackend.salvar`** — então **nenhuma `op` era criada**; e ele **não atualizava `atualizadaEm`**
+  (mesmo se subisse, o LWW do servidor recusaria por data antiga). O mesmo valia para **mover para
+  pasta** e **excluir** (nenhum `delete` subia); duplicar também não subia a cópia.
+- **Causa (mapas)**: `renomearMapa`/`moverMapaParaPasta` (mapa-store.js) chamam o `salvarGrafo`
+  **interno** do módulo — que NÃO é o `store.salvarGrafo` embrulhado pelo gancho —, então também
+  ficavam só no aparelho (o resto do grafo já subia ao vivo, desde o P119).
+- **Correção**:
+  - `app.js`: `renomearNota` e `moverNotaParaPasta` passam a gravar **`atualizadaEm = agora`**
+    (é uma EDIÇÃO — o LWW precisa da data); o rodapé "última edição" acompanha a renomeação.
+  - `sync/sync-cliente.js`: novo bloco **`SYNC - NOTAS: METADADOS AO VIVO`** — `syncLigarNotas`
+    (embrulha `renomearNota`/`moverNotaParaPasta`/`duplicarNota`/`excluirNota`; `syncEnfileirarExcluirNota`
+    manda o soft delete) ligado na INSTÂNCIA via `ligarNotas()`; nota `somenteNuvem` baixa o texto
+    antes de subir o metadado (não apaga — P119).
+  - `syncLigarMapas`: passou a embrulhar também `renomearMapa`/`moverMapaParaPasta` (que usam o
+    `salvarGrafo` interno), além dos que já tinha.
+- **Como auditar**: `node tests/sync_snapshot.cjs` (passo 4b: renomear a nota no 1º aparelho chega ao
+  2º) · `node tests/sync_completo.cjs` (passo 6: renomear o mapa chega ao 2º) · `node tests/multi_notas.cjs`
+  · `node tests/notes_chip_menu.cjs` · `node tests/mapa_gestao.cjs`.
+

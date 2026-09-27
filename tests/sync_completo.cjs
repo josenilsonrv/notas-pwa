@@ -223,6 +223,14 @@ const semearAparelho = page => page.evaluate(() => {
       { timeout: 15000 }
     );
 
+    // ---------- 6) RENOMEAR o MAPA no 1º aparelho chega ao 2º (nome espelhado) ----------
+    await page.evaluate(mapaId => window.MapaMentalStore.renomearMapa(mapaId, 'Projeto Renomeado'), idMapa);
+    await page2.waitForFunction(
+      () => JSON.parse(localStorage.getItem('notas-pwa-maps') || '[]').some(m => m.nome === 'Projeto Renomeado'),
+      null,
+      { timeout: 15000 }
+    );
+
     assert.deepEqual(erros, [], 'sem erro de página no 1º aparelho');
     assert.deepEqual(erros2, [], 'sem erro de página no 2º aparelho');
     await ctx1.close();
