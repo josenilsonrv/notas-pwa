@@ -166,6 +166,14 @@ const semearAparelho = page => page.evaluate(() => {
     assert.ok(local.modelos.includes('Meu modelo'), 'o modelo de nota chegou');
     assert.equal(local.historico, null, 'o histórico (Ctrl+Z) NÃO veio: é por aparelho');
 
+    // ---------- 3) PASTA AO VIVO: criar DEPOIS do login chega ao 2º aparelho (sem reload) ----------
+    await page.evaluate(() => window.MapaMentalStore.criarPasta('Ao vivo'));
+    await page2.waitForFunction(
+      () => JSON.parse(localStorage.getItem('notas-pwa-mapa-pastas') || '[]').some(p => p.nome === 'Ao vivo'),
+      null,
+      { timeout: 15000 }
+    );
+
     assert.deepEqual(erros, [], 'sem erro de página no 1º aparelho');
     assert.deepEqual(erros2, [], 'sem erro de página no 2º aparelho');
     await ctx1.close();

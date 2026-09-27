@@ -354,6 +354,7 @@ function installConta(App) {
             paragrafo('Conectado. Suas notas, mapas e ajustes ficam na sua conta.', 'conta-ajuda'),
             paragrafo(estado.email, 'conta-email'),
             paragrafo(this.contaTextoDoSync(), 'conta-sync'),
+            botao('Exportar backup', 'Baixar uma cópia das notas deste aparelho', () => this.contaExportarBackup(), 'conta-acao-secundaria'),
             botao('Sair da conta', 'Sair da conta', async () => {
                 mostrarErro('');
                 try {
@@ -422,6 +423,7 @@ function installConta(App) {
             divisor,
             google,
             paragrafo('Ao entrar pela primeira vez, o conteúdo deste aparelho é enviado para a sua conta.', 'conta-aviso'),
+            botao('Exportar backup', 'Baixar uma cópia das notas deste aparelho', () => this.contaExportarBackup(), 'conta-acao-secundaria'),
             erro
         );
         this.contaGoogleMontar(dialog, mostrarErro);
@@ -457,6 +459,30 @@ function installConta(App) {
         const dialog = this.contaDialogo;
         if (!dialog || !dialog.open) return;
         this.contaMontarDialogo(dialog);
+    };
+
+    /** Exporta TUDO o que o app guarda no aparelho (notas, mapas, ajustes, fila, rascunhos)
+     *  para um arquivo `.json` — backup manual, funciona logado ou não. */
+    p.contaExportarBackup = function () {
+        const chaves = {};
+        const prefixos = ['notas-pwa-', 'notes-draft:'];
+        try {
+            for (let indice = 0; indice < localStorage.length; indice++) {
+                const chave = localStorage.key(indice);
+                if (!chave || !prefixos.some(prefixo => chave.indexOf(prefixo) === 0)) continue;
+                chaves[chave] = localStorage.getItem(chave);
+            }
+        } catch (_) { /* armazenamento indisponível */ }
+        const conteudo = { exportadoEm: new Date().toISOString(), origem: 'notas-pwa', chaves };
+        const blob = new Blob([JSON.stringify(conteudo, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'notas-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
 
     /** Texto do estado de sincronização (a seção 5 liga os estados reais). */

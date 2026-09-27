@@ -1245,6 +1245,50 @@ function installSync(App) {
     };
     // 🔄 [FIM: SYNC - MIGRAÇÃO DOS ANEXOS ANTIGOS (1º login)]
 
+    // 🔄 [INÍCIO: SYNC - PASTAS (criar/renomear/excluir entram na fila)]
+    /** Notas já têm o gancho via `notasBackend`; as PASTAS (mapa-store) ficavam órfãs:
+     *  criadas/renomeadas/excluídas só subiam no 1º login. Aqui elas viram `op` na fila. */
+    p.syncEnfileirarPasta = function (pasta) {
+        if (!pasta || !pasta.id) return false;
+        return this.syncEnfileirar('pastas', 'upsert', String(pasta.id), { nome: pasta.nome || '', item: pasta });
+    };
+
+    p.syncEnfileirarExcluirPasta = function (id) {
+        return this.syncEnfileirar('pastas', 'delete', String(id), {});
+    };
+
+    p.syncLigarPastas = function () {
+        if (this.syncPastasLigado) return;
+        this.syncPastasLigado = true;
+        const app = this;
+        const store = (typeof MapaMentalStore !== 'undefined') ? MapaMentalStore : null;
+        if (!store) return;
+        const embrulhar = (nome, aoMudar) => {
+            const original = store[nome];
+            if (typeof original !== 'function') return;
+            store[nome] = function (...args) {
+                const resultado = original.apply(store, args);
+                try {
+                    if (app.syncAtivo() && !app.syncAplicando) aoMudar(app, args, resultado);
+                } catch (_) { /* best-effort: a gravação local já aconteceu */ }
+                return resultado;
+            };
+        };
+        embrulhar('criarPasta', (aplicacao, _args, resultado) => {
+            if (resultado && resultado.id) aplicacao.syncEnfileirarPasta(resultado);
+        });
+        embrulhar('renomearPasta', (aplicacao, args) => {
+            const id = String(args[0] || '');
+            const pastas = aplicacao.syncLer('notas-pwa-mapa-pastas', []);
+            const pasta = (Array.isArray(pastas) ? pastas : []).find(p => String(p.id) === id);
+            if (pasta) aplicacao.syncEnfileirarPasta(pasta);
+        });
+        embrulhar('excluirPasta', (aplicacao, args) => {
+            aplicacao.syncEnfileirarExcluirPasta(args[0]);
+        });
+    };
+    // 🔄 [FIM: SYNC - PASTAS (criar/renomear/excluir entram na fila)]
+
     /**
      * Igual ao `conta.js` (P96/P98): `installSync` roda como função simples dentro de
      * `new NotesPWA()`, então `this` NÃO é a instância. Ligar o tempo real no PROTÓTIPO
@@ -1259,6 +1303,16 @@ function installSync(App) {
     };
     if (window.notesApp) ligarTempoReal();
     else setTimeout(ligarTempoReal, 0);
+
+    /** Mesma deferência: liga o gancho das PASTAS na INSTÂNCIA (não no protótipo). */
+    const ligarPastas = () => {
+        const aplicacao = window.notesApp;
+        if (!aplicacao || aplicacao.__syncPastasIniciado) return;
+        aplicacao.__syncPastasIniciado = true;
+        aplicacao.syncLigarPastas();
+    };
+    if (window.notesApp) ligarPastas();
+    else setTimeout(ligarPastas, 0);
     // 🔄 [FIM: SYNC - TEMPO REAL (WebSocket)]
 }
 // 🔄 [FIM: SYNC - CLIENTE (FILA + SNAPSHOT/PUSH)]
