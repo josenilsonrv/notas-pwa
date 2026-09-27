@@ -1819,3 +1819,32 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
 
 
 
+
+### P120 — O "refresh" do sync deslocava o cursor/rolagem da nota para o TOPO (e a viewport do mapa podia pular)
+- **Sintoma**: em um dado momento (não sempre) a tela de Notas dava um "refresh" e o cursor/rolagem
+  **pulava para o topo** da nota. Nos Mapas, algo parecido: a view podia pular para o pan/zoom de
+  outro aparelho.
+- **Causa (notas)**: ao aplicar algo da nuvem, `syncRefazerEditor` **re-renderiza** o editor
+  (`openNotesModal` reescreve o `innerHTML`) mesmo quando o TEXTO da nota **não mudou** (eco da
+  própria gravação) — daí o "refresh". E `capturarCursorNota()` devolvia **`null` quando NÃO havia
+  seleção** no editor (o usuário clicou fora da linha / a seleção saiu): sem captura, a rolagem não
+  era reposta e o `innerHTML` zerava o `scrollTop` → a tela ia para o topo.
+- **Causa (mapas)**: `syncAplicarEntidades` redesenhava a área do mapa a cada aplicação (mesmo sem
+  nada do mapa ter mudado) e `syncAplicarMapas` gravava o grafo da nuvem **com a viewport do outro
+  aparelho** — o "scroll" do mapa é por APARELHO, não deve vir da nuvem.
+- **Correção** (`sync/sync-cliente.js`):
+  - `capturarCursorNota` **SEMPRE** captura a rolagem (mesmo sem caret) e o caret quando houver;
+    `restaurarCursorNota` repõe o caret (se houver) e a rolagem **SEMPRE, por último**;
+  - `syncAplicarNotas` calcula `syncNotaAtualMudou` (TEXTO antes × depois) e `syncRefazerEditor`
+    **NÃO re-renderiza quando o texto não mudou** — só limpa `syncEstale` (fim do "refresh");
+  - `syncAplicarEntidades` **zera** os marcadores `syncNotaAtualMudou`/`syncPastasMudou`/
+    `syncIndiceMapasMudou`/`syncMapaAtualMudou` e **só redesenha o mapa quando algo mudou**;
+  - `syncAplicarMapas` **preserva a VIEWPORT do aparelho** ao aplicar um grafo da nuvem (o mapa
+    "não pula" para a view do outro aparelho) — os nós novos continuam sendo aplicados.
+- **Decisão do dono (mantida)**: um "apagar tudo" de verdade continua valendo (o conteúdo MUDA); a
+  blindagem só evita re-render/refresh quando **nada** mudou.
+- **Como auditar**: `node tests/sync_cursor_refresh.cjs` (1: com a nota ROLADA e **sem caret**,
+  aplicar versão nova mantém a rolagem; 2: eco da MESMA versão NÃO re-renderiza; 3: a viewport do
+  mapa é preservada, mas os nós novos são aplicados) · `node tests/sync_snapshot.cjs` ·
+  `node tests/sync_completo.cjs`.
+

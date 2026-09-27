@@ -20,6 +20,9 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
+// v90: o "refresh" do sync não desloca mais o cursor/rolagem da nota (a rolagem passou a ser
+// preservada mesmo SEM caret) nem a VIEWPORT do mapa (por aparelho); e o editor/mapa só
+// re-renderizam quando o conteúdo REALMENTE mudou. Mudou `sync/sync-cliente.js`.
 // v89: "escrevo e sincroniza apaga tudo" — conteúdo AUSENTE no aparelho (nota `somenteNuvem` da
 // cota e mapa sem grafo local) não sobe mais VAZIO; e o MAPA ganhou a data de EDIÇÃO no payload
 // (o LWW rejeitava toda atualização) + sync AO VIVO do grafo (`salvarGrafo`/`criarMapa`/etc.).
@@ -78,7 +81,7 @@
 // `conta.js` e `styles.css` mudaram, então o cache precisa virar de versão.
 // v73: o `index.html` é cacheado COM os cabeçalhos; o fix do COOP (`same-origin-allow-popups`,
 // P108) só chega ao dispositivo com um cache NOVO — o antigo serviria o cabeçalho velho.
-const CACHE_NAME = 'notas-pwa-v89';
+const CACHE_NAME = 'notas-pwa-v90';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +

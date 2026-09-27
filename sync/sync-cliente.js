@@ -291,6 +291,12 @@ function installSync(App) {
     p.syncAplicarEntidades = function (entidades, delta) {
         const anterior = this.syncAplicando;
         this.syncAplicando = true;
+        // Zera os marcadores de "mudou": cada applier liga o seu. É o que decide se o editor de
+        // notas e a área do mapa precisam ser RE-RENDERIZADOS (a fonte do "refresh" — P120).
+        this.syncNotaAtualMudou = false;
+        this.syncPastasMudou = false;
+        this.syncIndiceMapasMudou = false;
+        this.syncMapaAtualMudou = false;
         // Cada entidade é aplicada de forma INDEPENDENTE: um applier que falhe (ex.: o editor
         // no meio do render) NUNCA impede as outras entidades de chegarem.
         const passo = (nome, acao) => {
@@ -328,7 +334,11 @@ function installSync(App) {
         // real — sem isto, a pasta criada no outro aparelho só aparecia depois de um F5.
         if (typeof this.renderPastas === 'function') this.renderPastas();
         const areaMapa = document.getElementById('mapaArea');
-        if (typeof this.renderArea === 'function' && areaMapa && !areaMapa.hidden) {
+        // Só redesenha o mapa quando ALGO da área mudou (pasta/mapa/grafo): sem isto, um eco de
+        // gravação qualquer piscava a tela do mapa sem necessidade — o análogo do "refresh" das
+        // notas (P120). A viewport também é preservada em `syncAplicarMapas`.
+        const mapaAreaMudou = Boolean(this.syncPastasMudou || this.syncIndiceMapasMudou || this.syncMapaAtualMudou);
+        if (typeof this.renderArea === 'function' && areaMapa && !areaMapa.hidden && mapaAreaMudou) {
             // A edição inline do título de um nó vive SÓ no DOM (só é confirmada no Enter/Esc/blur):
             // o `renderArea` reconstrói o canvas do zero e apagaria o que o usuário está digitando.
             // Captura nó + texto + caret ANTES e reabre a edição no MESMO ponto DEPOIS (nada se perde).
@@ -343,6 +353,10 @@ function installSync(App) {
         // em memória ainda incompleta; gravar aqui zeraria o texto da nota — achado do teste.)
         if (!registros || !registros.length) return;
         const lista = (this.projectsData || []).slice();
+        const idAtual = this.currentNotesProjectId == null ? null : String(this.currentNotesProjectId);
+        // Marca se o TEXTO da nota ABERTA realmente mudou: é o que decide se o editor precisa
+        // ser re-renderizado (sem mudança, o re-render é o "refresh" que desloca o cursor — P120).
+        let atualMudou = false;
         for (const registro of registros) {
             const indice = lista.findIndex(nota => String(nota.id) === String(registro.id));
             if (registro.deleted_at) {
@@ -351,6 +365,7 @@ function installSync(App) {
                 continue;
             }
             const nota = notaLocal(registro);
+            const ehAtual = idAtual !== null && String(registro.id) === idAtual;
             if (indice >= 0) {
                 // Preserva o texto local se a nuvem veio sem conteúdo (nota somente-metadados)
                 // E preserva a data de edição MAIS RECENTE: aplicar uma versão antiga (ex.: a
@@ -367,11 +382,14 @@ function installSync(App) {
                 if (dataDe(nota.atualizadaEm) < dataDe(anterior.atualizadaEm)) {
                     mesclada.atualizadaEm = anterior.atualizadaEm;
                 }
+                if (ehAtual && String(mesclada.notas || '') !== String(anterior.notas || '')) atualMudou = true;
                 lista[indice] = mesclada;
             } else {
+                if (ehAtual) atualMudou = true;
                 lista.push(nota);
             }
         }
+        this.syncNotaAtualMudou = atualMudou;
         if (!lista.length) lista.push({ id: 'local', nome: 'Minhas notas', notas: '', pastaId: null });
         this.gravarNotasLocaisComCota(lista);
         if (!lista.some(nota => String(nota.id) === String(this.currentNotesProjectId))) {
@@ -389,15 +407,23 @@ function installSync(App) {
     function capturarCursorNota() {
         const editor = document.getElementById('notesEditor');
         if (!editor) return null;
+        const container = document.getElementById('notesEditorContainer');
+        // A ROLAGEM é capturada SEMPRE (mesmo SEM caret): o re-render reescreve o `innerHTML` e
+        // o `scrollTop` volta a 0 — era isso que dava a sensação de "refresh" com a tela pulando
+        // para o TOPO da nota (P120).
+        const captura = {
+            indice: -1, noteId: null, offset: 0, temCaret: false,
+            scroll: container ? container.scrollTop : 0
+        };
         const selection = window.getSelection();
-        if (!selection || !selection.rangeCount || !editor.contains(selection.anchorNode)) return null;
+        if (!selection || !selection.rangeCount || !editor.contains(selection.anchorNode)) return captura;
         const range = selection.getRangeAt(0);
         const linha = (range.startContainer.nodeType === 1
             ? range.startContainer
             : range.startContainer.parentElement)?.closest?.('.notes-line');
-        if (!linha) return null;
+        if (!linha) return captura;
         const box = linha.querySelector('.notes-line-text');
-        if (!box) return null;
+        if (!box) return captura;
         let offset = 0;
         try {
             const r = document.createRange();
@@ -406,13 +432,11 @@ function installSync(App) {
             offset = r.toString().length;
         } catch (_) { offset = 0; }
         const linhas = [...editor.children].filter(el => el.classList.contains('notes-line'));
-        const container = document.getElementById('notesEditorContainer');
-        return {
-            indice: linhas.indexOf(linha),
-            noteId: linha.dataset.noteId || null,
-            offset,
-            scroll: container ? container.scrollTop : 0
-        };
+        captura.indice = linhas.indexOf(linha);
+        captura.noteId = linha.dataset.noteId || null;
+        captura.offset = offset;
+        captura.temCaret = true;
+        return captura;
     }
 
     /** Repõe o caret (e a rolagem) capturados — chamado DEPOIS do re-render do editor. */
@@ -420,29 +444,33 @@ function installSync(App) {
         if (!captura) return;
         const editor = document.getElementById('notesEditor');
         if (!editor) return;
-        const linhas = [...editor.children].filter(el => el.classList.contains('notes-line'));
-        if (!linhas.length) return;
-        const linha = (captura.noteId && linhas.find(el => el.dataset.noteId === captura.noteId))
-            || linhas[Math.min(Math.max(captura.indice, 0), linhas.length - 1)];
-        const box = linha && linha.querySelector('.notes-line-text');
-        if (!box) return;
-        // Percorre os nós de TEXTO somando os comprimentos até chegar ao offset salvo.
-        const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
-        let node = walker.nextNode();
-        let restante = captura.offset;
-        while (node && restante > node.length) { restante -= node.length; node = walker.nextNode(); }
-        const range = document.createRange();
-        if (node) range.setStart(node, Math.min(restante, node.length));
-        else range.setStart(box, 0);
-        range.collapse(true);
-        editor.focus({ preventScroll: true });
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
+        if (captura.temCaret) {
+            const linhas = [...editor.children].filter(el => el.classList.contains('notes-line'));
+            const linha = (captura.noteId && linhas.find(el => el.dataset.noteId === captura.noteId))
+                || linhas[Math.min(Math.max(captura.indice, 0), Math.max(linhas.length - 1, 0))];
+            const box = linha && linha.querySelector('.notes-line-text');
+            if (box) {
+                // Percorre os nós de TEXTO somando os comprimentos até chegar ao offset salvo.
+                const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+                let node = walker.nextNode();
+                let restante = captura.offset;
+                while (node && restante > node.length) { restante -= node.length; node = walker.nextNode(); }
+                const range = document.createRange();
+                if (node) range.setStart(node, Math.min(restante, node.length));
+                else range.setStart(box, 0);
+                range.collapse(true);
+                editor.focus({ preventScroll: true });
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                if (typeof this.rememberNotesSelection === 'function') this.rememberNotesSelection();
+                if (typeof this.updateNotesToolbarState === 'function') this.updateNotesToolbarState();
+            }
+        }
+        // A ROLAGEM é reposta SEMPRE, por ÚLTIMO (o `focus`/`placeNotesCursorAtEnd` podem ter
+        // rolado a tela): sem isto, a nota "pulava" para o topo.
         const container = document.getElementById('notesEditorContainer');
         if (container) container.scrollTop = captura.scroll;
-        if (typeof this.rememberNotesSelection === 'function') this.rememberNotesSelection();
-        if (typeof this.updateNotesToolbarState === 'function') this.updateNotesToolbarState();
     };
     // 🔄 [FIM: SYNC - PRESERVAÇÃO DE CURSOR/ROLAGEM (editor de notas)]
 
@@ -463,6 +491,13 @@ function installSync(App) {
         if (!id) return Promise.resolve();
         const tocada = (registros || []).some(registro => String(registro.id) === String(id) && !registro.deleted_at);
         if (!tocada) return Promise.resolve();
+        // SEM NOVIDADE no TEXTO desta nota (eco da própria gravação, ou snapshot sem mudança):
+        // re-renderizar aqui era o "refresh" que pisca a tela e desloca o cursor para o topo.
+        // Só tira o editor do estado "velho" (libera os próximos autosaves) e sai — P120.
+        if (!this.syncNotaAtualMudou) {
+            this.syncEstale = false;
+            return Promise.resolve();
+        }
         // Neutraliza a sessão (o "fechar" da reabertura não pode regravar o documento velho) e
         // reabre a nota pelo CAMINHO DO APP: render, sessão e chips ficam consistentes.
         if (this.notesSession) {
@@ -475,7 +510,6 @@ function installSync(App) {
         const captura = capturarCursorNota();
         return Promise.resolve(this.openNotesModal(id)).then(() => {
             this.syncEstale = false;
-            if (!captura) return;
             setTimeout(() => {
                 // Entre a captura e a reposição o usuário pode ter FECHADO o modal ou trocado de
                 // nota: repor o caret aí seria pior que não repor.
@@ -502,17 +536,22 @@ function installSync(App) {
     p.syncAplicarPastas = function (registros) {
         const atual = this.syncLer('notas-pwa-mapa-pastas', []);
         const lista = Array.isArray(atual) ? atual.slice() : [];
+        let mudou = false;
         for (const registro of registros) {
             const indice = lista.findIndex(pasta => String(pasta.id) === String(registro.id));
             if (registro.deleted_at) {
-                if (indice >= 0) lista.splice(indice, 1);
+                if (indice >= 0) { lista.splice(indice, 1); mudou = true; }
                 continue;
             }
             const pasta = Object.assign({}, (registro.dados || {}).item || {}, { id: String(registro.id) });
-            if (indice >= 0) lista[indice] = pasta;
-            else lista.push(pasta);
+            if (indice >= 0) {
+                if (JSON.stringify(lista[indice]) !== JSON.stringify(pasta)) mudou = true;
+                lista[indice] = pasta;
+            } else { lista.push(pasta); mudou = true; }
         }
         try { localStorage.setItem('notas-pwa-mapa-pastas', JSON.stringify(lista)); } catch (_) { /* cota */ }
+        // Decide se a área do MAPA (chips de pasta/mapa) precisa ser redesenhada (evita o "refresh").
+        this.syncPastasMudou = mudou;
     };
 
     /** Modelos: `tipo` decide a chave local (`notas-pwa-templates` ou `...-mapa-templates`). */
@@ -540,26 +579,49 @@ function installSync(App) {
     p.syncAplicarMapas = function (registros) {
         const atual = this.syncLer('notas-pwa-maps', []);
         const lista = Array.isArray(atual) ? atual.slice() : [];
+        const idAberto = this.mapaAbertaId == null ? null : String(this.mapaAbertaId);
+        let indiceMudou = false;
+        let grafoAbertoMudou = false;
         for (const registro of registros) {
             const dados = registro.dados || {};
             const indice = lista.findIndex(item => String(item.id) === String(registro.id));
+            const chaveGrafo = 'notas-pwa-mapa-' + registro.id;
+            const ehAberto = idAberto !== null && String(registro.id) === idAberto;
             if (registro.deleted_at) {
-                if (indice >= 0) lista.splice(indice, 1);
-                try { localStorage.removeItem('notas-pwa-mapa-' + registro.id); } catch (_) { /* ok */ }
+                if (indice >= 0) { lista.splice(indice, 1); indiceMudou = true; }
+                try { localStorage.removeItem(chaveGrafo); } catch (_) { /* ok */ }
+                if (ehAberto) grafoAbertoMudou = true;
                 continue;
             }
             const item = Object.assign({}, dados.item || {}, {
                 id: String(registro.id),
                 nome: dados.nome || (dados.item || {}).nome || 'Mapa'
             });
-            if (indice >= 0) lista[indice] = item;
-            else lista.push(item);
+            if (indice >= 0) {
+                if (JSON.stringify(lista[indice]) !== JSON.stringify(item)) indiceMudou = true;
+                lista[indice] = item;
+            } else { lista.push(item); indiceMudou = true; }
             if (dados.grafo) {
-                try { localStorage.setItem('notas-pwa-mapa-' + registro.id, JSON.stringify(dados.grafo)); }
+                let grafo = dados.grafo;
+                try {
+                    const local = JSON.parse(localStorage.getItem(chaveGrafo) || 'null');
+                    if (ehAberto) {
+                        const antes = local && Array.isArray(local.nos) ? JSON.stringify(local.nos) : '';
+                        const depois = Array.isArray(grafo.nos) ? JSON.stringify(grafo.nos) : '';
+                        if (antes !== depois) grafoAbertoMudou = true;
+                    }
+                    // A VIEWPORT é o "scroll" do mapa — por APARELHO. Preserva a do aparelho para a
+                    // tela NÃO pular para o pan/zoom do outro aparelho (o análogo do caret no topo).
+                    if (local && local.viewport) grafo = Object.assign({}, grafo, { viewport: local.viewport });
+                } catch (_) { /* sem local: usa a da nuvem */ }
+                try { localStorage.setItem(chaveGrafo, JSON.stringify(grafo)); }
                 catch (_) { /* cota: o grafo volta no próximo snapshot */ }
             }
         }
         try { localStorage.setItem('notas-pwa-maps', JSON.stringify(lista)); } catch (_) { /* cota */ }
+        // Decide se a área do MAPA precisa ser redesenhada (o "refresh" só quando algo mudou).
+        this.syncIndiceMapasMudou = indiceMudou;
+        this.syncMapaAtualMudou = grafoAbertoMudou;
     };
 
     // 🔄 [INÍCIO: SYNC - PRESERVAÇÃO DA EDIÇÃO INLINE DO NÓ (mapa)]
