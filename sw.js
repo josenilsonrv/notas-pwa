@@ -20,6 +20,9 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
+// v87: renomear PASTA agora leva a data de edição (o LWW rejeitava a renomeação por comparar
+// "0 > 0") e o merge de NOTA preserva a data mais recente (a nota vazia do próprio aparelho
+// não "rebaixa" a data da edição). Mudou `sync/sync-cliente.js`.
 // v86: a nota criada ao ABRIR UMA PASTA VAZIA (ou pelo botão +) agora entra na fila na hora
 // (antes só subia ao digitar), eliminando a duplicação de nota entre aparelhos. Mudou
 // `sync/sync-cliente.js`.
@@ -69,7 +72,7 @@
 // `conta.js` e `styles.css` mudaram, então o cache precisa virar de versão.
 // v73: o `index.html` é cacheado COM os cabeçalhos; o fix do COOP (`same-origin-allow-popups`,
 // P108) só chega ao dispositivo com um cache NOVO — o antigo serviria o cabeçalho velho.
-const CACHE_NAME = 'notas-pwa-v86';
+const CACHE_NAME = 'notas-pwa-v87';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +

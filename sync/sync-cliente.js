@@ -345,10 +345,22 @@ function installSync(App) {
             }
             const nota = notaLocal(registro);
             if (indice >= 0) {
-                // Preserva o texto local se a nuvem veio sem conteúdo (nota somente-metadados).
-                lista[indice] = Object.assign({}, lista[indice], nota, {
-                    notas: nota.notas || lista[indice].notas || ''
+                // Preserva o texto local se a nuvem veio sem conteúdo (nota somente-metadados)
+                // E preserva a data de edição MAIS RECENTE: aplicar uma versão antiga (ex.: a
+                // nota vazia que o próprio aparelho acabou de enviar) não pode "rebaixar" a data.
+                const anterior = lista[indice];
+                const dataDe = valor => {
+                    if (!valor) return 0;
+                    const d = new Date(String(valor).replace('Z', '+00:00'));
+                    return isNaN(d) ? 0 : d.getTime();
+                };
+                const mesclada = Object.assign({}, anterior, nota, {
+                    notas: nota.notas || anterior.notas || ''
                 });
+                if (dataDe(nota.atualizadaEm) < dataDe(anterior.atualizadaEm)) {
+                    mesclada.atualizadaEm = anterior.atualizadaEm;
+                }
+                lista[indice] = mesclada;
             } else {
                 lista.push(nota);
             }
@@ -1280,7 +1292,13 @@ function installSync(App) {
      *  criadas/renomeadas/excluídas só subiam no 1º login. Aqui elas viram `op` na fila. */
     p.syncEnfileirarPasta = function (pasta) {
         if (!pasta || !pasta.id) return false;
-        return this.syncEnfileirar('pastas', 'upsert', String(pasta.id), { nome: pasta.nome || '', item: pasta });
+        return this.syncEnfileirar('pastas', 'upsert', String(pasta.id), {
+            nome: pasta.nome || '',
+            item: pasta,
+            // A data de EDIÇÃO é o que decide o vencedor do LWW: sem ela, criar/renomear pasta
+            // era comparado como "0 > 0" e a renomeação era REJEITADA (o nome antigo prevalecia).
+            atualizada_em: new Date().toISOString()
+        });
     };
 
     p.syncEnfileirarExcluirPasta = function (id) {
