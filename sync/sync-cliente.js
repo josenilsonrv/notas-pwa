@@ -324,6 +324,9 @@ function installSync(App) {
             this.syncAplicando = anterior;
         }
         if (typeof this.renderNotesNav === 'function') this.renderNotesNav();
+        // A tela de PASTAS (cartões) também precisa refletir o que chegou da nuvem em tempo
+        // real — sem isto, a pasta criada no outro aparelho só aparecia depois de um F5.
+        if (typeof this.renderPastas === 'function') this.renderPastas();
         const areaMapa = document.getElementById('mapaArea');
         if (typeof this.renderArea === 'function' && areaMapa && !areaMapa.hidden) this.renderArea();
     };
