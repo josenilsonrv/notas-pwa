@@ -174,6 +174,14 @@ const semearAparelho = page => page.evaluate(() => {
       { timeout: 15000 }
     );
 
+    // ---------- 4) MODELO AO VIVO: criar template de mapa DEPOIS do login chega ao 2º aparelho ----------
+    await page.evaluate(() => window.MapaMentalStore.salvarTemplate('Modelo Vivo', { nos: [], conexoes: [] }));
+    await page2.waitForFunction(
+      () => JSON.parse(localStorage.getItem('notas-pwa-mapa-templates') || '[]').some(t => t.nome === 'Modelo Vivo'),
+      null,
+      { timeout: 15000 }
+    );
+
     assert.deepEqual(erros, [], 'sem erro de página no 1º aparelho');
     assert.deepEqual(erros2, [], 'sem erro de página no 2º aparelho');
     await ctx1.close();

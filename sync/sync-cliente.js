@@ -1337,6 +1337,67 @@ function installSync(App) {
     };
     // 🔄 [FIM: SYNC - PASTAS (criar/renomear/excluir entram na fila)]
 
+    // 🔄 [INÍCIO: SYNC - MODELOS (templates entram na fila)]
+    /** Modelos (templates de nota e de mapa) só subiam no 1º login. Aqui eles viram `op` ao vivo. */
+    p.syncEnfileirarModelo = function (tipo, item) {
+        if (!item || !item.id) return false;
+        return this.syncEnfileirar('modelos', 'upsert', String(item.id), {
+            tipo,
+            nome: item.name || item.nome || '',
+            item,
+            atualizada_em: new Date().toISOString()  // mesma regra LWW das pastas
+        });
+    };
+
+    p.syncEnfileirarExcluirModelo = function (id) {
+        return this.syncEnfileirar('modelos', 'delete', String(id), {});
+    };
+
+    p.syncLigarModelos = function () {
+        if (this.syncModelosLigado) return;
+        this.syncModelosLigado = true;
+        const app = this;
+
+        // Templates de MAPA (`MapaMentalStore.salvarTemplate`/`excluirTemplate`).
+        const store = (typeof MapaMentalStore !== 'undefined') ? MapaMentalStore : null;
+        if (store) {
+            const embrulhar = (nome, aoMudar) => {
+                const original = store[nome];
+                if (typeof original !== 'function') return;
+                store[nome] = function (...args) {
+                    const resultado = original.apply(store, args);
+                    try {
+                        if (app.syncAtivo() && !app.syncAplicando) aoMudar(app, args);
+                    } catch (_) { /* best-effort: a gravação local já aconteceu */ }
+                    return resultado;
+                };
+            };
+            embrulhar('salvarTemplate', aplicacao => {
+                const modelos = aplicacao.syncLer('notas-pwa-mapa-templates', []);
+                (Array.isArray(modelos) ? modelos : []).forEach(item => aplicacao.syncEnfileirarModelo('mapa', item));
+            });
+            embrulhar('excluirTemplate', (aplicacao, args) => {
+                aplicacao.syncEnfileirarExcluirModelo(args[0]);
+            });
+        }
+
+        // Templates de NOTA (`notesExtraRequest` POST /templates).
+        const originalExtra = p.notesExtraRequest;
+        if (typeof originalExtra === 'function') {
+            p.notesExtraRequest = async function (path, options = {}) {
+                const resultado = await originalExtra.call(this, path, options);
+                try {
+                    const metodo = (options.method || 'GET').toUpperCase();
+                    if (app.syncAtivo() && !app.syncAplicando && path === '/templates' && metodo === 'POST' && resultado && resultado.id) {
+                        app.syncEnfileirarModelo('nota', { id: resultado.id, name: resultado.name, html: resultado.html });
+                    }
+                } catch (_) { /* best-effort */ }
+                return resultado;
+            };
+        }
+    };
+    // 🔄 [FIM: SYNC - MODELOS (templates entram na fila)]
+
     /**
      * Igual ao `conta.js` (P96/P98): `installSync` roda como função simples dentro de
      * `new NotesPWA()`, então `this` NÃO é a instância. Ligar o tempo real no PROTÓTIPO
@@ -1371,6 +1432,16 @@ function installSync(App) {
     };
     if (window.notesApp) ligarCriacaoNota();
     else setTimeout(ligarCriacaoNota, 0);
+
+    /** Mesma deferência: liga o gancho de MODELOS na INSTÂNCIA. */
+    const ligarModelos = () => {
+        const aplicacao = window.notesApp;
+        if (!aplicacao || aplicacao.__syncModelosIniciado) return;
+        aplicacao.__syncModelosIniciado = true;
+        aplicacao.syncLigarModelos();
+    };
+    if (window.notesApp) ligarModelos();
+    else setTimeout(ligarModelos, 0);
     // 🔄 [FIM: SYNC - TEMPO REAL (WebSocket)]
 }
 // 🔄 [FIM: SYNC - CLIENTE (FILA + SNAPSHOT/PUSH)]
