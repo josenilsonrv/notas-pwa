@@ -50,6 +50,10 @@
     /** Prefixos (ordem importa: o mais específico primeiro). */
     const PREFIXOS = [
         {
+            prefixo: 'notas-pwa-sync-recuperacao-', tipo: 'recuperacao', entidade: null,
+            motivo: 'cópia local do texto que PERDEU o LWW no conflito — fica só no aparelho para conferir'
+        },
+        {
             prefixo: 'notas-pwa-mapa-historico-', tipo: 'mapa-historico', entidade: null,
             motivo: 'histórico de desfazer (Ctrl+Z) é por aparelho (decisão do dono)'
         },
@@ -63,7 +67,8 @@
     /** Literais de PREFIXO (montados com `+ id`): não são chave final de configuração. */
     const LITERAIS_IGNORADOS = {
         'notas-pwa-mapa-': 'prefixo de montagem (notas-pwa-mapa-<id>)',
-        'notas-pwa-mapa-historico-': 'prefixo de montagem (notas-pwa-mapa-historico-<id>)'
+        'notas-pwa-mapa-historico-': 'prefixo de montagem (notas-pwa-mapa-historico-<id>)',
+        'notas-pwa-sync-recuperacao-': 'prefixo de montagem (notas-pwa-sync-recuperacao-<id>)'
     };
 
     /** Resolve o destino de uma chave (exata ou por prefixo). `null` = desconhecida. */

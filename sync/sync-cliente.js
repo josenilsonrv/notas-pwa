@@ -328,7 +328,14 @@ function installSync(App) {
         // real — sem isto, a pasta criada no outro aparelho só aparecia depois de um F5.
         if (typeof this.renderPastas === 'function') this.renderPastas();
         const areaMapa = document.getElementById('mapaArea');
-        if (typeof this.renderArea === 'function' && areaMapa && !areaMapa.hidden) this.renderArea();
+        if (typeof this.renderArea === 'function' && areaMapa && !areaMapa.hidden) {
+            // A edição inline do título de um nó vive SÓ no DOM (só é confirmada no Enter/Esc/blur):
+            // o `renderArea` reconstrói o canvas do zero e apagaria o que o usuário está digitando.
+            // Captura nó + texto + caret ANTES e reabre a edição no MESMO ponto DEPOIS (nada se perde).
+            const edicao = this.syncCapturarEdicaoMapa();
+            this.renderArea();
+            if (edicao) this.syncRestaurarEdicaoMapa(edicao);
+        }
     };
 
     p.syncAplicarNotas = function (registros) {
@@ -372,6 +379,73 @@ function installSync(App) {
         }
     };
 
+    // 🔄 [INÍCIO: SYNC - PRESERVAÇÃO DE CURSOR/ROLAGEM (editor de notas)]
+    /**
+     * Captura a posição do caret e a rolagem do editor de notas ABERTO antes de um re-render.
+     * A marca guarda o ÍNDICE da `.notes-line` (+ `noteId`, para reencontrá-la) e o offset em
+     * CARACTERES dentro do `.notes-line-text` — o mapa sobrevive a reescrever o `innerHTML`,
+     * porque é recomposto a partir do conteúdo. Sem seleção no editor, devolve `null`.
+     */
+    function capturarCursorNota() {
+        const editor = document.getElementById('notesEditor');
+        if (!editor) return null;
+        const selection = window.getSelection();
+        if (!selection || !selection.rangeCount || !editor.contains(selection.anchorNode)) return null;
+        const range = selection.getRangeAt(0);
+        const linha = (range.startContainer.nodeType === 1
+            ? range.startContainer
+            : range.startContainer.parentElement)?.closest?.('.notes-line');
+        if (!linha) return null;
+        const box = linha.querySelector('.notes-line-text');
+        if (!box) return null;
+        let offset = 0;
+        try {
+            const r = document.createRange();
+            r.selectNodeContents(box);
+            r.setEnd(range.startContainer, range.startOffset);
+            offset = r.toString().length;
+        } catch (_) { offset = 0; }
+        const linhas = [...editor.children].filter(el => el.classList.contains('notes-line'));
+        const container = document.getElementById('notesEditorContainer');
+        return {
+            indice: linhas.indexOf(linha),
+            noteId: linha.dataset.noteId || null,
+            offset,
+            scroll: container ? container.scrollTop : 0
+        };
+    }
+
+    /** Repõe o caret (e a rolagem) capturados — chamado DEPOIS do re-render do editor. */
+    p.restaurarCursorNota = function (captura) {
+        if (!captura) return;
+        const editor = document.getElementById('notesEditor');
+        if (!editor) return;
+        const linhas = [...editor.children].filter(el => el.classList.contains('notes-line'));
+        if (!linhas.length) return;
+        const linha = (captura.noteId && linhas.find(el => el.dataset.noteId === captura.noteId))
+            || linhas[Math.min(Math.max(captura.indice, 0), linhas.length - 1)];
+        const box = linha && linha.querySelector('.notes-line-text');
+        if (!box) return;
+        // Percorre os nós de TEXTO somando os comprimentos até chegar ao offset salvo.
+        const walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+        let node = walker.nextNode();
+        let restante = captura.offset;
+        while (node && restante > node.length) { restante -= node.length; node = walker.nextNode(); }
+        const range = document.createRange();
+        if (node) range.setStart(node, Math.min(restante, node.length));
+        else range.setStart(box, 0);
+        range.collapse(true);
+        editor.focus({ preventScroll: true });
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        const container = document.getElementById('notesEditorContainer');
+        if (container) container.scrollTop = captura.scroll;
+        if (typeof this.rememberNotesSelection === 'function') this.rememberNotesSelection();
+        if (typeof this.updateNotesToolbarState === 'function') this.updateNotesToolbarState();
+    };
+    // 🔄 [FIM: SYNC - PRESERVAÇÃO DE CURSOR/ROLAGEM (editor de notas)]
+
     /**
      * Depois de aplicar notas, o EDITOR ABERTO precisa refletir o que veio da nuvem — senão o
      * autosave seguinte do motor regravaria o conteúdo velho por cima (achado do
@@ -395,7 +469,14 @@ function installSync(App) {
             this.notesSession.saved = this.getCleanNotesHtml();
             this.notesSession.needsModelMigration = false;
         }
-        return Promise.resolve(this.openNotesModal(id)).then(() => { this.syncEstale = false; });
+        // A reabertura reescreve o `innerHTML` do editor (o caret e a rolagem se perdem): captura a
+        // posição ANTES e repõe DEPOIS. O `setTimeout` de 150 ms vence o `placeNotesCursorAtEnd`
+        // (100 ms, só no desktop) disparado dentro de `openNotesModal` — a última palavra é a nossa.
+        const captura = capturarCursorNota();
+        return Promise.resolve(this.openNotesModal(id)).then(() => {
+            this.syncEstale = false;
+            if (captura) setTimeout(() => this.restaurarCursorNota(captura), 150);
+        });
     };
 
     /** Ajustes: o `v` guarda o TEXTO CRU do aparelho (lossless, sem reinterpretar JSON). */
@@ -472,6 +553,65 @@ function installSync(App) {
         }
         try { localStorage.setItem('notas-pwa-maps', JSON.stringify(lista)); } catch (_) { /* cota */ }
     };
+
+    // 🔄 [INÍCIO: SYNC - PRESERVAÇÃO DA EDIÇÃO INLINE DO NÓ (mapa)]
+    /**
+     * Captura a EDIÇÃO INLINE de um nó do Mapa (id + texto digitado + offset do caret) ANTES de um
+     * re-render. O texto digitado só vive no DOM (é confirmado no Enter/Esc/blur), então o
+     * `renderArea` — que reconstrói o canvas do zero — apagaria o que o usuário está escrevendo.
+     */
+    p.syncCapturarEdicaoMapa = function () {
+        const idNo = this.mapaEditandoId;
+        if (!idNo) return null;
+        const texto = document.querySelector('#mapaNos .mapa-no[data-mapa-no-id="' + idNo + '"] .mapa-no-texto');
+        if (!texto) return null;
+        // Offset em CARACTERES dentro do título (o `contenteditable` é `plaintext-only`).
+        let offset = String(texto.textContent || '').length;
+        const selecao = window.getSelection ? window.getSelection() : null;
+        if (selecao && selecao.rangeCount && texto.contains(selecao.anchorNode)) {
+            const faixa = selecao.getRangeAt(0);
+            try {
+                const r = document.createRange();
+                r.selectNodeContents(texto);
+                r.setEnd(faixa.startContainer, faixa.startOffset);
+                offset = r.toString().length;
+            } catch (_) { /* mantém o fim do texto */ }
+        }
+        return { idNo, titulo: texto.textContent || '', offset };
+    };
+
+    /**
+     * Repõe a edição inline capturada DEPOIS do re-render: salva o texto que o usuário digitou (a
+     * edição dele é a MAIS NOVA — vence por LWW na nuvem, igual ao Enter), reabre a edição no MESMO
+     * nó e devolve o caret à posição original (o `iniciarEdicao` selecionaria tudo).
+     */
+    p.syncRestaurarEdicaoMapa = function (edicao) {
+        if (!edicao) return;
+        const grafo = this.mapaCanvasGrafo;
+        const existe = grafo && (grafo.nos || []).some(no => String(no.id) === String(edicao.idNo));
+        if (!existe) return;
+        if (typeof this.mapaCommitarTituloNo === 'function') this.mapaCommitarTituloNo(edicao.idNo, edicao.titulo);
+        const interacao = window.MapaMentalInteracao;
+        if (!interacao || typeof interacao.iniciarEdicao !== 'function') return;
+        // Assíncrono (como `iniciarEdicaoDepois`): o DOM já precisa existir depois do render.
+        setTimeout(() => {
+            if (interacao.iniciarEdicao.call(this, edicao.idNo) === false) return;
+            const texto = document.querySelector('#mapaNos .mapa-no[data-mapa-no-id="' + edicao.idNo + '"] .mapa-no-texto');
+            const selecao = window.getSelection ? window.getSelection() : null;
+            if (!texto || !selecao) return;
+            const walker = document.createTreeWalker(texto, NodeFilter.SHOW_TEXT);
+            let node = walker.nextNode();
+            let restante = edicao.offset;
+            while (node && restante > node.length) { restante -= node.length; node = walker.nextNode(); }
+            const faixa = document.createRange();
+            if (node) faixa.setStart(node, Math.min(restante, node.length));
+            else faixa.setStart(texto, 0);
+            faixa.collapse(true);
+            selecao.removeAllRanges();
+            selecao.addRange(faixa);
+        }, 0);
+    };
+    // 🔄 [FIM: SYNC - PRESERVAÇÃO DA EDIÇÃO INLINE DO NÓ (mapa)]
 
     /** Aplica UMA versão do servidor (usada quando o conflito resolve para o servidor). */
     p.syncAplicarItem = function (conflito) {
