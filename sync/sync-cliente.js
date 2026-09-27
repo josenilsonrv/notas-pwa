@@ -475,7 +475,15 @@ function installSync(App) {
         const captura = capturarCursorNota();
         return Promise.resolve(this.openNotesModal(id)).then(() => {
             this.syncEstale = false;
-            if (captura) setTimeout(() => this.restaurarCursorNota(captura), 150);
+            if (!captura) return;
+            setTimeout(() => {
+                // Entre a captura e a reposição o usuário pode ter FECHADO o modal ou trocado de
+                // nota: repor o caret aí seria pior que não repor.
+                const backdrop = document.getElementById('notesModalBackdrop');
+                if (!backdrop || !backdrop.classList.contains('active')) return;
+                if (String(this.currentNotesProjectId) !== String(id)) return;
+                this.restaurarCursorNota(captura);
+            }, 150);
         });
     };
 
