@@ -53,56 +53,56 @@
 - **[Linhas 252-291 ~]** `(constructor)` -> `constructor()` (estado do editor, histórico, toolbar; `this.themeManager = new ThemeManager()` → `this.init()`)
 - **[Linhas 294-318 ~]** `// 🔄 [INÍCIO: ESTADO - MIGRAÇÃO/ABERTURA DA ÚLTIMA NOTA]` -> `init()` (migra nota única → lista; aplica área salva; `window.__notasPronto`; liga `verificarAtualizacaoSW()`)
 - **[Linhas 321-343 ~]** `/** Instala o mesmo motor de notas do sistema sobre este protótipo. */` -> `installNotesFeatures()` (+ `installAtualizacaoPWA` + **`installConta(NotesPWA)`** + **`installSync(NotesPWA)`** — conta e sync entram por instalação no protótipo, sem tocar no motor)
-- **[Linhas 1945-2028 ~]** `// 🚀 [INÍCIO: PWA - ATUALIZAÇÃO DO APP (UPDATE NOTIFICATION)]` -> `installAtualizacaoPWA(App)` (`recarregarParaNovaVersao` · `avisarNovaVersao` · `verificarAtualizacaoSW`: `updatefound`/`statechange` + `controllerchange` + mensagem `SW_ATIVADO` + `setInterval` 60 s)
-- **[Linhas 2030-2035 ~]** `// 🚀 [INÍCIO: PWA - BOOT (DOMContentLoaded)]` -> `document.addEventListener('DOMContentLoaded', () => { window.notesApp = new NotesPWA(); });`
+- **[Linhas 1953-2036 ~]** `// 🚀 [INÍCIO: PWA - ATUALIZAÇÃO DO APP (UPDATE NOTIFICATION)]` -> `installAtualizacaoPWA(App)` (`recarregarParaNovaVersao` · `avisarNovaVersao` · `verificarAtualizacaoSW`: `updatefound`/`statechange` + `controllerchange` + mensagem `SW_ATIVADO` + `setInterval` 60 s)
+- **[Linhas 2038-2043 ~]** `// 🚀 [INÍCIO: PWA - BOOT (DOMContentLoaded)]` -> `document.addEventListener('DOMContentLoaded', () => { window.notesApp = new NotesPWA(); });`
 
 ## Implementação: Persistência local (sem backend)
 - **[Linhas 345-471 ~]** `// 🔄 [INÍCIO: ESTADO - PERSISTÊNCIA LOCAL (SEM BACKEND)]` -> `loadContentFromStorage()` · `saveContentToStorage(html)`
 - **[Linhas 371-437 ~]** `// 🔄 [INÍCIO: ESTADO - MÚLTIPLAS NOTAS LOCAIS]` -> `lerNotasLocais()` (migra notas antigas com `pastaId: null`)
-- **[Linhas 395-410 ~]** `/** Seam de persistência das notas.` -> `notasBackend()` (`listar` / `obter` / `salvar`)
+- **[Linhas 395-410 ~]** `* Seam de persistência das notas.` -> `notasBackend()` (`listar` / `obter` / `salvar`)
 - **[Linhas 412-438 ~]** `/** Grava a lista de notas e o id da nota ativa no dispositivo. */` -> `gravarNotasLocais(lista)` · `salvarNotasLocais()` · `marcarNotaAtiva(id)` · `lerNotaAtiva()`
 - **[Linhas 439-470 ~]** `/** Substitui o cliente HTTP do sistema: qualquer gravação fica no dispositivo. */` -> `async apiCall(endpoint, options = {})` · `persistNow()`
 
 ## Implementação: Abrir/editar nota no modal
 - **[Linhas 473-853 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - ABRIR NOTAS]` -> `openNotesModal(id)` (também preenche o rodapé: `notesUltimaEdicao = atualizadaEm/criadaEm` → `updateNotesLastEdit()`)
 - **[Linhas 521-524 ~]** `(sem comentário de ancoragem)` -> `openStageNotesModal(stageId)`
-- **[Linhas 823-840 ~]** `// Placeholders chamados pelo motor antes de serem substituídos pelo install.` -> `closeNotesModal()` · `setupModalListeners()` · `toggleNotesFullscreen()` · `toggleNotesHeaderCollapse()` (**os dois últimos são substituídos pelo `install` de `notes/editor.js`**)
-- **[Linhas 842-864 ~]** `/**` (doc de `placeNotesCursorAtEnd`) -> `placeNotesCursorAtEnd(editor)`
-- **[Linhas 865-897 ~]** `/**` (doc de `focusNotesEditorFromEmptyArea`) -> `focusNotesEditorFromEmptyArea(event)`
-- **[Linhas 898-936 ~]** `/**` (doc de `rolarCaretParaAcima`) -> `rolarCaretParaAcima()` (**ADAPTATIVO**: cresce o `padding-bottom` do editor quando falta rolagem — a linha do cursor nunca fica sob a barra)
-- **[Linhas 937-960 ~]** `/**` (doc de `quebrarLinhaDeEmergencia`) -> `quebrarLinhaDeEmergencia()`
+- **[Linhas 835-852 ~]** `// Ponte com o motor de notas: setupModalListeners e toggleNotesFullscreen são ...` -> `closeNotesModal()` · `setupModalListeners()` · `toggleNotesFullscreen()` · `toggleNotesHeaderCollapse()` (**os dois últimos são substituídos pelo `install` de `notes/editor.js`**)
+- **[Linhas 855-866 ~]** `(sem comentário de ancoragem)` -> `placeNotesCursorAtEnd(editor)`
+- **[Linhas 868-900 ~]** `/**` (doc de `focusNotesEditorFromEmptyArea`) -> `focusNotesEditorFromEmptyArea(event)`
+- **[Linhas 902-943 ~]** `/**` (doc de `rolarCaretParaAcima`) -> `rolarCaretParaAcima()` (**ADAPTATIVO**: cresce o `padding-bottom` do editor quando falta rolagem — a linha do cursor nunca fica sob a barra)
+- **[Linhas 945-972 ~]** `/**` (doc de `quebrarLinhaDeEmergencia`) -> `quebrarLinhaDeEmergencia()`
 ## Implementação: Múltiplas notas (chips + botão "+")
 - **[Linhas 525-833 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - MÚLTIPLAS NOTAS (CHIPS + BOTÃO "+")]` -> `pastaPadraoId` (getter, `[509]`) · `notaPertenceAPasta(nota, pastaId)` · `notasDaPasta(pastaId)` · `contarNotasDaPasta(pastaId)` · `definirPastaAtivaNotas(pastaId)` · `renderNotesNav()` (`[555]` — chips da pasta ativa SÓ no `#notesContextNav`; a área de mapas tem a SUA faixa `#mapaChipsNav`, com os MAPAS, via `renderMapasNav()` em `mapa/mapa.js`) · **`definirPastaAtivaNotas(pastaId)` é o equivalente, nas Notas, de `garantirMapaSelecionado` (mapa/mapa.js)** e é chamada ao ENTRAR na área (por `aplicarArea('notas')`): mantém a nota aberta se ela pertencer à pasta ativa; senão abre a 1ª da pasta (pasta vazia cria "Nova nota")
 - **[Linhas 622-641 ~]** `/**` (doc de `accentDaNota`) -> `accentDaNota(nota)` · `invalidarAccentDaNota(id)`
 - **[Linhas 641-681 ~]** `/** Cria uma nota nova em branco e abre em seguida (o motor salva a anterior). */` -> `criarNota()` (grava `pastaId` da pasta ativa) · `criarNotaLocal(nome = 'Nova nota')` (`pastaId: null`) · **`renomearNota(id)`** (grava o nome E **`atualizadaEm = agora`** — é uma EDIÇÃO: o LWW do sync precisa da data para o nome espelhar no outro aparelho; o gancho `syncLigarNotas` enfileira a op — P121)
-- **[Linhas 676-707 ~]** `/** Exclui a nota, sempre com confirmação; se for a última, cria uma vazia. */` -> `async excluirNota(id)` (o gancho `syncLigarNotas` enfileira o `delete` — P121)
-- **[Linhas 708-826 ~]** `/** Duplica a nota (novo id, mesmo conteúdo/pasta), logo depois do original. */` -> `duplicarNota(id)` (o gancho enfileira a cópia) · `pastasDeNotas()` · **`moverNotaParaPasta(id, pastaId)`** (atualiza `atualizadaEm` + o gancho enfileira — P121) · `criarMenuNota(rotulo)` · `mostrarMenuNota(menu, chip)` · `abrirMenuNota(nota, chip)` (Renomear/Duplicar/Mover para pasta/Excluir) · `abrirMenuMoverNota(nota, chip)` · `fecharMenuNota()` · `setupChipLongPress(chip, nota)`
+- **[Linhas 682-711 ~]** `/** Exclui a nota, sempre com confirmação; se for a última, cria uma vazia. */` -> `async excluirNota(id)` (o gancho `syncLigarNotas` enfileira o `delete` — P121)
+- **[Linhas 713-832 ~]** `/** Duplica a nota (novo id, mesmo conteúdo/pasta), logo depois do original. */` -> `duplicarNota(id)` (o gancho enfileira a cópia) · `pastasDeNotas()` · **`moverNotaParaPasta(id, pastaId)`** (atualiza `atualizadaEm` + o gancho enfileira — P121) · `criarMenuNota(rotulo)` · `mostrarMenuNota(menu, chip)` · `abrirMenuNota(nota, chip)` (Renomear/Duplicar/Mover para pasta/Excluir) · `abrirMenuMoverNota(nota, chip)` · `fecharMenuNota()` · `setupChipLongPress(chip, nota)`
 
 ## Implementação: Seleção, avisos e listeners gerais
-- **[Linhas 966-986 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - SELEÇÃO DE NOTAS]` -> `rememberNotesSelection()` (`[947]`)
-- **[Linhas 980-987 ~]** `(sem comentário de ancoragem)` -> `updateNotesHistoryButtons()`
-- **[Linhas 988-1045 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - AVISOS]` -> `showToast(message, type = 'success')` (`[968]`) · `updateSaveStatus(text, isError = false)`
-- **[Linhas 1048-1112 ~]** `// Comandos da toolbar (undo/redo, headings, listas, cores, etc.)` -> `setupEventListeners()` (keydown/atalhos + blindagem do Enter + **o clique do ⇄ `#notesAlternarAreaBtn`** — P114)
-- **[Linhas 1113-1119 ~]** `(sem comentário de ancoragem)` -> `setupResize()`
+- **[Linhas 974-994 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - SELEÇÃO DE NOTAS]` -> `rememberNotesSelection()` (`[947]`)
+- **[Linhas 988-993 ~]** `(sem comentário de ancoragem)` -> `updateNotesHistoryButtons()`
+- **[Linhas 996-1053 ~]** `// ⚡ [INÍCIO: INTERAÇÃO/JS - AVISOS]` -> `showToast(message, type = 'success')` (`[968]`) · `updateSaveStatus(text, isError = false)`
+- **[Linhas 1056-1119 ~]** `// Comandos da toolbar (undo/redo, headings, listas, cores, etc.)` -> `setupEventListeners()` (keydown/atalhos + blindagem do Enter + **o clique do ⇄ `#notesAlternarAreaBtn`** — P114)
+- **[Linhas 1121-1126 ~]** `(sem comentário de ancoragem)` -> `setupResize()`
 
 ## Implementação: Toolbar PWA (ordem persistida + edição por arraste)
-- **[Linhas 1120-1644 ~]** `// ⚡ [INÍCIO: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]` -> `filhosToolbar()` (`[1091]`) · `chavesToolbar()`
-- **[Linhas 1146-1161 ~]** `(sem comentário de ancoragem)` -> `lerOrdemToolbar()` · `salvarOrdemToolbar(ordem)`
-- **[Linhas 1162-1221 ~]** `/**` (doc de `aplicarOrdemToolbar`) -> `aplicarOrdemToolbar(ordem = null, opcoes = {})` (trava de reentrância)
-- **[Linhas 1211-1225 ~]** `/** (Re)liga o observer da barra (ele fica desligado enquanto aplicamos a ordem). */` -> `agendarOrdemToolbar()`
-- **[Linhas 1236-1341 ~]** `/** Ativa a barra em uma linha com rolagem + botão de edição + ordem salva. */` -> `configurarToolbarPWA()` · `criarBotaoEditarToolbar(toolbar)` · **`ligarBotaoFonte()`** (`#notesFontBtn`) · **`notesLinhaDoCursor()`** · **`notesFonteDaLinha(linha)`** · **`abrirSeletorFonteNotas()`** / **`aplicarFonteNotas(css, temSelecao)`** (usa `NotasFontes`: sem seleção = TODAS as linhas; com seleção = o trecho) · `rotuloBotaoToolbar(el)`
-- **[Linhas 1342-1357 ~]** `/** Move um botão uma posição e persiste a nova ordem. */` -> `moverBotaoToolbar(el, delta)`
-- **[Linhas 1358-1507 ~]** `/** Diálogo "Editar barra de ferramentas": reordena arrastando (ou pelo teclado) e persiste. */` -> `abrirEditorToolbar()`
-- **[Linhas 1508-1514 ~]** `(sem comentário de ancoragem)` -> `restaurarOrdemToolbar()`
+- **[Linhas 1128-1652 ~]** `// ⚡ [INÍCIO: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]` -> `filhosToolbar()` (`[1091]`) · `chavesToolbar()`
+- **[Linhas 1154-1163 ~]** `(sem comentário de ancoragem)` -> `lerOrdemToolbar()` · `salvarOrdemToolbar(ordem)`
+- **[Linhas 1165-1217 ~]** `/**` (doc de `aplicarOrdemToolbar`) -> `aplicarOrdemToolbar(ordem = null, opcoes = {})` (trava de reentrância)
+- **[Linhas 1219-1242 ~]** `/** (Re)liga o observer da barra (ele fica desligado enquanto aplicamos a ordem). */` -> `agendarOrdemToolbar()`
+- **[Linhas 1244-1349 ~]** `/** Ativa a barra em uma linha com rolagem + botão de edição + ordem salva. */` -> `configurarToolbarPWA()` · `criarBotaoEditarToolbar(toolbar)` · **`ligarBotaoFonte()`** (`#notesFontBtn`) · **`notesLinhaDoCursor()`** · **`notesFonteDaLinha(linha)`** · **`abrirSeletorFonteNotas()`** / **`aplicarFonteNotas(css, temSelecao)`** (usa `NotasFontes`: sem seleção = TODAS as linhas; com seleção = o trecho) · `rotuloBotaoToolbar(el)`
+- **[Linhas 1350-1364 ~]** `/** Move um botão uma posição e persiste a nova ordem. */` -> `moverBotaoToolbar(el, delta)`
+- **[Linhas 1366-1515 ~]** `/** Diálogo "Editar barra de ferramentas": reordena arrastando (ou pelo teclado) e persiste. */` -> `abrirEditorToolbar()`
+- **[Linhas 1517-1521 ~]** `(sem comentário de ancoragem)` -> `restaurarOrdemToolbar()`
 
 ## Implementação: Toolbar acoplada ao teclado virtual
-- **[Linhas 1515-1591 ~]** `/** Mantém a barra logo acima do teclado virtual (visualViewport). */` -> `ativarToolbarTeclado()` (inclui a rolagem do caret a cada `input`, coalescida num `requestAnimationFrame`)
-- **[Linhas 1592-1643 ~]** `/**` (doc de `aplicarToolbarTeclado`) -> `aplicarToolbarTeclado(insetForcado)` (reserva `altura da barra + FOLGA_BARRA_TECLADO` no editor)
+- **[Linhas 1523-1588 ~]** `/** Mantém a barra logo acima do teclado virtual (visualViewport). */` -> `ativarToolbarTeclado()` (inclui a rolagem do caret a cada `input`, coalescida num `requestAnimationFrame`)
+- **[Linhas 1600-1651 ~]** `/**` (doc de `aplicarToolbarTeclado`) -> `aplicarToolbarTeclado(insetForcado)` (reserva `altura da barra + FOLGA_BARRA_TECLADO` no editor)
 
 ## Implementação: Modo mobile e módulos instaladores
-- **[Linhas 1653-1749 ~]** `// 🔄 [INÍCIO: PWA - MODO MOBILE (installModoMobileNotas)]` -> `function installModoMobileNotas(App)` (classe `notes-mobile`; **`sairDaTelaCheiaNotasMobile()`** = tira a tela cheia (⛶) ao entrar no celular, **`alternarAreaNotasMapa()`** = o ⇄ do cabeçalho leva ao Mapa e **`sairDaTelaCheiaMapaMobile()`** = libera a tela cheia do MAPA ao virar celular — P114; ao entrar/sair do modo chama **`sincronizarBarraModo()`** (reconstrói a barra ÚNICA do mapa quando o MODO troca: no celular ela fica enxuta, com os grupos na gaveta "Mais" — ver `aplicarBarraMapaTeclado`, mapa/mapa.js — P117) e **`sincronizarColapsoArea()`** (chips no celular × barras no PC))
-- **[Linhas 1755-1892 ~]** `// 🔄 [INÍCIO: PWA - CAMADA LOCAL DE EXTRAS/TABELAS (installLocalNotesStorage)]` -> `function installLocalNotesStorage(App)` (`readTemplates`/`writeTemplates`, **`pedirNaRede(userId, alvo, options)`** = fallback de REDE, `notesExtraRequest` (templates LOCAIS + rede para o resto), `readNotesFile`, `notesUpload` (data URL) e `notesFileViewer` local que **cai para a implementação de rede** quando não há anexo `a[data-note-asset]` — P84)
-- **[Linhas 1902-1943 ~]** `// 🔄 [INÍCIO: PWA - AJUSTES DE NOTA GRANDE (installAjustesNotaGrande)]` -> `function installAjustesNotaGrande(App)`
+- **[Linhas 1661-1757 ~]** `// 🔄 [INÍCIO: PWA - MODO MOBILE (installModoMobileNotas)]` -> `function installModoMobileNotas(App)` (classe `notes-mobile`; **`sairDaTelaCheiaNotasMobile()`** = tira a tela cheia (⛶) ao entrar no celular, **`alternarAreaNotasMapa()`** = o ⇄ do cabeçalho leva ao Mapa e **`sairDaTelaCheiaMapaMobile()`** = libera a tela cheia do MAPA ao virar celular — P114; ao entrar/sair do modo chama **`sincronizarBarraModo()`** (reconstrói a barra ÚNICA do mapa quando o MODO troca: no celular ela fica enxuta, com os grupos na gaveta "Mais" — ver `aplicarBarraMapaTeclado`, mapa/mapa.js — P117) e **`sincronizarColapsoArea()`** (chips no celular × barras no PC))
+- **[Linhas 1763-1900 ~]** `// 🔄 [INÍCIO: PWA - CAMADA LOCAL DE EXTRAS/TABELAS (installLocalNotesStorage)]` -> `function installLocalNotesStorage(App)` (`readTemplates`/`writeTemplates`, **`pedirNaRede(userId, alvo, options)`** = fallback de REDE, `notesExtraRequest` (templates LOCAIS + rede para o resto), `readNotesFile`, `notesUpload` (data URL) e `notesFileViewer` local que **cai para a implementação de rede** quando não há anexo `a[data-note-asset]` — P84)
+- **[Linhas 1910-1951 ~]** `// 🔄 [INÍCIO: PWA - AJUSTES DE NOTA GRANDE (installAjustesNotaGrande)]` -> `function installAjustesNotaGrande(App)`
 
 ---
 
@@ -110,23 +110,23 @@
 **Propósito:** Service Worker offline-first. Serve o cache na hora e revalida na rede com timeout, garantindo que o app nunca fique preso carregando.
 
 ## Implementação: Constantes, helpers e ciclo de vida
-- **[Linhas 18-97 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v83';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./fontes.js`, `./conta.js`, `./sync/chaves.js`, `./sync/sync-cliente.js` e `./mapa/mapa-cores.js`; **o script do GIS NÃO entra** — é cross-origin, opcional e o `fetch` já sai fora para outra origem)
-- **[Linhas 53-54 ~]** `(sem comentário de ancoragem)` -> `const CACHE_NAME` (**v81** — subiu porque a barra do MAPA virou UMA só (`#mapaBarraUnica`: ferramentas + formatação na mesma linha) e no CELULAR ela sai do topo e aparece ACOPLADA acima do teclado (`.mapa-barra-docked`), como o `#notesToolbar`; os ícones de IRMÃO/FILHO estavam TROCADOS (P117): mudaram `app.js`, `mapa/mapa.js`, `mapa/mapa-render.js`, `mapa/mapa-interacao.js` e `mapa/mapa.css`; antes, **v80**, a topbar do MAPA passou a ficar em UMA LINHA em QUALQUER largura do PC (`flex-wrap: nowrap` + título com ellipsis — P116): mudou `mapa/mapa.css`; antes, **v79**, o ⛶ de Notas saiu do CELULAR e entrou o **⇄** (`#notesAlternarAreaBtn`, espelhado pelo `#mapaAlternarAreaBtn` — P114), a paleta de cores e o seletor de tons passaram a respeitar o TEMA ESCURO (P115): mudaram `index.html`, `app.js`, `styles.css`, `mapa/mapa.css`, `mapa/mapa-render.js`, `mapa/mapa.js` e `notes/editor.css`; antes, **v78**, o botão de conta ficou no CANTO ESQUERDO em QUALQUER largura, com a pastilha só de ÍCONE/avatar: mudaram `mapa/mapa.css` e `styles.css`; **v77**, o ⛶ virou o ÚNICO controle do lado a lado e os botões "Ver mapa ao lado"/"Ver nota ao lado" saíram: mudaram `app.js`, `notes/editor.js`, `index.html`, `mapa/mapa.js`, `mapa/mapa-render.js` e `mapa/mapa.css`; **v76**, os dois botões de fechar passaram a fechar a PRÓPRIA área — P111; **v75**, a FOTO do perfil foi para o canto ESQUERDO no PC; **v74**, o botão da conta mostrou a FOTO do Google; e **v73**, no fix do COOP, já que o HTML é cacheado COM os cabeçalhos — P108) · `const TIMEOUT_MS`
-- **[Linhas 56-65 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
-- **[Linhas 67-95 ~]** `/** Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
-- **[Linhas 99-147 ~]** `// 💾 [INÍCIO: PWA - HELPERS DE CACHE/FETCH (retry/timeout/revalidar)]` -> `adicionarComRetry` · `buscarComTimeout` · `guardarNoCache` · `revalidar`
-- **[Linhas 149-170 ~]** `// 🚀 [INÍCIO: PWA - INSTALL (CACHE INICIAL)]` -> `self.addEventListener('install', (event) => {...})` (aborta se algum essencial faltar)
-- **[Linhas 172-191 ~]** `// 🚀 [INÍCIO: PWA - ACTIVATE (LIMPEZA DE CACHES ANTIGOS)]` -> `self.addEventListener('activate', ...)` (limpa caches + `clients.claim()` + avisa as abas com `postMessage({ type: 'SW_ATIVADO' })` — base do update notification)
+- **[Linhas 18-132 ~]** `// 🚀 [INÍCIO: PWA - CONSTANTES DE CACHE E ASSETS ESSENCIAIS]` -> `const CACHE_NAME = 'notas-pwa-v91';` · `const TIMEOUT_MS = 3000;` · `const OFFLINE_HTML` · `const ESSENCIAIS = [...]` (inclui `./fontes.js`, `./conta.js`, `./sync/chaves.js`, `./sync/sync-cliente.js` e `./mapa/mapa-cores.js`; **o script do GIS NÃO entra** — é cross-origin, opcional e o `fetch` já sai fora para outra origem)
+- **[Linhas 88-89 ~]** `(sem comentário de ancoragem)` -> `const CACHE_NAME` (**v91** — RENOMEAR/MOVER a NOTA espelha em tempo real: `renomearNota`/`moverNotaParaPasta` passam a gravar `atualizadaEm` e o gancho `syncLigarNotas` enfileira; no MAPA, `renomearMapa`/`moverMapaParaPasta` (que usavam o `salvarGrafo` interno) também entram — P121: mudaram `app.js` e `sync/sync-cliente.js`; antes **v90**, o "refresh" do sync não desloca o cursor/rolagem da nota nem a VIEWPORT do mapa — P120; **v89**, conteúdo AUSENTE no aparelho não sobe VAZIO e o MAPA ganhou a data de edição no payload — P119; **v88**, os MODELOS (templates de nota e de mapa) sincronizam AO VIVO; **v87**, renomear PASTA leva a data de edição (o LWW rejeitava a renomeação); **v86**, a nota criada ao ABRIR UMA PASTA VAZIA entra na fila na hora (sem duplicação); **v85**, a tela de PASTAS re-renderiza em TEMPO REAL quando chega algo da nuvem; **v84**, criar/renomear/excluir PASTA sincroniza ao vivo; **v83**, LWW por data de EDIÇÃO + fila vinculada à conta (mudaram `sync/sync-cliente.js`, `conta.js` e o backend Python); **v82**, o rosto da conta ganhou o TERCEIRO estado (INICIAIS do e-mail) e a imagem que falha é retentada quando a conexão volta (mudaram `conta.js`, `styles.css` e `mapa/mapa.css`); e antes, **v81** — subiu porque a barra do MAPA virou UMA só (`#mapaBarraUnica`: ferramentas + formatação na mesma linha) e no CELULAR ela sai do topo e aparece ACOPLADA acima do teclado (`.mapa-barra-docked`), como o `#notesToolbar`; os ícones de IRMÃO/FILHO estavam TROCADOS (P117): mudaram `app.js`, `mapa/mapa.js`, `mapa/mapa-render.js`, `mapa/mapa-interacao.js` e `mapa/mapa.css`; antes, **v80**, a topbar do MAPA passou a ficar em UMA LINHA em QUALQUER largura do PC (`flex-wrap: nowrap` + título com ellipsis — P116): mudou `mapa/mapa.css`; antes, **v79**, o ⛶ de Notas saiu do CELULAR e entrou o **⇄** (`#notesAlternarAreaBtn`, espelhado pelo `#mapaAlternarAreaBtn` — P114), a paleta de cores e o seletor de tons passaram a respeitar o TEMA ESCURO (P115): mudaram `index.html`, `app.js`, `styles.css`, `mapa/mapa.css`, `mapa/mapa-render.js`, `mapa/mapa.js` e `notes/editor.css`; antes, **v78**, o botão de conta ficou no CANTO ESQUERDO em QUALQUER largura, com a pastilha só de ÍCONE/avatar: mudaram `mapa/mapa.css` e `styles.css`; **v77**, o ⛶ virou o ÚNICO controle do lado a lado e os botões "Ver mapa ao lado"/"Ver nota ao lado" saíram: mudaram `app.js`, `notes/editor.js`, `index.html`, `mapa/mapa.js`, `mapa/mapa-render.js` e `mapa/mapa.css`; **v76**, os dois botões de fechar passaram a fechar a PRÓPRIA área — P111; **v75**, a FOTO do perfil foi para o canto ESQUERDO no PC; **v74**, o botão da conta mostrou a FOTO do Google; e **v73**, no fix do COOP, já que o HTML é cacheado COM os cabeçalhos — P108) · `const TIMEOUT_MS`
+- **[Linhas 91-95 ~]** `(sem comentário de ancoragem)` -> `const OFFLINE_HTML = '<!DOCTYPE html>...'`
+- **[Linhas 97-130 ~]** `/** Assets ESSENCIAIS: sem eles o app não funciona ...` -> `const ESSENCIAIS = [ './', './index.html', ..., './icon.svg' ]`
+- **[Linhas 134-182 ~]** `// 💾 [INÍCIO: PWA - HELPERS DE CACHE/FETCH (retry/timeout/revalidar)]` -> `adicionarComRetry` · `buscarComTimeout` · `guardarNoCache` · `revalidar`
+- **[Linhas 184-205 ~]** `// 🚀 [INÍCIO: PWA - INSTALL (CACHE INICIAL)]` -> `self.addEventListener('install', (event) => {...})` (aborta se algum essencial faltar)
+- **[Linhas 207-226 ~]** `// 🚀 [INÍCIO: PWA - ACTIVATE (LIMPEZA DE CACHES ANTIGOS)]` -> `self.addEventListener('activate', ...)` (limpa caches + `clients.claim()` + avisa as abas com `postMessage({ type: 'SW_ATIVADO' })` — base do update notification)
 
 ## Implementação: Estratégia de rede/cache em runtime
-- **[Linhas 100-117 ~]** `/** fetch + timeout + cache.put (evita travar a instalação com rede lenta/instável). */` -> `const adicionarComRetry = async (cache, asset, tentativas = 3) => {...}`
-- **[Linhas 119-130 ~]** `/** Busca na rede com limite de tempo (nunca deixa o carregamento pendurado). */` -> `const buscarComTimeout = (request, ms) => new Promise(...)`
-- **[Linhas 132-140 ~]** `/** Guarda a resposta no cache sem bloquear quem está esperando. */` -> `const guardarNoCache = (request, response) => {...}`
-- **[Linhas 141-147 ~]** `/** Revalida em segundo plano (stale-while-revalidate) sem bloquear a resposta. */` -> `const revalidar = (request) => {...}`
-- **[Linhas 193-236 ~]** `// 🚨 [INÍCIO: CRÍTICO - FETCH STRATEGY (CACHE-FIRST + TIMEOUT)]` -> `self.addEventListener('fetch', ...)` (cache → rede com timeout → fallback `index.html`/`OFFLINE_HTML`; **sai fora para `/api/*` e `/ws`** — o cache-first serviria snapshot/anexo velho, P99)
+- **[Linhas 135-152 ~]** `/** fetch + timeout + cache.put (evita travar a instalação com rede lenta/instável). */` -> `const adicionarComRetry = async (cache, asset, tentativas = 3) => {...}`
+- **[Linhas 154-164 ~]** `/** Busca na rede com limite de tempo (nunca deixa o carregamento pendurado). */` -> `const buscarComTimeout = (request, ms) => new Promise(...)`
+- **[Linhas 166-173 ~]** `/** Guarda a resposta no cache sem bloquear quem está esperando. */` -> `const guardarNoCache = (request, response) => {...}`
+- **[Linhas 175-180 ~]** `/** Revalida em segundo plano (stale-while-revalidate) sem bloquear a resposta. */` -> `const revalidar = (request) => {...}`
+- **[Linhas 228-271 ~]** `// 🚨 [INÍCIO: CRÍTICO - FETCH STRATEGY (CACHE-FIRST + TIMEOUT)]` -> `self.addEventListener('fetch', ...)` (cache → rede com timeout → fallback `index.html`/`OFFLINE_HTML`; **sai fora para `/api/*` e `/ws`** — o cache-first serviria snapshot/anexo velho, P99)
 
 ## Implementação: Mensagens do cliente
-- **[Linhas 238-255 ~]** `// 🔄 [INÍCIO: ESTADO/API - MESSAGE HANDLING]` -> `self.addEventListener('message', ...)` (`SKIP_WAITING`, `CACHE_UPDATED`)
+- **[Linhas 273-290 ~]** `// 🔄 [INÍCIO: ESTADO/API - MESSAGE HANDLING]` -> `self.addEventListener('message', ...)` (`SKIP_WAITING`, `CACHE_UPDATED`)
 
 ---
 
