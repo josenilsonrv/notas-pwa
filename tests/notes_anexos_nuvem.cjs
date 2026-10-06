@@ -165,9 +165,9 @@ const esperarNotas = (page, teste) => page.waitForFunction(t => {
     assert.equal(baixado.nosniff, 'nosniff');
     assert.ok(baixado.texto.startsWith('%PDF'), 'o binário volta igual');
 
-    // ---------- D) VISUALIZADOR: abre o anexo da conta ----------
+    // ---------- D) VISUALIZADOR: abre o anexo da conta no visualizador de PDF (pdf.js) ----------
     await page.evaluate(id => window.notesApp.notesFileViewer(id), idDoPdf);
-    await page.waitForSelector('.notes-file-viewer iframe', { timeout: 10000 });
+    await page.waitForSelector('.notes-pdf-viewer', { timeout: 20000 });
 
     assert.deepEqual(erros, [], 'sem erro de página: ' + erros.join(' | '));
     console.log('OK: anexos na nuvem — migração do antigo, upload novo, download seguro e visualizador');

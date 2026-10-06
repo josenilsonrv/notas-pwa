@@ -1869,6 +1869,10 @@ function installLocalNotesStorage(App) {
             this.showToast('Arquivo indisponível neste dispositivo.', 'error');
             return;
         }
+        // PDF local (upload sem login): o visualizador próprio (pdf.js) assume — ver notes/pdf.js.
+        if (window.NotesPdf && /^data:application\/pdf/i.test(url)) {
+            return window.NotesPdf.abrir(this, { url, nome: name, trigger: link });
+        }
         this.notesExtraDialog('Visualização do arquivo', dialog => {
             dialog.classList.add('notes-file-viewer');
             const heading = dialog.querySelector('h3');

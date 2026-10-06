@@ -1341,12 +1341,23 @@ function installSync(App) {
      * NATIVO do navegador (iframe) — abre em qualquer aparelho, sem depender do arquivo local.
      */
     const visualizadorOriginal = p.notesFileViewer;
-    p.notesFileViewer = function (id) {
+    p.notesFileViewer = async function (id) {
         if (!this.syncAtivo()) return visualizadorOriginal.call(this, id);
         const link = document.querySelector('a[data-note-asset="' + id + '"]');
         const url = link?.getAttribute('href') || '';
         if (url && !url.startsWith('data:') && url.indexOf('/api/note-assets/') === 0) {
             const nome = (link?.textContent || 'Arquivo').replace(/^\s*📎\s*/, '');
+            // PDF da conta: o visualizador próprio (pdf.js) assume. O tipo vem do `/info` (o nome
+            // do arquivo é só rótulo — nunca decide o formato).
+            if (window.NotesPdf) {
+                try {
+                    const info = await this.notesExtraRequest('/files/' + encodeURIComponent(id) + '/info');
+                    if (info && info.kind === 'pdf') {
+                        window.NotesPdf.abrir(this, { url, nome: info.name || nome, trigger: link });
+                        return;
+                    }
+                } catch (_) { /* sem `/info`: cai no visualizador nativo do navegador */ }
+            }
             this.notesExtraDialog('Visualização do arquivo', dialog => {
                 dialog.classList.add('notes-file-viewer');
                 const titulo = dialog.querySelector('h3');

@@ -167,6 +167,34 @@ def test_modelos_da_conta_pelo_contrato_do_visualizador():
     assert [item["name"] for item in lista] == ["Reuniao"]
 
 
+def test_download_com_range_bytes():
+    """HTTP Range: o pdf.js busca só os trechos que precisa (`Accept-Ranges`, `206`, `416`)."""
+    cliente, csrf = novo_cliente("range@exemplo.com")
+    conteudo = b"0123456789abcdefghij"  # 20 bytes
+    enviado = subir(cliente, csrf, conteudo, "extrato.pdf", "application/pdf").json()
+
+    # Sem Range: arquivo inteiro (200) + `Accept-Ranges` (é o que habilita o Range no pdf.js).
+    inteiro = cliente.get(f"/api/note-assets/files/{enviado['id']}")
+    assert inteiro.status_code == 200 and inteiro.content == conteudo
+    assert inteiro.headers["accept-ranges"] == "bytes"
+
+    # Faixa: 206 com `Content-Range` e SÓ os bytes pedidos.
+    parte = cliente.get(f"/api/note-assets/files/{enviado['id']}", headers={"Range": "bytes=5-9"})
+    assert parte.status_code == 206
+    assert parte.content == conteudo[5:10]
+    assert parte.headers["content-range"] == f"bytes 5-9/{len(conteudo)}"
+    assert parte.headers["accept-ranges"] == "bytes"
+
+    # Faixa aberta pelo fim (`bytes=-4`): últimos 4 bytes.
+    sufixo = cliente.get(f"/api/note-assets/files/{enviado['id']}", headers={"Range": "bytes=-4"})
+    assert sufixo.status_code == 206 and sufixo.content == conteudo[-4:]
+
+    # Faixa insatisfatível: 416 com `Content-Range: bytes */total`.
+    fora = cliente.get(f"/api/note-assets/files/{enviado['id']}", headers={"Range": "bytes=999-1000"})
+    assert fora.status_code == 416
+    assert fora.headers["content-range"] == f"bytes */{len(conteudo)}"
+
+
 def test_storage_em_memoria_e_o_padrao_sem_supabase():
     """Sem credencial, o backend sobe com o Storage em memória (nada quebra)."""
     definir_storage(None)

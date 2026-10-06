@@ -274,9 +274,45 @@ async def enviar_arquivo(request: Request, file: UploadFile, user_id: str | None
     return {"id": id_, "name": nome, "kind": dados["kind"], "size": len(conteudo)}
 
 
+_RANGE_INVALIDO = object()
+
+
+def _faixa_pedida(cabecalho: str | None, tamanho: int) -> object:
+    """`Range: bytes=inicio-fim` -> `(inicio, fim)` inclusivos.
+
+    Devolve `None` quando não há `Range` (resposta inteira, 200) e `_RANGE_INVALIDO` quando a
+    faixa é insatisfatível (vira 416). O pdf.js usa isso para buscar só os trechos que precisa —
+    um PDF de milhares de páginas mostra a 1ª sem baixar o arquivo inteiro.
+    """
+    if not cabecalho or not cabecalho.startswith("bytes="):
+        return None
+    especificacao = cabecalho[len("bytes="):].split(",")[0].strip()
+    if "-" not in especificacao:
+        return _RANGE_INVALIDO
+    inicio_txt, _, fim_txt = especificacao.partition("-")
+    try:
+        if inicio_txt == "":
+            quantidade = int(fim_txt)
+            if quantidade <= 0:
+                return _RANGE_INVALIDO
+            inicio, fim = max(0, tamanho - quantidade), tamanho - 1
+        else:
+            inicio = int(inicio_txt)
+            fim = int(fim_txt) if fim_txt else tamanho - 1
+    except ValueError:
+        return _RANGE_INVALIDO
+    if inicio < 0 or fim < inicio or inicio >= tamanho:
+        return _RANGE_INVALIDO
+    return inicio, min(fim, tamanho - 1)
+
+
 @router.get("/files/{id}")
 def baixar_arquivo(id: str, request: Request, user_id: str | None = None) -> Response:
-    """Devolve o BINARIO com os cabeçalhos de segurança (nunca `inline` para texto/HTML)."""
+    """Devolve o BINARIO com os cabeçalhos de segurança (nunca `inline` para texto/HTML).
+
+    Apoia **HTTP Range** (`Accept-Ranges: bytes` + `206`): o pdf.js busca só os trechos que
+    precisa (P9x). Sem `Range`, responde o arquivo inteiro (200), como antes.
+    """
     sessao = _sessao_do_pedido(request, user_id)
     registro = _registro_ativo(sessao.user_id, id)
     dados = registro.get("dados") or {}
@@ -285,10 +321,29 @@ def baixar_arquivo(id: str, request: Request, user_id: str | None = None) -> Res
         raise HTTPException(status_code=404, detail="nao encontrado")
     mime = str(dados.get("mime") or "application/octet-stream")
     nome = str(dados.get("nome") or id)
+    tamanho = len(conteudo)
     cabecalhos = dict(CABECALHOS_SEGUROS)
+    cabecalhos["Accept-Ranges"] = "bytes"
     disposicao = "inline" if mime in INLINE_SEGURO else "attachment"
     cabecalhos["Content-Disposition"] = f"{disposicao}; filename*=UTF-8''{quote(nome)}"
-    return Response(content=conteudo, media_type=mime, headers=cabecalhos)
+
+    faixa = _faixa_pedida(request.headers.get("range"), tamanho)
+    if faixa is _RANGE_INVALIDO:
+        raise HTTPException(
+            status_code=416,
+            detail="faixa invalida",
+            headers={"Content-Range": f"bytes */{tamanho}", "Accept-Ranges": "bytes"},
+        )
+    if faixa is None:
+        return Response(content=conteudo, media_type=mime, headers=cabecalhos)
+    inicio, fim = faixa
+    cabecalhos["Content-Range"] = f"bytes {inicio}-{fim}/{tamanho}"
+    return Response(
+        content=conteudo[inicio : fim + 1],
+        status_code=206,
+        media_type=mime,
+        headers=cabecalhos,
+    )
 
 
 @router.get("/files/{id}/info")

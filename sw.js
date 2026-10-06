@@ -20,6 +20,10 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
+// v96: o modo HORIZONTAL fica robusto (flex/overflow INLINE, nao depende so do CSS) e mostra UMA
+// pagina no CELULAR (DUAS so quando a janela tem >= 720px). Mudou `notes/pdf.js`.
+// v95: no modo HORIZONTAL cabem DUAS paginas por vez (lado a lado, com snap) e o contador vira
+// faixa (1-2 / N); os botoes ‹ › avancam de 2 em 2.
 // v91: RENOMEAR/MOVER a NOTA (chip) espelha em tempo real (renomear não passava pelo
 // `notasBackend.salvar` e nem atualizava `atualizadaEm`); excluir/duplicar nota também passam a
 // sincronizar. No MAPA, `renomearMapa`/`moverMapaParaPasta` (que usam o `salvarGrafo` interno)
@@ -85,7 +89,7 @@
 // `conta.js` e `styles.css` mudaram, então o cache precisa virar de versão.
 // v73: o `index.html` é cacheado COM os cabeçalhos; o fix do COOP (`same-origin-allow-popups`,
 // P108) só chega ao dispositivo com um cache NOVO — o antigo serviria o cabeçalho velho.
-const CACHE_NAME = 'notas-pwa-v91';
+const CACHE_NAME = 'notas-pwa-v96';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -115,6 +119,9 @@ const ESSENCIAIS = [
     './notes/table-math.js',
     './notes/tables.js',
     './notes/tables.css',
+    './notes/pdf.js',
+    './notes/pdfjs/pdf.min.mjs',
+    './notes/pdfjs/pdf.worker.min.mjs',
     './fontes.js',
     './mapa/mapa.css',
     './mapa/mapa-modelo.js',

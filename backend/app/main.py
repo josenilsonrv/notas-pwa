@@ -158,6 +158,8 @@ TIPOS = {
     ".png": "image/png",
     ".ico": "image/x-icon",
     ".txt": "text/plain; charset=utf-8",
+    # `.wasm` do pdf.js (decodificadores de imagem): o MIME certo habilita o streaming.
+    ".wasm": "application/wasm",
 }
 
 # Arquivos do PWA na raiz (os unicos servidos diretamente na raiz).
