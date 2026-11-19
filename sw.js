@@ -130,7 +130,11 @@
 // de NAVEGAÇÃO do Android e a safe-area deixam de ficar brancas. Mudaram
 // `notes/tables.js`, `notes/tables.css`, `styles.css`, `tests/notes_table_structure.cjs`
 // e `arquitetura.md`, então o cache PRECISA virar.
-const CACHE_NAME = 'notas-pwa-v106';
+// v107: CACHE-BUSTING de assets: `index.html` referencia `styles.css`, `notes/tables.css`,
+// `notes/tables.js` e `app.js` com `?v=107`, e o SW guarda TAMBÉM essas URLs versionadas.
+// Assim um Service Worker antigo (cache-first) não consegue servir o JS/CSS velhos.
+// Mudaram `index.html` e `sw.js`, então o cache PRECISA virar.
+const CACHE_NAME = 'notas-pwa-v107';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -144,12 +148,15 @@ const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf
  * no modal, monta o editor, etc.). A instalação só é concluída se TODOS estiverem
  * no cache — assim o modo offline nunca serve um app quebrado/à meio.
  */
+const VERSAO_ASSETS = '107'; // deve casar com `?v=` no index.html
 const ESSENCIAIS = [
     './',
     './index.html',
     './styles.css',
+    './styles.css?v=' + VERSAO_ASSETS,
     './theme-origem.css',
     './app.js',
+    './app.js?v=' + VERSAO_ASSETS,
     './conta.js',
     './sync/chaves.js',
     './sync/sync-cliente.js',
@@ -159,7 +166,9 @@ const ESSENCIAIS = [
     './notes/extras.css',
     './notes/table-math.js',
     './notes/tables.js',
+    './notes/tables.js?v=' + VERSAO_ASSETS,
     './notes/tables.css',
+    './notes/tables.css?v=' + VERSAO_ASSETS,
     './notes/pdf.js',
     './notes/flipjs/page-flip.browser.js',
     './notes/pdfjs/pdf.min.mjs',
