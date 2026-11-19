@@ -174,27 +174,30 @@ function installNotesTables(App){
 
   panel.append(address,input,confirm,split(),structureMenu,functionsMenu,split(),settings,help,split(),formats);document.getElementById('notesToolbar').after(panel);
   // ⚡ [INÍCIO: NOTAS/TABELA - BARRA ACOPLADA AO TECLADO (MOBILE)]
-  // No celular a barra da tabela sai do topo: fica sempre acoplada na parte de
-  // baixo e, com o teclado aberto, empilha logo ACIMA da barra de texto. Assim
-  // trocar um select/menu do painel (que fecha o teclado) não esconde a barra.
-  // Fora do modo mobile ela continua no fluxo normal abaixo da toolbar.
+  // No celular a barra da tabela se comporta como a barra de TEXTO: só aparece
+  // enquanto o teclado está aberto (toolbar docked), empilhada logo ACIMA dela.
+  // Exceção: um <select> aberto fecha o teclado, então a barra continua visível
+  // (colada no rodapé) apenas enquanto o menu nativo está em uso. Fora do modo
+  // mobile ela continua no fluxo normal abaixo da toolbar.
   let panelPadding=false;
   const syncDock=()=>{
    const toolbar=document.getElementById('notesToolbar');
    const mobile=document.documentElement.classList.contains('notes-mobile');
-   const docked=mobile&&!panel.hidden;
+   const toolbarDocked=Boolean(toolbar?.classList.contains('notes-toolbar-docked'));
+   const menuOpen=panel.contains(document.activeElement)&&document.activeElement?.tagName==='SELECT';
+   const docked=mobile&&!panel.hidden&&(toolbarDocked||menuOpen);
    panel.classList.toggle('notes-table-tools-docked',docked);
    if(!docked){
     ['--notes-table-dock-left','--notes-table-dock-width','--notes-table-dock-bottom'].forEach(name=>panel.style.removeProperty(name));
-    if(panelPadding){const notes=document.getElementById('notesEditor');if(notes){if(toolbar?.classList.contains('notes-toolbar-docked'))notes.style.paddingBottom=(toolbar.offsetHeight+(typeof NotesPWA!=='undefined'?NotesPWA.FOLGA_BARRA_TECLADO:28))+'px';else notes.style.removeProperty('padding-bottom');}panelPadding=false;}
+    if(panelPadding){const notes=document.getElementById('notesEditor');if(notes){if(toolbarDocked)notes.style.paddingBottom=(toolbar.offsetHeight+(typeof NotesPWA!=='undefined'?NotesPWA.FOLGA_BARRA_TECLADO:28))+'px';else notes.style.removeProperty('padding-bottom');}panelPadding=false;}
     return;
    }
-   const toolbarDocked=Boolean(toolbar?.classList.contains('notes-toolbar-docked'));
+   const offset=toolbarDocked?toolbar.offsetHeight:0;
    panel.style.setProperty('--notes-table-dock-left',toolbarDocked?toolbar.style.getPropertyValue('--notes-toolbar-dock-left')||'0px':'0px');
    panel.style.setProperty('--notes-table-dock-width',toolbarDocked?toolbar.style.getPropertyValue('--notes-toolbar-dock-width')||'100%':'100%');
-   panel.style.setProperty('--notes-table-dock-bottom','calc('+(toolbarDocked?toolbar.style.getPropertyValue('--notes-toolbar-dock-bottom')||'0px':'0px')+' + '+(toolbarDocked?toolbar.offsetHeight:0)+'px)');
+   panel.style.setProperty('--notes-table-dock-bottom','calc('+(toolbarDocked?toolbar.style.getPropertyValue('--notes-toolbar-dock-bottom')||'0px':'0px')+' + '+offset+'px)');
    const notes=document.getElementById('notesEditor');
-   if(notes)notes.style.paddingBottom=((toolbarDocked?toolbar.offsetHeight:0)+panel.offsetHeight+(typeof NotesPWA!=='undefined'?NotesPWA.FOLGA_BARRA_TECLADO:28))+'px';
+   if(notes)notes.style.paddingBottom=(offset+panel.offsetHeight+(typeof NotesPWA!=='undefined'?NotesPWA.FOLGA_BARRA_TECLADO:28))+'px';
    panelPadding=true;
   };
   app.sincronizarBarraTabela=syncDock;

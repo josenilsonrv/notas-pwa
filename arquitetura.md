@@ -145,7 +145,7 @@
 
 # Nome do Arquivo: styles.css
 **Propósito:** CSS base do PWA (tokens de tema, cor da barra de status, base e componentes próprios). Distinto de `theme-origem.css` (tema portado do original).
-- **[Linhas 5-36 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - VARIÁVEIS DE TEMA] */` -> `:root { --color-* }` + tokens da barra de status (claro/escuro)
+- **[Linhas 5-37 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - VARIÁVEIS DE TEMA] */` -> `:root { --color-* }` + tokens da barra de status (claro/escuro) + **`color-scheme: dark` e fundo `#0D1218` no `html`/`body` do tema escuro** (a barra de NAVEGAÇÃO do Android e a safe-area acompanham o tema)
 - **[Linhas 38-727 ~]** `/* 🎨 [INÍCIO: PWA/ESTILO - BASE E COMPONENTES] */` -> `body`, `button` e componentes próprios do app (inclui `.app-toast*`, `.app-theme-switch*`, `.app-tema-fixo` e o seletor de fontes `.notas-seletor-fontes*`)
 - **[Linhas 744-890 ~]** `/* 🎨 [INÍCIO: CONTA/ESTILO - BOTÃO E DIÁLOGO DE CONTA] */` -> **bloco da CONTA**: `.conta-btn` (pastilha flutuante do topo: ícone/avatar, `max-width: 260px`, `text-align: center`; **em QUALQUER largura** só o ÍCONE/avatar — `padding: 9px` e `.conta-btn-nome { display: none }`, porque a âncora única é o canto ESQUERDO e o título da área fica AO LADO; o e-mail segue no `title`/`aria-label` e no diálogo) + **`.conta-btn-foto`** (a FOTO do perfil do Google: `24px`, `border-radius: 50%`, `object-fit: cover`) + **`.conta-btn[data-rosto="foto"]`** (`padding: 5px` = a pastilha vira um avatar de 34px, do tamanho do botão de ícone) + **`.conta-btn-iniciais`** (**P118**: o avatar de quem está logado SEM foto — 24px, círculo no `--color-neon-blue`, 1–2 letras do e-mail; `[data-rosto="iniciais"]` com o MESMO `padding: 5px`) + variante **tema escuro** + diálogo `.conta-dialog`/`.conta-erro`/`.conta-email`/`.conta-sync`/`.conta-aviso`/`.conta-acao`/`.conta-acao-secundaria` (reusa a base `.notes-extra-dialog`) + **login com Google** `.conta-google`/`.conta-google-divisor` (o botão é o iframe do PRÓPRIO Google; os dois ficam `hidden` quando não há Client ID/GIS)
 - **[Linhas 856-945 ~]** `(continuação da BASE)` -> componentes próprios do app
@@ -189,8 +189,8 @@
 
 # Nome do Arquivo: notes/tables.css
 **Propósito:** Estilos da barra de ferramentas da tabela, do endereço/formula da célula e dos cursores de resize.
-- **[Linhas 1-73 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */` -> `.notes-table-*` PADRONIZADOS com a barra de texto: UMA linha (`nowrap`), altura `--app-toolbar-altura`, superfície de vidro do app, botões/selects 32px com hover/focus do `.toolbar-btn`, separadores e ícones 18px · `#notesEditor[data-table-resize]`
-  - **[Linhas 54-72 ~]** `/* ⚡ [INÍCIO: NOTAS/ESTILO - BARRA DA TABELA ACOPLADA AO TECLADO (MOBILE)] */` -> `html.notes-mobile … .notes-table-tools` (fora do dock fica oculta) + `.notes-table-tools-docked` (`position:fixed`, MESMO fundo/sombra/largura da toolbar e sem raio, empilhada acima dela via `--notes-table-dock-*`)
+- **[Linhas 1-74 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */` -> `.notes-table-*` PADRONIZADOS com a barra de texto: UMA linha (`nowrap`), altura `--app-toolbar-altura`, superfície de vidro do app, botões/selects 32px com hover/focus do `.toolbar-btn`, separadores e ícones 18px · `#notesEditor[data-table-resize]`
+  - **[Linhas 54-73 ~]** `/* ⚡ [INÍCIO: NOTAS/ESTILO - BARRA DA TABELA ACOPLADA AO TECLADO (MOBILE)] */` -> `html.notes-mobile … .notes-table-tools` (fora do dock fica oculta) + `.notes-table-tools-docked` (`position:fixed`, MESMO fundo/sombra/largura da toolbar, sem raio, `padding-bottom: env(safe-area-inset-bottom)` e empilhada acima dela via `--notes-table-dock-*`)
 
 # Nome do Arquivo: mapa/mapa.css
 **Propósito:** Estilos da área do mapa (shell, topbar, faixa de chips dos MAPAS, canvas/nós, conexões, minimapa, painel de propriedades e controles do layout automático).
@@ -298,13 +298,13 @@
 - **[Linhas 40-45 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - HISTÓRICO]` -> `p.recordNotesHistory=function(...args)` (flush de `notesDirtyTables` antes do snapshot)
 
 ## Implementação: Painel/edição (setupNotesEditing)
-- **[Linhas 47-274 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - PAINEL/EDIÇÃO (setupNotesEditing)]` -> `p.setupNotesEditing=function()` (painel com as classes `app-barra`/`app-rolagem`, MESMA altura/padding/superfície da toolbar de texto; botões com a linguagem visual do `.toolbar-btn` + ícones SVG e separadores)
+- **[Linhas 47-277 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - PAINEL/EDIÇÃO (setupNotesEditing)]` -> `p.setupNotesEditing=function()` (painel com as classes `app-barra`/`app-rolagem`, MESMA altura/padding/superfície da toolbar de texto; botões com a linguagem visual do `.toolbar-btn` + ícones SVG e separadores)
 - **[Linhas 55-76 ~]** `const fill=` · `const commit=` · `makeButton`/`icon`/`split` · `confirm` · `functionsMenu` (ƒx) · `help` · `formats` (`numberFormat`/`currency`/`decimals`)
 - **[Linhas 77-173 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - ESTRUTURA (LINHA/COLUNA/CÉLULA)]` -> `blankCell` · `clearCell` · `samePresentation` · `applyStructure` · `insertRowAt` · `deleteRowAt` · `insertColumnAt` · `deleteColumnAt` · `insertCellAt` · `deleteCellAt` · `structureMenu` (⊞ Estrutura: inserir/excluir linha, coluna e célula — nasce conectado ao `<table>`, herda apresentação e entra no histórico)
-- **[Linhas 176-201 ~]** `// ⚡ [INÍCIO: NOTAS/TABELA - BARRA ACOPLADA AO TECLADO (MOBILE)]` -> `syncDock()` · `app.sincronizarBarraTabela` (no celular a barra da tabela NUNCA fica no topo: fica acoplada embaixo e, com o teclado aberto, empilha ACIMA da toolbar de texto via `--notes-toolbar-dock-*`; observa classe/estilo da `#notesToolbar`)
-- **[Linhas 203-214 ~]** `const markSelection=` · `function select(cell,extend=false)` · `coordinates(cell)` · `widths(table)` · `setWidths(table,values)`
-- **[Linhas 215-236 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - AJUSTES (openSettings)]` -> `function openSettings()` (largura/altura, fundo/borda, aplicar a seleção/linha/coluna/tabela)
-- **[Linhas 237-273 ~]** listeners: `selectionchange` · `input` · `keydown` ( `=`/`Enter`/`Tab`/Backspace) · `dblclick` · `pointerdown` (arraste de coluna/linha + referência) · `pointermove` · `pointerup/cancel` · observers (`root`, `#notesToolbar`) + `resize`/`syncDock`
+- **[Linhas 176-204 ~]** `// ⚡ [INÍCIO: NOTAS/TABELA - BARRA ACOPLADA AO TECLADO (MOBILE)]` -> `syncDock()` · `app.sincronizarBarraTabela` (no celular a barra da tabela se comporta como a de TEXTO: só aparece com o teclado aberto, empilhada ACIMA da toolbar; exceção = `<select>` em uso, que fecha o teclado e mantém a barra no rodapé; observa classe/estilo da `#notesToolbar`)
+- **[Linhas 206-217 ~]** `const markSelection=` · `function select(cell,extend=false)` · `coordinates(cell)` · `widths(table)` · `setWidths(table,values)`
+- **[Linhas 218-239 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - AJUSTES (openSettings)]` -> `function openSettings()` (largura/altura, fundo/borda, aplicar a seleção/linha/coluna/tabela)
+- **[Linhas 240-276 ~]** listeners: `selectionchange` · `input` · `keydown` ( `=`/`Enter`/`Tab`/Backspace) · `dblclick` · `pointerdown` (arraste de coluna/linha + referência) · `pointermove` · `pointerup/cancel` · observers (`root`, `#notesToolbar`) + `resize`/`syncDock`
 
 ---
 

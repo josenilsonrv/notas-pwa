@@ -63,6 +63,8 @@ const {chromium}=require('playwright');
  assert.equal(await css(panel,'backgroundColor'),await css(toolbar,'backgroundColor'));
  assert.equal(await css(panelConfirm,'color'),await css(toolbarButton,'color'));
  assert.equal(await panel.locator('select').first().evaluate(el=>getComputedStyle(el).color),'rgb(148, 163, 184)');
+ // Barra de navegação do Android acompanha o tema (não fica branca no escuro).
+ assert.equal(await css(page.locator('html'),'colorScheme'),'dark');
 
  // Mobile: a barra da tabela só aparece ACOPLADA ao teclado (acima da toolbar de texto).
  await page.evaluate(()=>{document.documentElement.dataset.theme='light';document.documentElement.classList.add('notes-mobile');});
@@ -71,11 +73,18 @@ const {chromium}=require('playwright');
  assert.ok(await panel.evaluate(el=>el.classList.contains('notes-table-tools-docked')));
  assert.equal(await panel.evaluate(el=>getComputedStyle(el).position),'fixed');
  assert.notEqual(await panel.evaluate(el=>getComputedStyle(el).bottom),'0px');
+ // Teclado fechado SEM menu aberto: some, como a barra de texto.
  await page.evaluate(()=>app.aplicarToolbarTeclado(0));await page.waitForTimeout(80);
- assert.ok(await panel.evaluate(el=>el.classList.contains('notes-table-tools-docked')),'painel continua acoplado embaixo sem teclado');
- assert.equal(await panel.evaluate(el=>getComputedStyle(el).position),'fixed');
+ assert.ok(!(await panel.evaluate(el=>el.classList.contains('notes-table-tools-docked'))),'painel some quando o teclado fecha');
+ assert.equal(await panel.evaluate(el=>getComputedStyle(el).display),'none');
+ // Exceção: <select> aberto fecha o teclado, mas mantém a barra no rodapé.
+ await page.evaluate(()=>app.aplicarToolbarTeclado(300));await page.waitForTimeout(60);
+ await panel.getByRole('combobox',{name:'Estrutura da tabela'}).focus();
+ await page.evaluate(()=>app.aplicarToolbarTeclado(0));await page.waitForTimeout(60);
+ assert.ok(await panel.evaluate(el=>el.classList.contains('notes-table-tools-docked')),'select aberto mantém a barra');
  assert.equal(await panel.evaluate(el=>getComputedStyle(el).bottom),'0px');
- assert.notEqual(await panel.evaluate(el=>getComputedStyle(el).display),'none');
+ await page.evaluate(()=>{document.activeElement?.blur();app.sincronizarBarraTabela();});await page.waitForTimeout(60);
+ assert.ok(!(await panel.evaluate(el=>el.classList.contains('notes-table-tools-docked'))));
 
  if(process.env.NOTES_TABLE_SCREENSHOT)await page.screenshot({path:process.env.NOTES_TABLE_SCREENSHOT});
  assert.deepEqual(errors,[]);console.log('OK: estrutura (linha/coluna/célula), tema do painel e barra acoplada ao teclado no mobile');

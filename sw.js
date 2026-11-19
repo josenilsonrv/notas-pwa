@@ -124,7 +124,13 @@
 // botões (ícones SVG 18px, hover/focus do `.toolbar-btn`) e separadores; no celular
 // continua acoplada acima do teclado. Mudaram `notes/tables.js`, `notes/tables.css`,
 // `tests/notes_table_structure.cjs` e `arquitetura.md`, então o cache PRECISA virar.
-const CACHE_NAME = 'notas-pwa-v105';
+// v106: a barra da tabela agora SOME quando o teclado fecha (como a barra de texto)
+// e só permanece no rodapé enquanto um `<select>` nativo está em uso; o tema escuro
+// passou a aplicar `color-scheme: dark` e fundo `#0D1218` no html/body, então a barra
+// de NAVEGAÇÃO do Android e a safe-area deixam de ficar brancas. Mudaram
+// `notes/tables.js`, `notes/tables.css`, `styles.css`, `tests/notes_table_structure.cjs`
+// e `arquitetura.md`, então o cache PRECISA virar.
+const CACHE_NAME = 'notas-pwa-v106';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +

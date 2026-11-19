@@ -67,6 +67,7 @@ html #notesModal .notes-table-tools.notes-table-tools-docked {
     border-bottom:0;
     border-radius:0;
     box-shadow:0 -10px 28px rgba(0,0,0,.14);
+    padding-bottom:env(safe-area-inset-bottom,0px);
 }
 html[data-theme="dark"] #notesModal .notes-table-tools.notes-table-tools-docked { box-shadow:0 -10px 28px rgba(0,0,0,.5); }
 /* ⚡ [FIM: NOTAS/ESTILO - BARRA DA TABELA ACOPLADA AO TECLADO (MOBILE)] */
