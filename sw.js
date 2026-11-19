@@ -147,8 +147,8 @@
 // `openNotesModal`, sem repintar chips/pastas à toa e sem reload automático do Service
 // Worker; o rodapé de Notas passa a mostrar o estado REAL (salvo x pendente). Mudaram
 // `sync/sync-cliente.js`, `app.js`, `index.html`, `styles.css` e as URLs `?v=110`, então
-// o cache PRECISA virar.
-const CACHE_NAME = 'notas-pwa-v110';
+// o cache PRECISA virar. v111 (P125): o chip de NOTAS troca a nota SEM fechar o modal (fim da "piscada") e as faixas preservam a rolagem; mudaram `notes/editor.js`, `app.js`, `mapa/mapa.js`, `index.html` e as URLs `?v=111`.
+const CACHE_NAME = 'notas-pwa-v111';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -162,7 +162,7 @@ const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf
  * no modal, monta o editor, etc.). A instalação só é concluída se TODOS estiverem
  * no cache — assim o modo offline nunca serve um app quebrado/à meio.
  */
-const VERSAO_ASSETS = '110'; // deve casar com `?v=` no index.html
+const VERSAO_ASSETS = '111'; // deve casar com `?v=` no index.html
 const ESSENCIAIS = [
     './',
     './index.html',

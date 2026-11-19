@@ -481,7 +481,7 @@
     function renderMapasNav() {
         const nav = document.getElementById('mapaChipsNav');
         if (!nav) return;
-        const ativo = this.mapaAbertaId;
+        const ativo = this.mapaAbertaId, rolagemV = nav.scrollTop, rolagemH = nav.scrollLeft; // P125: espelho de Notas — preserva a rolagem
         nav.replaceChildren();
         mapasDaPasta.call(this).forEach(mapa => {
             const chip = document.createElement('button');
@@ -496,7 +496,7 @@
             chip.style.setProperty('--notes-accent', '#0071e3');
             chip.addEventListener('click', () => {
                 if (chip.dataset.menuAberto === 'true') { delete chip.dataset.menuAberto; return; }
-                if (mapa.id !== ativo) { abrirMapa.call(this, mapa.id); renderArea.call(this); }
+                if (mapa.id !== this.mapaAbertaId) { abrirMapa.call(this, mapa.id); renderArea.call(this); } // P125: estado VIVO
             });
             chip.addEventListener('dblclick', () => renomearMapaNoChip.call(this, mapa.id));
             chip.addEventListener('contextmenu', evento => {
@@ -514,7 +514,7 @@
         mais.title = 'Novo mapa';
         mais.setAttribute('aria-label', 'Criar novo mapa');
         mais.addEventListener('click', () => criarMapaNoChip.call(this));
-        nav.append(mais);
+        nav.append(mais); nav.scrollTop = rolagemV; nav.scrollLeft = rolagemH; // P125: devolve a rolagem perdida no replaceChildren
     }
 
     /** Cria um mapa na PASTA ativa e abre (espelha o "+" de nova nota). */

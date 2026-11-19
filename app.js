@@ -584,7 +584,7 @@ class NotesPWA {
     /** Monta os chips (notas da pasta ativa + botão "+") no contêiner informado. */
     renderNotesNavEm(nav) {
         if (!nav) return;
-        const ativa = this.currentNotesProjectId;
+        const ativa = this.currentNotesProjectId, rolagemV = nav.scrollTop, rolagemH = nav.scrollLeft; // P125: preserva a rolagem
         nav.replaceChildren();
 
         for (const nota of this.notasDaPasta()) {
@@ -598,7 +598,7 @@ class NotesPWA {
             chip.style.setProperty('--notes-accent', this.accentDaNota(nota) || '#0071e3');
             chip.addEventListener('click', () => {
                 if (chip.dataset.menuAberto === 'true') { delete chip.dataset.menuAberto; return; }
-                if (nota.id !== ativa) this.openNotesModal(nota.id);
+                if (nota.id !== this.currentNotesProjectId) this.openNotesModal(nota.id); // P125: estado VIVO, não o `ativa` do render
             });
             chip.addEventListener('dblclick', () => this.renomearNota(nota.id));
             chip.addEventListener('contextmenu', event => {
@@ -616,7 +616,7 @@ class NotesPWA {
         mais.title = 'Nova nota';
         mais.setAttribute('aria-label', 'Criar nova nota');
         mais.addEventListener('click', () => this.criarNota());
-        nav.append(mais);
+        nav.append(mais); nav.scrollTop = rolagemV; nav.scrollLeft = rolagemH; // P125: devolve a rolagem perdida no replaceChildren
     }
 
     /**

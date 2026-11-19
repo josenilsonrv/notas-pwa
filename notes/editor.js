@@ -1045,8 +1045,24 @@ function installNotesEditor(App) {
             editor().parentElement.before(banner);
         }
     };
-    p.openNotesModal=async function(id){if(this.notesSession&&!(await this.closeNotesModal()))return;original.openNotesModal.call(this,id);if(this.currentNotesProjectId)this.beginNotesSession();};
-    p.openStageNotesModal=async function(id){if(this.notesSession&&!(await this.closeNotesModal()))return;original.openStageNotesModal.call(this,id);if(this.currentNotesProjectId)this.beginNotesSession();};
+    /**
+     * Solta a sessão ATUAL sem FECHAR o modal (P125). `closeNotesModal` tira `.active` do
+     * `#notesModalBackdrop`, e TODO o estilo do cabeçalho/faixa de chips depende dessa classe
+     * (`notes/editor.css`: com `.active` o `#notesContextNav` tem `padding:12px 18px`; sem ela
+     * cai para `padding:4px` + borda/margem). Remover e recolocar a classe no mesmo gesto
+     * disparava as transições do "estado fechado" — era a "piscada" ao trocar de nota pelo chip.
+     * Aqui: salva a nota atual (MESMO guarda de antes), limpa timers/painéis de cor e zera a
+     * sessão. Devolve `false` quando a nota atual NÃO pôde ser salva (a troca é abortada).
+     */
+    p.soltarSessaoSemFechar=async function(){
+        if(this.notesSession&&!(await this.saveNotes()))return false;
+        clearTimeout(this.notesSaveTimer);clearTimeout(this.notesCodeTimer);clearTimeout(this.notesDraftTimer);
+        this.closeNotesColorPanels();this.notesMotionVersion=(this.notesMotionVersion||0)+1;
+        this.notesSession=null;document.getElementById('notesContextNav').hidden=false;
+        return true;
+    };
+    p.openNotesModal=async function(id){if(this.notesSession&&!(await this.soltarSessaoSemFechar()))return;original.openNotesModal.call(this,id);if(this.currentNotesProjectId)this.beginNotesSession();};
+    p.openStageNotesModal=async function(id){if(this.notesSession&&!(await this.soltarSessaoSemFechar()))return;original.openStageNotesModal.call(this,id);if(this.currentNotesProjectId)this.beginNotesSession();};
     p.closeNotesModal=async function(){if(this.notesSession){if(!(await this.saveNotes()))return false;clearTimeout(this.notesSaveTimer);this.notesSession=null;}clearTimeout(this.notesCodeTimer);clearTimeout(this.notesDraftTimer);this.closeNotesColorPanels();this.notesMotionVersion=(this.notesMotionVersion||0)+1;document.getElementById('notesContextNav').hidden=false;original.closeNotesModal.call(this);return true;};
     // 🔄 [FIM: NOTAS - SESSÃO/MODAL (status/autosave/open/close)]
 

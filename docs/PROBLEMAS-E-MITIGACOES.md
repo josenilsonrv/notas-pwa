@@ -1872,3 +1872,31 @@ As 11 falhas são as conhecidas do motor de notas (baseline) e as 2 “regressõ
   2º) · `node tests/sync_completo.cjs` (passo 6: renomear o mapa chega ao 2º) · `node tests/multi_notas.cjs`
   · `node tests/notes_chip_menu.cjs` · `node tests/mapa_gestao.cjs`.
 
+### P125 — Selecionar um chip dava uma "piscada" (o modal fechava e reabria no meio da troca)
+- **Sintoma**: ao tocar/clicar no chip de outra nota, a faixa de chips dava um pulo e o topo do modal
+  "piscava". No celular a faixa **encolhia de 60 px para 44 px e voltava animando**.
+- **Causa**: o clique no chip chama `openNotesModal` e, no PWA, quem responde é o embrulho do motor
+  (`notes/editor.js`), que **FECHAVA** a nota atual antes de abrir a próxima:
+  `closeNotesModal` → `original.closeNotesModal` → `#notesModalBackdrop.classList.remove('active')`.
+  Como `#notesModalBackdrop` nasce com `active` fixo (`index.html`) e **todo** o estilo do cabeçalho/faixa
+  depende dessa classe (`notes/editor.css`: com `.active` o `#notesContextNav` tem `padding:12px 18px`;
+  sem ela cai para `padding:4px` + borda/margem), remover e recolocar a classe no mesmo gesto disparava
+  as transições do "estado fechado" (`background/padding/box-shadow`, 220 ms) — a piscada.
+  Medido em headless (390×844): classe `active` → sem → `active`, `padding-top` 12px → 4px → 12px,
+  **9 transições CSS** e altura da faixa 60 → 44 → 60 px.
+- **Correção**:
+  - `notes/editor.js`: novo **`p.soltarSessaoSemFechar()`** — salva a nota atual (MESMO guarda de antes:
+    se não conseguir salvar, a troca é abortada), limpa timers/painéis de cor, incrementa
+    `notesMotionVersion`, zera `notesSession` e mostra a faixa — **sem** tocar em `.active`.
+    `p.openNotesModal`/`p.openStageNotesModal` passam a trocar a nota **in-place** (o `closeNotesModal`
+    de fechar DE VERDADE continua igual).
+  - `app.js` (`renderNotesNavEm`) e `mapa/mapa.js` (`renderMapasNav`): a faixa guarda/restaura a rolagem
+    (`scrollTop`/`scrollLeft`) em volta do `replaceChildren` — com muitas notas ela voltava ao início a
+    cada troca; o handler do chip compara com o estado VIVO (`currentNotesProjectId`/`mapaAbertaId`), não
+    com o valor capturado no render (closure velha reabria a nota já ativa).
+  - `sw.js` + `index.html`: cache **v111** (`?v=111`), senão o PWA instalado continua servindo o JS velho.
+- **Como auditar**: `node tests/notes_troca_chip.cjs` (o backdrop nunca perde `.active`, a faixa mantém
+  `padding-top: 12px` e **zero** animações, altura constante e rolagem preservada) ·
+  `node tests/multi_notas.cjs` · `node tests/notes_chip_menu.cjs` · `node tests/nota_abertura_padrao.cjs`
+  · `node tests/multi_notas_100.cjs` · `node tests/mapa_chips.cjs`.
+
