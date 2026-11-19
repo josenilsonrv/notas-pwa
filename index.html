@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#F8FAFC">
     <meta name="color-scheme" content="light dark">
     <meta name="description" content="Editor de notas com hierarquia, checklist e formatação avançada">
@@ -13,11 +13,11 @@
     <title>Notas PWA</title>
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/svg+xml" href="./icon.svg">
-    <link rel="stylesheet" href="./styles.css?v=107">
+    <link rel="stylesheet" href="./styles.css?v=108">
     <link rel="stylesheet" href="./theme-origem.css">
     <link rel="stylesheet" href="./notes/editor.css">
     <link rel="stylesheet" href="./notes/extras.css">
-    <link rel="stylesheet" href="./notes/tables.css?v=107">
+    <link rel="stylesheet" href="./notes/tables.css?v=108">
     <link rel="stylesheet" href="./mapa/mapa.css">
 <!-- 🚀 [INÍCIO: PWA - BOOT SEM FLASH (TEMA ANTES DO CSS E WATCHDOG)] -->
     <script>
@@ -31,6 +31,11 @@
             // --app-status-bar definido no styles.css: claro #F8FAFC, escuro #11161D).
             const metaTema = document.querySelector('meta[name="theme-color"]');
             if (metaTema) metaTema.setAttribute('content', document.documentElement.dataset.theme === 'dark' ? '#11161D' : '#F8FAFC');
+            // O Chrome usa o `color-scheme` do DOCUMENTO para pintar a barra de
+            // navegação/safe-area do Android. Sincroniza-o com o tema do app (que é
+            // manual) antes do 1º paint, em vez de deixar "light dark" do sistema.
+            const metaEsquema = document.querySelector('meta[name="color-scheme"]');
+            if (metaEsquema) metaEsquema.setAttribute('content', document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
         })();
     </script>
 </head>
@@ -242,12 +247,12 @@
     <script src="./notes/editor.js"></script>
     <script src="./notes/table-math.js"></script>
     <script src="./notes/extras.js"></script>
-    <script src="./notes/tables.js?v=107"></script>
+    <script src="./notes/tables.js?v=108"></script>
     <!-- Visualizador de PDF: pdf.js (render) + StPageFlip (virada de livro, vendorizada). -->
     <script src="./notes/flipjs/page-flip.browser.js"></script>
     <script src="./notes/pdf.js"></script>
     <script src="./fontes.js"></script>
-    <script src="./app.js?v=107"></script>
+    <script src="./app.js?v=108"></script>
     <!-- Conta (login OPCIONAL): botão "Entrar" + diálogo. Sem sessão, o app é o de hoje. -->
     <script src="./conta.js"></script>
     <!-- Sincronização (seção 5): mapa das chaves locais + cliente (fila/snapshot/push). -->

@@ -134,7 +134,11 @@
 // `notes/tables.js` e `app.js` com `?v=107`, e o SW guarda TAMBÉM essas URLs versionadas.
 // Assim um Service Worker antigo (cache-first) não consegue servir o JS/CSS velhos.
 // Mudaram `index.html` e `sw.js`, então o cache PRECISA virar.
-const CACHE_NAME = 'notas-pwa-v107';
+// v108: `viewport-fit=cover` + o `<meta name="color-scheme">` passam a acompanhar o
+// TEMA MANUAL do app (antes ficava "light dark" e o Android pintava a barra de
+// navegação/safe-area de claro). Mudaram `index.html`, `app.js`, as URLs `?v=108`
+// e o `VERSAO_ASSETS`, então o cache PRECISA virar.
+const CACHE_NAME = 'notas-pwa-v108';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -148,7 +152,7 @@ const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf
  * no modal, monta o editor, etc.). A instalação só é concluída se TODOS estiverem
  * no cache — assim o modo offline nunca serve um app quebrado/à meio.
  */
-const VERSAO_ASSETS = '107'; // deve casar com `?v=` no index.html
+const VERSAO_ASSETS = '108'; // deve casar com `?v=` no index.html
 const ESSENCIAIS = [
     './',
     './index.html',

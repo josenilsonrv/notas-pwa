@@ -72,6 +72,9 @@ class ThemeManager {
         const corBarra = (window.getComputedStyle(this.root).getPropertyValue('--app-status-bar') || '').trim()
             || (isDark ? '#11161D' : '#F8FAFC');
         document.querySelector('meta[name="theme-color"]')?.setAttribute('content', corBarra);
+        // O Chrome Android usa o `color-scheme` do documento para a barra de
+        // navegação (área segura). O tema do app é MANUAL, então sincronizamos aqui.
+        document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', isDark ? 'dark' : 'light');
         if (this.toggle) {
             this.toggle.setAttribute('aria-checked', String(isDark));
             this.toggle.setAttribute('title', isDark ? 'Tema escuro ativo — toque para o claro' : 'Tema claro ativo — toque para o escuro');
