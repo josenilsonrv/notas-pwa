@@ -15,7 +15,7 @@ const {chromium}=require('playwright');
  const html=read('index.html').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*>/gi,'');
  await page.route('**/*',r=>r.request().resourceType()==='document'?r.fulfill({contentType:'text/html',body:html}):r.abort());
  await page.goto('http://notes.test');
- for(const f of ['styles.css','notes/editor.css','notes/extras.css','notes/tables.css'])await page.addStyleTag({content:read(f)});
+ for(const f of ['styles.css','theme-origem.css','notes/editor.css','notes/extras.css','notes/tables.css'])await page.addStyleTag({content:read(f)});
  for(const f of ['notes/editor.js','notes/extras.js','notes/table-math.js','notes/tables.js'])await page.addScriptTag({content:read(f)});
  const source=read('app.js');await page.addScriptTag({content:source.slice(0,source.indexOf("document.addEventListener('DOMContentLoaded'"))+'\nwindow.TestApp = NotesPWA;'});
  await page.evaluate(()=>{
@@ -48,12 +48,21 @@ const {chromium}=require('playwright');
  await structure.selectOption('rowDelete');assert.deepEqual(await count(),{rows:3,cols:4,all:12});assert.deepEqual(await focused(),{row:1,col:3});
  await structure.selectOption('columnDelete');assert.deepEqual(await rows.evaluateAll(items=>items.map(item=>item.cells.length)),[3,3,3]);
 
- // Tema: painel usa o MESMO vidro do app nos dois modos.
- const panel=page.locator('.notes-table-tools');
- assert.equal(await panel.evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(255, 255, 255, 0.88)');
+ // Padronização: MESMA altura, superfície e linguagem de botão da barra de texto.
+ await page.evaluate(()=>document.getElementById('notesToolbar').classList.add('notes-toolbar-inline'));
+ const panel=page.locator('.notes-table-tools'),toolbar=page.locator('#notesToolbar');
+ const css=(loc,prop)=>loc.evaluate((el,p)=>getComputedStyle(el)[p],prop);
+ const panelConfirm=panel.getByRole('button',{name:'Aplicar valor ou fórmula',exact:true}),toolbarButton=toolbar.locator('.toolbar-btn[data-command="bold"]');
+ const boxHeight=loc=>loc.evaluate(el=>el.getBoundingClientRect().height);
+ assert.equal(await css(panel,'flexWrap'),'nowrap');
+ assert.equal(await css(panel,'minHeight'),await css(toolbar,'minHeight'));
+ assert.equal(await css(panel,'backgroundColor'),await css(toolbar,'backgroundColor'));
+ assert.equal(await boxHeight(panelConfirm),await boxHeight(toolbarButton));
+ assert.equal(await css(panelConfirm,'color'),await css(toolbarButton,'color'));
  await page.evaluate(()=>{document.documentElement.dataset.theme='dark';});await page.waitForTimeout(50);
- assert.equal(await panel.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(21, 27, 35)');
- assert.equal(await panel.locator('select').first().evaluate(el=>getComputedStyle(el).color),'rgb(203, 213, 225)');
+ assert.equal(await css(panel,'backgroundColor'),await css(toolbar,'backgroundColor'));
+ assert.equal(await css(panelConfirm,'color'),await css(toolbarButton,'color'));
+ assert.equal(await panel.locator('select').first().evaluate(el=>getComputedStyle(el).color),'rgb(148, 163, 184)');
 
  // Mobile: a barra da tabela só aparece ACOPLADA ao teclado (acima da toolbar de texto).
  await page.evaluate(()=>{document.documentElement.dataset.theme='light';document.documentElement.classList.add('notes-mobile');});

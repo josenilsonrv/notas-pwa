@@ -119,7 +119,12 @@
 // painel da tabela com cores por TEMA (claro/escuro) e, no CELULAR, a barra da tabela
 // acoplada acima do teclado (nunca no topo). Mudaram `notes/tables.js`, `notes/tables.css`,
 // `app.js` e `arquitetura.md`, então o cache PRECISA virar de versão.
-const CACHE_NAME = 'notas-pwa-v104';
+// v105: a barra da TABELA foi PADRONIZADA com a barra de TEXTO: uma única linha com
+// rolagem, mesma altura (`--app-toolbar-altura`), mesma superfície de vidro, mesmos
+// botões (ícones SVG 18px, hover/focus do `.toolbar-btn`) e separadores; no celular
+// continua acoplada acima do teclado. Mudaram `notes/tables.js`, `notes/tables.css`,
+// `tests/notes_table_structure.cjs` e `arquitetura.md`, então o cache PRECISA virar.
+const CACHE_NAME = 'notas-pwa-v105';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +

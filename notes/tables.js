@@ -48,29 +48,31 @@ function installNotesTables(App){
  p.setupNotesEditing=function(){
   setup.call(this);if(this.notesTablesReady)return;this.notesTablesReady=true;this.notesDirtyTables=new Set();
   const app=this,root=editor();let active=null,selected=[],editing=false,frame,drag=null,referenceAnchor=null;
-  const panel=document.createElement('div');panel.className='notes-table-tools';panel.hidden=true;
+  const panel=document.createElement('div');panel.className='notes-table-tools app-barra app-rolagem';panel.hidden=true;
   const address=document.createElement('span');address.className='notes-table-address';address.textContent='A1';
   const input=document.createElement('input');input.className='notes-table-formula';input.setAttribute('aria-label','Valor ou fórmula da célula');input.placeholder='Valor ou fórmula: =SOMA(A1:A3)';
-  const makeButton=(text,name,action)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.title=name;b.setAttribute('aria-label',name);b.onmousedown=e=>e.preventDefault();b.onclick=action;return b;};
+  const makeButton=(text,name,action)=>{const b=document.createElement('button');b.type='button';b.className='notes-table-btn';b.textContent=text;b.title=name;b.setAttribute('aria-label',name);b.onmousedown=e=>e.preventDefault();b.onclick=action;return b;};
+  const icon=(button,path)=>{button.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+path+'</svg>';return button;};
+  const split=()=>{const separator=document.createElement('span');separator.className='notes-table-split';separator.setAttribute('aria-hidden','true');return separator;};
   const fill=()=>{if(active?.isConnected){address.textContent=label(active);input.value=source(active);input.title=active.title||'';numberFormat.value=active.dataset.numberFormat||'auto';currency.value=active.dataset.numberCurrency||'BRL';decimals.value=active.dataset.numberDecimals||'2';currencyLabel.hidden=numberFormat.value!=='currency';}};
   const focusCell=cell=>{const range=document.createRange();range.selectNodeContents(cell);range.collapse(false);root.focus({preventScroll:true});getSelection().removeAllRanges();getSelection().addRange(range);app.rememberNotesSelection();};
   const commit=()=>{if(!active?.isConnected)return;app.flushNotesTyping();const value=input.value.trim();if(value.startsWith('=')){active.dataset.formula=value;}else{delete active.dataset.formula;delete active.dataset.cellValue;delete active.dataset.formulaError;active.removeAttribute('title');active.textContent=input.value||'';if(!active.textContent)active.append(document.createElement('br'));}editing=false;referenceAnchor=null;app.notesRecalculateTable(tableOf(active));app.recordNotesHistory();focusCell(active);fill();};
-  const confirm=makeButton('Aplicar','Aplicar valor ou fórmula',commit);
+  const confirm=icon(makeButton('Aplicar','Aplicar valor ou fórmula',commit),'<path d="m5 12 4 4L19 6"/>');
   const functionsMenu=document.createElement('select');functionsMenu.setAttribute('aria-label','Inserir função matemática');functionsMenu.append(new Option('ƒx Cálculos',''));functions.forEach(([name,value])=>functionsMenu.append(new Option(name,value)));
   functionsMenu.onchange=()=>{if(!active||!functionsMenu.value)return;editing=true;referenceAnchor=null;input.value='='+functionsMenu.value+'()';input.focus();input.setSelectionRange(input.value.length-1,input.value.length-1);functionsMenu.value='';};
-  const help=makeButton('?','Ajuda de cálculos',()=>app.notesExtraDialog('Cálculos na tabela',dialog=>{
+  const help=icon(makeButton('?','Ajuda de cálculos',()=>app.notesExtraDialog('Cálculos na tabela',dialog=>{
    const text=document.createElement('p');text.className='notes-table-help';text.textContent='Comece com =. Use +, −, *, /, ^ (potência), % e parênteses. Exemplos: =A1+B1, =A1*15%, =SOMA(A1:A5), =MEDIA(A1:A5), =POTENCIA(A1;2), =ARRED(A1;2). Use vírgula decimal (1,5) e ponto e vírgula entre argumentos. As funções trigonométricas usam radianos; PI() retorna π. Enquanto edita a fórmula nesta barra, clique em uma célula para inserir sua referência. Shift+clique estende a referência para um intervalo. Enter aplica; Escape cancela. Shift+clique fora da edição de fórmula seleciona um grupo de células para formatar.';dialog.append(text);
-  },help));
-  const settings=makeButton('Ajustar','Tamanho e cores da tabela',()=>openSettings());
+  },help)),'<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/>');
+  const settings=icon(makeButton('Ajustar','Tamanho e cores da tabela',()=>openSettings()),'<line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2"/>');
   const formats=document.createElement('div');formats.className='notes-table-formats';
   const numberFormat=document.createElement('select');numberFormat.setAttribute('aria-label','Formato da célula');[['auto','Automático'],['number','Número'],['currency','Moeda'],['percent','Porcentagem']].forEach(([value,text])=>numberFormat.append(new Option(text,value)));
   const currency=document.createElement('select');currency.setAttribute('aria-label','Moeda da célula');[['BRL','Real (R$)'],['USD','Dólar (US$)'],['EUR','Euro (€)'],['GBP','Libra (£)'],['JPY','Iene (¥)']].forEach(([value,text])=>currency.append(new Option(text,value)));
   const decimals=document.createElement('input');decimals.type='number';decimals.min=0;decimals.max=10;decimals.value=2;decimals.setAttribute('aria-label','Casas decimais');
   const field=(text,control)=>{const label=document.createElement('label');label.append(document.createTextNode(text),control);formats.append(label);return label;};field('Formato',numberFormat);const currencyLabel=field('Moeda',currency);currencyLabel.hidden=true;field('Casas decimais',decimals);
   numberFormat.onchange=()=>currencyLabel.hidden=numberFormat.value!=='currency';decimals.oninput=()=>{if(numberFormat.value==='auto')numberFormat.value='number';};
-  formats.append(makeButton('Aplicar formato','Aplicar formato às células selecionadas',()=>{
+  const applyFormat=icon(makeButton('Aplicar formato','Aplicar formato às células selecionadas',()=>{
    if(!active?.isConnected)return;if(!decimals.checkValidity()){decimals.reportValidity();return;}app.flushNotesTyping();const targets=selected.filter(cell=>cell.isConnected);for(const cell of targets){cell.dataset.numberFormat=numberFormat.value;cell.dataset.numberCurrency=currency.value;cell.dataset.numberDecimals=String(Math.max(0,Math.min(10,Number(decimals.value)||0)));}app.notesRecalculateTable(tableOf(active));app.recordNotesHistory();
-  }));
+  }),'<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>');formats.append(applyFormat);
   formats.title='Porcentagem: 0,15 é exibido como 15%. A precisão dos cálculos é preservada.';
   // 🔄 [INÍCIO: NOTAS/TABELA - ESTRUTURA (LINHA/COLUNA/CÉLULA)]
   // Edição estrutural da tabela em que o cursor está: inserir/excluir LINHA,
@@ -170,7 +172,7 @@ function installNotesTables(App){
   };
   // 🔄 [FIM: NOTAS/TABELA - ESTRUTURA (LINHA/COLUNA/CÉLULA)]
 
-  panel.append(address,input,confirm,structureMenu,functionsMenu,settings,help,formats);document.getElementById('notesToolbar').after(panel);
+  panel.append(address,input,confirm,split(),structureMenu,functionsMenu,split(),settings,help,split(),formats);document.getElementById('notesToolbar').after(panel);
   // ⚡ [INÍCIO: NOTAS/TABELA - BARRA ACOPLADA AO TECLADO (MOBILE)]
   // No celular a barra da tabela sai do topo: fica sempre acoplada na parte de
   // baixo e, com o teclado aberto, empilha logo ACIMA da barra de texto. Assim

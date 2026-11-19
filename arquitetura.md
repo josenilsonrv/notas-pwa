@@ -189,8 +189,8 @@
 
 # Nome do Arquivo: notes/tables.css
 **Propósito:** Estilos da barra de ferramentas da tabela, do endereço/formula da célula e dos cursores de resize.
-- **[Linhas 1-63 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */` -> `.notes-table-*` (cores por token de TEMA: `--app-vidro-*`/`--color-*`; campos e `option` também no escuro) · `#notesEditor[data-table-resize]`
-  - **[Linhas 41-62 ~]** `/* ⚡ [INÍCIO: NOTAS/ESTILO - BARRA DA TABELA ACOPLADA AO TECLADO (MOBILE)] */` -> `html.notes-mobile … .notes-table-tools` (fora do dock fica oculta) + `.notes-table-tools-docked` (`position:fixed`, empilhada acima da toolbar via `--notes-table-dock-*`)
+- **[Linhas 1-73 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */` -> `.notes-table-*` PADRONIZADOS com a barra de texto: UMA linha (`nowrap`), altura `--app-toolbar-altura`, superfície de vidro do app, botões/selects 32px com hover/focus do `.toolbar-btn`, separadores e ícones 18px · `#notesEditor[data-table-resize]`
+  - **[Linhas 54-72 ~]** `/* ⚡ [INÍCIO: NOTAS/ESTILO - BARRA DA TABELA ACOPLADA AO TECLADO (MOBILE)] */` -> `html.notes-mobile … .notes-table-tools` (fora do dock fica oculta) + `.notes-table-tools-docked` (`position:fixed`, MESMO fundo/sombra/largura da toolbar e sem raio, empilhada acima dela via `--notes-table-dock-*`)
 
 # Nome do Arquivo: mapa/mapa.css
 **Propósito:** Estilos da área do mapa (shell, topbar, faixa de chips dos MAPAS, canvas/nós, conexões, minimapa, painel de propriedades e controles do layout automático).
@@ -298,13 +298,13 @@
 - **[Linhas 40-45 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - HISTÓRICO]` -> `p.recordNotesHistory=function(...args)` (flush de `notesDirtyTables` antes do snapshot)
 
 ## Implementação: Painel/edição (setupNotesEditing)
-- **[Linhas 47-272 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - PAINEL/EDIÇÃO (setupNotesEditing)]` -> `p.setupNotesEditing=function()`
-- **[Linhas 55-74 ~]** `const fill=` · `const commit=` · `confirm` · `functionsMenu` (ƒx) · `help` · `formats` (`numberFormat`/`currency`/`decimals`)
-- **[Linhas 75-171 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - ESTRUTURA (LINHA/COLUNA/CÉLULA)]` -> `blankCell` · `clearCell` · `samePresentation` · `applyStructure` · `insertRowAt` · `deleteRowAt` · `insertColumnAt` · `deleteColumnAt` · `insertCellAt` · `deleteCellAt` · `structureMenu` (⊞ Estrutura: inserir/excluir linha, coluna e célula — nasce conectado ao `<table>`, herda apresentação e entra no histórico)
-- **[Linhas 174-199 ~]** `// ⚡ [INÍCIO: NOTAS/TABELA - BARRA ACOPLADA AO TECLADO (MOBILE)]` -> `syncDock()` · `app.sincronizarBarraTabela` (no celular a barra da tabela NUNCA fica no topo: fica acoplada embaixo e, com o teclado aberto, empilha ACIMA da toolbar de texto via `--notes-toolbar-dock-*`; observa classe/estilo da `#notesToolbar`)
-- **[Linhas 201-212 ~]** `const markSelection=` · `function select(cell,extend=false)` · `coordinates(cell)` · `widths(table)` · `setWidths(table,values)`
-- **[Linhas 213-234 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - AJUSTES (openSettings)]` -> `function openSettings()` (largura/altura, fundo/borda, aplicar a seleção/linha/coluna/tabela)
-- **[Linhas 235-271 ~]** listeners: `selectionchange` · `input` · `keydown` ( `=`/`Enter`/`Tab`/Backspace) · `dblclick` · `pointerdown` (arraste de coluna/linha + referência) · `pointermove` · `pointerup/cancel` · observers (`root`, `#notesToolbar`) + `resize`/`syncDock`
+- **[Linhas 47-274 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - PAINEL/EDIÇÃO (setupNotesEditing)]` -> `p.setupNotesEditing=function()` (painel com as classes `app-barra`/`app-rolagem`, MESMA altura/padding/superfície da toolbar de texto; botões com a linguagem visual do `.toolbar-btn` + ícones SVG e separadores)
+- **[Linhas 55-76 ~]** `const fill=` · `const commit=` · `makeButton`/`icon`/`split` · `confirm` · `functionsMenu` (ƒx) · `help` · `formats` (`numberFormat`/`currency`/`decimals`)
+- **[Linhas 77-173 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - ESTRUTURA (LINHA/COLUNA/CÉLULA)]` -> `blankCell` · `clearCell` · `samePresentation` · `applyStructure` · `insertRowAt` · `deleteRowAt` · `insertColumnAt` · `deleteColumnAt` · `insertCellAt` · `deleteCellAt` · `structureMenu` (⊞ Estrutura: inserir/excluir linha, coluna e célula — nasce conectado ao `<table>`, herda apresentação e entra no histórico)
+- **[Linhas 176-201 ~]** `// ⚡ [INÍCIO: NOTAS/TABELA - BARRA ACOPLADA AO TECLADO (MOBILE)]` -> `syncDock()` · `app.sincronizarBarraTabela` (no celular a barra da tabela NUNCA fica no topo: fica acoplada embaixo e, com o teclado aberto, empilha ACIMA da toolbar de texto via `--notes-toolbar-dock-*`; observa classe/estilo da `#notesToolbar`)
+- **[Linhas 203-214 ~]** `const markSelection=` · `function select(cell,extend=false)` · `coordinates(cell)` · `widths(table)` · `setWidths(table,values)`
+- **[Linhas 215-236 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - AJUSTES (openSettings)]` -> `function openSettings()` (largura/altura, fundo/borda, aplicar a seleção/linha/coluna/tabela)
+- **[Linhas 237-273 ~]** listeners: `selectionchange` · `input` · `keydown` ( `=`/`Enter`/`Tab`/Backspace) · `dblclick` · `pointerdown` (arraste de coluna/linha + referência) · `pointermove` · `pointerup/cancel` · observers (`root`, `#notesToolbar`) + `resize`/`syncDock`
 
 ---
 
