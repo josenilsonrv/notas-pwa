@@ -21,4 +21,15 @@
 # SameSite=Lax + Secure) - veja docs/BACKEND-SYNC.md.
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# O APP DE VERDADE VIVE NO RENDER (origem unica: o FastAPI serve o PWA E a API).
+# O Pages e SO estatico: `/api/*` cai no index.html com 200 e login/sync NUNCA
+# funcionariam ali (o front esconde o botao do Google ao ver HTML em vez de JSON).
+# A NAVEGACAO passa a ir para o backend; os assets seguem disponiveis para quem
+# ainda tem o PWA antigo instalado no pages.dev (e evita quebrar o cache dele).
+# ---------------------------------------------------------------------------
+/            https://notas-pwa.onrender.com/  301
+/index.html  https://notas-pwa.onrender.com/  301
+
+
 # 🚀 [FIM: DEPLOY - REDIRECTS (SW/MANIFEST FORA DO FALLBACK DE SPA)]

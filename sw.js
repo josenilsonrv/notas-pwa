@@ -20,6 +20,17 @@
 // SERVICE WORKER PARA PWA
 // ============================================
 
+// v100: no visualizador de PDF a troca de pagina ganhou uma ANIMACAO de VIRAR A FOLHA (estilo livro):
+// clicar na pagina vira, clique-e-segure/arraste acompanha o ponteiro e, no CELULAR, arrastar vira a
+// pagina; a folha usa um "instantaneo" das paginas visiveis e a navegacao acontece POR BAIXO (coberta).
+// De quebra, o scroll VERTICAL foi alinhado (o contador voltava uma pagina ao navegar). Mudaram
+// `notes/pdf.js` e `notes/extras.css`, entao o cache precisa virar.
+// v99: no visualizador de PDF, ao EXPANDIR a janela ainda apareciam TRES paginas (a largura da "tela"
+// do par so era refeita quando mudava 2 <-> 1 pagina); agora ela e reescrita a CADA mudanca de tamanho
+// e, quando a leitura esta "Ajustada", o encaixe e refeito. Mudou `notes/pdf.js`.
+// v98: no visualizador de PDF o modo horizontal mostra DUAS paginas por TELA (cada PAR e uma tela) e
+// a rolagem vai da ESQUERDA para a DIREITA, andando de PAR em PAR (1-2 -> 3-4), sem par "quebrado".
+// Mudaram `notes/pdf.js` e `notes/extras.css`. (v97 tentou 2 paginas por LINHA com rolagem vertical.)
 // v96: o modo HORIZONTAL fica robusto (flex/overflow INLINE, nao depende so do CSS) e mostra UMA
 // pagina no CELULAR (DUAS so quando a janela tem >= 720px). Mudou `notes/pdf.js`.
 // v95: no modo HORIZONTAL cabem DUAS paginas por vez (lado a lado, com snap) e o contador vira
@@ -89,7 +100,17 @@
 // `conta.js` e `styles.css` mudaram, então o cache precisa virar de versão.
 // v73: o `index.html` é cacheado COM os cabeçalhos; o fix do COOP (`same-origin-allow-popups`,
 // P108) só chega ao dispositivo com um cache NOVO — o antigo serviria o cabeçalho velho.
-const CACHE_NAME = 'notas-pwa-v96';
+// v101: o VISUALIZADOR DE PDF virou um LIVRO (StPageFlip vendorizada em `notes/flipjs/`):
+// a virada agora é a folha dobrando pela LOMBADA (avança virando a página da direita para a
+// esquerda; volta virando a da esquerda para a direita), com orientação automática (1 página no
+// celular, 2 no PC). Mudaram `index.html`, `notes/pdf.js`, `notes/extras.css` e entrou um arquivo
+// NOVO (`notes/flipjs/page-flip.browser.js`) — o cache precisa virar de versão.
+// v102: o LOGIN COM GOOGLE voltou a completar. O CSP do backend passou a liberar o Google
+// Identity Services (`connect-src https://accounts.google.com/gsi/` e `style-src .../gsi/style`,
+// como a documentação oficial exige) e o HTML novo PRECISA chegar ao aparelho: o cache antigo
+// guarda o `index.html` COM os cabeçalhos, então ele seguia servindo o COOP/CSP velhos e a janela
+// do Google abria em branco. Mudaram `backend/app/main.py` e o teste-guarda `test_health.py`.
+const CACHE_NAME = 'notas-pwa-v102';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -120,6 +141,7 @@ const ESSENCIAIS = [
     './notes/tables.js',
     './notes/tables.css',
     './notes/pdf.js',
+    './notes/flipjs/page-flip.browser.js',
     './notes/pdfjs/pdf.min.mjs',
     './notes/pdfjs/pdf.worker.min.mjs',
     './fontes.js',
@@ -159,13 +181,13 @@ const adicionarComRetry = async (cache, asset, tentativas = 3) => {
 };
 
 /** Busca na rede com limite de tempo (nunca deixa o carregamento pendurado). */
-const buscarComTimeout = (request, ms) => new Promise((resolve, reject) => {
+const buscarComTimeout = (request, ms, opcoes = {}) => new Promise((resolve, reject) => {
     const controller = new AbortController();
     const timer = setTimeout(() => {
         controller.abort();
         reject(new Error('timeout'));
     }, ms);
-    fetch(request, { signal: controller.signal })
+    fetch(request, Object.assign({}, opcoes, { signal: controller.signal }))
         .then((response) => { clearTimeout(timer); resolve(response); })
         .catch((error) => { clearTimeout(timer); reject(error); });
 });
@@ -232,7 +254,7 @@ self.addEventListener('activate', (event) => {
 
 // 🚀 [FIM: PWA - ACTIVATE (LIMPEZA DE CACHES ANTIGOS)]
 
-// 🚨 [INÍCIO: CRÍTICO - FETCH STRATEGY (CACHE-FIRST + TIMEOUT)]
+// 🚨 [INÍCIO: CRÍTICO - FETCH STRATEGY (NAVEGAÇÃO REDE-PRIMEIRO + CACHE-FIRST DOS ASSETS)]
 // ============================================
 // FETCH STRATEGY
 // ============================================
@@ -251,31 +273,43 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
         const emCache = await caches.match(request);
 
-        // 1) Cache primeiro: a página abre na hora, sem depender da rede.
+        // 1) NAVEGAÇÃO (o documento): REDE primeiro, cache DEPOIS. O `index.html` é guardado COM
+        // os cabeçalhos (CSP/COOP) — servir o cache primeiro mantinha o aparelho preso numa versão
+        // antiga do app e o COOP velho deixava a janela do login do Google em branco (P122).
+        // `cache: 'no-cache'` obriga o navegador a revalidar com o servidor.
+        if (request.mode === 'navigate') {
+            try {
+                const response = await buscarComTimeout(request, TIMEOUT_MS, { cache: 'no-cache' });
+                guardarNoCache(request, response);
+                return response;
+            } catch (_) {
+                // Offline/rede lenta: a página guardada (ou o index) responde na hora — nunca
+                // fica em branco carregando para sempre.
+                if (emCache) return emCache;
+                const index = await caches.match('./index.html');
+                if (index) return index;
+                return new Response(OFFLINE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+            }
+        }
+
+        // 2) Demais assets: cache primeiro (abre na hora) e revalida em segundo plano.
         if (emCache) {
             revalidar(request);
             return emCache;
         }
 
-        // 2) Sem cópia local: tenta a rede, mas com timeout.
+        // 3) Sem cópia local: tenta a rede, mas com timeout.
         try {
             const response = await buscarComTimeout(request, TIMEOUT_MS);
             guardarNoCache(request, response);
             return response;
         } catch (_) {
-            // 3) Navegação sem cache: usa o index.html guardado (se existir) ou
-            //    uma página mínima — nunca fica em branco carregando para sempre.
-            if (request.mode === 'navigate') {
-                const index = await caches.match('./index.html');
-                if (index) return index;
-                return new Response(OFFLINE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
-            }
             return Response.error();
         }
     })());
 });
 
-// 🚨 [FIM: CRÍTICO - FETCH STRATEGY (CACHE-FIRST + TIMEOUT)]
+// 🚨 [FIM: CRÍTICO - FETCH STRATEGY (NAVEGAÇÃO REDE-PRIMEIRO + CACHE-FIRST DOS ASSETS)]
 
 // 🔄 [INÍCIO: ESTADO/API - MESSAGE HANDLING]
 // ============================================

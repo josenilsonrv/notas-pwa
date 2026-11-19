@@ -20,14 +20,17 @@ import re
 _DIRETIVAS_CSP = (
     "default-src 'self'",
     "worker-src 'self'",
-    "style-src 'self' 'unsafe-inline'",
+    # Login com Google (GIS): a documentacao oficial exige a folha de estilo em `gsi/style` no
+    # `style-src` e o PAI `https://accounts.google.com/gsi/` no `connect-src` — sem isso o CSP
+    # barra as chamadas do proprio GIS e o botao oficial nao completa o login.
+    "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
     "img-src 'self' data: blob: https:",
     "media-src 'self' data: blob: https:",
     "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com",
     # `data:` no `connect-src`: o Chromium reporta um "connect" interno ao re-renderizar imagens
     # `data:` (o anexo local de hoje). URL `data:` NÃO sai do navegador, então liberá-la aqui não
     # abre exfiltração nenhuma — e evita um erro de console que assustava sem haver defeito.
-    "connect-src 'self' ws: wss: data:",
+    "connect-src 'self' ws: wss: data: https://accounts.google.com/gsi/",
     "font-src 'self' data:",
     "manifest-src 'self'",
     "object-src 'none'",

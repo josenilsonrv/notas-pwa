@@ -112,11 +112,16 @@ const novoEstado = (foto = FOTO_DA_DONA) => {
 };
 
 /** Stub do backend: `curl /config` diz que o Google está ativo; `/google` troca por sessão. */
-const instalarApi = (page, estado, chamadas) => (async () => {
-    await page.route('https://accounts.google.com/gsi/client', rota => rota.fulfill({
-        contentType: 'application/javascript; charset=utf-8',
-        body: GIS_FAKE
-    }));
+const instalarApi = (page, estado, chamadas, opcoes = {}) => (async () => {
+    // `semGis`: o script do GIS NÃO é servido (o catch-all do `montar` aborta a requisição) — é o
+    // caso do webview de app social/navegador que bloqueia `accounts.google.com`.
+    if (!opcoes.semGis) {
+        await page.route('https://accounts.google.com/gsi/client', rota => rota.fulfill({
+            contentType: 'application/javascript; charset=utf-8',
+            body: GIS_FAKE
+        }));
+    }
+
     // A foto do PERFIL: só esta URL responde (qualquer outra cai no catch-all, que aborta) —
     // é o que permite testar o caminho da imagem que NÃO carrega (caso B).
     await page.route(FOTO_DA_DONA, rota => rota.fulfill({
@@ -293,7 +298,31 @@ const instalarApi = (page, estado, chamadas) => (async () => {
         assert.deepEqual(erros4, [], 'sem erro de página na recuperação da foto');
         await page4.close();
 
-        console.log('OK: login com Google — botão só com backend/Client ID; a FOTO do perfil assume o topo (iniciais se faltar/ falhar, e a foto VOLTA quando a rede retorna); sem backend nada muda');
+        // ---------- E) Google ativo, mas o script do GIS NÃO carrega (webview/bloqueio) ----------
+        // Antes o Google sumia em silêncio: o celular ficava sem botão e sem explicação. Agora a
+        // caixa dá lugar a uma dica com o que fazer (abrir no navegador do aparelho).
+        const estadoSemGis = novoEstado();
+        const chamadasSemGis = [];
+        const page5 = await browser.newPage({ viewport: { width: 390, height: 800 } });
+        const erros5 = [];
+        page5.on('pageerror', e => erros5.push(e.message));
+        await montar(page5, pagina => instalarApi(pagina, estadoSemGis, chamadasSemGis, { semGis: true }));
+
+        await page5.locator('#contaBtn').click();
+        const caixa5 = page5.locator('.conta-dialog');
+        await caixa5.waitFor();
+        const dica = caixa5.locator('[data-conta-google-aviso]');
+        await dica.waitFor();
+        assert.ok((await dica.textContent()).includes('navegador'), 'a dica diz para abrir no navegador do aparelho');
+        assert.equal(await caixa5.locator('.conta-google .gis-fake').count(), 0, 'sem o script, nenhum botão do Google');
+        assert.equal(await caixa5.locator('.conta-google-divisor').isHidden(), true, 'sem botão, o divisor "ou" também não aparece');
+        assert.equal(await caixa5.locator('#contaEmail').count(), 1, 'o formulário de e-mail/senha continua disponível');
+        assert.ok(chamadasSemGis.some(c => c.caminho === '/config'), 'o backend foi consultado (/config) antes da dica');
+        assert.deepEqual(erros5, [], 'sem erro de página quando o script do Google é bloqueado');
+        await page5.close();
+
+
+        console.log('OK: login com Google — botão só com backend/Client ID; a FOTO do perfil assume o topo (iniciais se faltar/ falhar, e a foto VOLTA quando a rede retorna); sem backend nada muda; com o script do GIS bloqueado aparece a dica de abrir no navegador');
     } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exit(1); });
 // 🧪 [FIM: TESTE - CONTA GOOGLE - PARTE 2]

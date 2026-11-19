@@ -256,8 +256,26 @@ function installConta(App) {
     };
 
     /**
+     * O backend TEM Google ativo, mas o script do GIS não carregou (webview de app social,
+     * bloqueio de rede ou CSP antiga em cache). Em vez de o Google sumir em silêncio — o que
+     * deixa o usuário sem botão e sem explicação, típico no celular —, diz o que fazer.
+     */
+    p.contaGoogleSemScript = function (dialog) {
+        const alvo = dialog.querySelector('[data-conta-google]');
+        if (!alvo || alvo.dataset.semScript === 'true') return;
+        alvo.dataset.semScript = 'true';
+        const aviso = paragrafo(
+            'Não foi possível carregar o login do Google aqui. Abra o app no navegador do aparelho (Chrome ou Safari) e tente de novo.',
+            'conta-aviso'
+        );
+        aviso.dataset.contaGoogleAviso = '';
+        alvo.after(aviso);
+    };
+
+    /**
      * Monta o botão OFICIAL do Google no diálogo (renderizado pelo próprio GIS). Padrão de
-     * mercado: só aparece quando o backend tem Client ID E o script do Google carregou.
+     * mercado: só aparece quando o backend tem Client ID E o script do Google carregou — se o
+     * script falhar, a caixa dá lugar à dica de `contaGoogleSemScript`.
      */
     p.contaGoogleMontar = async function (dialog, mostrarErro) {
         const alvo = dialog.querySelector('[data-conta-google]');
@@ -265,7 +283,10 @@ function installConta(App) {
         const info = await this.contaGoogleConfig();
         if (!info || !info.google_ativo || !info.google_client_id) return;
         const google = await this.contaGoogleScript();
-        if (!google) return;
+        if (!google) {
+            this.contaGoogleSemScript(dialog);
+            return;
+        }
         alvo.hidden = false;
         const divisor = dialog.querySelector('[data-conta-google-divisor]');
         if (divisor) divisor.hidden = false;

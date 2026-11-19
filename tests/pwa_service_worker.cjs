@@ -16,9 +16,19 @@ const {chromium}=require('playwright');
 const raiz=path.join(__dirname,'..');
 const TIPOS={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png'};
 const PORTA=8123;
+// Documento CONTROLADO pelo teste: a versão "A" vira "B" para provar que a NAVEGAÇÃO vai à
+// rede primeiro (o cache é só o plano B) — era o cache-first que prendia o aparelho na versão
+// antiga e mantinha a janela do login do Google em branco (COOP/CSP velhos no HTML guardado).
+let htmlNav='<!doctype html><meta charset="utf-8"><title>nav</title><body data-versao="A">A</body>';
 
 const servidor=http.createServer((req,res)=>{
   const rel=decodeURIComponent(req.url.split('?')[0]);
+  if(rel==='/nav-teste'){
+    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
+    res.end(htmlNav);
+    return;
+  }
+
   const alvo=path.resolve(raiz, rel==='/' ? 'index.html' : '.'+rel);
   const existe=alvo.toLowerCase().startsWith(raiz.toLowerCase()) && fs.existsSync(alvo) && !fs.statSync(alvo).isDirectory();
   if(!existe){
@@ -80,8 +90,21 @@ const servidor=http.createServer((req,res)=>{
   });
   assert.equal(aviso.existe,true,'aviso de nova versao aparece na tela');
   assert.equal(aviso.botao,'Atualizar agora','aviso traz o botao "Atualizar agora"');
+  // NAVEGAÇÃO: o HTML vem SEMPRE da rede primeiro (o cache é o plano B). Antes, o cache-first
+  // deixava o aparelho preso na versão antiga — com o `index.html` guardado com COOP/CSP velhos,
+  // a janela do login do Google abria em branco (P122). O cache continua cobrindo o offline.
+  await page.goto(base+'nav-teste',{waitUntil:'domcontentloaded'});
+  assert.equal(await page.evaluate(()=>document.body.dataset.versao),'A','1a visita recebe a versao do servidor');
+  htmlNav=htmlNav.replace('data-versao="A">A','data-versao="B">B');
+  await page.reload({waitUntil:'domcontentloaded'});
+  assert.equal(await page.evaluate(()=>document.body.dataset.versao),'B','reload ja traz o HTML NOVO do servidor (rede primeiro)');
+  await ctx.setOffline(true);
+  await page.reload({waitUntil:'domcontentloaded'});
+  assert.equal(await page.evaluate(()=>document.body.dataset.versao),'B','offline ainda abre a pagina guardada (cache como plano B)');
+  await ctx.setOffline(false);
+
   assert.deepEqual(erros,[],'sem erros de pagina');
-  console.log('OK: sw.js na raiz servido como JavaScript (fora do fallback de SPA), registro com updateViaCache none e app inicia controlado');
+  console.log('OK: sw.js na raiz servido como JavaScript (fora do fallback de SPA), registro com updateViaCache none, navegacao REDE-primeiro (cache como plano B, inclusive offline) e app inicia controlado');
  }finally{await browser.close();servidor.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
 // 🧪 [FIM: TESTE - PWA SERVICE WORKER]

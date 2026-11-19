@@ -71,12 +71,18 @@ def test_sw_nunca_e_cacheado(cliente):
 
 
 def test_cabecalhos_de_seguranca_no_app(cliente):
-    """CSP por HASH (cacheável), nosniff, anti-clickjacking e WS liberado no connect-src."""
+    """CSP por HASH (cacheável), nosniff, anti-clickjacking, WS e GIS liberados."""
     resposta = cliente.get("/")
     politica = resposta.headers["content-security-policy"]
     assert "sha256-" in politica, "o script inline do index.html entra por hash"
     assert "frame-ancestors 'none'" in politica
     assert "connect-src 'self' ws: wss:" in politica, "o WebSocket precisa passar"
+    # Login com Google (GIS): a documentacao oficial exige o PAI `gsi/` no connect-src e a folha
+    # de estilo em `gsi/style`. Sem isto o CSP barra as chamadas do proprio GIS e o botao
+    # oficial NAO completa o login (o sintoma classico e a janela do Google em branco).
+    assert "https://accounts.google.com/gsi/" in politica, "o connect-src do GIS precisa passar"
+    assert "https://accounts.google.com/gsi/style" in politica, "o style-src do GIS precisa passar"
+    assert "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com" in politica
     assert "object-src 'none'" in politica
     assert resposta.headers["x-content-type-options"] == "nosniff"
     assert resposta.headers["x-frame-options"] == "DENY"
