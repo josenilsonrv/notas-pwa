@@ -13,7 +13,7 @@ Editor de notas avançado como Progressive Web App (PWA) para uso em celular, co
 - **Múltiplas notas**: Botão "+" cria notas novas; chips no topo alternam entre elas (duplo clique/toque longo renomeia ou exclui) e cada chip segue a cor padrão da sua nota. A área dos chips **rola na vertical** a partir de ~2 linhas e o botão "+" fica preso no canto inferior direito
 - **Navegação**: Setas para mover itens, colapso/expansão de hierarquias
 - **Blocos de código**: Bloco de código com realce e linguagem
-- **Tabelas**: Tabela estilo planilha com fórmulas (SOMA, MEDIA, POTENCIA, etc.), formatos de número/moeda/porcentagem, cores e redimensionamento; tocar fora da tabela posiciona o cursor logo após ela
+- **Tabelas**: Tabela estilo planilha com fórmulas (SOMA, MEDIA, POTENCIA, etc.), formatos de número/moeda/porcentagem, cores e redimensionamento; menu **⊞ Estrutura** insere/exclui linha, coluna e célula sempre conectadas à tabela; a barra da tabela acompanha o TEMA (claro/escuro) e, no celular, aparece acoplada ao teclado (nunca no topo); tocar fora da tabela posiciona o cursor logo após ela
 - **Inserir**: Imagem, arquivo, tabela, data, vídeo do YouTube (incorporado) e divisor
 - **Links**: Inserir/editar links com auto-link do texto digitado
 - **Modelos de nota**: Salvar a nota atual como modelo e reaplicá-la

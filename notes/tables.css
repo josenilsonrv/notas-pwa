@@ -1,11 +1,20 @@
 /* 🎨 [INÍCIO: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */
-.notes-table-tools { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:7px 14px; background:color-mix(in srgb,var(--color-bg-container,#eff2f6) 85%,transparent); border-bottom:1px solid #8090a030; font:13px system-ui; }
+/* Cores SEMPRE pelos tokens do tema (claro/escuro): a barra usa o mesmo vidro das
+   barras de Notas e os campos usam o vidro de campo (`styles.css`). Nada de
+   `#eff2f6` fixo — era isso que deixava a barra clara no modo escuro. */
+.notes-table-tools { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:7px 14px; background:var(--app-vidro-fundo,var(--color-bg-container,#eff2f6)); border-bottom:1px solid var(--app-vidro-borda,var(--color-border,#8090a030)); color:var(--color-text-main,#1d1d1f); -webkit-backdrop-filter:var(--app-vidro-blur,none); backdrop-filter:var(--app-vidro-blur,none); font:13px system-ui; }
 .notes-table-tools[hidden] { display:none !important; }
 .notes-table-address { min-width:30px; font-weight:600; color:var(--notes-accent,var(--color-neon-blue)); }
-.notes-table-tools input,.notes-table-tools button,.notes-table-tools select { min-height:30px; border:1px solid #8090a050; border-radius:5px; background:transparent; color:inherit; padding:4px 7px; font:inherit; }
+.notes-table-tools input,.notes-table-tools button,.notes-table-tools select { min-height:30px; border:1px solid var(--app-vidro-campo-borda,var(--color-border,#8090a050)); border-radius:5px; background:var(--app-vidro-campo-fundo,transparent); color:inherit; padding:4px 7px; font:inherit; }
 .notes-table-tools .notes-table-formula { flex:1 1 160px; min-width:100px; }
 .notes-table-tools button,.notes-table-tools select { cursor:pointer; }
-.notes-table-tools input:focus { outline:1px solid var(--notes-accent,var(--color-neon-blue)); }
+.notes-table-tools input::placeholder { color:var(--color-text-muted,#6e6e73); }
+.notes-table-tools :is(input,select):focus { outline:1px solid var(--notes-accent,var(--color-neon-blue)); outline-offset:1px; }
+.notes-table-tools select option { background:var(--app-vidro-campo-fundo,#fff); color:var(--color-text-main,#1d1d1f); }
+html[data-theme="dark"] .notes-table-tools { color-scheme:dark; }
+html[data-theme="dark"] .notes-table-tools :is(input,button,select) { background:var(--app-vidro-campo-fundo,#0d1218); border-color:var(--app-vidro-campo-borda,#263241); color:#cbd5e1; }
+html[data-theme="dark"] .notes-table-tools input::placeholder { color:#94a3b8; }
+html[data-theme="dark"] .notes-table-tools select option { background:#0d1218; color:#cbd5e1; }
 .notes-table-help { font-size:14px; line-height:1.7; }
 .notes-extra-dialog:has(form input[type=color]) label { grid-template-columns:135px minmax(0,1fr); }
 .notes-extra-dialog input[type=checkbox] { width:18px; height:18px; accent-color:var(--color-neon-blue); }
@@ -14,6 +23,7 @@
 #notesEditor table[data-note-table] { max-width:none; }
 #notesEditor td[data-formula],#notesEditor th[data-formula] { font-variant-numeric:tabular-nums; }
 #notesEditor [data-formula-error=true] { color:#b42318; }
+html[data-theme="dark"] #notesEditor [data-formula-error=true] { color:#fca5a5; }
 ::highlight(notes-table-selection) { background-color:#729dc42b; }
 
 .notes-table-formats { display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-basis:100%; }
@@ -27,4 +37,27 @@
 /* Descendant editing cursors must not override the resize affordance. */
 #notesEditor[data-table-resize="x"], #notesEditor[data-table-resize="x"] * { cursor:col-resize !important; }
 #notesEditor[data-table-resize="y"], #notesEditor[data-table-resize="y"] * { cursor:row-resize !important; }
+
+/* ⚡ [INÍCIO: NOTAS/ESTILO - BARRA DA TABELA ACOPLADA AO TECLADO (MOBILE)] */
+/* No celular a barra da tabela NÃO fica no topo: ela só aparece acoplada acima
+   do teclado (empilhada sobre a barra de texto, mesma largura/coluna). A posição
+   é calculada por `syncDock()` em `notes/tables.js` a partir dos valores que o
+   app.js já usa para a toolbar (`--notes-toolbar-dock-*`). */
+html.notes-mobile #notesModal .notes-table-tools:not(.notes-table-tools-docked) { display:none !important; }
+html #notesModal .notes-table-tools.notes-table-tools-docked {
+    position:fixed;
+    left:var(--notes-table-dock-left,0px);
+    width:var(--notes-table-dock-width,100%);
+    bottom:var(--notes-table-dock-bottom,0px);
+    z-index:1201;
+    margin:0;
+    border-bottom:1px solid var(--app-vidro-borda,var(--color-border,#2a3543));
+    border-radius:12px 12px 0 0;
+    box-shadow:0 -10px 28px rgba(0,0,0,.14);
+    max-height:45vh;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+}
+html[data-theme="dark"] #notesModal .notes-table-tools.notes-table-tools-docked { box-shadow:0 -10px 28px rgba(0,0,0,.5); }
+/* ⚡ [FIM: NOTAS/ESTILO - BARRA DA TABELA ACOPLADA AO TECLADO (MOBILE)] */
 /* 🎨 [FIM: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */

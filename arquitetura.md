@@ -86,7 +86,7 @@
 - **[Linhas 1121-1126 ~]** `(sem comentário de ancoragem)` -> `setupResize()`
 
 ## Implementação: Toolbar PWA (ordem persistida + edição por arraste)
-- **[Linhas 1128-1652 ~]** `// ⚡ [INÍCIO: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]` -> `filhosToolbar()` (`[1091]`) · `chavesToolbar()`
+- **[Linhas 1128-1655 ~]** `// ⚡ [INÍCIO: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]` -> `filhosToolbar()` (`[1091]`) · `chavesToolbar()`
 - **[Linhas 1154-1163 ~]** `(sem comentário de ancoragem)` -> `lerOrdemToolbar()` · `salvarOrdemToolbar(ordem)`
 - **[Linhas 1165-1217 ~]** `/**` (doc de `aplicarOrdemToolbar`) -> `aplicarOrdemToolbar(ordem = null, opcoes = {})` (trava de reentrância)
 - **[Linhas 1219-1242 ~]** `/** (Re)liga o observer da barra (ele fica desligado enquanto aplicamos a ordem). */` -> `agendarOrdemToolbar()`
@@ -97,7 +97,7 @@
 
 ## Implementação: Toolbar acoplada ao teclado virtual
 - **[Linhas 1523-1588 ~]** `/** Mantém a barra logo acima do teclado virtual (visualViewport). */` -> `ativarToolbarTeclado()` (inclui a rolagem do caret a cada `input`, coalescida num `requestAnimationFrame`)
-- **[Linhas 1600-1651 ~]** `/**` (doc de `aplicarToolbarTeclado`) -> `aplicarToolbarTeclado(insetForcado)` (reserva `altura da barra + FOLGA_BARRA_TECLADO` no editor)
+- **[Linhas 1601-1655 ~]** `/**` (doc de `aplicarToolbarTeclado`) -> `aplicarToolbarTeclado(insetForcado)` (reserva `altura da barra + FOLGA_BARRA_TECLADO` no editor e chama **`this.sincronizarBarraTabela?.()`** — a barra contextual da tabela, instalada em `notes/tables.js`, empilha acima desta quando o teclado abre)
 
 ## Implementação: Modo mobile e módulos instaladores
 - **[Linhas 1661-1757 ~]** `// 🔄 [INÍCIO: PWA - MODO MOBILE (installModoMobileNotas)]` -> `function installModoMobileNotas(App)` (classe `notes-mobile`; **`sairDaTelaCheiaNotasMobile()`** = tira a tela cheia (⛶) ao entrar no celular, **`alternarAreaNotasMapa()`** = o ⇄ do cabeçalho leva ao Mapa e **`sairDaTelaCheiaMapaMobile()`** = libera a tela cheia do MAPA ao virar celular — P114; ao entrar/sair do modo chama **`sincronizarBarraModo()`** (reconstrói a barra ÚNICA do mapa quando o MODO troca: no celular ela fica enxuta, com os grupos na gaveta "Mais" — ver `aplicarBarraMapaTeclado`, mapa/mapa.js — P117) e **`sincronizarColapsoArea()`** (chips no celular × barras no PC))
@@ -189,7 +189,8 @@
 
 # Nome do Arquivo: notes/tables.css
 **Propósito:** Estilos da barra de ferramentas da tabela, do endereço/formula da célula e dos cursores de resize.
-- **[Linhas 1-30 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */` -> `.notes-table-*`, `#notesEditor[data-table-resize]`
+- **[Linhas 1-63 ~]** `/* 🎨 [INÍCIO: NOTAS/ESTILO - BARRA DE FERRAMENTAS DA TABELA + RESIZE] */` -> `.notes-table-*` (cores por token de TEMA: `--app-vidro-*`/`--color-*`; campos e `option` também no escuro) · `#notesEditor[data-table-resize]`
+  - **[Linhas 41-62 ~]** `/* ⚡ [INÍCIO: NOTAS/ESTILO - BARRA DA TABELA ACOPLADA AO TECLADO (MOBILE)] */` -> `html.notes-mobile … .notes-table-tools` (fora do dock fica oculta) + `.notes-table-tools-docked` (`position:fixed`, empilhada acima da toolbar via `--notes-table-dock-*`)
 
 # Nome do Arquivo: mapa/mapa.css
 **Propósito:** Estilos da área do mapa (shell, topbar, faixa de chips dos MAPAS, canvas/nós, conexões, minimapa, painel de propriedades e controles do layout automático).
@@ -297,11 +298,13 @@
 - **[Linhas 40-45 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - HISTÓRICO]` -> `p.recordNotesHistory=function(...args)` (flush de `notesDirtyTables` antes do snapshot)
 
 ## Implementação: Painel/edição (setupNotesEditing)
-- **[Linhas 47-144 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - PAINEL/EDIÇÃO (setupNotesEditing)]` -> `p.setupNotesEditing=function()`
-- **[Linhas 55-76 ~]** `const fill=` · `const commit=` · `confirm` · `functionsMenu` (ƒx) · `help` · `formats` (`numberFormat`/`currency`/`decimals`)
-- **[Linhas 77-88 ~]** `const markSelection=` · `function select(cell,extend=false)` · `coordinates(cell)` · `widths(table)` · `setWidths(table,values)`
-- **[Linhas 89-110 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - AJUSTES (openSettings)]` -> `function openSettings()` (largura/altura, fundo/borda, aplicar a seleção/linha/coluna/tabela)
-- **[Linhas 111-142 ~]** listeners: `selectionchange` · `input` · `keydown` ( `=`/`Enter`/`Tab`/Backspace) · `dblclick` · `pointerdown` (arraste de coluna/linha + referência) · `pointermove` · `pointerup/cancel`
+- **[Linhas 47-272 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - PAINEL/EDIÇÃO (setupNotesEditing)]` -> `p.setupNotesEditing=function()`
+- **[Linhas 55-74 ~]** `const fill=` · `const commit=` · `confirm` · `functionsMenu` (ƒx) · `help` · `formats` (`numberFormat`/`currency`/`decimals`)
+- **[Linhas 75-171 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - ESTRUTURA (LINHA/COLUNA/CÉLULA)]` -> `blankCell` · `clearCell` · `samePresentation` · `applyStructure` · `insertRowAt` · `deleteRowAt` · `insertColumnAt` · `deleteColumnAt` · `insertCellAt` · `deleteCellAt` · `structureMenu` (⊞ Estrutura: inserir/excluir linha, coluna e célula — nasce conectado ao `<table>`, herda apresentação e entra no histórico)
+- **[Linhas 174-199 ~]** `// ⚡ [INÍCIO: NOTAS/TABELA - BARRA ACOPLADA AO TECLADO (MOBILE)]` -> `syncDock()` · `app.sincronizarBarraTabela` (no celular a barra da tabela NUNCA fica no topo: fica acoplada embaixo e, com o teclado aberto, empilha ACIMA da toolbar de texto via `--notes-toolbar-dock-*`; observa classe/estilo da `#notesToolbar`)
+- **[Linhas 201-212 ~]** `const markSelection=` · `function select(cell,extend=false)` · `coordinates(cell)` · `widths(table)` · `setWidths(table,values)`
+- **[Linhas 213-234 ~]** `// 🔄 [INÍCIO: NOTAS/TABELA - AJUSTES (openSettings)]` -> `function openSettings()` (largura/altura, fundo/borda, aplicar a seleção/linha/coluna/tabela)
+- **[Linhas 235-271 ~]** listeners: `selectionchange` · `input` · `keydown` ( `=`/`Enter`/`Tab`/Backspace) · `dblclick` · `pointerdown` (arraste de coluna/linha + referência) · `pointermove` · `pointerup/cancel` · observers (`root`, `#notesToolbar`) + `resize`/`syncDock`
 
 ---
 

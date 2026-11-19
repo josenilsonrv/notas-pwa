@@ -1630,6 +1630,7 @@ class NotesPWA {
                 editor?.style.removeProperty('padding-bottom');
             }
             this.notesToolbarTecladoAplicado = 'livre';
+            this.sincronizarBarraTabela?.();
             return;
         }
 
@@ -1648,6 +1649,8 @@ class NotesPWA {
         toolbar.style.setProperty('--notes-toolbar-dock-left', Math.round(Math.max(0, caixa.left) - zerado.left) + 'px');
         toolbar.style.setProperty('--notes-toolbar-dock-bottom', Math.round(zerado.bottom - (layout - inset)) + 'px');
         if (editor) editor.style.paddingBottom = (toolbar.offsetHeight + NotesPWA.FOLGA_BARRA_TECLADO) + 'px';
+        // A barra contextual da tabela (notes/tables.js) empilha ACIMA desta barra.
+        this.sincronizarBarraTabela?.();
     }
     // ⚡ [FIM: PWA - BARRA DE FERRAMENTAS INLINE, ORDEM E TECLADO]
 }

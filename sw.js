@@ -115,7 +115,11 @@
 // marca `notas-pwa-sync-conta` e essas notas NUNCA subiam. Agora `syncSubirFaltantes` enfileira
 // as notas que a nuvem DESCONHECE (id nunca visto), sem ressuscitar o que foi apagado em outro
 // aparelho (id já visto). Mudaram `sync/sync-cliente.js` e `sync/chaves.js`.
-const CACHE_NAME = 'notas-pwa-v103';
+// v104: TABELAS — menu contextual ⊞ Estrutura (inserir/excluir linha, coluna e célula),
+// painel da tabela com cores por TEMA (claro/escuro) e, no CELULAR, a barra da tabela
+// acoplada acima do teclado (nunca no topo). Mudaram `notes/tables.js`, `notes/tables.css`,
+// `app.js` e `arquitetura.md`, então o cache PRECISA virar de versão.
+const CACHE_NAME = 'notas-pwa-v104';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
