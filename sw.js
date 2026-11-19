@@ -138,7 +138,11 @@
 // TEMA MANUAL do app (antes ficava "light dark" e o Android pintava a barra de
 // navegação/safe-area de claro). Mudaram `index.html`, `app.js`, as URLs `?v=108`
 // e o `VERSAO_ASSETS`, então o cache PRECISA virar.
-const CACHE_NAME = 'notas-pwa-v108';
+// v109: MANIFEST por TEMA. O splash e a barra de navegação do PWA INSTALADO são
+// fixados pelo manifest (não pelo CSS/meta). O app troca o `<link rel=manifest>`
+// entre `manifest.json` (claro) e `manifest-escuro.json` (escuro); ao instalar/
+// reinstalar no tema escuro, splash e barra do sistema ficam escuros.
+const CACHE_NAME = 'notas-pwa-v109';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
@@ -152,7 +156,7 @@ const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf
  * no modal, monta o editor, etc.). A instalação só é concluída se TODOS estiverem
  * no cache — assim o modo offline nunca serve um app quebrado/à meio.
  */
-const VERSAO_ASSETS = '108'; // deve casar com `?v=` no index.html
+const VERSAO_ASSETS = '109'; // deve casar com `?v=` no index.html
 const ESSENCIAIS = [
     './',
     './index.html',
@@ -188,6 +192,7 @@ const ESSENCIAIS = [
     './mapa/mapa-interacao.js',
     './mapa/mapa.js',
     './manifest.json',
+    './manifest-escuro.json',
     './icon.svg'
 ];
 

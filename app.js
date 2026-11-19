@@ -75,6 +75,9 @@ class ThemeManager {
         // O Chrome Android usa o `color-scheme` do documento para a barra de
         // navegação (área segura). O tema do app é MANUAL, então sincronizamos aqui.
         document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', isDark ? 'dark' : 'light');
+        // Splash + barra do sistema do PWA instalado são fixados pelo manifest.
+        const linkManifest = document.getElementById('appManifest');
+        if (linkManifest) linkManifest.href = isDark ? './manifest-escuro.json' : './manifest.json';
         if (this.toggle) {
             this.toggle.setAttribute('aria-checked', String(isDark));
             this.toggle.setAttribute('title', isDark ? 'Tema escuro ativo — toque para o claro' : 'Tema claro ativo — toque para o escuro');

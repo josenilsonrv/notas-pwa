@@ -11,13 +11,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Notas">
     <title>Notas PWA</title>
-    <link rel="manifest" href="./manifest.json">
+    <link id="appManifest" rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/svg+xml" href="./icon.svg">
-    <link rel="stylesheet" href="./styles.css?v=108">
+    <link rel="stylesheet" href="./styles.css?v=109">
     <link rel="stylesheet" href="./theme-origem.css">
     <link rel="stylesheet" href="./notes/editor.css">
     <link rel="stylesheet" href="./notes/extras.css">
-    <link rel="stylesheet" href="./notes/tables.css?v=108">
+    <link rel="stylesheet" href="./notes/tables.css?v=109">
     <link rel="stylesheet" href="./mapa/mapa.css">
 <!-- 🚀 [INÍCIO: PWA - BOOT SEM FLASH (TEMA ANTES DO CSS E WATCHDOG)] -->
     <script>
@@ -36,6 +36,10 @@
             // manual) antes do 1º paint, em vez de deixar "light dark" do sistema.
             const metaEsquema = document.querySelector('meta[name="color-scheme"]');
             if (metaEsquema) metaEsquema.setAttribute('content', document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+            // O splash e a barra do sistema do PWA INSTALADO vêm do manifest. Escolhe
+            // o manifest do tema ATUAL (na instalação/reinstalação ele fixa as cores).
+            const linkManifest = document.getElementById('appManifest');
+            if (linkManifest) linkManifest.href = document.documentElement.dataset.theme === 'dark' ? './manifest-escuro.json' : './manifest.json';
         })();
     </script>
 </head>
@@ -247,12 +251,12 @@
     <script src="./notes/editor.js"></script>
     <script src="./notes/table-math.js"></script>
     <script src="./notes/extras.js"></script>
-    <script src="./notes/tables.js?v=108"></script>
+    <script src="./notes/tables.js?v=109"></script>
     <!-- Visualizador de PDF: pdf.js (render) + StPageFlip (virada de livro, vendorizada). -->
     <script src="./notes/flipjs/page-flip.browser.js"></script>
     <script src="./notes/pdf.js"></script>
     <script src="./fontes.js"></script>
-    <script src="./app.js?v=108"></script>
+    <script src="./app.js?v=109"></script>
     <!-- Conta (login OPCIONAL): botão "Entrar" + diálogo. Sem sessão, o app é o de hoje. -->
     <script src="./conta.js"></script>
     <!-- Sincronização (seção 5): mapa das chaves locais + cliente (fila/snapshot/push). -->
