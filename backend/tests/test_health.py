@@ -56,6 +56,7 @@ def test_serve_os_modulos_do_pwa(cliente):
         ("/mapa/mapa.js", "application/javascript"),
         ("/styles.css", "text/css"),
         ("/manifest.json", "application/json"),
+        ("/manifest-escuro.json", "application/json"),
     ):
         resposta = cliente.get(caminho)
         assert resposta.status_code == 200, caminho

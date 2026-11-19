@@ -176,6 +176,7 @@ ARQUIVOS_RAIZ = {
     "theme-origem.css",
     "sw.js",
     "manifest.json",
+    "manifest-escuro.json",
     "icon.svg",
     "icon-192.png",
     "icon-512.png",
