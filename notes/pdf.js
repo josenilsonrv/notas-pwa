@@ -1,23 +1,25 @@
 /**
- * 🗺️ COMPONENTE: Visualizador de PDF do PWA (notas/pdf.js)
- * 🎯 OBJETIVO: abrir um PDF (anexo local `data:` ou anexo da conta `/api/note-assets/files/<id>`)
- *             e mostrar as PÁGINAS renderizadas + camada de TEXTO (seleção, cópia e busca),
- *             com VIRTUALIZAÇÃO para documentos de milhares de páginas.
+ * 🗺️ COMPONENTE: Visualizador de PDF do PWA (notes/pdf.js)
+ * 🎯 OBJETIVO: abrir um PDF (anexo local `data:` ou da conta `/api/note-assets/files/<id>`) e
+ *             mostrar as PÁGINAS como um LIVRO com virada realista (folha que enverga) pela
+ *             lombada — avança virando a página da DIREITA para a esquerda e volta virando a da
+ *             ESQUERDA para a direita, como num livro de verdade. A dobra é feita pela StPageFlip
+ *             (vendorizada em `notes/flipjs/`, global `St`); cada página é desenhada pelo pdf.js.
  * 🔗 QUEM DEPENDE DELE: `notes/extras.js`, `app.js` e `sync/sync-cliente.js` — os três
  *             visualizadores de arquivo delegam a ele quando o tipo do anexo é PDF.
  *
  * Desenho (por que assim):
- *   - `pdf.js` (vendored em `notes/pdfjs/`, carregado SOB DEMANDA) faz o trabalho pesado num
- *     Web Worker; a main thread só desenha a janela visível.
- *   - VIRTUALIZAÇÃO: um placeholder leve por página (dezenas de milhares seriam caros só se
- *     fossem canvas); `IntersectionObserver` renderiza só o que está perto da tela e libera
- *     (canvas + texto) o que já saiu — o custo por rolagem não cresce com o total de páginas.
- *   - TEXTO sob demanda: `page.getTextContent()` só das páginas renderizadas (base da busca).
- *   - BUSCA incremental e CANCELÁVEL: varre as páginas em blocos, cedendo o controle, com
- *     progresso — nunca materializa o texto inteiro de uma vez.
- *   - Ao FECHAR, cancela desenhos em andamento e `destroy()` no documento (libera o worker).
+ *   - pdf.js (vendorizado em `notes/pdfjs/`, carregado SOB DEMANDA) rasteriza cada página num
+ *     `<canvas>` FORA do DOM e a exibe como `<img>` (blob URL): a StPageFlip aplica a DOBRA
+ *     (`clip-path` + `rotateY`) à página e, nas folhas `soft`, CLONA o elemento para a folha que
+ *     vira — um `<canvas>` clonado ficaria em BRANCO (o bitmap não é copiado); um `<img>` não.
+ *     O desenho é SOB DEMANDA (tela atual + vizinhança).
+ *   - ORIENTAÇÃO automática: DUAS páginas lado a lado quando a janela é larga (lombada no meio,
+ *     UMA folha por vez) e UMA página no celular — alternável pelo botão ↔.
+ *   - BUSCA por `getTextContent()` que NAVEGA até a página (sem realce sobre o papel).
+ *   - Ao FECHAR, `destroy()` na StPageFlip e no documento (libera o worker do pdf.js).
  *
- * Sem `pdf.js` disponível (offline/cache antigo), o módulo SINALIZA a falha e quem chamou
+ * Sem pdf.js OU sem StPageFlip (offline/cache antigo), o módulo SINALIZA a falha e quem chamou
  * mantém o comportamento anterior (iframe/download) — nunca regride.
  */
 (function (root) {
@@ -37,16 +39,21 @@
  const WASM = BASE + 'wasm/';
  const ICCS = BASE + 'iccs/';
 
- // Zoom: limites e passo do botão (teclado também usa).
- const ZOOM_MIN = 0.25, ZOOM_MAX = 5, ZOOM_PASSO = 1.25;
- // Margem (px) de pré-renderização e de liberação em volta da tela.
- const PREVIA = 400, FOLGA = 1400;
- // Páginas desenhadas ao mesmo tempo (mantém a rolagem fluida).
+ // Resolução do canvas de cada página (múltiplo da escala de exibição): nitidez suficiente sem
+ // registrar (bitmap) a página inteira em tamanho de tela. As páginas são DOM — a lib escala.
+ const RESOLUCAO = 2;
+ // Páginas desenhadas ao mesmo tempo (mantém a troca fluida).
  const CONCORRENCIA = 2;
- // Modo HORIZONTAL: quantas páginas ficam lado a lado por vez e o espaço entre elas (px).
- const PAGINAS_POR_VEZ = 2, ESPACO_PAGINA = 12;
- // Largura mínima da janela para caberem DUAS páginas (no CELULAR fica UMA por vez).
- const LARGURA_MINIMA_DUAS = 720;
+ // Quantas páginas em volta da atual ficam desenhadas (cobre o spread seguinte/anterior: a página
+ // de BAIXO já tem canvas quando o usuário dobra a folha — senão apareceria em branco).
+ const VIZINHANCA = 4;
+ // Largura mínima da janela para já abrir com DUAS páginas (celular abre com UMA).
+ const LARGURA_JANELA_DUAS = 720;
+ // Limiar de largura que a StPageFlip usa para decidir portrait × landscape (size:'stretch').
+ const MIN_PAGINA_LARGURA = 320;
+ // Tempo (ms) da dobra da folha. Em `prefers-reduced-motion` a virada é praticamente instantânea
+ // (a StPageFlip recusa `flippingTime <= 0`, então usamos 1 ms em vez de 0).
+ const DURA_FOLHA = 750, DURA_FOLHA_REDUZIDA = 1;
 
  /** Cria um botão no padrão do visualizador (sem foco ao clicar na barra). */
  const botao = (rotulo, texto, acao) => {
@@ -59,6 +66,12 @@
   el.onclick = acao;
   return el;
  };
+
+ /** O usuário pediu para reduzir movimento? (nesse caso a dobra é instantânea). */
+ function reduzirMovimento() {
+  return typeof root.matchMedia === 'function'
+   && root.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ }
 
  // 🚀 [INÍCIO: NOTAS/PDF - CARREGAR BIBLIOTECA (pdf.js sob demanda)]
  let biblioteca = null;
@@ -95,11 +108,11 @@
    const estado = {
     app, dialog, url, nome,
     lib: null, doc: null, carregando: null,
-    total: 0, escala: 1, ajuste: 1, paginaAtual: 0,
-    dpr: Math.min(root.devicePixelRatio || 1, 2),
-    base: { w: 0, h: 0 }, modo: 'vertical',
-    paginas: [], pendentes: [], ativos: 0, observadores: [],
+    total: 0, paginaAtual: 1,
+    base: { w: 0, h: 0 },
+    paginas: [], livro: null, fila: [], ativos: 0,
     controles: null, busca: null, fallback: null,
+    scroll: null, aviso: null, lombada: null, bloco: null, observadorTamanho: null, frameTamanho: 0,
     fechado: false,
    };
    estado.controles = montarBarra(estado);
@@ -110,27 +123,21 @@
  }
  // 🔄 [FIM: NOTAS/PDF - ABRIR (monta a janela e inicia)]
 
- // ⚡ [INÍCIO: NOTAS/PDF - BARRA (página, zoom, busca, expandir)]
+// ⚡ [INÍCIO: NOTAS/PDF - BARRA (página, orientação, busca, expandir)]
  /** Monta a barra de ferramentas e devolve os controles (usados por atualizarBarra). */
  function montarBarra(estado) {
   const { dialog } = estado;
   const tools = document.createElement('div');
   tools.className = 'notes-viewer-tools';
 
-  const anterior = botao('Página anterior', '‹', () => irPara(estado, estado.paginaAtual - paginasPorVez(estado)));
-  const proxima = botao('Próxima página', '›', () => irPara(estado, estado.paginaAtual + paginasPorVez(estado)));
+  const anterior = botao('Página anterior', '‹', () => virarPagina(estado, -1));
+  const proxima = botao('Próxima página', '›', () => virarPagina(estado, 1));
   const pagina = document.createElement('span');
   pagina.className = 'notes-pdf-pagina';
   pagina.textContent = '1 / 1';
 
-  const menos = botao('Reduzir', '−', () => aplicarZoom(estado, 1 / ZOOM_PASSO));
-  const mais = botao('Ampliar', '+', () => aplicarZoom(estado, ZOOM_PASSO));
-  const zoom = document.createElement('span');
-  zoom.className = 'notes-pdf-zoom';
-  zoom.textContent = '100%';
-  const ajustar = botao('Ajustar à largura', 'Ajustar', () => aplicarZoom(estado, 0, true));
-  // Leitura HORIZONTAL: as páginas ficam lado a lado (esquerda → direita).
-  const orientacao = botao('Ver as páginas lado a lado (horizontal)', '↔', () => alternarOrientacao(estado));
+  // Uma página ⇄ duas páginas lado a lado (portrait × landscape).
+  const orientacao = botao('Uma ou duas páginas por tela', '↔', () => alternarPaginas(estado));
   orientacao.setAttribute('aria-pressed', 'false');
 
   const campo = document.createElement('input');
@@ -154,7 +161,7 @@
 
   tools.append(
    anterior, pagina, proxima,
-   menos, zoom, mais, ajustar, orientacao,
+   orientacao,
    campo, contador, irAnterior, irProxima,
    expandir,
   );
@@ -168,65 +175,70 @@
    tools.append(baixar);
   }
   dialog.append(tools);
-  return { anterior, proxima, pagina, menos, mais, zoom, ajustar, orientacao, campo, contador, irAnterior, irProxima, expandir };
+  return { anterior, proxima, pagina, orientacao, campo, contador, irAnterior, irProxima, expandir };
  }
- // ⚡ [FIM: NOTAS/PDF - BARRA (página, zoom, busca, expandir)]
+ // ⚡ [FIM: NOTAS/PDF - BARRA (página, orientação, busca, expandir)]
 
- // 🎨 [INÍCIO: NOTAS/PDF - CONTEÚDO (área rolável e aviso)]
- /** Cria a área rolável (com os placeholders) e a faixa de aviso/erro. */
+ // 🎨 [INÍCIO: NOTAS/PDF - CONTEÚDO (área do livro e aviso)]
+ /** Cria a área do livro (onde a StPageFlip monta as páginas) e a faixa de aviso/erro. */
  function montarConteudo(estado) {
   const scroll = document.createElement('div');
   scroll.className = 'notes-pdf-scroll';
   scroll.tabIndex = 0;
-  const paginasEl = document.createElement('div');
-  paginasEl.className = 'notes-pdf-pages';
-  scroll.append(paginasEl);
   const aviso = document.createElement('div');
   aviso.className = 'notes-pdf-aviso';
   aviso.setAttribute('role', 'status');
   aviso.hidden = true;
-  // A página "atual" vem da ROLAGEM (não da última página desenhada): rAF evita custo por evento.
-  scroll.addEventListener('scroll', () => {
-   cancelAnimationFrame(estado.frameScroll);
-   estado.frameScroll = root.requestAnimationFrame(() => atualizarPaginaPorRolagem(estado));
-  }, { passive: true });
-  estado.dialog.append(scroll, aviso);
+  const lombada = document.createElement('div');
+  lombada.className = 'notes-pdf-lombada';
+  lombada.setAttribute('aria-hidden', 'true');
+  scroll.append(aviso, lombada);
+  estado.dialog.append(scroll);
   estado.scroll = scroll;
-  estado.paginasEl = paginasEl;
   estado.aviso = aviso;
-  // Reencaixa quando a janela muda de tamanho — inclusive troca 2 ⇄ 1 página no horizontal.
-  const observadorTamanho = new ResizeObserver(() => {
-   if (estado.fechado) return;
-   const porVez = paginasPorVez(estado);
-   if (porVez === estado.porVezAplicado) return;
-   estado.porVezAplicado = porVez;
-   if (estado.modo === 'horizontal') {
-    estado.escala = escalaDeAjuste(estado);
-    estado.ajuste = estado.escala;
-    redesenhar(estado);
-    atualizarBarra(estado);
-   }
+  estado.lombada = lombada;
+  // Reencaixa a dobra quando a JANELA do leitor muda (EXPANDIR/restaurar): a StPageFlip só ouve
+  // `window.resize`, então um diálogo que muda de tamanho sozinho precisa avisar a lib.
+  const observador = new ResizeObserver(() => {
+   if (estado.fechado || !estado.livro) return;
+   cancelAnimationFrame(estado.frameTamanho);
+   estado.frameTamanho = root.requestAnimationFrame(() => {
+    try { estado.livro.getRender().update(); } catch (_) { /* ainda não inicializou */ }
+    atualizarLombada(estado);
+   });
   });
-  observadorTamanho.observe(scroll);
-  estado.observadorTamanho = observadorTamanho;
+  observador.observe(scroll);
+  estado.observadorTamanho = observador;
  }
- // 🎨 [FIM: NOTAS/PDF - CONTEÚDO (área rolável e aviso)]
+ // 🎨 [FIM: NOTAS/PDF - CONTEÚDO (área do livro e aviso)]
 
- // 🔄 [INÍCIO: NOTAS/PDF - DESENHAR PÁGINA (canvas + camada de texto)]
- /** Desenha UMA página (canvas na resolução do dpr + camada de texto) e a coloca no slot. */
+ // 🔄 [INÍCIO: NOTAS/PDF - DESENHAR PÁGINA (canvas sob demanda)]
+ /** Cria o elemento de UMA página (DOM de verdade: a StPageFlip dobra a folha, não rasteriza). */
+ function criarPagina(estado, n) {
+  const el = document.createElement('div');
+  el.className = 'notes-pdf-page';
+  el.dataset.page = String(n);
+  el.dataset.density = 'soft'; // folha maleável (enverga na lombada)
+  // A página é uma IMAGEM (não um <canvas>): a StPageFlip CLONA a página (`cloneNode`) para a folha
+  // que vira — e um <canvas> clonado fica em BRANCO (o bitmap não é copiado), enquanto o <img>
+  // clonado mantém o `src` e continua mostrando a página durante a dobra.
+  const img = document.createElement('img');
+  img.className = 'notes-pdf-img';
+  img.alt = '';
+  img.draggable = false;
+  el.append(img);
+  return { n, el, img, url: null, page: null, tarefa: null, renderizada: false, desenho: false, naFila: false };
+ }
+
+ /** Desenha UMA página no canvas do próprio elemento (o conteúdo aparece na folha dobrada). */
  async function desenharPagina(estado, slot) {
   if (!slot || slot.renderizada || slot.desenho || estado.fechado) return;
   slot.desenho = true;
   try {
    if (!slot.page) slot.page = await estado.doc.getPage(slot.n);
    if (estado.fechado) return;
-   const cssW = Math.round(estado.base.w * estado.escala);
-   const cssH = Math.round(estado.base.h * estado.escala);
-   const viewport = slot.page.getViewport({ scale: estado.escala * estado.dpr });
-   const canvas = document.createElement('canvas');
-   canvas.className = 'notes-pdf-canvas';
-   canvas.style.width = cssW + 'px';
-   canvas.style.height = cssH + 'px';
+   const viewport = slot.page.getViewport({ scale: RESOLUCAO });
+   const canvas = document.createElement('canvas'); // fora do DOM: só rasteriza a página
    canvas.width = Math.max(1, Math.floor(viewport.width));
    canvas.height = Math.max(1, Math.floor(viewport.height));
    const contexto = canvas.getContext('2d', { alpha: false });
@@ -234,29 +246,12 @@
    slot.tarefa = tarefa;
    await tarefa.promise;
    if (estado.fechado) return;
-
-   const texto = document.createElement('div');
-   texto.className = 'textLayer';
-   texto.style.setProperty('--total-scale-factor', String(estado.escala));
-   texto.style.setProperty('--scale-round-x', '1px');
-   texto.style.setProperty('--scale-round-y', '1px');
-   texto.style.width = cssW + 'px';
-   texto.style.height = cssH + 'px';
-   const camada = new estado.lib.TextLayer({
-    textContentSource: await slot.page.getTextContent(),
-    container: texto,
-    viewport: slot.page.getViewport({ scale: estado.escala }),
-   });
-   await camada.render();
-   if (estado.fechado) return;
-
-   slot.el.replaceChildren(canvas, texto); // troca atômica: evita "meia página" na tela
+   const blob = await new Promise(res => { try { canvas.toBlob(res, 'image/png'); } catch (_) { res(null); } });
+   if (estado.fechado || !blob) return;
+   if (slot.url) { try { URL.revokeObjectURL(slot.url); } catch (_) { /* já revogado */ } }
+   slot.url = URL.createObjectURL(blob);
+   slot.img.src = slot.url;
    slot.renderizada = true;
-   ajustarAltura(estado, slot, cssH);
-   const busca = estado.busca;
-   if (busca && busca.ocorrencias.length && busca.ocorrencias[busca.indice] === slot.n) {
-    pintarOcorrencias(estado, slot.n, busca.termo);
-   }
   } catch (erro) {
    if (erro && erro.name === 'RenderingCancelledException') return;
    mostrarErro(estado, erro);
@@ -265,103 +260,73 @@
    slot.desenho = false;
   }
  }
- // 🔄 [FIM: NOTAS/PDF - DESENHAR PÁGINA (canvas + camada de texto)]
+ // 🔄 [FIM: NOTAS/PDF - DESENHAR PÁGINA (canvas sob demanda)]
 
  // 💾 [INÍCIO: NOTAS/PDF - LIBERAR PÁGINA (memória)]
- /** Cancela o desenho e esvazia o slot — o custo de manter 1000 páginas não existe. */
+ /** Libera o canvas de uma página (some da memória); a folha continua, só fica em branco. */
  function liberarPagina(estado, slot) {
   if (!slot || !slot.renderizada) return;
   if (slot.tarefa) { try { slot.tarefa.cancel(); } catch (_) { /* já concluído */ } }
   try { slot.page?.cleanup?.(); } catch (_) { /* página já liberada */ }
   slot.page = null;
-  slot.el.replaceChildren();
+  if (slot.url) { try { URL.revokeObjectURL(slot.url); } catch (_) { /* já revogado */ } slot.url = null; }
+  slot.img.removeAttribute('src');
   slot.renderizada = false;
  }
  // 💾 [FIM: NOTAS/PDF - LIBERAR PÁGINA (memória)]
 
- // 🔄 [INÍCIO: NOTAS/PDF - VIRTUALIZADOR (placeholders + observadores)]
- /** Cria um placeholder LEVE por página (nunca um canvas por página). */
- function criarPaginas(estado) {
-  const largura = Math.round(estado.base.w * estado.escala);
-  const altura = Math.round(estado.base.h * estado.escala);
-  const fragmento = document.createDocumentFragment();
-  estado.paginas = [];
-  for (let n = 1; n <= estado.total; n++) {
-   const el = document.createElement('div');
-   el.className = 'notes-pdf-page';
-   el.dataset.page = String(n);
-   el.style.width = largura + 'px';
-   el.style.height = altura + 'px';
-   fragmento.append(el);
-   estado.paginas.push({ n, el, page: null, tarefa: null, renderizada: false, desenho: false, naFila: false, altura });
-  }
-  estado.paginasEl.replaceChildren(fragmento);
-  aplicarOrientacaoDOM(estado);
- }
-
- /** Margem do IntersectionObserver no eixo em que as páginas estão dispostas. */
- function margensDePrevia(estado, valor) {
-  return estado.modo === 'horizontal' ? '0px ' + valor + 'px' : valor + 'px 0px';
- }
-
- /** Observa os placeholders: desenha o que se aproxima e libera o que já saiu. */
- function observarPaginas(estado) {
-  const desenhar = new IntersectionObserver(entradas => {
-   for (const entrada of entradas) {
-    if (entrada.isIntersecting) enfileirar(estado, estado.paginas[Number(entrada.target.dataset.page) - 1]);
-   }
-  }, { root: estado.scroll, rootMargin: margensDePrevia(estado, PREVIA) });
-  const soltar = new IntersectionObserver(entradas => {
-   for (const entrada of entradas) {
-    if (!entrada.isIntersecting) liberarPagina(estado, estado.paginas[Number(entrada.target.dataset.page) - 1]);
-   }
-  }, { root: estado.scroll, rootMargin: margensDePrevia(estado, FOLGA) });
-  for (const slot of estado.paginas) { desenhar.observe(slot.el); soltar.observe(slot.el); }
-  estado.observadores = [desenhar, soltar];
- }
-
- /** Reobserva (após troca de zoom): garante que a janela visível seja redesenhada. */
- function reobservar(estado) {
-  for (const observador of estado.observadores) observador.disconnect();
-  estado.observadores = [];
-  for (const slot of estado.paginas) slot.naFila = false;
-  estado.pendentes = [];
-  observarPaginas(estado);
- }
-
+ // 🔄 [INÍCIO: NOTAS/PDF - DESENHO SOB DEMANDA (fila + vizinhança)]
  function enfileirar(estado, slot) {
   if (!slot || slot.renderizada || slot.desenho || slot.naFila || estado.fechado) return;
   slot.naFila = true;
-  estado.pendentes.push(slot);
+  estado.fila.push(slot);
   processarFila(estado);
  }
 
- /** Renderiza até CONCORRENCIA páginas ao mesmo tempo (rolagem fluida). */
+ /** Renderiza até CONCORRENCIA páginas ao mesmo tempo (troca fluida). */
  function processarFila(estado) {
-  while (estado.ativos < CONCORRENCIA && estado.pendentes.length) {
-   const slot = estado.pendentes.shift();
+  while (estado.ativos < CONCORRENCIA && estado.fila.length) {
+   const slot = estado.fila.shift();
    slot.naFila = false;
    estado.ativos++;
    desenharPagina(estado, slot).finally(() => {
     estado.ativos--;
-    if (estado.pendentes.length) processarFila(estado);
+    if (estado.fila.length) processarFila(estado);
    });
   }
  }
- // 🔄 [FIM: NOTAS/PDF - VIRTUALIZADOR (placeholders + observadores)]
 
- // ⚙️ [INÍCIO: NOTAS/PDF - BUSCA (varredura incremental e cancelável)]
- /** Cancela a busca atual e limpa o destaque. */
+ /** Garante desenho da página atual e da VIZINHANÇA; libera o que ficou longe (memória baixa). */
+ function garantirPaginas(estado, indice) {
+  const total = estado.total || 0;
+  for (let d = 0; d <= VIZINHANCA; d++) {
+   for (const i of (d === 0 ? [indice] : [indice + d, indice - d])) {
+    if (i >= 0 && i < total) enfileirar(estado, estado.paginas[i]);
+   }
+  }
+  for (let i = 0; i < total; i++) {
+   if (Math.abs(i - indice) > VIZINHANCA + 2) liberarPagina(estado, estado.paginas[i]);
+  }
+ }
+ // 🔄 [FIM: NOTAS/PDF - DESENHO SOB DEMANDA (fila + vizinhança)]
+
+ // ⚙️ [INÍCIO: NOTAS/PDF - BUSCA (índice incremental + navegação)]
+ /** Cancela a busca atual e limpa o contador de ocorrências. */
  function limparBusca(estado) {
   estado.busca?.cancelar?.();
   estado.busca = null;
   if (estado.controles) estado.controles.contador.textContent = '';
-  if (root.CSS && CSS.highlights) CSS.highlights.delete('notes-pdf-find');
  }
 
+ /** Cede o controle (entre blocos de busca/carga) sem travar a interface. */
+ const esperar = () => new Promise(resolve => {
+  if (typeof root.requestIdleCallback === 'function') root.requestIdleCallback(() => resolve(), { timeout: 250 });
+  else root.setTimeout(resolve, 0);
+ });
+
  /**
-  * Varre as páginas em BLOCOS (cedendo o controle a cada 8) para não travar a interface.
-  * Em 1000 páginas isto lê uma página por vez e pode ser cancelado a qualquer momento.
+  * Varre as páginas em BLOCOS (cedendo o controle a cada 8) e guarda em que páginas o termo
+  * aparece. A busca NAVEGA até a página com `flip` (a StPageFlip não expõe realce no papel).
   */
  async function iniciarBusca(estado, termo) {
   termo = String(termo || '').trim();
@@ -374,15 +339,12 @@
   const alvo = termo.toLowerCase();
   for (let n = 1; n <= estado.total; n++) {
    if (!token.ativo || estado.fechado) return;
-   const slot = estado.paginas[n - 1];
    try {
-    const jaTinha = Boolean(slot.page);
-    const page = slot.page || (slot.page = await estado.doc.getPage(n));
+    const page = await estado.doc.getPage(n);
     const conteudo = await page.getTextContent();
     const texto = conteudo.items.map(item => item.str).join(' ').toLowerCase();
-    let pos = texto.indexOf(alvo);
-    while (pos !== -1) { busca.ocorrencias.push(n); pos = texto.indexOf(alvo, pos + alvo.length); }
-    if (!jaTinha && !slot.renderizada) { page.cleanup(); slot.page = null; }
+    if (texto.includes(alvo)) busca.ocorrencias.push(n);
+    page.cleanup();
    } catch (_) { /* página ilegível não interrompe a busca */ }
    contador.textContent = 'Buscando… ' + n + '/' + estado.total;
    if (n % 8 === 0) await esperar();
@@ -402,45 +364,150 @@
   irParaOcorrencia(estado);
  }
 
+ /** Vira (com animação) até a página da ocorrência atual. */
  function irParaOcorrencia(estado) {
   const busca = estado.busca;
+  if (!busca || !estado.livro) return;
   const pagina = busca.ocorrencias[busca.indice];
-  irPara(estado, pagina);
-  pintarOcorrencias(estado, pagina, busca.termo);
+  estado.livro.flip(pagina - 1, 'top');
  }
+ // ⚙️ [FIM: NOTAS/PDF - BUSCA (índice incremental + navegação)]
 
- /** Destaque das ocorrências da página atual (CSS Custom Highlight sobre a camada de texto). */
- function pintarOcorrencias(estado, n, termo) {
-  if (!root.CSS || !CSS.highlights || typeof Highlight === 'undefined') return;
-  CSS.highlights.delete('notes-pdf-find');
-  const camada = estado.paginas[n - 1]?.el.querySelector('.textLayer');
-  if (!camada) return;
-  const realce = new Highlight();
-  const alvo = termo.toLowerCase();
-  const caminhante = document.createTreeWalker(camada, NodeFilter.SHOW_TEXT);
-  let no;
-  while ((no = caminhante.nextNode())) {
-   const baixo = no.data.toLowerCase();
-   let pos = baixo.indexOf(alvo);
-   while (pos !== -1) {
-    const faixa = document.createRange();
-    faixa.setStart(no, pos);
-    faixa.setEnd(no, pos + alvo.length);
-    realce.add(faixa);
-    pos = baixo.indexOf(alvo, pos + alvo.length);
-   }
+ // ⚡ [INÍCIO: NOTAS/PDF - VIRAR PÁGINA (livro / StPageFlip)]
+ /**
+  * Monta o LIVRO com a StPageFlip: as páginas (DOM) entram na lib, que faz a DOBRA realista da
+  * folha pela lombada — vira a página da DIREITA para a esquerda ao avançar e a da ESQUERDA para
+  * a direita ao voltar. A orientação (uma/duas páginas) é decidida pela largura da janela.
+  */
+ function montarLivro(estado) {
+  const St = root.St;
+  if (!St || typeof St.PageFlip !== 'function') {
+   mostrarErro(estado, new Error('A biblioteca de virada (StPageFlip) não carregou.'), true);
+   return;
   }
-  if (realce.size) CSS.highlights.set('notes-pdf-find', realce);
+  const bloco = document.createElement('div');
+  bloco.className = 'notes-pdf-livro';
+  for (const slot of estado.paginas) bloco.append(slot.el);
+  estado.scroll.append(bloco);
+  estado.bloco = bloco;
+  estado.livro = new St.PageFlip(bloco, {
+   width: Math.max(1, Math.round(estado.base.w)),
+   height: Math.max(1, Math.round(estado.base.h)),
+   size: 'stretch',
+   minWidth: MIN_PAGINA_LARGURA, maxWidth: 1200, minHeight: 400, maxHeight: 1700,
+   drawShadow: true,
+   maxShadowOpacity: 0.45,
+   flippingTime: reduzirMovimento() ? DURA_FOLHA_REDUZIDA : DURA_FOLHA,
+   usePortrait: true,          // orientação automática pela largura (1 no celular, 2 no PC)
+   showCover: false,           // pareia 1-2, 3-4 … como no contador
+   mobileScrollSupport: false, // o gesto horizontal é da folha, não da página
+   useMouseEvents: true,       // arrasto com rato e toque (a própria lib decide o sentido)
+   clickEventForward: true,
+   showPageCorners: true,
+   disableFlipByClick: false,
+   swipeDistance: 24,
+   startPage: 0,
+  });
+  const livro = estado.livro;
+  livro.loadFromHTML(estado.paginas.map(slot => slot.el));
+  // A LOMBADA vai para DENTRO do bloco de páginas (mesma pilha 3D) com z-index logo ACIMA das
+  // páginas paradas (`startZIndex+1`) e ABAIXO da folha que vira (`startZIndex+5`) e da de baixo
+  // (`+3`): assim ela aparece em repouso e é COBERTA pela página durante a viração.
+  const blocoPaginas = bloco.querySelector('.stf__block');
+  if (blocoPaginas && estado.lombada) {
+   estado.lombada.style.zIndex = String((livro.getSettings().startZIndex || 0) + 2);
+   blocoPaginas.appendChild(estado.lombada);
+  }
+  // Reforço: a 1ª medição pode correr antes de o layout assentar — refaz após o 1º paint.
+  root.requestAnimationFrame(() => root.requestAnimationFrame(() => atualizarLombada(estado)));
+  livro.on('flip', e => {
+   const indice = Math.max(0, Number(e.data) || 0);
+   estado.paginaAtual = indice + 1;
+   garantirPaginas(estado, indice);
+   atualizarBarra(estado);
+   atualizarLombada(estado);
+  });
+  livro.on('changeOrientation', () => { atualizarBarra(estado); atualizarLombada(estado); });
+  livro.on('changeState', e => {
+   // Ao COMEÇAR a interação, reforça o desenho da vizinhança: a página que fica POR BAIXO precisa
+   // ter imagem pronta antes de ser revelada pela dobra. (A lombada NÃO é escondida na virada: ela
+   // é coberta pela própria página, que está numa camada acima — ver `montarLivro`.)
+   if (String(e.data) !== 'read') garantirPaginas(estado, Math.max(0, (estado.paginaAtual || 1) - 1));
+  });
+  livro.on('init', () => { garantirPaginas(estado, 0); atualizarBarra(estado); atualizarLombada(estado); });
  }
- // ⚙️ [FIM: NOTAS/PDF - BUSCA (varredura incremental e cancelável)]
 
- // ⚙️ [INÍCIO: NOTAS/PDF - CONTROLE (abrir documento, zoom, navegação, avisos, encerrar)]
- /** Cede o controle (entre blocos de busca/carga) sem travar a interface. */
- const esperar = () => new Promise(resolve => {
-  if (typeof root.requestIdleCallback === 'function') root.requestIdleCallback(() => resolve(), { timeout: 250 });
-  else root.setTimeout(resolve, 0);
- });
+ /** Avança (passo > 0) ou volta (passo < 0) UMA folha — com a animação de livro da lib. */
+ function virarPagina(estado, passo) {
+  const livro = estado.livro;
+  if (!livro || estado.fechado) return;
+  if (passo >= 0) livro.flipNext(); else livro.flipPrev();
+ }
 
+ /** Alterna entre UMA e DUAS páginas por tela (portrait × landscape). */
+ function alternarPaginas(estado) {
+  const livro = estado.livro;
+  if (!livro) return;
+  const cfg = livro.getSettings();
+  const emDuas = livro.getOrientation() === 'landscape';
+  if (emDuas) {
+   // passa a UMA: força portrait (largura do bloco < 2*minWidth)
+   cfg.usePortrait = true;
+   cfg.minWidth = Math.ceil((estado.scroll.clientWidth || 800) / 2) + 2;
+  } else {
+   // volta a DUAS: força landscape
+   cfg.usePortrait = false;
+   cfg.minWidth = MIN_PAGINA_LARGURA;
+  }
+  try { livro.getRender().update(); } catch (_) { /* estado transitório */ }
+  atualizarBarra(estado);
+  atualizarLombada(estado);
+ }
+
+ /**
+  * Mostra/posiciona a LOMBADA (o "vinco"/spine no MEIO do livro). Ela vive DENTRO do bloco de
+  * páginas (mesma pilha), com z-index logo acima das páginas paradas e ABAIXO da folha que vira —
+  * por isso, ao virar, a PÁGINA COBRE a lombada. A posição vem do RETÂNGULO real do livro
+  * (`getBoundsRect`). A aparência acompanha o VOLUME: quanto mais páginas, mais larga/marcada.
+  */
+ function atualizarLombada(estado) {
+  const lombada = estado.lombada;
+  if (!lombada || !estado.livro) return;
+  // Escala de aparência pelo nº de páginas (log): 1 página → fraca; 1000+ → forte (aproxima o
+  // "vinco" mais largo/marcado de um livro grosso).
+  const total = estado.total || 1;
+  const forca = Math.min(1, Math.log10(Math.max(1, total)) / Math.log10(1000));
+  lombada.style.setProperty('--lombada-largura', Math.round(44 + 52 * forca) + 'px');
+  lombada.style.setProperty('--lombada-forca', (0.5 + 0.42 * forca).toFixed(2));
+  const duas = estado.livro.getOrientation() === 'landscape';
+  if (!duas || estado.fechado) { lombada.classList.remove('visivel'); return; }
+  let caixa = null;
+  try { caixa = estado.livro.getBoundsRect(); } catch (_) { caixa = null; }
+  if (!caixa || !caixa.width) { lombada.classList.remove('visivel'); return; }
+  // Coordenadas RELATIVAS ao bloco de páginas (a lombada está dentro dele).
+  lombada.style.left = Math.round(caixa.left + caixa.width / 2) + 'px';
+  lombada.style.top = Math.round(caixa.top) + 'px';
+  lombada.style.height = Math.round(caixa.height) + 'px';
+  lombada.classList.add('visivel');
+ }
+
+ /** Atualiza o contador (faixa `n-m / total` em duas páginas) e o estado dos botões. */
+ function atualizarBarra(estado) {
+  const c = estado.controles;
+  if (!c) return;
+  const total = estado.total || 1;
+  const idx = estado.livro ? Number(estado.livro.getCurrentPageIndex()) || 0 : 0;
+  const atual = Math.min(total, Math.max(1, idx + 1));
+  const duas = Boolean(estado.livro) && estado.livro.getOrientation() === 'landscape' && total > 1;
+  const fim = duas ? Math.min(total, atual + 1) : atual;
+  c.pagina.textContent = (fim > atual ? atual + '-' + fim : String(atual)) + ' / ' + total;
+  c.anterior.disabled = atual <= 1;
+  c.proxima.disabled = atual + (duas ? 1 : 0) >= total;
+  c.orientacao?.setAttribute('aria-pressed', String(duas));
+ }
+ // ⚡ [FIM: NOTAS/PDF - VIRAR PÁGINA (livro / StPageFlip)]
+
+ // ⚙️ [INÍCIO: NOTAS/PDF - CONTROLE (abrir documento, avisos, encerrar)]
  function mostrarAviso(estado, texto) {
   if (!estado.aviso) return;
   estado.aviso.hidden = false;
@@ -461,134 +528,6 @@
    return { data: new Uint8Array(await resposta.arrayBuffer()) };
   }
   return { url };
- }
-
- /** Quantas páginas ficam lado a lado: 2 no horizontal QUANDO cabe, senão 1 (celular). */
- function paginasPorVez(estado) {
-  if (estado.modo !== 'horizontal') return 1;
-  return ((estado.scroll && estado.scroll.clientWidth) || 0) >= LARGURA_MINIMA_DUAS ? PAGINAS_POR_VEZ : 1;
- }
-
- /** Aplica a orientação no DOM por ESTILO INLINE (não depende só do CSS, que pode estar em cache antigo). */
- function aplicarOrientacaoDOM(estado) {
-  const horizontal = estado.modo === 'horizontal';
-  estado.scroll.classList.toggle('notes-pdf-horizontal', horizontal);
-  estado.paginasEl.style.flexDirection = horizontal ? 'row' : 'column';
-  estado.paginasEl.style.alignItems = horizontal ? 'flex-start' : 'center';
-  estado.paginasEl.style.width = horizontal ? 'max-content' : Math.round(estado.base.w * estado.escala) + 'px';
-  estado.scroll.style.overflowX = horizontal ? 'auto' : '';
-  estado.scroll.style.overflowY = horizontal ? 'hidden' : '';
- }
-
- /** Escala de encaixe: 1 página na largura (vertical) ou DUAS lado a lado (horizontal). */
- function escalaDeAjuste(estado) {
-  const porVez = paginasPorVez(estado);
-  let escala;
-  if (porVez > 1) {
-   const largura = (estado.scroll.clientWidth || 760) - 24 - (porVez - 1) * ESPACO_PAGINA;
-   const altura = (estado.scroll.clientHeight || 560) - 24;
-   escala = Math.min(largura / (porVez * estado.base.w), altura / estado.base.h);
-  } else {
-   const largura = (estado.scroll.clientWidth || 760) - 24;
-   escala = largura / estado.base.w;
-  }
-  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Number.isFinite(escala) && escala > 0 ? escala : 1));
- }
-
- function atualizarBarra(estado) {
-  const c = estado.controles;
-  if (!c) return;
-  const atual = estado.paginaAtual || 1;
-  const total = estado.total || 1;
-  const porVez = paginasPorVez(estado);
-  const fim = Math.min(total, atual + porVez - 1);
-  c.pagina.textContent = (fim > atual ? atual + '-' + fim : String(atual)) + ' / ' + total;
-  if (estado.escala) c.zoom.textContent = Math.round((estado.escala / (estado.ajuste || 1)) * 100) + '%';
-  c.anterior.disabled = atual <= 1;
-  c.proxima.disabled = atual + porVez > total;
-  c.orientacao?.setAttribute('aria-pressed', String(estado.modo === 'horizontal'));
-  if (c.orientacao) c.orientacao.title = estado.modo === 'horizontal'
-   ? 'Ver as páginas de cima para baixo (vertical)'
-   : 'Ver as páginas lado a lado (horizontal)';
- }
-
- function definirPaginaAtual(estado, n) {
-  if (!n || estado.paginaAtual === n) return;
-  estado.paginaAtual = n;
-  atualizarBarra(estado);
- }
-
- /** Página atual pela POSIÇÃO da rolagem (placeholders têm tamanho uniforme). */
- function atualizarPaginaPorRolagem(estado) {
-  if (estado.fechado || !estado.total) return;
-  const horizontal = estado.modo === 'horizontal';
-  const referencia = horizontal ? estado.base.w : estado.base.h;
-  const passo = Math.max(1, Math.round(referencia * estado.escala) + ESPACO_PAGINA);
-  const posicao = horizontal ? estado.scroll.scrollLeft : estado.scroll.scrollTop;
-  const n = Math.min(estado.total, Math.max(1, Math.floor(posicao / passo) + 1));
-  definirPaginaAtual(estado, n);
- }
-
- function ajustarAltura(estado, slot, cssH) {
-  if (Math.abs((slot.altura || 0) - cssH) < 1) return;
-  slot.altura = cssH;
-  slot.el.style.height = cssH + 'px';
- }
-
- /** Vai para uma página (rola a área interna no eixo ativo e atualiza o contador). */
- function irPara(estado, n) {
-  const alvo = Math.min(Math.max(1, n || 1), estado.total || 1);
-  const slot = estado.paginas[alvo - 1];
-  if (!slot) return;
-  const caixa = estado.scroll.getBoundingClientRect();
-  const alvoCaixa = slot.el.getBoundingClientRect();
-  if (estado.modo === 'horizontal') {
-   const esquerda = alvoCaixa.left - caixa.left + estado.scroll.scrollLeft;
-   estado.scroll.scrollLeft = Math.max(0, esquerda - ESPACO_PAGINA);
-  } else {
-   const topo = alvoCaixa.top - caixa.top + estado.scroll.scrollTop;
-   estado.scroll.scrollTop = Math.max(0, topo - ESPACO_PAGINA);
-  }
-  definirPaginaAtual(estado, alvo);
- }
-
- /** Zoom: `ajustarLargura` recalcula o encaixe; senão multiplica a escala atual. */
- function aplicarZoom(estado, fator, ajustarLargura = false) {
-  if (!estado.doc) return;
-  const alvo = ajustarLargura ? escalaDeAjuste(estado) : estado.escala * fator;
-  const nova = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, alvo));
-  if (Math.abs(nova - estado.escala) < 0.001) return;
-  estado.escala = nova;
-  redesenhar(estado);
- }
-
- /** Alterna a leitura VERTICAL (de cima para baixo) × HORIZONTAL (esquerda → direita). */
- function alternarOrientacao(estado) {
-  if (!estado.doc) return;
-  estado.modo = estado.modo === 'horizontal' ? 'vertical' : 'horizontal';
-  aplicarOrientacaoDOM(estado);
-  estado.escala = escalaDeAjuste(estado);
-  estado.ajuste = estado.escala;
-  estado.porVezAplicado = paginasPorVez(estado);
-  estado.scroll.scrollTop = 0;
-  estado.scroll.scrollLeft = 0;
-  redesenhar(estado);
-  atualizarBarra(estado);
- }
-
- /** Aplica o zoom: libera tudo, redimensiona os placeholders e redesde a janela visível. */
- function redesenhar(estado) {
-  for (const slot of estado.paginas) liberarPagina(estado, slot);
-  const largura = Math.round(estado.base.w * estado.escala);
-  const altura = Math.round(estado.base.h * estado.escala);
-  for (const slot of estado.paginas) {
-   slot.el.style.width = largura + 'px';
-   slot.el.style.height = altura + 'px';
-   slot.altura = altura;
-  }
-  aplicarOrientacaoDOM(estado);
-  atualizarBarra(estado);
-  reobservar(estado);
  }
 
  function mensagemDeErro(erro) {
@@ -618,7 +557,7 @@
   if (critico) adicionarFallback(estado);
  }
 
- /** Abre o documento: mostra a 1ª página e só então deixa a rolagem assumir o resto. */
+ /** Abre o documento, cria as páginas e monta o LIVRO (StPageFlip). */
  async function iniciar(estado) {
   try {
    mostrarAviso(estado, 'Carregando documento…');
@@ -647,36 +586,33 @@
    const primeira = await estado.doc.getPage(1);
    const bruto = primeira.getViewport({ scale: 1 });
    estado.base = { w: bruto.width, h: bruto.height };
-   estado.escala = escalaDeAjuste(estado);
-   estado.ajuste = estado.escala;
-   estado.porVezAplicado = paginasPorVez(estado);
-   criarPaginas(estado);
-   observarPaginas(estado);
-   atualizarBarra(estado);
+   estado.paginas = [];
+   for (let n = 1; n <= estado.total; n++) estado.paginas.push(criarPagina(estado, n));
    esconderAviso(estado);
+   montarLivro(estado);
+   atualizarBarra(estado);
   } catch (erro) {
    if (estado.fechado) return;
    mostrarErro(estado, erro, true);
   }
  }
 
- /** Fechou a janela: cancela tudo e destrói o documento (libera o worker do pdf.js). */
+ /** Fechou a janela: cancela tudo, destrói o LIVRO (StPageFlip) e o documento (libera o worker). */
  function encerrar(estado) {
   estado.fechado = true;
   estado.busca?.cancelar?.();
   estado.busca = null;
-  for (const observador of estado.observadores) observador.disconnect();
-  estado.observadores = [];
   estado.observadorTamanho?.disconnect();
   for (const slot of estado.paginas || []) {
    if (slot.tarefa) { try { slot.tarefa.cancel(); } catch (_) { /* já concluído */ } }
   }
-  if (root.CSS && CSS.highlights) CSS.highlights.delete('notes-pdf-find');
+  try { estado.livro?.destroy?.(); } catch (_) { /* já destruído */ }
+  estado.livro = null;
   try { estado.carregando?.destroy?.(); } catch (_) { /* já destruído */ }
   if (estado.doc) { try { estado.doc.destroy(); } catch (_) { /* já destruído */ } }
   estado.doc = null;
  }
- // ⚙️ [FIM: NOTAS/PDF - CONTROLE (abrir documento, zoom, navegação, avisos, encerrar)]
+ // ⚙️ [FIM: NOTAS/PDF - CONTROLE (abrir documento, avisos, encerrar)]
 
  root.NotesPdf = { abrir: abrir, disponivel: () => Boolean(biblioteca) };
 })(typeof window !== 'undefined' ? window : self);

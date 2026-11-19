@@ -1,11 +1,11 @@
 // 🧪 [INÍCIO: TESTE - PDF VISUALIZADOR]
 /*
- * Visualizador de PDF (notes/pdf.js + pdf.js vendorizado em notes/pdfjs/):
- *   A) TEXTO: um PDF de 1 página abre, RENDERIZA (canvas) e a camada de texto traz o conteúdo;
- *   B) VIRTUALIZAÇÃO: num PDF de 1000 páginas existem 1000 placeholders e POUCOS canvas (o
- *      custo não cresce com o total de páginas);
- *   C) BUSCA: acha o termo e navega (contador), sem travar;
- *   D) ZOOM controla a escala e o fechar libera o documento.
+ * Visualizador de PDF como LIVRO (notes/pdf.js + StPageFlip em notes/flipjs/ + pdf.js vendorizado):
+ *   A) TEXTO: um PDF de 1 página abre, RENDERIZA (canvas) e a busca acha o termo (índice);
+ *   B) LIVRO: num PDF de 1000 páginas existem 1000 páginas e POUCOS canvas (desenho sob demanda);
+ *      as páginas são FOLHAS MALEÁVEIS (`data-density="soft"`); o contador mostra o PAR (1-2 / N);
+ *   C) NAVEGAÇÃO: os botões ‹ › viram a folha e o contador acompanha (3-4 → 1-2);
+ *   D) ORIENTAÇÃO: o botão ↔ alterna UMA ⇄ DUAS páginas por tela; fechar destrói o LIVRO.
  *
  * Servidor Node (estático do PWA + `/api/note-assets` mockado com HTTP RANGE) porque o WORKER
  * do pdf.js busca arquivos REAIS — as requisições INTERNAS do worker não passam por `page.route`.
@@ -114,7 +114,7 @@ function subirServidor() {
     await page.route('**/*', r => r.request().resourceType() === 'document' ? r.fulfill({ contentType: 'text/html', body: html }) : r.continue());
     await page.goto(base);
     for (const f of ['styles.css', 'notes/editor.css', 'notes/extras.css']) await page.addStyleTag({ content: read(f) });
-    for (const f of ['notes/editor.js', 'notes/extras.js', 'notes/tables.js', 'notes/pdf.js']) await page.addScriptTag({ content: read(f) });
+    for (const f of ['notes/flipjs/page-flip.browser.js', 'notes/editor.js', 'notes/extras.js', 'notes/tables.js', 'notes/pdf.js']) await page.addScriptTag({ content: read(f) });
     const fonte = read('app.js');
     await page.addScriptTag({ content: fonte.slice(0, fonte.indexOf("document.addEventListener('DOMContentLoaded'")) + '\nwindow.TestApp = NotesPWA;' });
     await page.evaluate(() => {
@@ -143,84 +143,57 @@ function subirServidor() {
       return app.notesFileViewer(id);
     }, id);
 
-    // ---------- A) TEXTO: renderiza + camada de texto + busca + zoom ----------
+    const contador = () => page.locator('.notes-pdf-pagina').textContent();
+    const paginaDesenhada = () => page.waitForFunction(
+      () => [...document.querySelectorAll('.notes-pdf-img')].some(i => i.complete && i.naturalWidth > 10),
+      null, { timeout: 40000 });
+
+    // ---------- A) 1 página: abre, RENDERIZA e a BUSCA acha o termo ----------
     await abrir('texto');
-    await page.locator('.notes-pdf-page canvas').first().waitFor({ timeout: 25000 });
-    assert.equal(await page.locator('.notes-pdf-page').count(), 1);
-    const camada = await page.locator('.notes-pdf-page .textLayer').first().evaluate(e => e.textContent);
-    assert.ok(camada.includes('MARCA123'), 'a camada de texto traz o conteúdo: ' + JSON.stringify(camada));
-    assert.match(await page.locator('.notes-pdf-pagina').textContent(), /1\s*\/\s*1/);
+    await paginaDesenhada();
+    assert.equal(await page.locator('.notes-pdf-page').count(), 1, 'uma página');
+    assert.equal(await page.locator('.notes-pdf-livro').evaluate(e => e.classList.contains('stf__parent')), true, 'a StPageFlip assume o bloco do livro');
+    assert.equal(await page.locator('.notes-pdf-page').first().evaluate(e => e.dataset.density), 'soft', 'a folha é maleável (soft)');
+    assert.match(await contador(), /1\s*\/\s*1/, 'contador 1 / 1');
 
     await page.locator('.notes-pdf-busca').fill('MARCA123');
     await page.locator('.notes-pdf-busca').press('Enter');
     await page.waitForFunction(() => /1 de 1/.test(document.querySelector('.notes-pdf-contador').textContent), null, { timeout: 15000 });
 
-    const zoomAntes = await page.locator('.notes-pdf-zoom').textContent();
-    await page.getByRole('button', { name: 'Ampliar' }).click();
-    await page.waitForTimeout(400);
-    assert.notEqual(await page.locator('.notes-pdf-zoom').textContent(), zoomAntes, 'o zoom muda a escala');
-
-    // Leitura HORIZONTAL (esquerda → direita): páginas lado a lado.
-    await page.getByRole('button', { name: 'Ver as páginas lado a lado (horizontal)' }).click();
-    await page.waitForTimeout(500);
-    assert.equal(await page.locator('.notes-pdf-scroll').evaluate(e => e.classList.contains('notes-pdf-horizontal')), true, 'o modo horizontal liga');
-    assert.equal(await page.locator('.notes-pdf-pages').evaluate(e => getComputedStyle(e).flexDirection), 'row', 'as páginas ficam lado a lado');
-    await page.getByRole('button', { name: 'Ver as páginas lado a lado (horizontal)' }).click();
-    await page.waitForTimeout(400);
-    assert.equal(await page.locator('.notes-pdf-scroll').evaluate(e => e.classList.contains('notes-pdf-horizontal')), false, 'volta ao vertical');
-
     await page.getByRole('button', { name: 'Fechar', exact: true }).click();
     await page.waitForSelector('.notes-pdf-viewer', { state: 'detached', timeout: 5000 });
 
-    // ---------- B) VIRTUALIZAÇÃO: 1000 páginas, poucos canvas ----------
+    // ---------- B) LIVRO: 1000 páginas, desenho sob demanda, folhas soft ----------
     await abrir('grande');
-    await page.locator('.notes-pdf-page canvas').first().waitFor({ timeout: 40000 });
-    assert.equal(await page.locator('.notes-pdf-page').count(), 1000, 'um placeholder leve por página');
-    await page.waitForTimeout(600);
-    const canvases = await page.locator('.notes-pdf-page canvas').count();
-    assert.ok(canvases > 0 && canvases < 20, 'só a janela visível é renderizada (canvas=' + canvases + ')');
-    assert.match(await page.locator('.notes-pdf-pagina').textContent(), /1\s*\/\s*1000/);
+    await page.waitForFunction(() => document.querySelectorAll('.notes-pdf-page').length === 1000, null, { timeout: 40000 });
+    await paginaDesenhada();
+    await page.waitForTimeout(500);
+    assert.equal(await page.locator('.notes-pdf-page[data-density="soft"]').count(), 1000, 'todas as páginas são folhas maleáveis');
+    const desenhadas = await page.locator('.notes-pdf-img').evaluateAll(is => is.filter(i => i.complete && i.naturalWidth > 10).length);
+    assert.ok(desenhadas > 0 && desenhadas < 20, 'só a vizinhança é desenhada (imgs=' + desenhadas + ')');
+    assert.match(await contador(), /1\s*-\s*2\s*\/\s*1000/, 'contador em faixa (1-2 / 1000) no desktop');
 
-    // HORIZONTAL: DUAS páginas por vez (lado a lado), contador em faixa.
-    await page.getByRole('button', { name: 'Ver as páginas lado a lado (horizontal)' }).click();
-    await page.waitForTimeout(1000);
-    assert.match(await page.locator('.notes-pdf-pagina').textContent(), /1\s*-\s*2\s*\/\s*1000/, 'contador em faixa (1-2 / 1000)');
-    const visiveis = await page.evaluate(() => {
-      const alvo = document.querySelector('.notes-pdf-scroll').getBoundingClientRect();
-      return [...document.querySelectorAll('.notes-pdf-page')].filter(pagina => {
-        const caixa = pagina.getBoundingClientRect();
-        return caixa.left >= alvo.left - 3 && caixa.right <= alvo.right + 3;
-      }).length;
-    });
-    assert.ok(visiveis >= 2, 'cabem DUAS páginas por vez no horizontal (visíveis=' + visiveis + ')');
+    // ---------- C) NAVEGAÇÃO: ‹ › viram a folha e o contador acompanha ----------
+    await page.getByRole('button', { name: 'Próxima página' }).click();
+    await page.waitForFunction(() => /3\s*-\s*4\s*\/\s*1000/.test(document.querySelector('.notes-pdf-pagina').textContent), null, { timeout: 8000 });
+    await page.getByRole('button', { name: 'Página anterior' }).click();
+    await page.waitForFunction(() => /1\s*-\s*2\s*\/\s*1000/.test(document.querySelector('.notes-pdf-pagina').textContent), null, { timeout: 8000 });
 
-    // CELULAR: no horizontal cabe só UMA página por vez.
-    await page.setViewportSize({ width: 420, height: 760 });
-    await page.waitForTimeout(1000);
-    assert.match(await page.locator('.notes-pdf-pagina').textContent(), /^\s*1\s*\/\s*1000/, 'no celular o contador volta a "1 / 1000"');
-    const visiveisMobile = await page.evaluate(() => {
-      const alvo = document.querySelector('.notes-pdf-scroll').getBoundingClientRect();
-      return [...document.querySelectorAll('.notes-pdf-page')].filter(pagina => {
-        const caixa = pagina.getBoundingClientRect();
-        return caixa.left >= alvo.left - 3 && caixa.right <= alvo.right + 3;
-      }).length;
-    });
-    assert.equal(visiveisMobile, 1, 'no celular cabe só UMA página (visíveis=' + visiveisMobile + ')');
-    await page.setViewportSize({ width: 1280, height: 960 });
-    await page.waitForTimeout(800);
+    // ---------- D) ORIENTAÇÃO: ↔ alterna UMA ⇄ DUAS páginas ----------
+    await page.getByRole('button', { name: 'Uma ou duas páginas por tela' }).click();
+    await page.waitForFunction(() => /^\s*1\s*\/\s*1000/.test(document.querySelector('.notes-pdf-pagina').textContent), null, { timeout: 8000 });
+    assert.equal(await page.locator('.notes-pdf-lombada.visivel').count(), 0, 'em UMA página não há vinco central');
+    await page.getByRole('button', { name: 'Uma ou duas páginas por tela' }).click();
+    await page.waitForFunction(() => /1\s*-\s*2\s*\/\s*1000/.test(document.querySelector('.notes-pdf-pagina').textContent), null, { timeout: 8000 });
+    assert.equal(await page.locator('.notes-pdf-lombada.visivel').count(), 1, 'voltando a DUAS páginas o vinco central reaparece');
 
-    await page.getByRole('button', { name: 'Ver as páginas lado a lado (horizontal)' }).click();
-    await page.waitForTimeout(700);
-
-    // Busca numa página distante: encontra sem varrer tudo de uma vez e o busca é da 1ª página.
-    await page.locator('.notes-pdf-busca').fill('Primeira pagina');
-    await page.locator('.notes-pdf-busca').press('Enter');
-    await page.waitForFunction(() => /1 de 1/.test(document.querySelector('.notes-pdf-contador').textContent), null, { timeout: 40000 });
+    // ---------- Fechar destrói o LIVRO ----------
     await page.getByRole('button', { name: 'Fechar', exact: true }).click();
     await page.waitForSelector('.notes-pdf-viewer', { state: 'detached', timeout: 5000 });
+    assert.equal(await page.locator('.stf__parent').count(), 0, 'o livro (StPageFlip) é destruído ao fechar');
 
     assert.deepEqual(erros, [], 'sem erro de página: ' + erros.join(' | '));
-    console.log('OK: visualizador de PDF — render+texto, busca, zoom e virtualização (1000 páginas)');
+    console.log('OK: visualizador de PDF como LIVRO — render, busca, 1000 páginas sob demanda, navegação e orientação');
   } catch (falha) {
     if (erros.length) console.error('erros de página:', erros.join(' | '));
     throw falha;

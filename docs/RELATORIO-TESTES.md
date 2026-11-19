@@ -1,9 +1,9 @@
 # Relatório da suíte de testes
 
-> Gerado por `node tests/run-all.cjs` em 2026-09-26 22:11:23.
+> Gerado por `node tests/run-all.cjs` em 2026-10-06 20:10:24.
 > Projeto testado: `C:\Users\Usuario\OneDrive\Desktop\notas-pwa`
 
-**PASSOU: 76 / 84** · FALHOU: 0 · CONHECIDAS: 7 · flaky: 0 · tempo: 575.9 s
+**PASSOU: 78 / 86** · FALHOU: 0 · CONHECIDAS: 7 · flaky: 0 · tempo: 475.0 s
 
 Falhas conhecidas (determinísticas, documentadas em `docs/PROBLEMAS-E-MITIGACOES.md` P83): `notes_cascade_defaults.cjs` (cores em cascata divergem do original (paridade do motor)) · `notes_collapse_motion.cjs` (tempo da animacao de colapso diverge do original) · `notes_markdown.cjs` (tabela markdown nao e convertida como no original) · `notes_navigation_completion.cjs` (cor herdada na navegacao por conclusao divergente) · `notes_outline_code.cjs` (colapso de titulo + bloco de codigo diverge do original) · `notes_paste_blocks.cjs` (colagem de blocos de codigo junta linhas do original) · `test_notes_editor_ui.cjs` (Enter em lista aninhada cria nivel diferente do original)
 
@@ -11,88 +11,90 @@ Falhas conhecidas (determinísticas, documentadas em `docs/PROBLEMAS-E-MITIGACOE
 
 | Teste | Resultado | Tempo |
 | --- | --- | --- |
-| `alternar_areas_mobile.cjs` | ✅ | 6944 ms |
-| `backend_python.cjs` | ✅ | 19546 ms |
-| `barras_botoes.cjs` | ✅ | 6842 ms |
-| `conta_google.cjs` | ✅ | 7819 ms |
-| `conta_login.cjs` | ✅ | 7415 ms |
-| `expandir.cjs` | ✅ | 13940 ms |
-| `mapa_abertura_padrao.cjs` | ✅ | 5319 ms |
-| `mapa_area.cjs` | ✅ | 5507 ms |
-| `mapa_atalhos.cjs` | ✅ | 6130 ms |
-| `mapa_canvas.cjs` | ✅ | 6700 ms |
-| `mapa_chips.cjs` | ✅ | 4548 ms |
-| `mapa_colapso.cjs` | ✅ | 8977 ms |
-| `mapa_conexoes.cjs` | ✅ | 5920 ms |
-| `mapa_conteudo.cjs` | ✅ | 6877 ms |
-| `mapa_dragdrop.cjs` | ✅ | 6561 ms |
-| `mapa_estilo.cjs` | ✅ | 6548 ms |
-| `mapa_gestao.cjs` | ✅ | 8146 ms |
-| `mapa_layout.cjs` | ✅ | 8359 ms |
-| `mapa_mobile_topbar.cjs` | ✅ | 30572 ms |
-| `mapa_nos.cjs` | ✅ | 11069 ms |
-| `mapa_padrao_notas.cjs` | ✅ | 6918 ms |
-| `mapa_toolbar.cjs` | ✅ | 7462 ms |
-| `mapa_undo.cjs` | ✅ | 7879 ms |
-| `mapa_vazio.cjs` | ✅ | 6325 ms |
-| `modo_local_sem_backend.cjs` | ✅ | 7414 ms |
-| `multi_notas.cjs` | ✅ | 9428 ms |
-| `multi_notas_100.cjs` | ✅ | 4133 ms |
-| `nota_abertura_padrao.cjs` | ✅ | 7310 ms |
-| `nota_grande_pwa.cjs` | ✅ | 5943 ms |
-| `notes_anexos_nuvem.cjs` | ✅ | 16801 ms |
-| `notes_cascade_defaults.cjs` | 🔶 conhecida — cores em cascata divergem do original (paridade do motor) | 6427 ms |
-| `notes_checklist_enter.cjs` | ✅ | 5248 ms |
-| `notes_checklist_numbers.cjs` | ✅ | 2935 ms |
-| `notes_checklist_order.cjs` | ✅ | 4035 ms |
-| `notes_chip_menu.cjs` | ✅ | 6199 ms |
-| `notes_clear_all.cjs` | ✅ | 5748 ms |
-| `notes_collapse_motion.cjs` | 🔶 conhecida — tempo da animacao de colapso diverge do original | 4476 ms |
-| `notes_collapsed_heading.cjs` | ✅ | 5772 ms |
-| `notes_colors_persistence.cjs` | ✅ | 1806 ms |
-| `notes_completion_spacing.cjs` | ✅ | 4904 ms |
-| `notes_cut_background.cjs` | ✅ | 3766 ms |
-| `notes_document_migration.cjs` | ✅ | 5729 ms |
-| `notes_document_model.cjs` | ✅ | 263 ms |
-| `notes_enter_child.cjs` | ✅ | 3605 ms |
-| `notes_enter_robust.cjs` | ✅ | 7041 ms |
-| `notes_extras.cjs` | ✅ | 17698 ms |
-| `notes_import_spacing.cjs` | ✅ | 4851 ms |
-| `notes_indent_child.cjs` | ✅ | 4782 ms |
-| `notes_indent_levels.cjs` | ✅ | 4046 ms |
-| `notes_large_document.cjs` | ✅ | 4964 ms |
-| `notes_last_line_enter.cjs` | ✅ | 4974 ms |
-| `notes_markdown.cjs` | 🔶 conhecida — tabela markdown nao e convertida como no original | 5811 ms |
-| `notes_million.cjs` | ✅ | 6034 ms |
-| `notes_million_extras.cjs` | ✅ | 6956 ms |
-| `notes_navigation_completion.cjs` | 🔶 conhecida — cor herdada na navegacao por conclusao divergente | 7600 ms |
-| `notes_outline_code.cjs` | 🔶 conhecida — colapso de titulo + bloco de codigo diverge do original | 5620 ms |
-| `notes_parent_undo.cjs` | ✅ | 6175 ms |
-| `notes_paste_blocks.cjs` | 🔶 conhecida — colagem de blocos de codigo junta linhas do original | 3466 ms |
-| `notes_paste_selection.cjs` | ✅ | 4404 ms |
-| `notes_performance.cjs` | ✅ | 4477 ms |
-| `notes_regression_audit.cjs` | ✅ | 4378 ms |
-| `notes_renumber_structure.cjs` | ✅ | 3509 ms |
+| `alternar_areas_mobile.cjs` | ✅ | 6231 ms |
+| `backend_python.cjs` | ✅ | 12310 ms |
+| `barras_botoes.cjs` | ✅ | 6091 ms |
+| `conta_google.cjs` | ✅ | 6730 ms |
+| `conta_login.cjs` | ✅ | 4524 ms |
+| `expandir.cjs` | ✅ | 10839 ms |
+| `mapa_abertura_padrao.cjs` | ✅ | 3816 ms |
+| `mapa_area.cjs` | ✅ | 2469 ms |
+| `mapa_atalhos.cjs` | ✅ | 4027 ms |
+| `mapa_canvas.cjs` | ✅ | 4981 ms |
+| `mapa_chips.cjs` | ✅ | 3546 ms |
+| `mapa_colapso.cjs` | ✅ | 6353 ms |
+| `mapa_conexoes.cjs` | ✅ | 4369 ms |
+| `mapa_conteudo.cjs` | ✅ | 6423 ms |
+| `mapa_dragdrop.cjs` | ✅ | 5630 ms |
+| `mapa_estilo.cjs` | ✅ | 4046 ms |
+| `mapa_gestao.cjs` | ✅ | 3812 ms |
+| `mapa_layout.cjs` | ✅ | 3745 ms |
+| `mapa_mobile_topbar.cjs` | ✅ | 26314 ms |
+| `mapa_nos.cjs` | ✅ | 6246 ms |
+| `mapa_padrao_notas.cjs` | ✅ | 3974 ms |
+| `mapa_toolbar.cjs` | ✅ | 4696 ms |
+| `mapa_undo.cjs` | ✅ | 4563 ms |
+| `mapa_vazio.cjs` | ✅ | 3673 ms |
+| `modo_local_sem_backend.cjs` | ✅ | 5191 ms |
+| `multi_notas.cjs` | ✅ | 7327 ms |
+| `multi_notas_100.cjs` | ✅ | 2924 ms |
+| `nota_abertura_padrao.cjs` | ✅ | 3065 ms |
+| `nota_grande_pwa.cjs` | ✅ | 3185 ms |
+| `notes_anexos_nuvem.cjs` | ✅ | 11434 ms |
+| `notes_cascade_defaults.cjs` | 🔶 conhecida — cores em cascata divergem do original (paridade do motor) | 4233 ms |
+| `notes_checklist_enter.cjs` | ✅ | 2810 ms |
+| `notes_checklist_numbers.cjs` | ✅ | 1661 ms |
+| `notes_checklist_order.cjs` | ✅ | 1948 ms |
+| `notes_chip_menu.cjs` | ✅ | 4244 ms |
+| `notes_clear_all.cjs` | ✅ | 4137 ms |
+| `notes_collapse_motion.cjs` | 🔶 conhecida — tempo da animacao de colapso diverge do original | 2771 ms |
+| `notes_collapsed_heading.cjs` | ✅ | 4948 ms |
+| `notes_colors_persistence.cjs` | ✅ | 1997 ms |
+| `notes_completion_spacing.cjs` | ✅ | 3584 ms |
+| `notes_cut_background.cjs` | ✅ | 5268 ms |
+| `notes_document_migration.cjs` | ✅ | 3505 ms |
+| `notes_document_model.cjs` | ✅ | 107 ms |
+| `notes_enter_child.cjs` | ✅ | 1693 ms |
+| `notes_enter_robust.cjs` | ✅ | 4316 ms |
+| `notes_extras.cjs` | ✅ | 13892 ms |
+| `notes_import_spacing.cjs` | ✅ | 2905 ms |
+| `notes_indent_child.cjs` | ✅ | 16677 ms |
+| `notes_indent_levels.cjs` | ✅ | 2657 ms |
+| `notes_large_document.cjs` | ✅ | 3744 ms |
+| `notes_last_line_enter.cjs` | ✅ | 4238 ms |
+| `notes_markdown.cjs` | 🔶 conhecida — tabela markdown nao e convertida como no original | 3333 ms |
+| `notes_million.cjs` | ✅ | 3925 ms |
+| `notes_million_extras.cjs` | ✅ | 3911 ms |
+| `notes_navigation_completion.cjs` | 🔶 conhecida — cor herdada na navegacao por conclusao divergente | 5192 ms |
+| `notes_outline_code.cjs` | 🔶 conhecida — colapso de titulo + bloco de codigo diverge do original | 2829 ms |
+| `notes_parent_undo.cjs` | ✅ | 3791 ms |
+| `notes_paste_blocks.cjs` | 🔶 conhecida — colagem de blocos de codigo junta linhas do original | 2622 ms |
+| `notes_paste_selection.cjs` | ✅ | 4013 ms |
+| `notes_performance.cjs` | ✅ | 4156 ms |
+| `notes_regression_audit.cjs` | ✅ | 3450 ms |
+| `notes_renumber_structure.cjs` | ✅ | 4347 ms |
 | `notes_requested_fixes.cjs` | ➖ n/a — exercita telas do dashboard de foco (#focusStageFocusId, #focusStageTitle), que  | 0 ms |
-| `notes_table_math.cjs` | ✅ | 92 ms |
-| `notes_table_media.cjs` | ✅ | 7061 ms |
-| `notes_table_tools.cjs` | ✅ | 8664 ms |
-| `notes_tone_picker.cjs` | ✅ | 3315 ms |
-| `notes_tone_picker_mobile.cjs` | ✅ | 3696 ms |
-| `notes_underline.cjs` | ✅ | 4481 ms |
-| `paletas_tema.cjs` | ✅ | 2974 ms |
-| `parity_structure.cjs` | ✅ | 86 ms |
-| `parity_visual.cjs` | ✅ | 11002 ms |
-| `pastas_unificadas.cjs` | ✅ | 7188 ms |
-| `pwa_service_worker.cjs` | ✅ | 6336 ms |
-| `shortcuts.cjs` | ✅ | 13541 ms |
-| `split_view.cjs` | ✅ | 7284 ms |
-| `sync_chaves.cjs` | ✅ | 87 ms |
-| `sync_completo.cjs` | ✅ | 6517 ms |
-| `sync_snapshot.cjs` | ✅ | 9225 ms |
-| `sync_websocket.cjs` | ✅ | 23756 ms |
-| `tema_switch.cjs` | ✅ | 4044 ms |
-| `tema_vidro.cjs` | ✅ | 7747 ms |
-| `test_notes_editor_ui.cjs` | 🔶 conhecida — Enter em lista aninhada cria nivel diferente do original | 5672 ms |
-| `toolbar_pwa.cjs` | ✅ | 12044 ms |
+| `notes_table_math.cjs` | ✅ | 142 ms |
+| `notes_table_media.cjs` | ✅ | 6963 ms |
+| `notes_table_tools.cjs` | ✅ | 7245 ms |
+| `notes_tone_picker.cjs` | ✅ | 3124 ms |
+| `notes_tone_picker_mobile.cjs` | ✅ | 3531 ms |
+| `notes_underline.cjs` | ✅ | 6600 ms |
+| `paletas_tema.cjs` | ✅ | 7016 ms |
+| `parity_structure.cjs` | ✅ | 143 ms |
+| `parity_visual.cjs` | ✅ | 12952 ms |
+| `pastas_unificadas.cjs` | ✅ | 8466 ms |
+| `pdf_visualizador.cjs` | ✅ | 12865 ms |
+| `pwa_service_worker.cjs` | ✅ | 3056 ms |
+| `shortcuts.cjs` | ✅ | 10452 ms |
+| `split_view.cjs` | ✅ | 6707 ms |
+| `sync_chaves.cjs` | ✅ | 80 ms |
+| `sync_completo.cjs` | ✅ | 9128 ms |
+| `sync_cursor_refresh.cjs` | ✅ | 3249 ms |
+| `sync_snapshot.cjs` | ✅ | 9965 ms |
+| `sync_websocket.cjs` | ✅ | 20481 ms |
+| `tema_switch.cjs` | ✅ | 3928 ms |
+| `tema_vidro.cjs` | ✅ | 7343 ms |
+| `test_notes_editor_ui.cjs` | 🔶 conhecida — Enter em lista aninhada cria nivel diferente do original | 4150 ms |
+| `toolbar_pwa.cjs` | ✅ | 11947 ms |
 
