@@ -82,6 +82,8 @@ function installSync(App) {
         window.notasConta = window.notasConta || { logado: false, email: '', csrf: '', sync: {} };
         window.notasConta.sync = { estado: estado || 'local', pendentes: Number(pendentes || 0) };
         if (typeof this.contaAtualizarDialogo === 'function') this.contaAtualizarDialogo();
+        // P124: o RODAPÉ das notas mostra o estado REAL (salvo x pendente) — sem abrir nada.
+        if (typeof this.syncAtualizarRodape === 'function') this.syncAtualizarRodape();
     };
 
     /**
@@ -181,7 +183,15 @@ function installSync(App) {
             for (const item of this.syncFilaLer()) {
                 const idLocal = idLocalDe(item);
                 if ((item.conta || '') !== email) { restantes.push(item); continue; }
-                if (confirmados.has(idLocal)) continue;
+                if (confirmados.has(idLocal)) {
+                    // P124: a nuvem CONFIRMOU este conteúdo — ele passa a ser a BASE da mescla
+                    // por linha (é contra ela que as edições do outro aparelho são comparadas).
+                    if (item.entidade === 'notas' && item.dados && typeof item.dados.conteudo_html === 'string') {
+                        this.syncNotasBase = this.syncNotasBase || new Map();
+                        this.syncNotasBase.set(String(item.id), item.dados.conteudo_html);
+                    }
+                    continue;
+                }
                 const conflito = conflitoPorId[idLocal];
                 if (conflito) {
                     // O servidor venceu o LWW: preserva cópia de recuperação do texto divergente
@@ -305,6 +315,10 @@ function installSync(App) {
         this.syncPastasMudou = false;
         this.syncIndiceMapasMudou = false;
         this.syncMapaAtualMudou = false;
+        // P124: a FAIXA DE CHIPS só é reconstruída quando a LISTA de notas mudou (criou,
+        // removeu, renomeou, trocou de pasta). Sem isto, qualquer `change` (mapa, ajuste,
+        // pasta) repintava os chips e dava a sensação de "refresh".
+        this.syncNavNotasMudou = false;
         // Cada entidade é aplicada de forma INDEPENDENTE: um applier que falhe (ex.: o editor
         // no meio do render) NUNCA impede as outras entidades de chegarem.
         const passo = (nome, acao) => {
@@ -338,10 +352,21 @@ function installSync(App) {
         } finally {
             this.syncAplicando = anterior;
         }
-        if (typeof this.renderNotesNav === 'function') this.renderNotesNav();
-        // A tela de PASTAS (cartões) também precisa refletir o que chegou da nuvem em tempo
-        // real — sem isto, a pasta criada no outro aparelho só aparecia depois de um F5.
-        if (typeof this.renderPastas === 'function') this.renderPastas();
+        // P124: o que este aparelho tem de MAIS NOVO (e não está na fila) entra na fila agora,
+        // já FORA do anti-eco — senão a aplicação nunca subiria de volta.
+        this.syncSubirPendentesDeLocal();
+        // P124: repintar SÓ o que realmente mudou. Sem isto, toda aplicação redesenhava a
+        // faixa de chips e a tela de Pastas (a "piscada" que não tinha nada a ver com a nota).
+        if (this.syncNavNotasMudou && typeof this.renderNotesNav === 'function') this.renderNotesNav();
+        // A tela de PASTAS (cartões) precisa refletir o que chegou da nuvem em tempo real —
+        // mas os cartões só existem na tela raiz: com o editor aberto eles ficam atrás do
+        // modal e reconstruí-los ali era puro desperdício (a entrada na área re-renderiza).
+        const pastasSecao = document.getElementById('pastasArea');
+        const modalNotas = document.getElementById('notesModalBackdrop');
+        const pastasVisiveis = Boolean(pastasSecao && !pastasSecao.hidden
+            && !(modalNotas && modalNotas.classList.contains('active')));
+        const pastasMudaram = Boolean(this.syncPastasMudou || this.syncIndiceMapasMudou || this.syncNavNotasMudou);
+        if (pastasVisiveis && pastasMudaram && typeof this.renderPastas === 'function') this.renderPastas();
         const areaMapa = document.getElementById('mapaArea');
         // Só redesenha o mapa quando ALGO da área mudou (pasta/mapa/grafo): sem isto, um eco de
         // gravação qualquer piscava a tela do mapa sem necessidade — o análogo do "refresh" das
@@ -357,53 +382,230 @@ function installSync(App) {
         }
     };
 
+    // 🔄 [INÍCIO: SYNC - MESCLA POR LINHA (base local/nuvem)]
+    /** Acima deste tamanho a mescla linha a linha é pesada: cai no LWW do documento. */
+    const LIMITE_MESCLA = 400000;
+
+    /** Data de edição (ISO/epoch) -> epoch. 0 quando não dá para ler. */
+    const dataDe = valor => {
+        if (!valor) return 0;
+        const data = new Date(String(valor).replace('Z', '+00:00'));
+        return isNaN(data) ? 0 : data.getTime();
+    };
+
+    /**
+     * HTML -> linhas identificadas. O motor JÁ grava `data-note-id` em cada `.notes-line`
+     * (`notes/editor.js`), então o MESMO parágrafo tem o MESMO id nos dois aparelhos — é o
+     * que permite trocar só as linhas que mudaram, sem reconstruir a nota inteira.
+     */
+    const linhasDeHtml = html => {
+        const molde = document.createElement('div');
+        molde.innerHTML = String(html || '');
+        const lista = [];
+        for (const el of molde.children) {
+            if (!el.classList || !el.classList.contains('notes-line')) continue;
+            lista.push({ id: String(el.dataset.noteId || ''), el });
+        }
+        return lista;
+    };
+
+    /** Conteúdo comparável de uma linha (ignora a ORDEM dos atributos e os `data-*` do motor). */
+    const assinaturaDaLinha = el => {
+        const props = Object.keys(el.dataset)
+            .filter(chave => chave !== 'noteid' && chave !== 'documentversion')
+            .sort()
+            .map(chave => chave + '=' + el.dataset[chave]);
+        const atributos = [...el.attributes]
+            .filter(atributo => !atributo.name.startsWith('data-'))
+            .map(atributo => atributo.name + '=' + atributo.value);
+        const texto = el.querySelector('.notes-line-text') || el;
+        return JSON.stringify([el.className, atributos, props, texto.innerHTML]);
+    };
+
+    /**
+     * Mescla de 3 vias por LINHA — a "experiência Google Docs" sem OT/CRDT:
+     *   base   = última versão confirmada pela nuvem;
+     *   local  = o que este aparelho tem;
+     *   remoto = o que acabou de chegar.
+     * Linha que só um lado mudou fica com quem mudou (edições em linhas diferentes NUNCA se
+     * perdem). Linha que os dois mudaram resolve por LWW da nota. Devolve `null` quando não
+     * dá para casar linhas (conteúdo legado sem ids / nota gigante) — aí vale o LWW do documento.
+     */
+    p.syncMesclarConteudo = function (baseHtml, localHtml, remotoHtml, remotoMaisNovo) {
+        const tamanho = Math.max(String(baseHtml || '').length, String(localHtml || '').length, String(remotoHtml || '').length);
+        if (tamanho > LIMITE_MESCLA) return null;
+        const base = linhasDeHtml(baseHtml), local = linhasDeHtml(localHtml), remoto = linhasDeHtml(remotoHtml);
+        if ([...base, ...local, ...remoto].some(linha => !linha.id)) return null;
+        const mapa = linhas => new Map(linhas.map(linha => [linha.id, linha]));
+        const mapaBase = mapa(base), mapaLocal = mapa(local), mapaRemoto = mapa(remoto);
+        const escolhido = new Map();
+        let conflitos = 0;
+        for (const id of new Set([...mapaBase.keys(), ...mapaLocal.keys(), ...mapaRemoto.keys()])) {
+            const b = mapaBase.get(id), l = mapaLocal.get(id), r = mapaRemoto.get(id);
+            const sb = b ? assinaturaDaLinha(b.el) : null;
+            const sl = l ? assinaturaDaLinha(l.el) : null;
+            const sr = r ? assinaturaDaLinha(r.el) : null;
+            let vencedor = null;
+            if (sl !== null && sr !== null) {
+                if (sl === sr) vencedor = l;
+                else {
+                    const mudouLocal = sb === null || sl !== sb;
+                    const mudouRemoto = sb === null || sr !== sb;
+                    if (mudouLocal && !mudouRemoto) vencedor = l;
+                    else if (!mudouLocal && mudouRemoto) vencedor = r;
+                    else if (!mudouLocal && !mudouRemoto) vencedor = l;
+                    else { conflitos += 1; vencedor = remotoMaisNovo ? r : l; }
+                }
+            } else if (sl !== null) {
+                // Existe só aqui: linha nova deste aparelho OU apagada na nuvem.
+                if (sb === null) vencedor = l;
+                else if (sl === sb) vencedor = null;                    // não mexi: a remoção vale
+                else vencedor = remotoMaisNovo ? null : l;              // editei: a mais nova vence
+            } else if (sr !== null) {
+                // Existe só na nuvem: linha nova de lá OU apagada aqui.
+                if (sb === null) vencedor = r;
+                else if (sr === sb) vencedor = null;                    // a nuvem não mexeu: remoção local vale
+                else vencedor = remotoMaisNovo ? r : null;              // a nuvem editou: a mais nova vence
+            }
+            if (vencedor) escolhido.set(id, vencedor);
+        }
+        // Ordem: a espinha é a ordem LOCAL (o que o usuário vê); as linhas que só existem na
+        // nuvem entram DEPOIS do vizinho anterior delas na ordem remota (inserções concorrentes
+        // dos dois lados sobrevivem).
+        const ordem = [];
+        const postos = new Set();
+        for (const linha of local) {
+            if (escolhido.has(linha.id) && !postos.has(linha.id)) { ordem.push(linha.id); postos.add(linha.id); }
+        }
+        for (let i = 0; i < remoto.length; i++) {
+            const id = remoto[i].id;
+            if (!escolhido.has(id) || postos.has(id)) continue;
+            let posicao = 0;
+            for (let j = i - 1; j >= 0; j--) {
+                if (postos.has(remoto[j].id)) { posicao = ordem.indexOf(remoto[j].id) + 1; break; }
+            }
+            ordem.splice(posicao, 0, id);
+            postos.add(id);
+        }
+        for (const id of escolhido.keys()) if (!postos.has(id)) { ordem.push(id); postos.add(id); }
+        return { html: ordem.map(id => escolhido.get(id).el.outerHTML).join(''), conflitos };
+    };
+    // 🔄 [FIM: SYNC - MESCLA POR LINHA (base local/nuvem)]
+
     p.syncAplicarNotas = function (registros) {
         // Nada a aplicar: NÃO mexe no aparelho. (Durante o boot o app pode estar com a lista
         // em memória ainda incompleta; gravar aqui zeraria o texto da nota — achado do teste.)
         if (!registros || !registros.length) return;
+        this.syncNotasBase = this.syncNotasBase || new Map();
         const lista = (this.projectsData || []).slice();
         const idAtual = this.currentNotesProjectId == null ? null : String(this.currentNotesProjectId);
+        const backdrop = document.getElementById('notesModalBackdrop');
+        const editorAberto = Boolean(backdrop && backdrop.classList.contains('active'));
+        // Só reconstruir os chips quando a LISTA mudou (id/nome/pasta) — P124.
+        const retrato = itens => JSON.stringify(itens.map(nota => [String(nota.id), nota.nome || '', nota.pastaId || '']));
+        const retratoAntes = retrato(lista);
         // Marca se o TEXTO da nota ABERTA realmente mudou: é o que decide se o editor precisa
-        // ser re-renderizado (sem mudança, o re-render é o "refresh" que desloca o cursor — P120).
+        // ser atualizado (sem mudança, atualizar seria o "refresh" que desloca o cursor — P120).
         let atualMudou = false;
         for (const registro of registros) {
             const indice = lista.findIndex(nota => String(nota.id) === String(registro.id));
             if (registro.deleted_at) {
                 if (indice >= 0) lista.splice(indice, 1);
+                this.syncNotasBase.delete(String(registro.id));
                 if (String(this.currentNotesProjectId) === String(registro.id)) this.currentNotesProjectId = null;
                 continue;
             }
-            const nota = notaLocal(registro);
+            const nuvem = notaLocal(registro);
             const ehAtual = idAtual !== null && String(registro.id) === idAtual;
-            if (indice >= 0) {
-                // Preserva o texto local se a nuvem veio sem conteúdo (nota somente-metadados)
-                // E preserva a data de edição MAIS RECENTE: aplicar uma versão antiga (ex.: a
-                // nota vazia que o próprio aparelho acabou de enviar) não pode "rebaixar" a data.
-                const anterior = lista[indice];
-                const dataDe = valor => {
-                    if (!valor) return 0;
-                    const d = new Date(String(valor).replace('Z', '+00:00'));
-                    return isNaN(d) ? 0 : d.getTime();
-                };
-                const mesclada = Object.assign({}, anterior, nota, {
-                    notas: nota.notas || anterior.notas || ''
-                });
-                if (dataDe(nota.atualizadaEm) < dataDe(anterior.atualizadaEm)) {
-                    mesclada.atualizadaEm = anterior.atualizadaEm;
-                }
-                if (ehAtual && String(mesclada.notas || '') !== String(anterior.notas || '')) atualMudou = true;
-                lista[indice] = mesclada;
-            } else {
-                if (ehAtual) atualMudou = true;
-                lista.push(nota);
+            // P124: alguém está digitando ESTA nota? Não toca em NADA agora (a digitação em voo
+            // é a versão mais nova) e guarda a da nuvem para a primeira janela ociosa.
+            if (ehAtual && editorAberto && this.syncEditorEmEdicao()) {
+                this.syncGuardarRemotoPendente(registro);
+                continue;
             }
+            const anterior = indice >= 0 ? lista[indice] : null;
+            const localHtml = String((anterior && anterior.notas) || '');
+            const remotoHtml = String(nuvem.notas || '');
+            const dataNuvem = dataDe(nuvem.atualizadaEm);
+            const nuvemMaisNova = dataNuvem > dataDe(anterior && anterior.atualizadaEm);
+            // Conflito resolvido pelo SERVIDOR (`syncAplicarItem`) chega marcado: a versão dele
+            // vence mesmo com data igual/mais velha — é a regra do LWW do backend.
+            const forcar = Boolean(registro.__forcar);
+            const aceitarNuvem = forcar || nuvemMaisNova;
+            const baseHtml = this.syncNotasBase.get(String(registro.id));
+            let texto;
+            if (!anterior) {
+                texto = remotoHtml;                       // nota nova (chegou da nuvem)
+            } else if (!aceitarNuvem) {
+                // A nuvem NÃO é mais nova: o texto LOCAL prevalece (nunca é rebaixado — P124).
+                texto = localHtml || remotoHtml;
+            } else {
+                // Com BASE conhecida, mescla por linha (edições dos dois lados sobrevivem).
+                // Sem base (boot/sessão nova) não dá para saber o que cada lado mudou: vale o
+                // LWW do documento (a versão mais nova inteira) — evita ressuscitar exclusão.
+                const mescla = baseHtml
+                    ? this.syncMesclarConteudo(baseHtml, localHtml, remotoHtml, aceitarNuvem)
+                    : null;
+                texto = mescla ? mescla.html : (remotoHtml || localHtml);
+            }
+            const mesclada = Object.assign({}, anterior || {}, nuvem, { notas: texto });
+            // Nome/pasta/cor também são LWW: a nuvem só reescreve quando é aceita.
+            if (anterior && !aceitarNuvem) {
+                mesclada.nome = anterior.nome;
+                mesclada.pastaId = anterior.pastaId;
+                mesclada.accent = anterior.accent;
+            }
+            // A data de edição nunca é rebaixada.
+            if (anterior && dataDe(mesclada.atualizadaEm) < dataDe(anterior.atualizadaEm)) {
+                mesclada.atualizadaEm = anterior.atualizadaEm;
+            }
+            if (ehAtual && String(texto || '') !== String(localHtml)) atualMudou = true;
+            if (indice >= 0) lista[indice] = mesclada; else lista.push(mesclada);
+            // A BASE é a versão que a nuvem CONFIRMA ter agora (não a mesclada, que ainda vai subir).
+            this.syncNotasBase.set(String(registro.id), remotoHtml);
+            // Este aparelho tem texto mais novo e ele não está na fila: sobe (nunca fica só aqui).
+            this.syncSubirSeLocalMaisNovo(mesclada, remotoHtml, dataNuvem, nuvemMaisNova);
         }
         this.syncNotaAtualMudou = atualMudou;
+        this.syncNavNotasMudou = retrato(lista) !== retratoAntes;
         if (!lista.length) lista.push({ id: 'local', nome: 'Minhas notas', notas: '', pastaId: null });
         this.gravarNotasLocaisComCota(lista);
         if (!lista.some(nota => String(nota.id) === String(this.currentNotesProjectId))) {
             this.currentNotesProjectId = lista[0].id;
         }
+    };
+
+    /**
+     * O texto deste aparelho é ESTRITAMENTE mais novo que o da nuvem e não há op na fila
+     * (ex.: editado enquanto estava deslogado): enfileira, senão o que foi escrito ficaria
+     * só aqui. Empate de data fica como está (o próximo edit sobe e resolve).
+     */
+    p.syncSubirSeLocalMaisNovo = function (nota, remotoHtml, dataNuvem, nuvemMaisNova) {
+        if (!this.syncAtivo() || nuvemMaisNova) return false;
+        const texto = String((nota && nota.notas) || '');
+        if (!texto || texto === String(remotoHtml || '')) return false;
+        if (dataDe(nota.atualizadaEm) <= (dataNuvem || 0)) return false;
+        const naFila = this.syncFilaDaConta().some(item => item.entidade === 'notas' && String(item.id) === String(nota.id));
+        if (naFila) return false;
+        // `syncEnfileirar` recusa durante a aplicação (anti-eco): guarda e enfileira no FIM.
+        if (this.syncAplicando) {
+            this.syncSubirDepois = this.syncSubirDepois || new Map();
+            this.syncSubirDepois.set(String(nota.id), nota);
+            return true;
+        }
+        return this.syncEnfileirarNota(nota);
+    };
+
+    /** Esvazia o "texto local mais novo" acumulado na aplicação — FORA do anti-eco. */
+    p.syncSubirPendentesDeLocal = function () {
+        const pendentes = this.syncSubirDepois;
+        this.syncSubirDepois = null;
+        if (!pendentes || !pendentes.size) return;
+        if (this.syncAplicando) {   // ainda dentro de outra aplicação: devolve para a próxima
+            this.syncSubirDepois = pendentes;
+            return;
+        }
+        pendentes.forEach(nota => this.syncEnfileirarNota(nota));
     };
 
     // 🔄 [INÍCIO: SYNC - PRESERVAÇÃO DE CURSOR/ROLAGEM (editor de notas)]
@@ -483,10 +685,185 @@ function installSync(App) {
     };
     // 🔄 [FIM: SYNC - PRESERVAÇÃO DE CURSOR/ROLAGEM (editor de notas)]
 
+    // 🔄 [INÍCIO: SYNC - EDIÇÃO EM VOO (nunca interromper quem está digitando)]
+    /** A janela (ms) em que uma tecla recente conta como "estou digitando agora". */
+    const JANELA_DIGITACAO = 1200;
+
+    /** Há tecla recente no editor? (o listener de `input` é ligado por `syncLigarDigitacao`). */
+    p.syncDigitando = function () {
+        const ultimo = Number(this.notesUltimoInput) || 0;
+        return Boolean(ultimo) && (Date.now() - ultimo) < JANELA_DIGITACAO;
+    };
+
+    /**
+     * O editor está com edição NÃO GRAVADA (ou o dedo ainda está nele)? Nesses dois casos a
+     * digitação em voo é a versão mais nova da nota: o sync NÃO pode mexer no DOM nem
+     * rebaixar o texto (era a causa da perda de trechos e do cursor saltando — P124).
+     * `notesRascunhoPendente` é ligado pelo `notesStatus` (o motor avisa a cada edição) e
+     * desligado quando a gravação local termina — é a checagem BARATA (sem re-renderizar a nota).
+     */
+    p.syncEditorEmEdicao = function () {
+        return Boolean(this.notesRascunhoPendente) || this.syncDigitando();
+    };
+
+    /** A versão da nuvem chegou com o editor em uso: fica guardada para a janela ociosa. */
+    p.syncGuardarRemotoPendente = function (registro) {
+        this.syncRemotoPendente = this.syncRemotoPendente || {};
+        this.syncRemotoPendente[String(registro.id)] = registro;
+        this.syncAgendarRefazerPendente(1400);
+    };
+
+    /** Aplica a versão pendente assim que o dedo para e a gravação local termina (uma vez só). */
+    p.syncAgendarRefazerPendente = function (atraso = 1400) {
+        clearTimeout(this.syncRefazerTimer);
+        this.syncRefazerTimer = setTimeout(() => {
+            const id = this.currentNotesProjectId == null ? null : String(this.currentNotesProjectId);
+            if (!id) return;
+            const pendente = this.syncRemotoPendente && this.syncRemotoPendente[id];
+            if (!pendente) return;
+            if (this.syncEditorEmEdicao()) { this.syncAgendarRefazerPendente(atraso); return; }
+            delete this.syncRemotoPendente[id];
+            this.syncAplicarEntidades({ notas: [pendente] }, true);
+        }, atraso);
+    };
+
+    /**
+     * Atualiza o EDITOR ABERTO sem reconstruí-lo (P124): parseia o HTML da nuvem fora do
+     * documento e reconcilia por `data-note-id` — a MESMA semântica do `renderDocument` do
+     * motor. Linha igual não é tocada; linha diferente é substituída; a ordem é acertada com
+     * `insertBefore` e só o que sobra é removido. Depois o caret e a rolagem voltam ao lugar.
+     * Devolve `false` quando não há editor (o chamador cai no caminho antigo).
+     */
+    p.syncAtualizarEditorSilencioso = function (html) {
+        const editor = document.getElementById('notesEditor');
+        if (!editor) return false;
+        const captura = capturarCursorNota();
+        const molde = document.createElement('div');
+        molde.innerHTML = String(html || '');
+        const novas = [...molde.children].filter(el => el.classList && el.classList.contains('notes-line'));
+        if (!novas.length) {
+            const vazia = document.createElement('div');
+            vazia.className = 'notes-line';
+            vazia.dataset.level = '0';
+            vazia.innerHTML = '<div class="notes-line-text"><br></div>';
+            novas.push(vazia);
+        }
+        const atuais = [...editor.children].filter(el => el.classList && el.classList.contains('notes-line'));
+        const porId = new Map();
+        atuais.forEach(el => { const id = el.dataset.noteId; if (id && !porId.has(id)) porId.set(id, el); });
+        const desejadas = novas.map(nova => {
+            const id = nova.dataset.noteId;
+            const atual = id ? porId.get(id) : null;
+            if (atual && atual.outerHTML === nova.outerHTML) return atual;   // idêntica: NÃO toca
+            if (atual) { atual.replaceWith(nova); return nova; }             // só esta linha muda
+            return nova;
+        });
+        desejadas.forEach((el, indice) => {
+            if (editor.children[indice] !== el) editor.insertBefore(el, editor.children[indice] || null);
+        });
+        const manter = new Set(desejadas);
+        [...editor.children].forEach(el => { if (!manter.has(el)) el.remove(); });
+        // Sessão coerente: o que está na tela É a versão da nuvem (o próximo autosave não repete).
+        if (this.notesSession) {
+            this.notesSession.saved = String(html || '');
+            this.notesSession.needsModelMigration = false;
+            try { localStorage.removeItem(this.notesSession.key); } catch (_) { /* sem storage */ }
+        }
+        this.notesContent = String(html || '');
+        if (typeof this.refreshNotesCollapseControls === 'function') this.refreshNotesCollapseControls();
+        if (typeof this.updateNotesTopicCount === 'function') this.updateNotesTopicCount();
+        if (captura) this.restaurarCursorNota(captura);
+        return true;
+    };
+    /** Liga (UMA vez) o acompanhamento de digitação do editor — a janela do `syncDigitando`. */
+    p.syncLigarDigitacao = function () {
+        if (this.syncDigitacaoLigada) return;
+        this.syncDigitacaoLigada = true;
+        document.addEventListener('input', evento => {
+            const alvo = evento.target;
+            if (!alvo || !alvo.closest || !alvo.closest('#notesEditor')) return;
+            this.notesUltimoInput = Date.now();
+            // Chegou versão da nuvem enquanto eu digitava: tenta de novo quando o dedo parar.
+            const id = this.currentNotesProjectId == null ? null : String(this.currentNotesProjectId);
+            if (id && this.syncRemotoPendente && this.syncRemotoPendente[id]) this.syncAgendarRefazerPendente(1400);
+        }, true);
+    };
+    // 🔄 [FIM: SYNC - EDIÇÃO EM VOO (nunca interromper quem está digitando)]
+
+    // ⚡ [INÍCIO: SYNC - RODAPÉ DO ESTADO REAL (salvo x pendente)]
+    /**
+     * O rodapé de Notas deixou de dizer "Salvo" só porque o LocalStorage aceitou: com sessão
+     * ele mostra o caminho REAL da alteração — pendente, enviando, sem conexão, sessão
+     * expirada ou sincronizado. Deslogado continua "Salvo" (offline-first, como sempre foi e
+     * como a paridade visual espera). Nunca re-renderiza a nota: mexe só no `#notesSaveStatus`.
+     */
+    p.syncRotuloRodape = function () {
+        const espelho = (window.notasConta && window.notasConta.sync) || {};
+        const estado = String(espelho.estado || '');
+        const fila = typeof this.syncFilaDaConta === 'function'
+            ? this.syncFilaDaConta().length
+            : Number(espelho.pendentes || 0);
+        if (estado === 'erro') return { texto: 'Falha ao salvar', estado: 'erro', erro: true, titulo: 'Não foi possível gravar a nota neste aparelho' };
+        if (!this.syncAtivo()) return { texto: 'Salvo', estado: 'local', titulo: 'Salvo neste aparelho (entre na conta para sincronizar)' };
+        if (estado === 'expirada') return { texto: 'Sessão expirada', estado: 'expirada', titulo: 'Entre novamente para voltar a sincronizar' };
+        if (this.notesRascunhoPendente) return { texto: 'Pendente', estado: 'pendente', titulo: 'Ainda gravando esta nota no aparelho' };
+        if (estado === 'sincronizando') return { texto: 'Enviando…', estado: 'enviando', titulo: 'Enviando alterações para a sua conta' };
+        if (fila > 0) {
+            if (estado === 'offline') {
+                return { texto: 'Sem conexão — ' + fila + ' na fila', estado: 'offline', titulo: 'As alterações estão salvas no aparelho e sobem quando a conexão voltar' };
+            }
+            return { texto: fila === 1 ? 'Pendente — 1 na fila' : 'Pendente — ' + fila + ' na fila', estado: 'pendente', titulo: 'Aguardando envio para a sua conta' };
+        }
+        if (estado === 'pendente') return { texto: 'Enviando…', estado: 'enviando', titulo: 'Enviando alterações para a sua conta' };
+        if (estado === 'offline') return { texto: 'Sem conexão', estado: 'offline', titulo: 'As alterações ficam no aparelho até a conexão voltar' };
+        return { texto: 'Salvo', estado: 'salvo', titulo: 'Sincronizado com a sua conta' };
+    };
+
+    /** Escreve o rótulo no rodapé (texto/atributos apenas — não toca na nota). */
+    p.syncAtualizarRodape = function () {
+        const status = document.getElementById('notesSaveStatus');
+        if (!status) return;
+        const rotulo = this.syncRotuloRodape();
+        if (status.textContent !== rotulo.texto) status.textContent = rotulo.texto;
+        status.title = rotulo.titulo || '';
+        status.disabled = !rotulo.erro;
+        status.classList.toggle('is-error', Boolean(rotulo.erro));
+        if (rotulo.estado) status.dataset.estado = rotulo.estado; else delete status.dataset.estado;
+        status.onclick = rotulo.erro ? () => this.saveNotes() : null;
+    };
+
+    /** O motor fala "Salvo"/"Alterações pendentes"/"Salvando…": aqui vira o estado REAL. */
+    const notesStatusOriginal = typeof p.notesStatus === 'function' ? p.notesStatus : null;
+    p.notesStatus = function (texto, erro) {
+        if (!erro && (texto === 'Alterações pendentes' || texto === 'Salvando…')) {
+            this.notesRascunhoPendente = true;
+            // Com sessão o rótulo é o do estado real ("Pendente"), não o texto cru do motor.
+            if (this.syncAtivo()) return this.syncAtualizarRodape();
+        }
+        if (!erro && texto === 'Salvo') {
+            this.notesRascunhoPendente = false;
+            // Com sessão, "Salvo" só aparece quando a fila estiver vazia e a nuvem confirmar.
+            if (this.syncAtivo()) return this.syncAtualizarRodape();
+        }
+        if (notesStatusOriginal) notesStatusOriginal.call(this, texto, erro);
+        // Falha de gravação LOCAL ("Falha ao salvar…"): o rodapé fica em estado de erro
+        // (clique = tentar de novo), com a cor de erro do tema.
+        const status = document.getElementById('notesSaveStatus');
+        if (status) {
+            status.classList.toggle('is-error', Boolean(erro));
+            if (erro) status.dataset.estado = 'erro';
+            else if (status.dataset.estado === 'erro') delete status.dataset.estado;
+        }
+    };
+    // ⚡ [FIM: SYNC - RODAPÉ DO ESTADO REAL (salvo x pendente)]
+
+
     /**
      * Depois de aplicar notas, o EDITOR ABERTO precisa refletir o que veio da nuvem — senão o
      * autosave seguinte do motor regravaria o conteúdo velho por cima (achado do
      * `sync_snapshot.cjs`: o 2º aparelho recebia a nota e ela voltava vazia).
+     * P124: a atualização é IN-PLACE (`syncAtualizarEditorSilencioso`) — nada de reabrir o
+     * modal, nada de piscar, e nada de mexer no DOM enquanto o usuário está digitando.
      */
     p.syncRefazerEditor = function (registros) {
         // Autosave AGENDADO antes desta aplicação carrega o estado antigo: cancela de todo jeito.
@@ -501,29 +878,34 @@ function installSync(App) {
         const tocada = (registros || []).some(registro => String(registro.id) === String(id) && !registro.deleted_at);
         if (!tocada) return Promise.resolve();
         // SEM NOVIDADE no TEXTO desta nota (eco da própria gravação, ou snapshot sem mudança):
-        // re-renderizar aqui era o "refresh" que pisca a tela e desloca o cursor para o topo.
-        // Só tira o editor do estado "velho" (libera os próximos autosaves) e sai — P120.
+        // só tira o editor do estado "velho" (libera os próximos autosaves) e sai — P120.
         if (!this.syncNotaAtualMudou) {
             this.syncEstale = false;
             return Promise.resolve();
         }
-        // Neutraliza a sessão (o "fechar" da reabertura não pode regravar o documento velho) e
-        // reabre a nota pelo CAMINHO DO APP: render, sessão e chips ficam consistentes.
+        // P124: quem está digitando tem a palavra — NADA de DOM agora. A versão da nuvem já
+        // ficou pendente (`syncGuardarRemotoPendente`) e entra na primeira janela ociosa.
+        if (this.syncEditorEmEdicao()) {
+            this.syncAgendarRefazerPendente(1400);
+            return Promise.resolve();
+        }
+        const nota = (this.projectsData || []).find(item => String(item.id) === String(id));
+        if (!nota) return Promise.resolve();
+        this.syncEstale = false;
+        // Caminho normal: troca SÓ as linhas que mudaram, no lugar (zero "refresh").
+        if (this.syncAtualizarEditorSilencioso(String(nota.notas || ''))) return Promise.resolve();
+        // Fallback (sem as linhas esperadas no DOM): reabre pelo caminho do app, com caret/rolagem
+        // capturados ANTES. Neutraliza a sessão para o "fechar" não regravar o documento velho.
         if (this.notesSession) {
             this.notesSession.saved = this.getCleanNotesHtml();
             this.notesSession.needsModelMigration = false;
         }
-        // A reabertura reescreve o `innerHTML` do editor (o caret e a rolagem se perdem): captura a
-        // posição ANTES e repõe DEPOIS. O `setTimeout` de 150 ms vence o `placeNotesCursorAtEnd`
-        // (100 ms, só no desktop) disparado dentro de `openNotesModal` — a última palavra é a nossa.
         const captura = capturarCursorNota();
         return Promise.resolve(this.openNotesModal(id)).then(() => {
             this.syncEstale = false;
             setTimeout(() => {
-                // Entre a captura e a reposição o usuário pode ter FECHADO o modal ou trocado de
-                // nota: repor o caret aí seria pior que não repor.
-                const backdrop = document.getElementById('notesModalBackdrop');
-                if (!backdrop || !backdrop.classList.contains('active')) return;
+                const atual = document.getElementById('notesModalBackdrop');
+                if (!atual || !atual.classList.contains('active')) return;
                 if (String(this.currentNotesProjectId) !== String(id)) return;
                 this.restaurarCursorNota(captura);
             }, 150);
@@ -700,7 +1082,10 @@ function installSync(App) {
             id: conflito.id,
             dados: versao.dados,
             updated_at: versao.updated_at,
-            deleted_at: versao.deleted_at || null
+            deleted_at: versao.deleted_at || null,
+            // O servidor venceu o LWW desta op: a versão dele é aplicada mesmo que a data de
+            // edição seja igual/mais velha (é a resposta autoritativa do backend — P124).
+            __forcar: true
         };
         const anterior = this.syncAplicando;
         this.syncAplicando = true;
@@ -713,6 +1098,11 @@ function installSync(App) {
         } finally {
             this.syncAplicando = anterior;
         }
+        this.syncSubirPendentesDeLocal();
+        // O conflito também é uma versão da nuvem: reflete no editor/chips pelos MESMOS caminhos
+        // de sempre — in-place, sem re-render e respeitando quem está digitando (P124).
+        if (conflito.entidade === 'notas') this.syncRefazerEditor([registro]).catch(() => { });
+        if (this.syncNavNotasMudou && typeof this.renderNotesNav === 'function') this.renderNotesNav();
     };
 
     /**
@@ -1855,6 +2245,16 @@ function installSync(App) {
     };
     if (window.notesApp) ligarTempoReal();
     else setTimeout(ligarTempoReal, 0);
+
+    /** Mesma deferência: liga o acompanhamento de DIGITAÇÃO na INSTÂNCIA. */
+    const ligarDigitacao = () => {
+        const aplicacao = window.notesApp;
+        if (!aplicacao || aplicacao.__syncDigitacaoIniciada) return;
+        aplicacao.__syncDigitacaoIniciada = true;
+        aplicacao.syncLigarDigitacao();
+    };
+    if (window.notesApp) ligarDigitacao();
+    else setTimeout(ligarDigitacao, 0);
 
     /** Mesma deferência: liga o gancho das PASTAS na INSTÂNCIA (não no protótipo). */
     const ligarPastas = () => {

@@ -1071,6 +1071,22 @@ html[data-theme="dark"] {
 html[data-theme="dark"] .app-rodape { background: var(--mapa-superficie, #151B23); color: var(--mapa-texto-suave, #94A3B8); }
 html[data-theme="dark"] .app-rodape-meta { color: var(--mapa-texto-suave, #94A3B8); }
 
+/* 🎨 [INÍCIO: NOTAS/ESTILO - RODAPÉ: ESTADO REAL DO SYNC] */
+/* P124: o rodapé de Notas diz o caminho REAL da alteração (pendente/enviando/sem conexão/
+   sessão expirada/sincronizado). O `data-estado` só é gravado COM sessão — deslogado o
+   rótulo segue "Salvo" e a paridade visual do app local não muda. */
+#notesSaveStatus[data-estado="pendente"],
+#notesSaveStatus[data-estado="enviando"] { color: var(--app-rodape-pendente, #B45309); }
+#notesSaveStatus[data-estado="offline"],
+#notesSaveStatus[data-estado="expirada"],
+#notesSaveStatus.is-error { color: var(--app-rodape-offline, #B91C1C); }
+html[data-theme="dark"] #notesSaveStatus[data-estado="pendente"],
+html[data-theme="dark"] #notesSaveStatus[data-estado="enviando"] { color: #FBBF24; }
+html[data-theme="dark"] #notesSaveStatus[data-estado="offline"],
+html[data-theme="dark"] #notesSaveStatus[data-estado="expirada"],
+html[data-theme="dark"] #notesSaveStatus.is-error { color: #F87171; }
+/* 🎨 [FIM: NOTAS/ESTILO - RODAPÉ: ESTADO REAL DO SYNC] */
+
 /* Rolagem padrão: trilha transparente; polegar só no hover. O 2º seletor eleva a
    especificidade dentro do modal de Notas (o `theme-origem.css` fixa o polegar cinza
    com 2 ids + 1 classe e venceria o seletor simples). */

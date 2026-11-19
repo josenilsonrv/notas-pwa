@@ -81,15 +81,23 @@ const servidor=http.createServer((req,res)=>{
   assert.ok(fs.readFileSync(path.join(raiz,'app.js'),'utf8').includes('installAtualizacaoPWA'),'app.js instala a atualizacao do PWA');
   const aviso=await page.evaluate(()=>{
     const app=window.notesApp;
-    app.recarregarParaNovaVersao=()=>{ /* nao recarrega durante o teste */ };
+    window.__recargas=0;
+    // Nao recarrega DE VERDADE (o teste mede a INTENCAO de recarregar).
+    app.recarregarParaNovaVersao=()=>{window.__recargas+=1;};
     app.avisarNovaVersao(null);
     const caixa=document.querySelector('.app-toast.is-update');
     const resultado={existe:!!caixa,botao:caixa?caixa.querySelector('.app-toast-action').textContent:''};
-    if(caixa) caixa.remove();
     return resultado;
   });
   assert.equal(aviso.existe,true,'aviso de nova versao aparece na tela');
   assert.equal(aviso.botao,'Atualizar agora','aviso traz o botao "Atualizar agora"');
+  // P124: o aviso NAO recarrega sozinho — reload automatico piscava a tela no meio da digitacao.
+  await page.waitForTimeout(4500);
+  assert.equal(await page.evaluate(()=>window.__recargas),0,'versao nova NAO recarrega sozinha');
+  // ... mas o botao continua aplicando quando o USUARIO pede.
+  await page.locator('.app-toast.is-update .app-toast-action').click();
+  assert.equal(await page.evaluate(()=>window.__recargas),1,'"Atualizar agora" aplica a versao nova');
+  await page.evaluate(()=>{const caixa=document.querySelector('.app-toast.is-update');if(caixa)caixa.remove();});
   // NAVEGAÇÃO: o HTML vem SEMPRE da rede primeiro (o cache é o plano B). Antes, o cache-first
   // deixava o aparelho preso na versão antiga — com o `index.html` guardado com COOP/CSP velhos,
   // a janela do login do Google abria em branco (P122). O cache continua cobrindo o offline.

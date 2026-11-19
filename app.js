@@ -1974,11 +1974,25 @@ function installAjustesNotaGrande(App) {
 function installAtualizacaoPWA(App) {
     if (!App || !App.prototype) return false;
 
-    /** Recarrega uma única vez (`window.__notasRecarregando` evita recargas em loop). */
+    /**
+     * Aplica a versão nova (`window.__notasRecarregando` evita recargas em loop).
+     * P124: o reload NUNCA pode custar o que está sendo digitado — a nota (e o rascunho) é
+     * gravada ANTES de recarregar. Quem decide a HORA é o usuário ("Atualizar agora") ou a
+     * próxima abertura do app: nada de reload automático no meio da digitação.
+     */
     App.prototype.recarregarParaNovaVersao = function () {
         if (window.__notasRecarregando) return;
         window.__notasRecarregando = true;
-        location.reload();
+        const recarregar = () => { location.reload(); };
+        try {
+            if (typeof this.flushNotesTyping === 'function') this.flushNotesTyping();
+            if (this.notesSession && typeof this.storeNotesDraft === 'function') this.storeNotesDraft();
+            if (this.notesSession && typeof this.saveNotes === 'function') {
+                Promise.resolve(this.saveNotes()).then(recarregar, recarregar);
+                return;
+            }
+        } catch (_) { /* qualquer falha: recarrega mesmo assim */ }
+        recarregar();
     };
 
     /** Aviso VISÍVEL de versão nova, com botão "Atualizar agora". */
@@ -2001,8 +2015,9 @@ function installAtualizacaoPWA(App) {
         });
         aviso.append(texto, atualizar);
         regiao.append(aviso);
-        // Mesmo sem clique, aplica sozinho (o SW já assumiu o controle com skipWaiting).
-        setTimeout(() => this.recarregarParaNovaVersao(), 4000);
+        // P124: NÃO recarrega sozinho. O reload automático (4 s) piscava a tela e podia comer
+        // a última frase digitada — o `beforeunload` só guardava um rascunho. A versão nova
+        // entra no clique de "Atualizar agora" ou na próxima abertura do app.
     };
 
     /** Liga a deteção e a reaplicação das atualizações do Service Worker. */

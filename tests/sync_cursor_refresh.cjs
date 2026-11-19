@@ -103,7 +103,7 @@ const aplicarNota = (page, html) => page.evaluate(conteudo => window.notesApp.sy
             refeitos: window.__refeitos,
             marcador: document.getElementById('notesEditor').textContent.indexOf('MARCADOR') >= 0
         }));
-        assert.equal(depois.refeitos, 1, 'a versão nova re-renderizou o editor (1x)');
+        assert.equal(depois.refeitos, 0, 'a versão nova entra IN-PLACE (nada de openNotesModal — P124)');
         assert.ok(depois.marcador, 'o conteúdo novo da nuvem chegou ao editor');
         assert.ok(Math.abs(depois.scroll - antes.scroll) <= 2,
             'SEM CARET a rolagem volta ao ponto original (antes=' + antes.scroll + ', depois=' + depois.scroll + ')');
@@ -116,7 +116,7 @@ const aplicarNota = (page, html) => page.evaluate(conteudo => window.notesApp.sy
             refeitos: window.__refeitos,
             scroll: document.getElementById('notesEditorContainer').scrollTop
         }));
-        assert.equal(eco.refeitos, 1, 'a MESMA versão NÃO re-renderiza (o contador não andou)');
+        assert.equal(eco.refeitos, 0, 'a MESMA versão NÃO re-renderiza (o contador não andou)');
         assert.equal(eco.scroll, scrollAntesEco, 'o eco não mexe na rolagem (nada foi re-renderizado)');
 
         // ---------- 3) MAPAS: a VIEWPORT do aparelho é preservada ao aplicar um grafo da nuvem ----------

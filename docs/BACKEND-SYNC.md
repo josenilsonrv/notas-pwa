@@ -133,6 +133,32 @@ a suíte de navegador falha se a CSP quebrar o app.
 - No **1º login**, os anexos antigos gravados como `data:` na nota são migrados para a conta
   (o HTML da nota passa a guardar só o id).
 
+## 5.1 UX do sync (P124): "Google Docs/Word" sem OT/CRDT
+
+O que chega da nuvem **nunca** reconstrói a tela. Regras do cliente (`sync/sync-cliente.js`):
+
+- **LWW honesto**: o texto local só é substituído quando a versão da nuvem tem
+  `atualizada_em` **estritamente maior**; versão antiga/empatada é ignorada (nada de
+  T2 → T1 → T2). Conflito resolvido pelo servidor vem marcado com `__forcar` e vence.
+- **Mescla de 3 vias por linha** (`syncMesclarConteudo`): base = última versão confirmada
+  pela nuvem (`syncNotasBase`, alimentada pelo `ack`), local = este aparelho, remoto = o que
+  chegou. Linha que só um lado mudou fica com quem mudou (edições em linhas diferentes não se
+  perdem); a mesma linha resolve por LWW. Conteúdo legado sem `data-note-id` (ou nota acima de
+  400 KB) cai no LWW do documento.
+- **Atualização in-place** (`syncAtualizarEditorSilencioso`): reconcilia por `data-note-id`,
+  troca só as linhas diferentes e repõe caret/rolagem. Nada de `openNotesModal`, `innerHTML`
+  geral ou `placeNotesCursorAtEnd`.
+- **Quem está digitando tem a palavra**: com edição em voo (`notesRascunhoPendente` ou tecla
+  nos últimos 1,2 s) a versão da nuvem fica guardada e entra na primeira janela ociosa.
+- **Rodapé honesto**: `Salvo` só com a fila vazia e `estado === 'sincronizado'`; senão
+  `Pendente`, `Pendente — N na fila`, `Enviando…`, `Sem conexão — N na fila`, `Sessão expirada`
+  ou `Falha ao salvar`. Deslogado continua `Salvo` (offline-first).
+- **Sem reload automático**: o aviso "Nova versão disponível" não recarrega sozinho; o reload
+  (clique em "Atualizar agora") grava a nota/rascunho antes de aplicar.
+
+Testes-guarda: `tests/sync_cursor_refresh.cjs`, `tests/sync_merge_linhas.cjs`,
+`tests/sync_rodape_status.cjs` e `tests/pwa_service_worker.cjs`.
+
 ## 6. Diagnóstico: "o sync travou"
 
 | Sintoma | Causa provável | O que fazer |

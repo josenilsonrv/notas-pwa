@@ -13,11 +13,11 @@
     <title>Notas PWA</title>
     <link id="appManifest" rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/svg+xml" href="./icon.svg">
-    <link rel="stylesheet" href="./styles.css?v=109">
+    <link rel="stylesheet" href="./styles.css?v=110">
     <link rel="stylesheet" href="./theme-origem.css">
     <link rel="stylesheet" href="./notes/editor.css">
     <link rel="stylesheet" href="./notes/extras.css">
-    <link rel="stylesheet" href="./notes/tables.css?v=109">
+    <link rel="stylesheet" href="./notes/tables.css?v=110">
     <link rel="stylesheet" href="./mapa/mapa.css">
 <!-- 🚀 [INÍCIO: PWA - BOOT SEM FLASH (TEMA ANTES DO CSS E WATCHDOG)] -->
     <script>
@@ -251,12 +251,12 @@
     <script src="./notes/editor.js"></script>
     <script src="./notes/table-math.js"></script>
     <script src="./notes/extras.js"></script>
-    <script src="./notes/tables.js?v=109"></script>
+    <script src="./notes/tables.js?v=110"></script>
     <!-- Visualizador de PDF: pdf.js (render) + StPageFlip (virada de livro, vendorizada). -->
     <script src="./notes/flipjs/page-flip.browser.js"></script>
     <script src="./notes/pdf.js"></script>
     <script src="./fontes.js"></script>
-    <script src="./app.js?v=109"></script>
+    <script src="./app.js?v=110"></script>
     <!-- Conta (login OPCIONAL): botão "Entrar" + diálogo. Sem sessão, o app é o de hoje. -->
     <script src="./conta.js"></script>
     <!-- Sincronização (seção 5): mapa das chaves locais + cliente (fila/snapshot/push). -->
@@ -323,6 +323,10 @@
             navigator.serviceWorker.addEventListener('controllerchange', function () {
                 if (!tinhaControlador || recarregando) return;
                 if (window.__notasRecarregando) return; // o app já está atualizando/recarregando
+                // P124: o app JÁ iniciou? Então quem decide a hora de aplicar a versão nova é
+                // o app.js (aviso "Atualizar agora"); recarregar aqui piscava a tela no meio
+                // da digitação. Este caminho fica só para o caso de o app NÃO ter subido.
+                if (window.__notasPronto) return;
                 recarregando = true;
                 location.reload();
             });
