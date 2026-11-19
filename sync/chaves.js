@@ -41,6 +41,10 @@
             tipo: 'marca', entidade: null,
             motivo: 'marca local: qual conta já subiu o conteúdo deste aparelho'
         },
+        'notas-pwa-sync-vistas': {
+            tipo: 'marca', entidade: null,
+            motivo: 'marca local: ids de nota que ESTE aparelho já viu na nuvem (P123 — separa nota órfã de nota apagada em outro aparelho)'
+        },
         'notas-pwa-fila-sync': {
             tipo: 'fila', entidade: null,
             motivo: 'fila de pendências: é da CONTA mas nunca sobe (só o conteúdo dela sobe)'

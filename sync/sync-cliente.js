@@ -16,6 +16,10 @@ function installSync(App) {
     const p = App.prototype;
     const FILA = 'notas-pwa-fila-sync';
     const MARCA_CONTA = 'notas-pwa-sync-conta';
+    // P123: ids de nota que ESTE aparelho já viu na nuvem (por conta). Separa "nota criada sem
+    // sessão" (id NUNCA visto -> sobe) de "nota apagada em outro aparelho" (id já visto e ausente
+    // agora -> NÃO sobe, senão o próximo login ressuscitaria o que foi excluído).
+    const VISTAS = 'notas-pwa-sync-vistas';
     const TAMANHO_LOTE = 60;
     // Identificador único e PERSISTENTE da operação (enviado como `id_local`). O `seq` é só
     // a ordem local; o `op_id` sobrevive a mesclas/reaquisitamentos da fila.
@@ -291,6 +295,10 @@ function installSync(App) {
     p.syncAplicarEntidades = function (entidades, delta) {
         const anterior = this.syncAplicando;
         this.syncAplicando = true;
+        // A carga INICIAL (`delta` falso) é a fotografia COMPLETA da conta: recomeça o conjunto
+        // de notas conhecidas na nuvem. Deltas (HTTP `desde_rev`/WebSocket) somam ou removem
+        // (tombstone) desse conjunto — ver `syncRegistrarNotasDaNuvem` (P123).
+        if (!delta) this.syncNuvemNotas = [];
         // Zera os marcadores de "mudou": cada applier liga o seu. É o que decide se o editor de
         // notas e a área do mapa precisam ser RE-RENDERIZADOS (a fonte do "refresh" — P120).
         this.syncNotaAtualMudou = false;
@@ -303,6 +311,7 @@ function installSync(App) {
             try { acao(); } catch (erro) { console.warn('[sync] falha ao aplicar ' + nome + ':', erro); }
         };
         try {
+            if (entidades.notas) this.syncRegistrarNotasDaNuvem(entidades.notas, delta);
             if (entidades.notas) passo('notas', () => this.syncAplicarNotas(entidades.notas, delta));
             if (entidades.notas && entidades.notas.length) {
                 // Só a NOTA ABERTA fica "velha" com a aplicação: as outras nem têm editor na tela.
@@ -821,6 +830,73 @@ function installSync(App) {
         return ops;
     };
 
+    /**
+     * Registra as notas que a NUVEM tem agora (o snapshot). O conjunto em memória (`syncNuvemNotas`)
+     * é a fotografia da conta; a marca `notas-pwa-sync-vistas` guarda a UNIÃO histórica por conta —
+     * é ela que impede o "subir faltantes" de ressuscitar nota apagada em outro aparelho (P123).
+     */
+    p.syncRegistrarNotasDaNuvem = function (registros, delta) {
+        const atuais = new Set(delta ? (this.syncNuvemNotas || []) : []);
+        for (const registro of registros || []) {
+            const id = String((registro && registro.id) || '');
+            if (!id) continue;
+            if (registro.deleted_at) atuais.delete(id);
+            else atuais.add(id);
+        }
+        this.syncNuvemNotas = Array.from(atuais);
+        const email = (window.notasConta && window.notasConta.email) || '';
+        const marca = this.syncLer(VISTAS, null);
+        const conhecidas = marca && marca.conta === email && Array.isArray(marca.ids) ? marca.ids : [];
+        const uniao = Array.from(new Set(conhecidas.map(String).concat(this.syncNuvemNotas)));
+        try {
+            localStorage.setItem(VISTAS, JSON.stringify({ conta: email, ids: uniao }));
+        } catch (_) { /* armazenamento cheio/privado: a proteção vale só nesta sessão */ }
+    };
+
+    /**
+     * Quais notas LOCAIS precisam subir. Função PURA (o teste roda sem DOM/cookies, no `vm`):
+     *  - `somenteNuvem` NUNCA sobe (o texto não está no aparelho — P119);
+     *  - id PRESENTE na nuvem não sobe;
+     *  - id já VISTO na nuvem e ausente agora = apagada em outro aparelho -> **não** sobe;
+     *  - id DESCONHECIDO e ausente = criada/editada sem sessão (backend fora) -> **sobe** (P123).
+     */
+    p.syncNotasFaltantes = function (locais, naNuvem, conhecidas) {
+        const nuvem = new Set((naNuvem || []).map(String));
+        const vistas = new Set((conhecidas || []).map(String));
+        return (locais || []).filter(nota => {
+            if (!nota || !nota.id) return false;
+            if (nota.somenteNuvem) return false;
+            const id = String(nota.id);
+            return !nuvem.has(id) && !vistas.has(id);
+        });
+    };
+
+    /**
+     * P123 — o "1º login" só sobe tudo UMA vez (marca `notas-pwa-sync-conta`). Se o aparelho
+     * escreveu enquanto NÃO havia sessão (backend pausado/fora -> o app sobe deslogado), a marca
+     * já existia e essas notas ficavam órfãs para sempre. Aqui elas entram na fila por serem
+     * DESCONHECIDAS na nuvem; o que foi apagado em outro aparelho (id já visto) fica de fora.
+     */
+    p.syncSubirFaltantes = function () {
+        if (!this.syncAtivo() || this.syncAplicando) return [];
+        const email = (window.notasConta && window.notasConta.email) || '';
+        const marca = this.syncLer(VISTAS, null);
+        const conhecidas = marca && marca.conta === email && Array.isArray(marca.ids) ? marca.ids : [];
+        const locais = (this.projectsData && this.projectsData.length)
+            ? this.projectsData
+            : this.lerNotasLocais();
+        // Já existe `upsert` dessa nota na fila? Não duplica: ela vai subir de qualquer forma.
+        const naFila = new Set(
+            this.syncFilaDaConta()
+                .filter(item => item.entidade === 'notas')
+                .map(item => String(item.id))
+        );
+        const faltantes = this.syncNotasFaltantes(locais, this.syncNuvemNotas || [], conhecidas)
+            .filter(nota => !naFila.has(String(nota.id)));
+        faltantes.forEach(nota => this.syncEnfileirarNota(nota));
+        return faltantes;
+    };
+
     /** Sobe TUDO em lotes, mostrando o progresso discreto no diálogo de conta. */
     p.syncSubirTudo = async function () {
         const ops = this.syncColetarOps();
@@ -864,6 +940,11 @@ function installSync(App) {
             if (marca !== window.notasConta.email) {
                 await this.syncSubirTudo();
                 try { localStorage.setItem(MARCA_CONTA, window.notasConta.email); } catch (_) { /* privado */ }
+            } else {
+                // P123: a marca já existia, mas o aparelho pode ter escrito SEM sessão (backend
+                // fora/pausado -> o app sobe deslogado). Sobe só o que a nuvem DESCONHECE; o que
+                // foi apagado em outro aparelho não volta (ver `syncNotasFaltantes`).
+                this.syncSubirFaltantes();
             }
             await this.syncDrenar();
             this.syncPronto = true;   // o aparelho já conhece o estado da conta

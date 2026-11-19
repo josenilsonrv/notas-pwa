@@ -110,7 +110,12 @@
 // como a documentação oficial exige) e o HTML novo PRECISA chegar ao aparelho: o cache antigo
 // guarda o `index.html` COM os cabeçalhos, então ele seguia servindo o COOP/CSP velhos e a janela
 // do Google abria em branco. Mudaram `backend/app/main.py` e o teste-guarda `test_health.py`.
-const CACHE_NAME = 'notas-pwa-v102';
+// v103: P123 — nota criada SEM sessão não fica mais órfã. Se o backend cai (ex.: projeto
+// pausado) o app sobe DESLOGADO e grava local; ao voltar a sessão, o "1º login" era pulado pela
+// marca `notas-pwa-sync-conta` e essas notas NUNCA subiam. Agora `syncSubirFaltantes` enfileira
+// as notas que a nuvem DESCONHECE (id nunca visto), sem ressuscitar o que foi apagado em outro
+// aparelho (id já visto). Mudaram `sync/sync-cliente.js` e `sync/chaves.js`.
+const CACHE_NAME = 'notas-pwa-v103';
 const TIMEOUT_MS = 3000;
 
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">' +
