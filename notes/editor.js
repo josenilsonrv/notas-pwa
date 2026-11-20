@@ -345,16 +345,18 @@ function installNotesEditor(App) {
         // Read layout together before writing controls, avoiding a layout pass per row.
         const rowMetrics=all.map(line=>{
             if(editor().dataset.largeNote==='true'&&!line.dataset.list&&line.dataset.check!=='true'){
-                const fallback={fontSize:'14px',lineHeight:'22.4px',color:'inherit',fontWeight:'400',fontStyle:'normal'};return {styles:[],fallback,first:fallback};
+                const fallback={fontSize:'14px',lineHeight:'22.4px',color:'inherit',fontWeight:'400',fontStyle:'normal',fontFamily:'',textDecorationLine:'none'};return {styles:[],fallback,first:fallback};
             }
 
             const walker=document.createTreeWalker(body(line),NodeFilter.SHOW_TEXT),styles=[];
+            const lineDeco=getComputedStyle(body(line)).textDecorationLine||'';
+            const decoOf=computed=>[lineDeco,computed.textDecorationLine].filter(d=>d&&d!=='none').join(' ');
             while(walker.nextNode())if(walker.currentNode.textContent.trim()){
                 const computed=getComputedStyle(walker.currentNode.parentElement);
-                styles.push({fontSize:computed.fontSize,lineHeight:computed.lineHeight,color:computed.color,fontWeight:computed.fontWeight,fontStyle:computed.fontStyle});
+                styles.push({fontSize:computed.fontSize,lineHeight:computed.lineHeight,color:computed.color,fontWeight:computed.fontWeight,fontStyle:computed.fontStyle,fontFamily:computed.fontFamily,textDecorationLine:decoOf(computed)});
             }
             const computed=getComputedStyle(body(line));
-            const fallback={fontSize:computed.fontSize,lineHeight:computed.lineHeight,color:computed.color,fontWeight:computed.fontWeight,fontStyle:computed.fontStyle};
+            const fallback={fontSize:computed.fontSize,lineHeight:computed.lineHeight,color:computed.color,fontWeight:computed.fontWeight,fontStyle:computed.fontStyle,fontFamily:computed.fontFamily,textDecorationLine:lineDeco||computed.textDecorationLine};
             return {styles,fallback,first:styles[0]||fallback};
         });
         all.forEach((line,index)=>{
@@ -397,6 +399,9 @@ function installNotesEditor(App) {
                 marker.style.fontWeight=styles.length?(styles.every(s=>Number(s.fontWeight)>=600)?'700':'400'):fallback.fontWeight;
                 marker.style.fontSize=firstStyle.fontSize;marker.style.color=firstStyle.color;
                 marker.style.fontStyle=styles.length?(styles.every(s=>s.fontStyle==='italic'||s.fontStyle==='oblique')?'italic':'normal'):fallback.fontStyle;
+                marker.style.fontFamily=firstStyle.fontFamily||'';
+                const decorations=styles.length?styles:[fallback],hasDeco=kind=>decorations.every(s=>(s.textDecorationLine||'').includes(kind));
+                marker.style.textDecorationLine=[hasDeco('underline')&&'underline',hasDeco('line-through')&&'line-through'].filter(Boolean).join(' ')||'none';
             }else marker?.remove();
             if(line.dataset.collapsed==='true')children.forEach(child=>child.hidden=true);
         });
@@ -479,6 +484,21 @@ function installNotesEditor(App) {
         body(line).querySelectorAll(command==='bold'?'b,strong':'i,em').forEach(e=>e.replaceWith(...e.childNodes));
         body(line).querySelectorAll('[style]').forEach(e=>e.style[field]='');
         line.dataset[command]=String(enabled);
+    }
+    function formatLineDecoration(line,field,enabled){
+        line.dataset[field]=String(enabled);
+        if(enabled)return;
+        const kind=field==='underline'?'underline':'line-through';
+        body(line).querySelectorAll(field==='underline'?'u':'s,strike,del').forEach(e=>e.replaceWith(...e.childNodes));
+        body(line).querySelectorAll('[style]').forEach(e=>{
+            const deco=[e.style.textDecorationLine,e.style.textDecoration].filter(Boolean).join(' ');
+            if(!deco.includes(kind))return;
+            const rest=[...new Set(deco.split(/\s+/).filter(d=>d&&d!==kind))].join(' ');
+            if(rest)e.style.textDecoration=rest;
+            else ['text-decoration','text-decoration-line','text-decoration-style','text-decoration-color'].forEach(prop=>e.style.removeProperty(prop));
+            if(e.tagName==='SPAN'&&![...e.attributes].length)e.replaceWith(...e.childNodes);
+        });
+        body(line).querySelectorAll('span,font').forEach(e=>{if(!e.textContent&&!e.querySelector('img,br'))e.remove();});
     }
     p.applyNotesTextStyle=function(property,value){
         this.restoreNotesSelection();const mark=bookmark(),chosen=selected().filter(Boolean),whole=getSelection().isCollapsed;
@@ -629,9 +649,12 @@ function installNotesEditor(App) {
         if(command==='undo')return this.undoNotes();if(command==='redo')return this.redoNotes();
         this.restoreNotesSelection();normalize(editor());const mark=bookmark(), chosen=selected().filter(Boolean);
         if(this.notesHistoryMarks)this.notesHistoryMarks[this.notesHistoryIndex]=mark;
-        if(command==='strikeThrough'&&getSelection().isCollapsed){return this.applyNotesTextStyle('textDecoration',document.queryCommandState('strikeThrough')?'none':'line-through');}
-        if(command==='underline'&&getSelection().isCollapsed){return this.applyNotesTextStyle('textDecoration',document.queryCommandState('underline')?'none':'underline');}
-        if(command==='bold'||command==='italic'){
+        if((command==='underline'||command==='strikeThrough')&&getSelection().isCollapsed){
+            const field=command==='underline'?'underline':'strike';
+            const enabled=chosen[0]?.dataset[field]!=='true';
+            chosen.forEach(l=>formatLineDecoration(l,field,enabled));
+        }
+        else if(command==='bold'||command==='italic'){
             if(getSelection().isCollapsed){const enabled=chosen[0]?.dataset[command]!=='true';chosen.forEach(l=>formatWholeLine(l,command,enabled));}
             else return this.applyNotesTextStyle(command==='bold'?'fontWeight':'fontStyle',document.queryCommandState(command)?(command==='bold'?'400':'normal'):(command==='bold'?'700':'italic'));
         }
@@ -815,7 +838,7 @@ function installNotesEditor(App) {
                 // é filho) e HERDA a formatação da linha de cima (título/lista/check) +
                 // a numeração. O item aparece logo abaixo do grupo recolhido.
                 const next=newLine('<br>',{level:String(level(line)),list:lista,check,checked:'false'});
-                for(const field of ['bold','italic'])if(line.dataset[field])next.dataset[field]=line.dataset[field];
+                for(const field of ['bold','italic','underline','strike'])if(line.dataset[field])next.dataset[field]=line.dataset[field];
                 if(titulo){next.dataset.heading=titulo;next.dataset.outlineBreak=titulo;}
                 if(lista==='ol'&&line.dataset.checkNumber)next.dataset.checkNumber=String(Number(line.dataset.checkNumber)+1);
                 (group.at(-1)||line).after(next);
@@ -823,13 +846,14 @@ function installNotesEditor(App) {
             }
         }
         const next=newLine('<br>',{level:String(level(line)+(child?1:0)),list:line.dataset.list||'',check:line.dataset.check||'false',checked:'false'});
+        for(const field of ['bold','italic','underline','strike'])if(line.dataset[field]!==undefined)next.dataset[field]=line.dataset[field];
         if(line.dataset.list==='ol'&&line.dataset.checkNumber){
             const number=Number(line.dataset.checkNumber)+1;
             let start=line;while(start.previousElementSibling&&level(start.previousElementSibling)>=level(line))start=start.previousElementSibling;
             for(let row=start;row;row=row.nextElementSibling){if(row!==start&&level(row)<level(line))break;if(level(row)===level(line)&&row.dataset.checkNumber&&Number(row.dataset.checkNumber)>=number)row.dataset.checkNumber=String(Number(row.dataset.checkNumber)+1);}
             next.dataset.checkNumber=String(number);
         }
-        if(mark.start[1]===0){for(const field of ['heading','bold','italic'])if(line.dataset[field])next.dataset[field]=line.dataset[field];}
+        if(mark.start[1]===0){if(line.dataset.heading)next.dataset.heading=line.dataset.heading;}
         const fragment=tail.extractContents();if(fragment.childNodes.length)body(next).replaceChildren(fragment);
         if(!body(next).textContent && !body(next).querySelector('img,br'))body(next).append(document.createElement('br'));
         if(!body(line).childNodes.length)body(line).append(document.createElement('br'));
@@ -838,7 +862,7 @@ function installNotesEditor(App) {
     // 🔄 [FIM: NOTAS - ATALHOS (handleNotesEditorShortcut)]
 
     // 🔄 [INÍCIO: NOTAS - ESTADO DA TOOLBAR E CHECKLIST]
-    p.updateNotesToolbarState=function(){const chosen=selected().filter(Boolean);document.querySelectorAll('#notesToolbar [data-command]').forEach(button=>{const command=button.dataset.command;let active=false;if(command.startsWith('heading'))active=getSelection().isCollapsed?chosen.length&&chosen.every(l=>l.dataset.heading===command.slice(-1)):selectedHeading()===command.slice(-1);else if(command==='checklist')active=chosen.length&&chosen.every(l=>l.dataset.check==='true');else if(command.includes('List'))active=chosen.length&&chosen.every(l=>l.dataset.list===(command==='insertOrderedList'?'ol':'ul'));else if(command==='bold'||command==='italic'||command==='underline')active=document.queryCommandState(command);button.classList.toggle('is-active',Boolean(active));button.setAttribute('aria-pressed',String(Boolean(active)));});};
+    p.updateNotesToolbarState=function(){const chosen=selected().filter(Boolean);document.querySelectorAll('#notesToolbar [data-command]').forEach(button=>{const command=button.dataset.command;let active=false;if(command.startsWith('heading'))active=getSelection().isCollapsed?chosen.length&&chosen.every(l=>l.dataset.heading===command.slice(-1)):selectedHeading()===command.slice(-1);else if(command==='checklist')active=chosen.length&&chosen.every(l=>l.dataset.check==='true');else if(command.includes('List'))active=chosen.length&&chosen.every(l=>l.dataset.list===(command==='insertOrderedList'?'ol':'ul'));else if(command==='bold'||command==='italic')active=document.queryCommandState(command);else if(command==='underline')active=getSelection().isCollapsed?chosen[0]?.dataset.underline==='true':document.queryCommandState(command);else if(command==='strikeThrough')active=getSelection().isCollapsed?chosen[0]?.dataset.strike==='true':document.queryCommandState(command);button.classList.toggle('is-active',Boolean(active));button.setAttribute('aria-pressed',String(Boolean(active)));});};
     p.updateNotesChecklistOrder=function(check){
         this.flushNotesTyping();
         const line=lineAt(check),value=String(check.checked),keepCheckboxFocus=document.activeElement===check;

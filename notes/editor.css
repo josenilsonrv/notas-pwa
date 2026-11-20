@@ -49,6 +49,9 @@ html #notesModalBackdrop.notes-drawer #notesModal.notes-resizing { transition:no
 #notesEditor .notes-line[data-bold="false"] { font-weight:400; }
 #notesEditor .notes-line[data-italic="true"] { font-style:italic; }
 #notesEditor .notes-line[data-italic="false"] { font-style:normal; }
+#notesEditor .notes-line[data-underline="true"] .notes-line-text { text-decoration-line:underline; }
+#notesEditor .notes-line[data-strike="true"] .notes-line-text { text-decoration-line:line-through; }
+#notesEditor .notes-line[data-underline="true"][data-strike="true"] .notes-line-text { text-decoration-line:underline line-through; }
 #notesEditor [data-inline-heading="1"], #notesEditor .notes-line[data-heading="1"] { font-size:1.5rem; }
 #notesEditor [data-inline-heading="2"], #notesEditor .notes-line[data-heading="2"] { font-size:1.25rem; }
 #notesEditor [data-inline-heading="3"], #notesEditor .notes-line[data-heading="3"] { font-size:1.1rem; }
